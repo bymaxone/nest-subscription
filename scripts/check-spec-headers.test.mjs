@@ -1,6 +1,7 @@
 /**
  * @fileoverview Tests for the spec-header gate: it exits non-zero and names the file for a spec with no
- * header, no layer, a layer outside the list or no stated purpose, and passes a correct one.
+ * header, no layer, a layer outside the list or no stated purpose, and passes a correct one. Files named
+ * `*.test.ts` are held to the same rule as `*.spec.ts`.
  * @layer scripts
  *
  * A gate that never fails proves nothing, so each case runs the real command against a throwaway tree
@@ -114,6 +115,20 @@ describe('the spec-header gate', () => {
     })
     assert.equal(status, 1)
     assert.match(output, /test\/e2e\/b\.e2e-spec\.ts/)
+  })
+
+  it('fails and names a test file with no header', () => {
+    // Scenario: a `*.test.ts` file, which the unit runner also executes, opens with a statement.
+    const { status, output } = run({ 'src/core/a.spec.ts': GOOD, 'src/core/b.test.ts': 'it()\n' })
+    assert.equal(status, 1)
+    assert.match(output, /src\/core\/b\.test\.ts: does not open with a \/\*\* \*\/ block comment/)
+  })
+
+  it('passes and counts a test file with a correct header', () => {
+    // Scenario: a spec and a `*.test.ts` file, both with a complete header.
+    const { status, output } = run({ 'src/core/a.spec.ts': GOOD, 'src/core/b.test.ts': GOOD })
+    assert.equal(status, 0, output)
+    assert.match(output, /Every spec file \(2\)/)
   })
 
   it('fails when there is no spec to check', () => {

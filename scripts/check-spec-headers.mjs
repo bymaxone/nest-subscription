@@ -1,5 +1,5 @@
 /**
- * @fileoverview Spec-header gate: every spec file under `src` and `test` opens with a block comment
+ * @fileoverview Spec-header gate: every spec or test file under `src` and `test` opens with a block comment
  * that states what the file tests and which layer it belongs to.
  * @layer scripts
  *
@@ -19,8 +19,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 /** Directories whose spec files are checked, relative to the root. */
 const SPEC_ROOTS = ['src', 'test']
 
-/** Spec files: unit (`*.spec.ts`) and end-to-end (`*.e2e-spec.ts`). */
-const SPEC_FILE = /\.(?:e2e-)?spec\.ts$/
+/** Spec files: unit (`*.spec.ts`, `*.test.ts`) and end-to-end (`*.e2e-spec.ts`). */
+const SPEC_FILE = /\.(?:(?:e2e-)?spec|test)\.ts$/
 
 /** Shortest text, outside the layer marker, that can still state a purpose. */
 const MIN_PURPOSE_LENGTH = 20

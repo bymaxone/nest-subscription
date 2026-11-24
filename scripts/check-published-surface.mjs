@@ -212,8 +212,8 @@ function checkChangelog() {
   }
 
   // Every version heading is reference-link syntax, so it renders as plain text
-  // unless a `[x.y.z]: url` definition exists. Three headings had one and three
-  // did not, which is invisible until someone reads the rendered file.
+  // unless a `[x.y.z]: url` definition exists, and a missing one is invisible until the
+  // rendered file is read.
   const defined = new Set([...CHANGELOG.matchAll(/^\[(\d+\.\d+\.\d+)\]: /gm)].map((m) => m[1]))
   for (const v of documented) {
     if (!defined.has(v)) {

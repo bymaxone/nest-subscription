@@ -23,8 +23,8 @@
  * would push every excerpt toward being a full file.
  *
  * Question 3 exists because question 1 cannot see it: a property is not a reference, so
- * an invented `DEFAULT_OPTIONS.REDACTION_DISABLED` reads as a use of
- * `DEFAULT_OPTIONS` — which IS imported — and passes.
+ * an invented `LIMITS.NO_SUCH_KEY` reads as a use of
+ * `LIMITS` — which IS imported — and passes.
  *
  * Deliberately NOT checked: a free local like `health` in an excerpt whose scope the
  * prose introduces. Flagging those means flagging every excerpt variable, and the
@@ -71,8 +71,8 @@ function walk(dir, filter) {
  * Add every name a declaration binds, including through a destructuring pattern.
  *
  * `export const { ConfigurableModuleClass: Base, OPTIONS_TYPE } = builder()` binds two
- * names and matches none of the plain-identifier cases, so four real exports of this
- * package were invisible to the check and a snippet could use them unimported.
+ * names and matches none of the plain-identifier cases, so each name has to be collected
+ * from the pattern or a snippet could use it unimported.
  *
  * @param name - A declaration's name node: an identifier or a binding pattern.
  * @param into - The set to add the bound names to.
@@ -168,9 +168,8 @@ function unwrapObjectLiteral(node) {
 
 /**
  * The keys of every module-level constant object literal in `src/`, by object name.
- * A snippet writing `DEFAULT_OPTIONS.NO_SUCH_KEY` names something that does not
- * exist, which is how an invented constant reached this documentation once already —
- * the identifier check cannot see it, because a property is not a reference.
+ * A snippet writing `LIMITS.NO_SUCH_KEY` names something that does not
+ * exist, and the identifier check cannot see it, because a property is not a reference.
  */
 function constantMembers() {
   const members = new Map()
@@ -205,8 +204,7 @@ function constantMembers() {
 
 /**
  * Extract every TypeScript block, with the line its fence opens on. Both spellings
- * count: `ts` and `typescript` are the same language to every renderer, and taking
- * only the long one left nine blocks silently outside the check.
+ * count: `ts` and `typescript` are the same language to every renderer.
  */
 function snippetsOf(markdown) {
   const blocks = []
@@ -215,15 +213,13 @@ function snippetsOf(markdown) {
   let fence = 3
   let buffer = []
   for (const [index, line] of lines.entries()) {
-    // Blockquoted snippets (`> ```typescript`) are code too — the task documents
-    // quote most of theirs, and skipping them hid three of the reported defects.
+    // Blockquoted snippets (`> ```typescript`) are code too, so the quote marker is stripped.
     const bare = line.replace(/^>\s?/, '')
     if (start === -1) {
       // Two things vary besides the label. The fence can be LONGER than three
       // backticks — a snippet that itself shows a fenced example has to be wrapped in
       // more of them — and CommonMark allows up to three spaces of indentation before
-      // it, which the task documents use. Requiring exactly three backticks at column
-      // zero skipped six real blocks.
+      // it, so neither is tied to exactly three backticks at column zero.
       const opening = /^ {0,3}(`{3,})(?:ts|typescript)\s*$/.exec(bare)
       if (opening) {
         fence = opening[1].length
@@ -284,13 +280,13 @@ function usedIn(source) {
         (ts.isPropertyDeclaration(parent) && parent.name === node) ||
         (ts.isMethodDeclaration(parent) && parent.name === node) ||
         (ts.isQualifiedName(parent) && parent.right === node) ||
-        // The left half of `{ DEFAULT_OPTIONS as KEYS }` names what is being
+        // The left half of `{ LIMITS as KEYS }` names what is being
         // imported, it does not read it — the binding this snippet gets is `KEYS`.
-        // Counting it as a use made the alias case report the ORIGINAL name as
-        // unimported, and the run failed before the alias-aware key check could run.
+        // Counting it as a use would report the ORIGINAL name as unimported before the
+        // alias-aware key check could run.
         ((ts.isImportSpecifier(parent) || ts.isBindingElement(parent)) &&
           parent.propertyName === node)
-      // A shorthand `{ safeMinLevel }` names the property AND reads the variable, so
+      // A shorthand `{ level }` names the property AND reads the variable, so
       // it is a use — treating it as a declaration name would hide exactly the kind of
       // reference this script exists to find.
       const isOwnDeclarationName =
@@ -309,7 +305,7 @@ function usedIn(source) {
 /**
  * The ORIGINAL name behind each imported binding, by local name.
  *
- * `import { DEFAULT_OPTIONS as KEYS }` binds `KEYS` locally, so looking the constant
+ * `import { LIMITS as KEYS }` binds `KEYS` locally, so looking the constant
  * up by the local name finds nothing and `KEYS.INVENTED` sails through. The map keeps
  * both ends so the alias resolves back to what the package actually exports.
  *
@@ -331,7 +327,7 @@ function importedAliases(source) {
 /**
  * The names a snippet IMPORTS, as opposed to the ones it declares itself.
  *
- * The distinction decides whether `DEFAULT_OPTIONS.SOMETHING` is checked against the
+ * The distinction decides whether `LIMITS.SOMETHING` is checked against the
  * package's constant: an import means it IS that constant, while a local `const` of the
  * same name means the snippet's own object and must be left alone.
  *
@@ -388,8 +384,8 @@ function membersOf(node) {
  * The `this.x` reads that no class in the snippet declares, checked ONE CLASS AT A
  * TIME.
  *
- * Merging every class into a single set was the earlier shape, and it let a second
- * class cover for the first: `class A { f() { this.missing() } } class B { missing() {} }`
+ * A single set merged across every class would let a second class cover for the first:
+ * `class A { f() { this.missing() } } class B { missing() {} }`
  * passed because `B` contributed the name. `this` inside `A` cannot reach `B`.
  *
  * A nested class is walked as its own scope and does not lend its members to the
