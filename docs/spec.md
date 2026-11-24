@@ -2,7 +2,7 @@
 
 > **Status:** 📝 Draft, waiting for owner review
 > **Owner:** Bymax One
-> **Version:** 0.1 · **Last update:** 2026-11-24
+> **Version:** 0.2 · **Last update:** 2026-11-24 (0.2: the ten open questions answered by the owner)
 > **Package:** `@bymax-one/nest-subscription`, a public npm library for NestJS 11
 > **Workflow:** `/bymax-workflow:spec` → reviewed specification → `/bymax-workflow:roadmap` (`plan.md`) → `/bymax-workflow:phase-tasks` (`tasks/`)
 > **Sibling precedents:** `bymaxone/nest-telemetry` (tooling, gates, packaging, release), `bymaxone/nest-auth` (module options, repositories, hooks, guards, controllers behind switches), `bymaxone/nest-notification` (provider adapters as optional peers)
@@ -23,7 +23,6 @@ It says **what** the library does and **why**. File layout, phases and task brea
 | AC | Acceptance criterion |
 | R | Risk |
 | D | Decision already taken by the owner, with its date |
-| Q | Open decision. Never invent an owner answer for one |
 
 **Evidence labels.** *Verified* means read in the provider's official documentation on 2026-11-24; the URL is in §12. *Planned contract* means read in the specification of a platform that is not released yet and can change. *Proposed* means a design recommendation the owner has not confirmed.
 
@@ -165,7 +164,7 @@ The two are independent. Neither requires the other, and the host's code is the 
 
 *Verified* facts it is built on are in Appendix A.
 
-**FR10. Read.** It reads a customer's subscriptions and active entitlements from the RevenueCat REST API and maps them into the model. Which API version it reads from is Q01.
+**FR10. Read.** It reads a customer's subscriptions and active entitlements from version 2 of the RevenueCat REST API, which reports an explicit status, an access flag and a renewal status for each subscription, and maps them into the model. Version 1 is used only for the Google Play stop-renewal operation, which exists only there (D06).
 
 **FR11. Identity.** The account identifier is the RevenueCat App User ID. The host must configure the RevenueCat SDKs with its own stable account identifier. An event that concerns an anonymous identifier, or an identifier the host does not know, is recorded and reported, never dropped silently. Aliases and transfers are followed: when RevenueCat moves purchases from one identifier to another, both accounts are refreshed.
 
@@ -185,7 +184,8 @@ The two are independent. Neither requires the other, and the host's code is the 
 
 **FR15.** It reads a customer's subscription and entitlements through the Finance API with a tenant API key, verifies Finance's signed webhooks, and maps Finance's subscription states into the model. It has no dependency on RevenueCat and works for a host that sells only through Finance.
 
-- **Identity.** Finance names a customer with its own identifier and stores the host's identifier as an external reference. The adapter keeps the pair in the snapshot's source customer reference.
+- **Identity.** Finance names a customer with its own identifier and stores the host's identifier as an external reference. The adapter keeps the pair in the snapshot's source customer reference from the first contact, and resolves it through a lookup by external reference once Finance offers one (D15).
+- **Entitlement names.** Finance models plans and feature keys. The host maps plan identifiers to entitlement names in the module options (D07).
 - **Hot path.** Finance asks its tenants not to call its API synchronously on a request path. The library's design already satisfies this: the guard reads the stored snapshot (§3.10).
 - **Store purchases.** As specified today, Finance covers subscriptions it bills itself. A host that sells inside a native app through the app stores uses the RevenueCat adapter until Finance can report store purchases.
 
@@ -210,13 +210,13 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 ### 3.9 Storage, refresh and reconciliation
 
-**FR22. Store port.** The host implements a small port to persist snapshots and processed event identifiers. The library ships an in-memory implementation for tests and development, marked as not for production, and documents a reference implementation over a relational table. It imports no database client.
+**FR22. Store port.** The host implements a small port to persist snapshots and processed event identifiers. The library ships an in-memory implementation for tests and development, marked as not for production, and documents a reference implementation over a relational table. It imports no database client. It also ships a conformance suite the host runs against its own implementation (D11).
 
 **FR23. Optional cache.** When the host provides a cache, the library reads through it in front of the store, with a short lifetime, and invalidates it on every change.
 
 **FR24. Refresh on demand.** The service can force a read from the source for one account, for example right after the app reports a purchase, without waiting for the webhook. Concurrent refreshes of one account collapse into one source call.
 
-**FR25. Staleness.** Every snapshot carries its age. The host sets a maximum age. A snapshot older than that is refreshed in the background on its next read, and the read returns the stored value meanwhile.
+**FR25. Staleness.** Every snapshot carries its age. The host sets a maximum age; the default is 24 hours (D12). A snapshot older than that is refreshed in the background on its next read, and the read returns the stored value meanwhile.
 
 **FR26. Reconciliation.** The service exposes a method that refreshes the accounts whose snapshot is older than a threshold, in bounded batches, with a rate limit that respects the source's. The host calls it from its own scheduled job. This covers a lost webhook.
 
@@ -233,7 +233,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 **FR31. When the snapshot is missing or the store is down.** The policy is one explicit option with two values, and the default is to refuse (SEC04):
 
 - **Refuse:** no snapshot or an unreadable store denies access.
-- **Last known state:** a stored snapshot younger than a tolerance the host sets is trusted even when it cannot be refreshed.
+- **Last known state:** a stored snapshot younger than a tolerance the host sets is trusted even when it cannot be refreshed. The default tolerance is 24 hours (D12).
 
 ### 3.11 Telling the host
 
@@ -326,7 +326,7 @@ Reads on a request path go to the store.
 
 ### 6.2 Package
 
-- **Subpaths** (*proposed*, Q03): the NestJS module and services at the root; shared types; one subpath per shipped adapter, so a host loads only the one it uses; testing support.
+- **Subpaths** (D08): the NestJS module and services at the root; `shared` for the types; `revenuecat` and `finance`, one per shipped adapter, so a host loads only the one it uses; `testing` for the testing support.
 - **Zero direct dependencies.** NestJS packages are peers. Each adapter uses the platform's HTTP API through the runtime's own `fetch` and `node:crypto`, with no provider SDK.
 - **Optional integration** with `@bymax-one/nest-cache` for the cache and with `@bymax-one/nest-core` for the error envelope, both as optional peers the library runs without.
 - **Dual format**, ESM and CommonJS, with declarations for each, as the family's library standard requires.
@@ -356,7 +356,7 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ## 8. Constraints
 
-- **Runtime:** Node.js 24 or newer, NestJS 11 (Q04 for the Node floor).
+- **Runtime:** Node.js 26 or newer, NestJS 11 (D09). The sibling libraries and the backend template still declare 24, so a backend moves to Node.js 26 before it installs this library.
 - **Family rules:** zero direct dependencies; every peer that is not NestJS itself is optional; injection tokens are symbols; explicit injection on every provider; one place reads the environment, and the library itself reads none.
 - **Language:** everything in the repository and on GitHub is English.
 - **Release:** the first publish and every version bump need the owner's explicit instruction. Breaking changes are announced in the changelog with a note on how a derived backend applies them.
@@ -413,21 +413,20 @@ The library keeps no other state. It stores no payment data, no price paid and n
 | D03 | The Bymax Finance adapter is specified now and built when the Finance API exists | 2026-11-24 |
 | D04 | The package is `@bymax-one/nest-subscription`, public, in the repository `bymaxone/nest-subscription` | 2026-11-24 |
 | D05 | The repository, its documents and everything on GitHub are in English | 2026-11-24 |
+| D06 | The RevenueCat adapter reads from version 2 of the REST API and uses version 1 only for the Google Play stop-renewal operation | 2026-11-24 |
+| D07 | For Bymax Finance, the host maps plan identifiers to entitlement names in the module options, so product code uses the same names with either adapter | 2026-11-24 |
+| D08 | Subpaths: the root, `shared`, `revenuecat`, `finance` and `testing` | 2026-11-24 |
+| D09 | The library requires Node.js 26 or newer | 2026-11-24 |
+| D10 | The first release ships both the webhook controller, off by default, and the processor | 2026-11-24 |
+| D11 | The library ships the store port, an in-memory store for tests and a conformance suite; a store for a relational table is documented, not shipped | 2026-11-24 |
+| D12 | The default staleness limit and the default tolerance for a last known state are both 24 hours | 2026-11-24 |
+| D13 | The first release includes the stop-renewal operation | 2026-11-24 |
+| D14 | The example repository is `nest-subscription-example` | 2026-11-24 |
+| D15 | The Finance adapter stores the pair of host account identifier and Finance customer identifier at first contact, and uses a lookup by external reference once Finance offers one | 2026-11-24 |
 
 ### 10.2 Open
 
-| Id | Question | Proposed |
-|---|---|---|
-| Q01 | Which RevenueCat API the adapter reads from. Version 2 has an explicit status, an access flag and a renewal status per subscription. Version 1 is what the webhook guide recommends, and it is the only one with the Google Play cancel | Read from version 2; use version 1 only for the Google Play cancel |
-| Q02 | How entitlements are named for Bymax Finance, which models plans and feature keys rather than named entitlements | The host maps plan identifiers to entitlement names in the module options |
-| Q03 | The subpath names | Root, `shared`, `revenuecat`, `finance`, `testing` |
-| Q04 | The Node.js floor: 24 as in the sibling libraries, or 26 | Declare 24 or newer and run CI on 26, until the family moves together |
-| Q05 | Whether the webhook controller ships in the first release or only the processor | Both, with the controller off by default |
-| Q06 | Whether the library ships a reference store for a specific database client as a subpath, or only documents one | Document it; ship only the in-memory one |
-| Q07 | The default staleness limit and the default tolerance for "last known state" | 24 hours for both, to be confirmed with real traffic |
-| Q08 | Whether the first release includes "stop renewal", or only reading and guarding | Include it: a product that sells on the web and on Google Play must offer cancellation in the app |
-| Q09 | The name of the example repository | `nest-subscription-example` |
-| Q10 | How the Finance adapter finds a customer from the host's own account identifier, since the planned API addresses customers by Finance's identifier | Store the pair in the snapshot at first contact, and ask Finance for a lookup by external reference |
+None. A new question is added here with a proposal and is never answered on the owner's behalf.
 
 ---
 
@@ -542,7 +541,7 @@ Store maps to origin: `app_store` and `mac_app_store` to `app_store`; `play_stor
 |---|---|
 | A read of one customer's subscription with: state, plan and price reference, billing interval, current period start and end, whether it renews, cancelled at, and the instant access ends | To fill the subscription record (FR02) |
 | A read of one customer's resolved entitlements | To fill the entitlements (FR01) |
-| A lookup of a customer by the host's own account identifier | To find the customer at first contact (Q10) |
+| A lookup of a customer by the host's own account identifier | To find the customer at first contact (D15) |
 | Signed webhooks with a timestamp, a unique event identifier and a documented signature scheme with rotation | Verification and de-duplication (FR15, FR19) |
 | A list of past events with a stated retention | Reconciliation after a missed delivery (FR26) |
 | A stop-renewal operation that keeps access until the period ends | FR36 |
