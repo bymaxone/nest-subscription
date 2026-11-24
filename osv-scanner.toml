@@ -1,0 +1,9 @@
+# OSV-Scanner configuration, read by the scan in `.github/workflows/osv-scanner.yml`.
+#
+# No advisory is ignored. An entry here needs the advisory identifier, an `ignoreUntil` date and the
+# reason the advisory does not apply, for example:
+#
+#   [[IgnoredVulns]]
+#   id = "GHSA-xxxx-xxxx-xxxx"
+#   ignoreUntil = 2027-01-01T00:00:00Z
+#   reason = "Reached only through <tooling>, a devDependency; not in the published package."

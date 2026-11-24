@@ -3,7 +3,7 @@
 Subscription state library for NestJS 11: normalized entitlements across App Store, Google Play and web purchases, with pluggable source adapters (RevenueCat, Bymax Finance), verified webhooks, snapshot caching and route guards. Zero direct dependencies.
 
 > [!IMPORTANT]
-> This repository is at the specification stage. There is no source code and no published package yet. The library is being built from [`docs/spec.md`](docs/spec.md).
+> This repository is scaffolded. The build, the quality gates and the CI are in place, and the entry points export almost nothing: the library's behaviour is written phase by phase from [`docs/plan.md`](docs/plan.md), against [`docs/spec.md`](docs/spec.md). Nothing is published to npm yet.
 
 ## What it will do
 
@@ -18,9 +18,22 @@ Subscription state library for NestJS 11: normalized entitlements across App Sto
 - Charge anyone, hold card data, or talk to the App Store or Google Play on the device. Purchases happen in the app and in the billing platform.
 - Decide what a subscription is worth in a product. Prices, benefits and limits belong to the host.
 
+## The shared model
+
+The model's types and closed value sets live in the `shared` subpath, which needs no NestJS package. The first of them is the set of environments a subscription can come from:
+
+```ts
+import { SUBSCRIPTION_ENVIRONMENTS } from '@bymax-one/nest-subscription/shared'
+
+const environments: readonly string[] = SUBSCRIPTION_ENVIRONMENTS
+```
+
 ## Documentation
 
 - [Specification](docs/spec.md)
+- [Roadmap](docs/plan.md)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
 - [Security policy](SECURITY.md)
 - [Code of conduct](CODE_OF_CONDUCT.md)
 

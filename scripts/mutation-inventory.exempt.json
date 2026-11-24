@@ -1,0 +1,18 @@
+[
+  {
+    "file": "src/check-function-length.spec.ts",
+    "reason": "Runs scripts/check-function-length.mjs as a child process and imports nothing from src/, so it judges no mutant."
+  },
+  {
+    "file": "src/check-function-length.baseline.spec.ts",
+    "reason": "Runs scripts/check-function-length.mjs as a child process and imports nothing from src/, so it judges no mutant."
+  },
+  {
+    "file": "src/check-function-length.key.spec.ts",
+    "reason": "Runs scripts/check-function-length.mjs as a child process and imports nothing from src/, so it judges no mutant."
+  },
+  {
+    "file": "src/socket-gate.spec.ts",
+    "reason": "Pins the Jest setup and resolver under scripts/ that refuse a socket and imports nothing from src/, so it executes no mutated code and judges no mutant."
+  }
+]

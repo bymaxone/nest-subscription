@@ -1,13 +1,26 @@
 # @bymax-one/nest-subscription — Agent Specification
 
 > **Type:** npm public library (not an application)
-> **Stage:** specification. No source code exists yet.
+> **Stage:** scaffolded. The build, the gates and the CI run on entry points that export almost nothing; the library's behaviour is written phase by phase from `docs/plan.md`. Nothing is published.
 
 ## 1. Where things are
 
 - [`docs/spec.md`](docs/spec.md) is the specification: what the library does, its public surface, its constraints and its open decisions. Read it before proposing or writing anything.
-- The roadmap and the phase task files are written from the specification and live in `docs/plan.md` and `docs/tasks/`.
-- The repository this one mirrors for tooling, gates, packaging and release is `bymaxone/nest-telemetry`. The first implementation phase brings its scaffold here and adds the library sections of this file (design principles, security specification, testing strategy, packaging invariants, pitfalls), together with `CLAUDE.md`, `CONTRIBUTING.md` and the Copilot instruction files.
+- [`docs/plan.md`](docs/plan.md) is the roadmap and [`docs/tasks/`](docs/tasks/README.md) holds the task file of each phase. The names, paths and commands every task shares are fixed in `docs/tasks/README.md`; change one there, in the same pull request, or not at all.
+- `bymaxone/nest-telemetry` is the repository this one mirrors for tooling, gates, packaging and release. A script or configuration is taken from it only after being read, and only what serves any `@bymax-one` library is kept.
+- Directories and subpaths (`@bymax-one/nest-subscription` is the package name):
+
+  | Directory                         | Subpath                     | Holds                                                               |
+  | --------------------------------- | --------------------------- | ------------------------------------------------------------------- |
+  | `src/shared/`                     | `/shared`                   | the model, closed value sets and error codes; no runtime dependency |
+  | `src/internal/`                   | `/internal` (not for hosts) | classes and tokens more than one entry point needs                  |
+  | `src/core/`                       | the root                    | module, service, guard, webhook processor, notifications            |
+  | `src/revenuecat/`, `src/finance/` | `/revenuecat`, `/finance`   | one adapter each                                                    |
+  | `src/testing/`                    | `/testing`                  | in-memory store, conformance cases, fake source, request builders   |
+  | `test/e2e/`, `test/fixtures/`     | none                        | end-to-end suite and recorded provider payloads                     |
+  | `scripts/`                        | none                        | the gate scripts                                                    |
+
+- Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`, `pnpm mutation`, `pnpm check:exports`, `pnpm check:runtime`, `pnpm check:api`, `pnpm check:docs`, `pnpm check:published`, `pnpm size`. What each proves is in `docs/tasks/README.md` §4.
 
 ## 2. Rules that already apply
 
@@ -213,3 +226,77 @@ twenty-six such findings, every SHA resolving nowhere and every `git log` line u
 rewrite published history.
 
 <!-- shared:end -->
+
+## 4. What is specific to this repository
+
+- `docs/` is written in English, like everything else here. A different language for `docs/` is the repository owner's decision, recorded in this section, and no contributor introduces one.
+- The `shared` markers above delimit text a workflow replaces wholesale. Everything this repository states for itself sits below the closing marker.
+- The first publish and every version bump are the owner's explicit instruction. `package.json` stays at `0.0.0` until then, and nothing here creates a tag or publishes.
+- The specification's open questions are in `docs/spec.md` §10.2. A question the specification does not answer is added there with a proposal; it is never answered on the owner's behalf in code.
+
+## 5. Design principles
+
+- **Access comes from the source's flag, never from a status name.** The guard reads `givesAccess` as the billing source reported it. No code maps a status to an access decision (FR02).
+- **A webhook is a trigger, not a source of state.** A payload never writes a snapshot. It causes a read of the source, and only that read writes (FR16, SEC01).
+- **Two ports, one direction.** `SubscriptionSource` reads the billing platform and `SubscriptionStore` holds snapshots; adapters and stores plug in through them. `core` never imports an adapter: the host imports the adapter's factory from its subpath and passes the result in the module options, so an adapter that is not configured loads none of its code (NFR05).
+- **The library is the mechanism, the host is the policy.** Prices, benefits, limits, the fail policy and the staleness limits are options of the host with refusing defaults.
+- **Zero direct dependencies.** NestJS packages are peers, every other peer is optional, and adapters use the runtime's `fetch` and `node:crypto`, with no provider SDK.
+- **No environment reads.** The library reads no environment variable; the host passes every value in.
+- **Time is injected.** Code reads the clock through the injected `Clock`, and no test waits on a real timer.
+
+## 6. Security specification
+
+Each requirement below is stated in `docs/spec.md` §8.2 and is built by the phase named. Until its phase is merged it is a requirement, not a control the repository runs.
+
+| Id    | Requirement in short                                                                       | Built in |
+| ----- | ------------------------------------------------------------------------------------------ | -------- |
+| SEC01 | No access is granted from a webhook payload                                                | P6       |
+| SEC02 | Signature check over the raw bytes, with a tolerance and a constant-time comparison        | P6       |
+| SEC03 | A refused webhook does not say which check failed                                          | P6       |
+| SEC04 | A missing snapshot, an unreadable store or an unreachable source refuses by default        | P4       |
+| SEC05 | A secret never sits in an enumerable property, an error or a log                           | P2       |
+| SEC06 | No payment data, no raw payload; account identifiers only as a short hash                  | P5, P6   |
+| SEC07 | Sandbox grants nothing unless enabled, and enabling it in production needs a second option | P2, P7   |
+| SEC08 | Tenant and account go through one key encoder, never string concatenation                  | P1, P3   |
+| SEC09 | Secret rotation without downtime where the source allows two secrets                       | P2, P7   |
+| SEC10 | A management operation acts only on the authenticated account's subscription               | P8       |
+
+What the repository runs today is the scaffold's own protection: the lint rule set, the no-socket gate for unit tests, the dependency scan in CI, and the commit rule that rejects AI attribution.
+
+## 7. Testing strategy
+
+- **Coverage is 100% for statements, branches, functions and lines in three scopes:** the unit suite (`pnpm test:cov`), the end-to-end suite (`pnpm test:e2e`) and both together (`pnpm test:cov:all`). `passWithNoTests` is off.
+- **Mutation score is 100** (`pnpm mutation`, `break: 100`). Stryker does not mutate a value evaluated at module load, so a closed `as const` table is checked by `node scripts/mutate-const-tables.mjs -- pnpm exec jest --config jest.mutants.config.ts`, which removes one entry at a time and expects a test to fail.
+- **A unit spec opens no socket and starts no server** (`pnpm check:socket-gate`, the Jest setup and resolver under `scripts/`). A case that needs a server lives in `test/e2e`, where a provider is replaced by a local stand-in.
+- **Mappings are table-driven:** one row per provider value, so a value added to a table without a row fails.
+- **Every `it()` carries a scenario comment**, and its title states only what its assertions establish. Every spec opens with a header naming its purpose and layer (`pnpm check:spec-headers`).
+- **An equivalent mutant** is documented in the source as `// Stryker disable next-line <Mutator>: <reason>` and enforced by `pnpm check:mutants`.
+- **A spec that judges no mutant** (it runs a script as a child process and imports nothing from `src/`) is listed with its reason in `scripts/mutation-inventory.exempt.json`.
+
+## 8. Packaging invariants
+
+- `exports` declares `types` per condition: `import` to `.d.ts`, `require` to `.d.cts`. A single shared `types` key makes CommonJS consumers resolve ESM declarations, because `"type": "module"` marks a plain `.d.ts` as ESM.
+- Every subpath also has a `typesVersions` entry, because `moduleResolution: node` predates `exports` and ignores it. `pnpm check:exports` runs the strict `attw` profile; never weaken it to silence a row.
+- Each entry point is a separate bundle. A module reached from two of them by a relative path would be copied into each, and a copied class is a second injection token and a second `instanceof` target. So `src/internal/` is built as its own bundle and every other entry point imports it by package specifier (`@bymax-one/nest-subscription/internal`), which `tsup.config.ts` marks external. Never import it by relative path.
+- The tarball holds `dist/` and the package documents only; `pnpm check:runtime` loads every subpath from the packed tarball in ESM and CommonJS and checks the contents.
+- `pnpm size` holds a brotli budget per bundle. A budget is re-derived from the built artifact with modest headroom, never nudged, and never met by shortening a message.
+
+## 9. Common pitfalls
+
+- Deriving access from a status name instead of the source's flag.
+- Letting a webhook payload, or anything parsed from it, write a snapshot.
+- Concatenating tenant and account into a key by hand instead of calling `encodeAccountKey`.
+- A secret in an enumerable property, or in an error message, a log line or an observer payload.
+- String injection tokens or a missing `@Inject(TOKEN)`: tokens are `Symbol()`, and every provider injects explicitly.
+- Reading `process.env`, or the real clock, outside the one place that is allowed to.
+- `core` importing an adapter, or an adapter importing `core` by relative path.
+- `any`, `@ts-ignore`, `@ts-expect-error`, `eslint-disable`, `istanbul ignore`: fix the cause.
+- Lowering a threshold, widening an ignore list or raising a size budget to make a gate pass.
+
+## 10. Pre-task checklist
+
+Before starting, read `docs/tasks/README.md` and the task's required reading. Before finishing:
+
+- [ ] `pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm test:cov:all && pnpm build` all pass
+- [ ] A new public export has a doc comment and a test that fails without it, and `pnpm check:api` agrees
+- [ ] No gate threshold, ignore list or baseline was loosened, and no suppression was added

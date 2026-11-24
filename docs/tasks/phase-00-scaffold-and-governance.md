@@ -1,6 +1,6 @@
 # Phase 0 — Scaffold and governance
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 6 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P0 — scaffold-and-governance
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -37,15 +37,15 @@ At the end it is a library project that builds, tests and gates an empty package
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 0.1 | Bring the package metadata and the build toolchain | 📋 ToDo | P0 | L | — |
-| 0.2 | Bring the test, coverage and mutation configuration | 📋 ToDo | P0 | M | 0.1 |
-| 0.3 | Bring the packaging, size and source gates | 📋 ToDo | P0 | M | 0.2 |
-| 0.4 | Bring the git hooks and commit rules | 📋 ToDo | P1 | S | 0.1 |
-| 0.5 | Extend the CI with the family workflows | 📋 ToDo | P0 | M | 0.3 |
-| 0.6 | Write the repository documents for a library | 📋 ToDo | P0 | M | 0.3 |
-| 0.7 | Require the status checks and close the phase | 📋 ToDo | P0 | S | 0.5, 0.6 |
+| ID  | Task                                                | Status         | Priority | Size | Depends on |
+| --- | --------------------------------------------------- | -------------- | -------- | ---- | ---------- |
+| 0.1 | Bring the package metadata and the build toolchain  | ✅ Done        | P0       | L    | —          |
+| 0.2 | Bring the test, coverage and mutation configuration | ✅ Done        | P0       | M    | 0.1        |
+| 0.3 | Bring the packaging, size and source gates          | ✅ Done        | P0       | M    | 0.2        |
+| 0.4 | Bring the git hooks and commit rules                | ✅ Done        | P1       | S    | 0.1        |
+| 0.5 | Extend the CI with the family workflows             | ✅ Done        | P0       | M    | 0.3        |
+| 0.6 | Write the repository documents for a library        | ✅ Done        | P0       | M    | 0.3        |
+| 0.7 | Require the status checks and close the phase       | 🔄 In Progress | P0       | S    | 0.5, 0.6   |
 
 ---
 
@@ -53,7 +53,7 @@ At the end it is a library project that builds, tests and gates an empty package
 
 ### Task 0.1 — Bring the package metadata and the build toolchain
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: —
@@ -64,11 +64,11 @@ Create the package manifest, the TypeScript projects, the bundler configuration 
 
 #### Acceptance criteria
 
-- [ ] `pnpm install` succeeds with a committed lockfile, and `package.json` has an empty `dependencies` field, `engines.node` at `>=26.0.0`, and NestJS packages as peers.
-- [ ] `pnpm build` emits ESM, CommonJS and both declaration formats for `.`, `./shared`, `./revenuecat`, `./finance`, `./testing` and the internal bundle.
-- [ ] The `exports` map gives each condition its own `types` entry, and `main`, `module`, `types` and `typesVersions` are present at the top level.
-- [ ] `pnpm typecheck` and `pnpm lint` pass.
-- [ ] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
+- [x] `pnpm install` succeeds with a committed lockfile, and `package.json` has an empty `dependencies` field, `engines.node` at `>=26.0.0`, and NestJS packages as peers.
+- [x] `pnpm build` emits ESM, CommonJS and both declaration formats for `.`, `./shared`, `./revenuecat`, `./finance`, `./testing` and the internal bundle.
+- [x] The `exports` map gives each condition its own `types` entry, and `main`, `module`, `types` and `typesVersions` are present at the top level.
+- [x] `pnpm typecheck` and `pnpm lint` pass.
+- [x] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
 
 #### Files to create / modify
 
@@ -80,7 +80,7 @@ Create the package manifest, the TypeScript projects, the bundler configuration 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript build and packaging engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -139,13 +139,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 0.2 — Bring the test, coverage and mutation configuration
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.1
@@ -156,10 +156,10 @@ Add the Jest projects (unit, end-to-end, combined coverage), the no-socket gate 
 
 #### Acceptance criteria
 
-- [ ] `pnpm test`, `pnpm test:e2e` and `pnpm test:cov:all` pass, each meeting the 100% threshold on its own.
-- [ ] A unit test that opens a socket fails, proven once and then removed.
-- [ ] `pnpm mutation` runs to completion with thresholds `high`, `low` and `break` at 100.
-- [ ] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
+- [x] `pnpm test`, `pnpm test:e2e` and `pnpm test:cov:all` pass, each meeting the 100% threshold on its own.
+- [x] A unit test that opens a socket fails, proven once and then removed.
+- [x] `pnpm mutation` runs to completion with thresholds `high`, `low` and `break` at 100.
+- [x] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
 
 #### Files to create / modify
 
@@ -169,7 +169,7 @@ Add the Jest projects (unit, end-to-end, combined coverage), the no-socket gate 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior test infrastructure engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -224,13 +224,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 0.3 — Bring the packaging, size and source gates
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.2
@@ -241,10 +241,10 @@ Add the gate scripts that check the packed tarball, the API surface, the bundle 
 
 #### Acceptance criteria
 
-- [ ] `pnpm check:exports` and `pnpm check:runtime` pass against the packed tarball for all five public subpaths, in ESM and in CommonJS.
-- [ ] `pnpm check:api`, `pnpm size`, `pnpm check:docs`, `pnpm check:published`, `pnpm check:file-length`, `pnpm check:function-length`, `pnpm check:spec-headers` and `pnpm check:mutants` pass.
-- [ ] No script kept from the sibling loads a telemetry module, and no baseline lists a telemetry file.
-- [ ] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
+- [x] `pnpm check:exports` and `pnpm check:runtime` pass against the packed tarball for all five public subpaths, in ESM and in CommonJS.
+- [x] `pnpm check:api`, `pnpm size`, `pnpm check:docs`, `pnpm check:published`, `pnpm check:file-length`, `pnpm check:function-length`, `pnpm check:spec-headers` and `pnpm check:mutants` pass.
+- [x] No script kept from the sibling loads a telemetry module, and no baseline lists a telemetry file.
+- [x] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
 
 #### Files to create / modify
 
@@ -255,7 +255,7 @@ Add the gate scripts that check the packed tarball, the API surface, the bundle 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior build and release tooling engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -310,13 +310,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 0.4 — Bring the git hooks and commit rules
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: S
 - **Depends on**: 0.1
@@ -327,10 +327,10 @@ Add Husky, commitlint and the local rule that rejects AI attribution in a commit
 
 #### Acceptance criteria
 
-- [ ] A commit whose message is not a Conventional Commit is rejected locally.
-- [ ] A commit message that names an AI tool as author or reviewer is rejected locally, by the same patterns the organisation check uses.
-- [ ] `pnpm install` installs the hooks through the `prepare` script.
-- [ ] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
+- [x] A commit whose message is not a Conventional Commit is rejected locally.
+- [x] A commit message that names an AI tool as author or reviewer is rejected locally, by the same patterns the organisation check uses.
+- [x] `pnpm install` installs the hooks through the `prepare` script.
+- [x] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
 
 #### Files to create / modify
 
@@ -340,7 +340,7 @@ Add Husky, commitlint and the local rule that rejects AI attribution in a commit
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior developer tooling engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -390,13 +390,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 0.5 — Extend the CI with the family workflows
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.3
@@ -407,12 +407,12 @@ Call the organisation's reusable library CI and security workflows, add the rele
 
 #### Acceptance criteria
 
-- [ ] The pull request shows the aggregate check `CI passed` green, produced by jobs that call `bymaxone/.github` reusables at `@v1`.
-- [ ] The job that checks the required documents and the relative Markdown links is kept, and the aggregate check depends on it.
-- [ ] `agents-sync.yml` is still pinned to a release commit, and `.github/dependabot.yml` has the group that moves that pin.
-- [ ] Every third-party action is pinned by commit SHA with its version in a trailing comment.
-- [ ] The release workflow publishes only from a version tag, through the `npm-publish` environment, and nothing in this task creates a tag.
-- [ ] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
+- [x] The pull request shows the aggregate check `CI passed` green, produced by jobs that call `bymaxone/.github` reusables at `@v1`.
+- [x] The job that checks the required documents and the relative Markdown links is kept, and the aggregate check depends on it.
+- [x] `agents-sync.yml` is still pinned to a release commit, and `.github/dependabot.yml` has the group that moves that pin.
+- [x] Every third-party action is pinned by commit SHA with its version in a trailing comment.
+- [x] The release workflow publishes only from a version tag, through the `npm-publish` environment, and nothing in this task creates a tag.
+- [x] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
 
 #### Files to create / modify
 
@@ -423,7 +423,7 @@ Call the organisation's reusable library CI and security workflows, add the rele
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior CI and release engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -482,13 +482,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 0.6 — Write the repository documents for a library
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.3
@@ -499,11 +499,11 @@ Add the library sections of `AGENTS.md`, and write `CLAUDE.md`, `CONTRIBUTING.md
 
 #### Acceptance criteria
 
-- [ ] `AGENTS.md` no longer says the repository is at the specification stage, and has the sections: design principles, security specification, testing strategy, packaging invariants, pitfalls.
-- [ ] Below the shared block of §3, `AGENTS.md` states the language policy for `docs/` (English) and the rules specific to this repository.
-- [ ] The shared block between `<!-- shared:begin -->` and its closing marker is byte-identical to what it was.
-- [ ] `CLAUDE.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `.github/copilot-instructions.md`, `.github/instructions/code.instructions.md` and `.github/instructions/tests.instructions.md` exist and name no telemetry concept.
-- [ ] `README.md` states the stage truthfully: scaffolded, no behaviour, not published.
+- [x] `AGENTS.md` no longer says the repository is at the specification stage, and has the sections: design principles, security specification, testing strategy, packaging invariants, pitfalls.
+- [x] Below the shared block of §3, `AGENTS.md` states the language policy for `docs/` (English) and the rules specific to this repository.
+- [x] The shared block between `<!-- shared:begin -->` and its closing marker is byte-identical to what it was.
+- [x] `CLAUDE.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `.github/copilot-instructions.md`, `.github/instructions/code.instructions.md` and `.github/instructions/tests.instructions.md` exist and name no telemetry concept.
+- [x] `README.md` states the stage truthfully: scaffolded, no behaviour, not published.
 
 #### Files to create / modify
 
@@ -514,7 +514,7 @@ Add the library sections of `AGENTS.md`, and write `CLAUDE.md`, `CONTRIBUTING.md
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior technical writer and maintainer engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -570,13 +570,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.6 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 0.7 — Require the status checks and close the phase
 
-- **Status**: 📋 ToDo
+- **Status**: 🔄 In Progress
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 0.5, 0.6
@@ -598,7 +598,7 @@ Add the required status checks to the repository ruleset, verify the whole phase
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior repository maintainer engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -645,12 +645,21 @@ Completion Protocol (after the work is reported done):
 5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.7 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ## Completion log
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
+
+- 0.1 ✅ 2026-11-24 — package manifest, the empty entry points, TypeScript, lint, format and tsup configuration; build emits ESM, CJS and both declaration formats for every entry
+- 0.2 ✅ 2026-11-24 — Jest unit, end-to-end and combined configs, no-socket gate with a runtime spec, Stryker at 100; the empty package has no mutants, so the run completes with no score
+- 0.3 ✅ 2026-11-24 — gate scripts triaged and adapted (runtime, exports map, size, api, docs, published surface, length, spec headers, mutation directives); baselines regenerated empty; OpenTelemetry-specific scripts dropped
+- 0.4 ✅ 2026-11-24 — Husky hooks, commitlint with the no-attribution plugin, commit template and editor settings; a trailer naming an AI tool is rejected, a bare subject is not (the shared plugin reads trailers and addresses only)
+
+- 0.5 ✅ 2026-11-24 — CI calls the organisation's reusable pipeline beside the documents job, the aggregate stays CI passed; release, CodeQL, OSV, Scorecard, API surface, full mutation and peer drift workflows and Dependabot with the agents-sync group
+
+- 0.6 ✅ 2026-11-24 — AGENTS.md library sections below the shared block, CLAUDE.md, CONTRIBUTING.md, CHANGELOG.md, Copilot instruction files and reviewer agent; README and docs index state the scaffolded stage
 
 <!-- entries are added as tasks complete -->

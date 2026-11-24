@@ -6,5 +6,6 @@ This folder holds the working documentation of the repository: the specification
 - [`spec.md`](spec.md) is the specification the library is built from.
 - [`plan.md`](plan.md) is the roadmap: the phases the specification is built in, and their status.
 - [`tasks/`](tasks/README.md) holds one task file per phase, and the names, paths and commands they share.
-- Normative rules for contributors and agents live in [`../AGENTS.md`](../AGENTS.md).
+- Normative rules for contributors and agents live in [`../AGENTS.md`](../AGENTS.md), with the short entry points in [`../CLAUDE.md`](../CLAUDE.md) and [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
+- The package's release notes are in [`../CHANGELOG.md`](../CHANGELOG.md); its `Unreleased` section holds what the first release will describe.
 - [`AUTOPILOT.md`](AUTOPILOT.md) holds the parameters of the autonomous phase-by-phase execution: preconditions, gates, model policy and merge policy.

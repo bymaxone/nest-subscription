@@ -10,14 +10,14 @@ This document says in which order the specification is built and when each part 
 
 ## Status legend
 
-| Emoji | Meaning |
-|---|---|
-| 📋 | ToDo |
-| 🔄 | In Progress |
-| 👀 | Review |
-| ✅ | Done |
-| ⛔ | Blocked |
-| 🟡 | Partial |
+| Emoji | Meaning     |
+| ----- | ----------- |
+| 📋    | ToDo        |
+| 🔄    | In Progress |
+| 👀    | Review      |
+| ✅    | Done        |
+| ⛔    | Blocked     |
+| 🟡    | Partial     |
 
 ---
 
@@ -26,27 +26,27 @@ This document says in which order the specification is built and when each part 
 > Update this every time a phase moves status. Recompute % from the table below.
 
 **Overall progress**: 📋 0 / 12 phases done (0%)
-**Active phase**: —
+**Active phase**: P0 — scaffold-and-governance
 **Blocked**: P11, until the Bymax Finance API exists (D03)
 
 ---
 
 ## Phase dashboard
 
-| ID | Phase | Status | Progress | Size | Last updated |
-|---|---|---|---|---|---|
-| P0 | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules | 📋 ToDo | 0/7 | L | — |
-| P1 | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | 📋 ToDo | 0/7 | L | — |
-| P2 | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment | 📋 ToDo | 0/5 | M | — |
-| P3 | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation | 📋 ToDo | 0/5 | L | — |
-| P4 | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies | 📋 ToDo | 0/4 | M | — |
-| P5 | change-notifications-and-observer — the typed change list, the host hook and the observer | 📋 ToDo | 0/5 | M | — |
-| P6 | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline | 📋 ToDo | 0/5 | L | — |
-| P7 | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables | 📋 ToDo | 0/7 | L | — |
-| P8 | management-operations — capabilities, stop renewal and the management reference | 📋 ToDo | 0/4 | M | — |
-| P9 | release-readiness — the public documents, the full gate run and the release candidate | 📋 ToDo | 0/5 | M | — |
-| P10 | example-repository — `nest-subscription-example`, one suite run against each source | 📋 ToDo | 0/5 | M | — |
-| P11 | finance-adapter — the Bymax Finance adapter, built when its API exists | ⛔ Blocked | 0/5 | L | — |
+| ID  | Phase                                                                                                   | Status         | Progress | Size | Last updated |
+| --- | ------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | 🔄 In Progress | 6/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | 📋 ToDo        | 0/7      | L    | —            |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 📋 ToDo        | 0/5      | M    | —            |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo        | 0/5      | L    | —            |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo        | 0/4      | M    | —            |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo        | 0/5      | M    | —            |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline             | 📋 ToDo        | 0/5      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables                | 📋 ToDo        | 0/7      | L    | —            |
+| P8  | management-operations — capabilities, stop renewal and the management reference                         | 📋 ToDo        | 0/4      | M    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                   | 📋 ToDo        | 0/5      | M    | —            |
+| P10 | example-repository — `nest-subscription-example`, one suite run against each source                     | 📋 ToDo        | 0/5      | M    | —            |
+| P11 | finance-adapter — the Bymax Finance adapter, built when its API exists                                  | ⛔ Blocked     | 0/5      | L    | —            |
 
 ---
 
@@ -79,20 +79,20 @@ P7 → P11 (start, once unblocked)        P8, P10 → P11 (closing)
 
 Every requirement of the specification has a phase that owns it; where one is split, the parentheses name the part each phase owns. A phase is not done while one of its rows lacks a test.
 
-| Phase | Functional | Non-functional and security | Acceptance |
-|---|---|---|---|
-| P0 | — | Specification §5.2, §8 and §11 | — |
-| P1 | FR01, FR02, FR03, FR04, FR05, FR06, FR07, FR08, FR09, FR22, FR39 (store and fake source) | SEC08 (key construction) | — |
-| P2 | — | NFR05, SEC05, SEC07 (options and boot refusal), SEC09 (options shape) | AC09 (library objects) |
-| P3 | FR23, FR24, FR25, FR26, FR27, FR28 | NFR03, NFR04, SEC08 (enforced on every read and write) | — |
-| P4 | FR29, FR30, FR31 | NFR01, SEC04 | AC07 |
-| P5 | FR32, FR33, FR34 | SEC06 (observer payloads) | — |
-| P6 | FR16, FR17, FR18, FR19, FR20, FR21 | NFR02, SEC01, SEC02, SEC03, SEC06 (no raw payload stored or logged) | AC02 (receiver), AC03, AC04 |
-| P7 | FR10, FR11, FR12, FR13, FR14, FR39 (RevenueCat request builders) | SEC07 (sandbox filter), SEC09 (rotation for RevenueCat) | AC01, AC02 (RevenueCat methods), AC05, AC06, AC10 (Appendix A) |
-| P8 | FR35, FR36, FR37, FR38 | SEC10 | — |
-| P9 | — | Specification §5.2 measured on the whole package | AC09 (captured logs, whole package) |
-| P10 | — | — | AC08 (fake source and RevenueCat) |
-| P11 | FR15, FR39 (Finance request builders) | SEC09 (rotation for Finance) | AC08 (Finance), AC10 (Appendix B) |
+| Phase | Functional                                                                               | Non-functional and security                                           | Acceptance                                                     |
+| ----- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| P0    | —                                                                                        | Specification §5.2, §8 and §11                                        | —                                                              |
+| P1    | FR01, FR02, FR03, FR04, FR05, FR06, FR07, FR08, FR09, FR22, FR39 (store and fake source) | SEC08 (key construction)                                              | —                                                              |
+| P2    | —                                                                                        | NFR05, SEC05, SEC07 (options and boot refusal), SEC09 (options shape) | AC09 (library objects)                                         |
+| P3    | FR23, FR24, FR25, FR26, FR27, FR28                                                       | NFR03, NFR04, SEC08 (enforced on every read and write)                | —                                                              |
+| P4    | FR29, FR30, FR31                                                                         | NFR01, SEC04                                                          | AC07                                                           |
+| P5    | FR32, FR33, FR34                                                                         | SEC06 (observer payloads)                                             | —                                                              |
+| P6    | FR16, FR17, FR18, FR19, FR20, FR21                                                       | NFR02, SEC01, SEC02, SEC03, SEC06 (no raw payload stored or logged)   | AC02 (receiver), AC03, AC04                                    |
+| P7    | FR10, FR11, FR12, FR13, FR14, FR39 (RevenueCat request builders)                         | SEC07 (sandbox filter), SEC09 (rotation for RevenueCat)               | AC01, AC02 (RevenueCat methods), AC05, AC06, AC10 (Appendix A) |
+| P8    | FR35, FR36, FR37, FR38                                                                   | SEC10                                                                 | —                                                              |
+| P9    | —                                                                                        | Specification §5.2 measured on the whole package                      | AC09 (captured logs, whole package)                            |
+| P10   | —                                                                                        | —                                                                     | AC08 (fake source and RevenueCat)                              |
+| P11   | FR15, FR39 (Finance request builders)                                                    | SEC09 (rotation for Finance)                                          | AC08 (Finance), AC10 (Appendix B)                              |
 
 ---
 
@@ -100,17 +100,17 @@ Every requirement of the specification has a phase that owns it; where one is sp
 
 The specification leaves the file layout to this roadmap. These are the directories each phase fills; a phase's task file names the files.
 
-| Path | Holds | Subpath (D08) |
-|---|---|---|
-| `src/shared/` | The model, the status and origin values, the notification kinds, the error codes. No runtime dependency | `shared` |
-| `src/internal/` | The classes and injection tokens that more than one entry point needs, built as one bundle | not public |
-| `src/core/` | The module, the options, the service, the guard and decorator, the webhook processor and controller, the notifications, the observer | root |
-| `src/revenuecat/` | The RevenueCat adapter | `revenuecat` |
-| `src/finance/` | The Bymax Finance adapter | `finance` |
-| `src/testing/` | The in-memory store, the conformance suite, the fake source, the signed request builders | `testing` |
-| `test/e2e/` | The end-to-end suite, against a real NestJS application | — |
-| `test/fixtures/` | Recorded provider payloads, with every identifier and secret replaced | — |
-| `scripts/` | The gate scripts brought from `nest-telemetry` | — |
+| Path              | Holds                                                                                                                                | Subpath (D08) |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| `src/shared/`     | The model, the status and origin values, the notification kinds, the error codes. No runtime dependency                              | `shared`      |
+| `src/internal/`   | The classes and injection tokens that more than one entry point needs, built as one bundle                                           | not public    |
+| `src/core/`       | The module, the options, the service, the guard and decorator, the webhook processor and controller, the notifications, the observer | root          |
+| `src/revenuecat/` | The RevenueCat adapter                                                                                                               | `revenuecat`  |
+| `src/finance/`    | The Bymax Finance adapter                                                                                                            | `finance`     |
+| `src/testing/`    | The in-memory store, the conformance suite, the fake source, the signed request builders                                             | `testing`     |
+| `test/e2e/`       | The end-to-end suite, against a real NestJS application                                                                              | —             |
+| `test/fixtures/`  | Recorded provider payloads, with every identifier and secret replaced                                                                | —             |
+| `scripts/`        | The gate scripts brought from `nest-telemetry`                                                                                       | —             |
 
 `src/internal/` exists because of a measured failure in the family: a module reached from two entry points is copied into each bundle, and a copied class is a second injection token and a second `instanceof` target. An adapter subpath and the root both need the source port's token, so both import it from the shared internal bundle by package specifier.
 
@@ -120,23 +120,23 @@ The specification leaves the file layout to this roadmap. These are the director
 
 > Rules every phase respects. They come from the specification §5.2 and §8, from `AGENTS.md`, and from the scaffold of `bymaxone/nest-telemetry`.
 
-| Area | Rule |
-|---|---|
-| Runtime | Node.js 26 or newer, NestJS 11 (D09). The scaffold's `engines` field is raised from the sibling's value |
-| Package manager | pnpm, pinned in `packageManager`, with its settings in `pnpm-workspace.yaml`. Publishing uses `npm`, never `pnpm` |
-| Dependencies | Zero direct dependencies. NestJS packages are peers; every other peer is optional. Adapters use the runtime's `fetch` and `node:crypto`, no provider SDK |
-| TypeScript | Strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. No `any` |
-| Suppressions | None, in any form: no `eslint-disable`, no `@ts-ignore`, no `istanbul ignore`, no Stryker disable without a recorded reason |
-| Injection | Tokens are symbols. Every provider injects explicitly. The library reads no environment variable |
-| Secrets | A secret never sits in an enumerable property. A class that owns one holds it in a `#private` field; a resolved options object exposes it through a non-enumerable getter (SEC05) |
-| Keys | A key built from more than one field encodes each field so that no content can move the boundary between them (`AGENTS.md` §3) |
-| Size | A function is at most 50 lines, a file at most 800. Each source file opens with a header naming its purpose and layer; each export has a doc comment |
-| Comments | English. A comment states a constraint that still holds, never a phase, a task or a review round |
-| Tests | Test first. 100% statement, branch, function and line coverage in the unit suite, in the end-to-end suite and in both together. Mutation score 100. Unit tests open no socket |
-| Packaging | ESM and CommonJS with declarations for each, checked against the packed tarball, plus a bundle size budget and an API surface check |
-| Provider facts | A statement about RevenueCat, a store or Bymax Finance is re-read at its source in specification §12 before code relies on it, and the task cites the page |
-| Commits and review | Conventional Commits. Changes reach `main` through a pull request. No attribution to an AI tool anywhere |
-| Release | The first publish and every version bump need the owner's explicit instruction |
+| Area               | Rule                                                                                                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime            | Node.js 26 or newer, NestJS 11 (D09)                                                                                                                                              |
+| Package manager    | pnpm, pinned in `packageManager`, with its settings in `pnpm-workspace.yaml`. Publishing uses `npm`, never `pnpm`                                                                 |
+| Dependencies       | Zero direct dependencies. NestJS packages are peers; every other peer is optional. Adapters use the runtime's `fetch` and `node:crypto`, no provider SDK                          |
+| TypeScript         | Strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. No `any`                                                                                                |
+| Suppressions       | None, in any form: no `eslint-disable`, no `@ts-ignore`, no `istanbul ignore`, no Stryker disable without a recorded reason                                                       |
+| Injection          | Tokens are symbols. Every provider injects explicitly. The library reads no environment variable                                                                                  |
+| Secrets            | A secret never sits in an enumerable property. A class that owns one holds it in a `#private` field; a resolved options object exposes it through a non-enumerable getter (SEC05) |
+| Keys               | A key built from more than one field encodes each field so that no content can move the boundary between them (`AGENTS.md` §3)                                                    |
+| Size               | A function is at most 50 lines, a file at most 800. Each source file opens with a header naming its purpose and layer; each export has a doc comment                              |
+| Comments           | English. A comment states a constraint that still holds, never a phase, a task or a review round                                                                                  |
+| Tests              | Test first. 100% statement, branch, function and line coverage in the unit suite, in the end-to-end suite and in both together. Mutation score 100. Unit tests open no socket     |
+| Packaging          | ESM and CommonJS with declarations for each, checked against the packed tarball, plus a bundle size budget and an API surface check                                               |
+| Provider facts     | A statement about RevenueCat, a store or Bymax Finance is re-read at its source in specification §12 before code relies on it, and the task cites the page                        |
+| Commits and review | Conventional Commits. Changes reach `main` through a pull request. No attribution to an AI tool anywhere                                                                          |
+| Release            | The first publish and every version bump need the owner's explicit instruction                                                                                                    |
 
 **Done, for every phase:** the phase's pull request is merged with `CI passed` green, every requirement in its row of the coverage table has a test that fails without the implementation, and no gate threshold or ignore list was loosened to get there.
 
