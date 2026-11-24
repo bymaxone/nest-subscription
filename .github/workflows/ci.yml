@@ -1,0 +1,79 @@
+# CI for the specification stage.
+#
+# The repository holds documents only, so there is nothing to lint, type-check,
+# test or build: the `docs` job checks that the required documents exist and
+# that their relative links resolve.
+#
+# The aggregate job keeps the name `CI passed`: it is the one check the
+# organisation ruleset requires in every repository, matched by literal name.
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    name: Documents present
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Required files exist and are not empty
+        run: |
+          missing=0
+          for f in README.md LICENSE SECURITY.md CODE_OF_CONDUCT.md AGENTS.md docs/spec.md; do
+            if [ ! -s "$f" ]; then
+              echo "::error file=$f::missing or empty"
+              missing=1
+            fi
+          done
+          exit "$missing"
+      - name: Relative links in Markdown resolve
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          bad = 0
+          for path in pathlib.Path('.').rglob('*.md'):
+              if '.git' in path.parts or 'node_modules' in path.parts:
+                  continue
+              for target in re.findall(r'\]\(([^)#\s]+)', path.read_text(encoding='utf-8')):
+                  if target.startswith(('http://', 'https://', 'mailto:')):
+                      continue
+                  if not (path.parent / target).exists():
+                      print(f'::error file={path}::broken link to {target}')
+                      bad += 1
+          sys.exit(1 if bad else 0)
+          PY
+
+  ci-pass:
+    name: CI passed
+    if: always()
+    needs: [docs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Report the result of every dependency
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          {
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+            echo "$NEEDS" | jq -r 'to_entries[] | "| \(.key) | \(.value.result) |"' | sort
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Fail when any dependency failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
