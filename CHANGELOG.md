@@ -33,3 +33,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   against its own store.
 - `FakeSubscriptionSource` in the `testing` subpath: a scriptable billing source that sets an
   account's state, queues signed notifications, delays or fails the next read and counts reads.
+- The option types `SubscriptionModuleOptions`, `SubscriptionModuleAsyncOptions`,
+  `SubscriptionOptionsInput` and `ResolvedSubscriptionOptions`, and `resolveOptions`, which applies
+  the defaults (fail policy `refuse`, 24-hour tolerance and maximum age, sandbox access off,
+  webhook controller off) and returns a frozen object, exported from the root.

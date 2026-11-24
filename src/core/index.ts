@@ -42,3 +42,17 @@ export type {
   SubscriptionStatus,
   WillRenew
 } from '@bymax-one/nest-subscription/shared'
+export { resolveOptions } from './options/resolve-options'
+export type {
+  AccountResolverOption,
+  ResolvedAccountOption,
+  ResolvedSubscriptionOptions,
+  SubscriptionCache,
+  SubscriptionChangeHook,
+  SubscriptionChangeNotification,
+  SubscriptionFailPolicy,
+  SubscriptionModuleAsyncOptions,
+  SubscriptionModuleOptions,
+  SubscriptionObserverOption,
+  SubscriptionOptionsInput
+} from './options/subscription-options.types'

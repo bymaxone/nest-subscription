@@ -20,7 +20,8 @@ describe('core entry point', () => {
       'SUBSCRIPTION_SOURCE',
       'SUBSCRIPTION_STORE',
       'SubscriptionError',
-      'encodeAccountKey'
+      'encodeAccountKey',
+      'resolveOptions'
     ])
   })
 

@@ -1,6 +1,6 @@
 # Phase 2 — Module and options
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P2 — module-and-options
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,7 +39,7 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 
 | ID  | Task                                               | Status  | Priority | Size | Depends on |
 | --- | -------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 2.1 | Define the module options and their defaults       | 📋 ToDo | P0       | M    | —          |
+| 2.1 | Define the module options and their defaults       | ✅ Done | P0       | M    | —          |
 | 2.2 | Validate the options into one aggregated error     | 📋 ToDo | P0       | M    | 2.1        |
 | 2.3 | Contain the secrets in the resolved options        | 📋 ToDo | P0       | M    | 2.1        |
 | 2.4 | Implement the module with forRoot and forRootAsync | 📋 ToDo | P0       | L    | 2.2, 2.3   |
@@ -51,7 +51,7 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 
 ### Task 2.1 — Define the module options and their defaults
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -62,11 +62,11 @@ Write the option types the host fills in, the resolved form the library uses int
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionModuleOptions` covers: the source, the store, the account resolver, the change hook, the fail policy with its tolerance, the maximum snapshot age, the sandbox switch with its production confirmation, the production flag, the optional cache, the optional observer, the event retention, the webhook controller switch and path, and the multi-tenant flag.
-- [ ] `resolveOptions` applies the defaults: fail policy `refuse`, last-known-state tolerance 24 hours, maximum age 24 hours, sandbox access off, webhook controller off.
-- [ ] Durations are plain numbers of milliseconds with the unit in the option name.
-- [ ] A test pins every default against the specification.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionModuleOptions` covers: the source, the store, the account resolver, the change hook, the fail policy with its tolerance, the maximum snapshot age, the sandbox switch with its production confirmation, the production flag, the optional cache, the optional observer, the event retention, the webhook controller switch and path, and the multi-tenant flag.
+- [x] `resolveOptions` applies the defaults: fail policy `refuse`, last-known-state tolerance 24 hours, maximum age 24 hours, sandbox access off, webhook controller off.
+- [x] Durations are plain numbers of milliseconds with the unit in the option name.
+- [x] A test pins every default against the specification.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -472,4 +472,4 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
-<!-- entries are added as tasks complete -->
+- 2.1 ✅ 2026-11-24 — option types, defaults pinned to the specification, frozen resolved form and the system clock
