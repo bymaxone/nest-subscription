@@ -1,8 +1,8 @@
 # CI for the specification stage.
 #
 # The repository holds documents only, so there is nothing to lint, type-check,
-# test or build yet. The first implementation phase replaces the `docs` job with
-# the organisation's reusable library pipeline, as in the sibling libraries.
+# test or build: the `docs` job checks that the required documents exist and
+# that their relative links resolve.
 #
 # The aggregate job keeps the name `CI passed`: it is the one check the
 # organisation ruleset requires in every repository, matched by literal name.
