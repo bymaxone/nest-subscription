@@ -431,7 +431,7 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ### 10.2 Open
 
-**Q1. Which code does a malformed caller argument raise?** §6.4 lists seven cases and does not name one for an argument that is malformed rather than unknown: a blank account identifier given to the key encoder, or an unparseable instant given to the entitlement resolution. _Proposal_: one added code, `SUBSCRIPTION_INVALID_INPUT`, so a host can tell a programming error from an unknown account or a configuration error. The catalogue carries it until the owner decides; removing it later is a public change.
+**Q1. Which code does a malformed caller argument raise?** §6.4 names no code for an argument that is malformed rather than unknown: a blank account identifier given to the key encoder, or an unparseable instant given to the entitlement resolution. _Proposal_: one added code, `SUBSCRIPTION_INVALID_INPUT`, so a host can tell a programming error from an unknown account or a configuration error. The catalogue carries it until the owner decides; removing it later is a public change.
 
 A new question is added here with a proposal and is never answered on the owner's behalf.
 

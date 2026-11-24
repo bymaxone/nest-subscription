@@ -644,7 +644,7 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
-- 1.1 ✅ 2026-11-24 — snapshot model types, the five closed value sets and the change type in the shared subpath; no function from status to access exists
+- 1.1 ✅ 2026-11-24 — snapshot model types, the closed value sets and the change type in the shared subpath; no function from status to access exists
 
 - 1.2 ✅ 2026-11-24 — closed SUBSCRIPTION_ error-code catalogue with fixed messages in shared and SubscriptionError in the internal bundle, re-exported from the root and proven one constructor in the packed tarball
 
@@ -652,7 +652,7 @@ Completion Protocol (after the work is reported done):
 
 - 1.4 ✅ 2026-11-24 — encodeAccountKey: length-prefixed, injective by construction, a blank account refused; the only join of tenant and account
 
-- 1.5 ✅ 2026-11-24 — source port, store port (atomic write with pending changes, ordered by source instant, paged listings), Clock and the six symbol tokens, with every port type exported from the root
+- 1.5 ✅ 2026-11-24 — source port, store port (atomic write with pending changes, ordered by source instant, paged listings), Clock and the symbol tokens, with every port type exported from the root
 
 - 1.6 ✅ 2026-11-24 — InMemorySubscriptionStore (not for production, warns once) and the framework-neutral store conformance cases, each failed by a named broken store, run unchanged against the in-memory store and a valid variant
 
