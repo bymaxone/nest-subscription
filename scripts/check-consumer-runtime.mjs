@@ -76,6 +76,7 @@ const TESTING_EXPORTS = [
 
 /** Every runtime name of the root entry point. */
 const ROOT_EXPORTS = [
+  'SECRET_PLACEHOLDER',
   'SUBSCRIPTION_CACHE',
   'SUBSCRIPTION_CLOCK',
   'SUBSCRIPTION_ERROR_CODES',
@@ -83,8 +84,12 @@ const ROOT_EXPORTS = [
   'SUBSCRIPTION_OPTIONS',
   'SUBSCRIPTION_SOURCE',
   'SUBSCRIPTION_STORE',
+  'Secret',
   'SubscriptionError',
-  'encodeAccountKey'
+  'SubscriptionModule',
+  'encodeAccountKey',
+  'resolveOptions',
+  'validateOptions'
 ]
 
 /** Every runtime name of the `shared` subpath: the closed value sets, the error codes

@@ -37,7 +37,7 @@ This document says in which order the specification is built and when each part 
 | --- | ------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
 | P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done        | 7/7      | L    | 2026-11-24   |
 | P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | ✅ Done        | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 🔄 In Progress | 3/5      | M    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 🔄 In Progress | 4/5      | M    | 2026-11-24   |
 | P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo        | 0/5      | L    | —            |
 | P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo        | 0/4      | M    | —            |
 | P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo        | 0/5      | M    | —            |

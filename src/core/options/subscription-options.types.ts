@@ -117,6 +117,8 @@ export interface SubscriptionOptionsInput {
 export interface SubscriptionModuleOptions extends Omit<SubscriptionOptionsInput, 'store'> {
   /** The persistence port, or the injection token under which the host provides one. */
   readonly store: SubscriptionStore | InjectionToken
+  /** The modules that provide what the options name, such as the module that provides the store. */
+  readonly imports?: ModuleMetadata['imports']
   /** Whether the module is global. Defaults to `false`. */
   readonly global?: boolean
 }

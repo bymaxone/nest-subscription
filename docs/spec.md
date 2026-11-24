@@ -455,7 +455,12 @@ proposal below is what the code does until the owner answers.
   decides, and an unset retention means identifiers are not purged by the library.
 - **Q04. In `forRootAsync`, how is a store given by token resolved?** A token cannot be known when
   the module is built. Proposal: `forRoot` accepts the store as an instance or a token; the
-  `forRootAsync` factory returns the instance, which the host obtains through `inject`.
+  `forRootAsync` factory returns the instance, which the host obtains through `inject`. A store
+  token must be provided by a module the host lists in the `imports` option of `forRoot`.
+- **Q05. Are the cache and observer tokens absent or `null` when `forRootAsync` configures none?**
+  Providers cannot depend on the result of a factory. Proposal: `forRoot` provides each token only
+  when its option is set; `forRootAsync` always provides both, holding `null` when unset, and a
+  consumer treats `null` as absent.
 
 ---
 

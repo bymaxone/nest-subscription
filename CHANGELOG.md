@@ -44,3 +44,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   secret, which keeps its values out of serialization, spread, enumeration and `util.inspect`, holds
   two valid values during a rotation and compares in constant time. The module options accept an
   optional `webhookSecret`, which the resolved options hold in a non-enumerable accessor.
+- `SubscriptionModule.forRoot` and `forRootAsync`, exported from the root. The options are
+  validated once at boot; the module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`,
+  `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER`
+  when configured. No optional peer is loaded at run time.

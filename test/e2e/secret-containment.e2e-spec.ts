@@ -4,7 +4,7 @@
  * holds is swept for them. The sweep lives in `fixtures/sentinel-sweep.ts` so that each later provider is added to it.
  * @layer e2e
  */
-import { Secret, resolveOptions } from '@bymax-one/nest-subscription'
+import { Secret, SubscriptionError, resolveOptions } from '@bymax-one/nest-subscription'
 import {
   FakeSubscriptionSource,
   InMemorySubscriptionStore
@@ -44,5 +44,30 @@ describe('secret containment', () => {
     expect(secret?.matches(WEBHOOK_SENTINEL)).toBe(true)
     expect(secret?.matches(ROTATED_SENTINEL)).toBe(true)
     expect(secret?.matches('another-value')).toBe(false)
+  })
+
+  it('reads back the single value it was given and refuses to hold an unusable one', () => {
+    // Scenario: the deliberate read of one value, and a holder built from nothing or from an
+    // empty previous value, which would otherwise accept an empty presentation.
+    expect(new Secret(WEBHOOK_SENTINEL).reveal()).toBe(WEBHOOK_SENTINEL)
+    expect(Secret.from(WEBHOOK_SENTINEL).candidates()).toEqual([WEBHOOK_SENTINEL])
+    expect(() => new Secret('')).toThrow(SubscriptionError)
+    expect(() => new Secret(WEBHOOK_SENTINEL, '')).toThrow(SubscriptionError)
+    expect(new Secret(WEBHOOK_SENTINEL).matches(ROTATED_SENTINEL)).toBe(false)
+    const held = new Secret(WEBHOOK_SENTINEL)
+    expect(Secret.from(held)).toBe(held)
+    expect(Reflect.apply(held.matches, held, [undefined])).toBe(false)
+  })
+
+  it('keeps the value out of the error a refused secret raises', () => {
+    // Scenario: the refusal of an empty previous value next to a real current one.
+    try {
+      new Secret(WEBHOOK_SENTINEL, '')
+    } catch (error) {
+      expectNoSentinel(outputsOf(error as object))
+      expect(String(error)).not.toContain(WEBHOOK_SENTINEL)
+      return
+    }
+    throw new Error('the secret was accepted')
   })
 })

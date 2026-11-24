@@ -5,6 +5,9 @@
 import * as internal from '@bymax-one/nest-subscription/internal'
 import { resolveEntitlements } from '@bymax-one/nest-subscription/shared'
 import * as entry from './index'
+import { resolveOptions } from './options/resolve-options'
+import { validateOptions } from './options/validate-options'
+import { SubscriptionModule } from './subscription.module'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 describe('core entry point', () => {
@@ -22,6 +25,7 @@ describe('core entry point', () => {
       'SUBSCRIPTION_STORE',
       'Secret',
       'SubscriptionError',
+      'SubscriptionModule',
       'encodeAccountKey',
       'resolveOptions',
       'validateOptions'
@@ -32,6 +36,9 @@ describe('core entry point', () => {
     // Scenario: each name the root takes from the internal bundle or from `shared` is the very
     // value of its origin, so one constructor and one set of symbols serve every entry point.
     expect(entry.SUBSCRIPTION_ERROR_CODES).toBe(SUBSCRIPTION_ERROR_CODES)
+    expect(entry.resolveOptions).toBe(resolveOptions)
+    expect(entry.validateOptions).toBe(validateOptions)
+    expect(entry.SubscriptionModule).toBe(SubscriptionModule)
     for (const [name, value] of Object.entries(internal)) {
       expect(entry[name as keyof typeof entry]).toBe(value)
     }

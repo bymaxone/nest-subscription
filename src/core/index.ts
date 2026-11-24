@@ -60,3 +60,4 @@ export type {
   SubscriptionObserverOption,
   SubscriptionOptionsInput
 } from './options/subscription-options.types'
+export { SubscriptionModule } from './subscription.module'

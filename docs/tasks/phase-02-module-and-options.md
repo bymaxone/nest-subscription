@@ -1,6 +1,6 @@
 # Phase 2 — Module and options
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P2 — module-and-options
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,7 +42,7 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 | 2.1 | Define the module options and their defaults       | ✅ Done | P0       | M    | —          |
 | 2.2 | Validate the options into one aggregated error     | ✅ Done | P0       | M    | 2.1        |
 | 2.3 | Contain the secrets in the resolved options        | ✅ Done | P0       | M    | 2.1        |
-| 2.4 | Implement the module with forRoot and forRootAsync | 📋 ToDo | P0       | L    | 2.2, 2.3   |
+| 2.4 | Implement the module with forRoot and forRootAsync | ✅ Done | P0       | L    | 2.2, 2.3   |
 | 2.5 | Prove that an unused adapter loads no code         | 📋 ToDo | P0       | S    | 2.4        |
 
 ---
@@ -298,7 +298,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 2.4 — Implement the module with forRoot and forRootAsync
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 2.2, 2.3
@@ -309,12 +309,12 @@ Write `SubscriptionModule`, which validates the options at boot and provides the
 
 #### Acceptance criteria
 
-- [ ] A NestJS application boots with `FakeSubscriptionSource` and `InMemorySubscriptionStore` through `forRoot` and through `forRootAsync` with an injected factory.
-- [ ] An invalid configuration fails the boot with the aggregated error, in both forms.
-- [ ] The module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER` only when configured.
-- [ ] With `@bymax-one/nest-cache` and `@bymax-one/nest-core` absent from the module graph, the application boots and every test of the phase passes.
-- [ ] Every provider uses explicit `@Inject` with a symbol token.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A NestJS application boots with `FakeSubscriptionSource` and `InMemorySubscriptionStore` through `forRoot` and through `forRootAsync` with an injected factory.
+- [x] An invalid configuration fails the boot with the aggregated error, in both forms.
+- [x] The module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER` only when configured.
+- [x] With `@bymax-one/nest-cache` and `@bymax-one/nest-core` absent from the module graph, the application boots and every test of the phase passes.
+- [x] Every provider uses explicit `@Inject` with a symbol token.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -475,3 +475,4 @@ Completion Protocol (after the work is reported done):
 - 2.1 ✅ 2026-11-24 — option types, defaults pinned to the specification, frozen resolved form and the system clock
 - 2.2 ✅ 2026-11-24 — table-driven validator that aggregates every offending option into one error without any supplied value
 - 2.3 ✅ 2026-11-24 — Secret holder, non-enumerable secret accessor on the resolved options and the sentinel sweep over the four paths
+- 2.4 ✅ 2026-11-24 — SubscriptionModule with forRoot and forRootAsync, boot e2e in both forms and the secret sweep over every provider

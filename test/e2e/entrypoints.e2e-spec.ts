@@ -42,11 +42,16 @@ describe('entry points', () => {
         'SUBSCRIPTION_SOURCE',
         'SUBSCRIPTION_STORE',
         'SUBSCRIPTION_ERROR_CODES',
+        'SECRET_PLACEHOLDER',
+        'Secret',
         'SubscriptionError',
-        'encodeAccountKey'
+        'SubscriptionModule',
+        'encodeAccountKey',
+        'resolveOptions',
+        'validateOptions'
       ].sort()
     )
-    expect(Object.values(core)).toHaveLength(9)
+    expect(Object.values(core)).toHaveLength(14)
     expect(Object.keys(internal).sort()).toEqual(
       [
         'SUBSCRIPTION_CACHE',
@@ -55,11 +60,13 @@ describe('entry points', () => {
         'SUBSCRIPTION_OPTIONS',
         'SUBSCRIPTION_SOURCE',
         'SUBSCRIPTION_STORE',
+        'SECRET_PLACEHOLDER',
+        'Secret',
         'SubscriptionError',
         'encodeAccountKey'
       ].sort()
     )
-    expect(Object.values(internal)).toHaveLength(8)
+    expect(Object.values(internal)).toHaveLength(10)
     expect(core.SubscriptionError).toBe(shared.SubscriptionError)
     expect(internal.SubscriptionError).toBe(shared.SubscriptionError)
   })
