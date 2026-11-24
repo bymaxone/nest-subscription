@@ -270,7 +270,7 @@ What the repository runs today is the scaffold's own protection: the lint rule s
 - **A unit spec opens no socket and starts no server** (`pnpm check:socket-gate`, the Jest setup and resolver under `scripts/`). A case that needs a server lives in `test/e2e`, where a provider is replaced by a local stand-in.
 - **Mappings are table-driven:** one row per provider value, so a value added to a table without a row fails.
 - **Every `it()` carries a scenario comment**, and its title states only what its assertions establish. Every spec opens with a header naming its purpose and layer (`pnpm check:spec-headers`).
-- **An equivalent mutant** is documented in the source as `// Stryker disable next-line <Mutator>: <reason>` and enforced by `pnpm check:mutants`; a reason after `--` or on a second line is silently dropped.
+- **An equivalent mutant** is documented in the source as `// Stryker disable next-line <Mutator>: <reason>` and enforced by `pnpm check:mutants`.
 - **A spec that judges no mutant** (it runs a script as a child process and imports nothing from `src/`) is listed with its reason in `scripts/mutation-inventory.exempt.json`.
 
 ## 8. Packaging invariants

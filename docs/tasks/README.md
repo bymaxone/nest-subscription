@@ -54,7 +54,7 @@ These are the scripts of the scaffold P0 brings from `bymaxone/nest-telemetry`. 
 | Command                                   | Proves                                                                              |
 | ----------------------------------------- | ----------------------------------------------------------------------------------- |
 | `pnpm typecheck`                          | Source, build and end-to-end TypeScript projects compile                            |
-| `pnpm lint`                               | ESLint, the no-socket gate for unit tests and the source header check               |
+| `pnpm lint`                               | ESLint, the no-socket gate for unit tests and the spec header check                 |
 | `pnpm test`                               | Unit suite, files `src/**/*.spec.ts`                                                |
 | `pnpm test:e2e`                           | End-to-end suite, files `test/e2e/*.e2e-spec.ts`, against a real NestJS application |
 | `pnpm test:cov:all`                       | Both suites together meet the coverage gate                                         |
