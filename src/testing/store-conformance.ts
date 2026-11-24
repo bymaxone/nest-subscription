@@ -41,9 +41,13 @@ function keyOf(accountId: string, tenantId?: string): string {
   return encodeAccountKey({ accountId, tenantId })
 }
 
-/** A snapshot of an account, fetched at the given instant. */
-function snapshotOf(accountId: string, fetchedAt: string): SubscriptionSnapshot {
-  return createEmptySnapshot({ accountId, source: SNAPSHOT_SOURCE, fetchedAt })
+/** A snapshot of an account, fetched at the given instant, as the given source reported it. */
+function snapshotOf(
+  accountId: string,
+  fetchedAt: string,
+  source: string = SNAPSHOT_SOURCE
+): SubscriptionSnapshot {
+  return createEmptySnapshot({ accountId, source, fetchedAt })
 }
 
 // The data of the cases is fixed when the module loads, so every case reads the same instants,
@@ -61,6 +65,7 @@ const C2 = change('c2')
 const C3 = change('c3')
 const ACC = 'acc'
 const SNAPSHOT_SOURCE = 'conformance'
+const REPLACEMENT_SOURCE = 'replacement'
 const SOURCE_FIRST = 'first'
 const SOURCE_SECOND = 'second'
 const SOURCE_UNSEEN = 'never-seen'
@@ -86,16 +91,20 @@ function held(
   return { snapshot, pendingChanges }
 }
 
-/** Writes an account's snapshot at an instant with changes; the write must be accepted. */
+/**
+ * Writes an account's snapshot at an instant with changes; the write must be accepted. The
+ * snapshot is fetched at the same instant unless another is given.
+ */
 async function seed(
   store: SubscriptionStore,
   accountId: string,
   instant: string,
-  changes: readonly SubscriptionChange[]
+  changes: readonly SubscriptionChange[],
+  fetchedAt: string = instant
 ): Promise<void> {
   const written = await store.putSnapshot(
     keyOf(accountId),
-    snapshotOf(accountId, instant),
+    snapshotOf(accountId, fetchedAt),
     changes,
     instant
   )
@@ -209,13 +218,23 @@ const orderingCases: readonly StoreConformanceCase[] = [
     }
   },
   {
-    name: 'replaces the snapshot when the instant is equal or newer',
+    name: 'replaces the snapshot when the instant is equal',
     run: async (createStore): Promise<void> => {
       const store = await createStore()
-      await seed(store, ACC, T5, [])
-      await seed(store, ACC, T5, [])
-      await seed(store, ACC, T6, [])
-      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, T6), []))
+      await seed(store, ACC, T5, [C1])
+      const replacement = snapshotOf(ACC, T5, REPLACEMENT_SOURCE)
+      assert.equal(await store.putSnapshot(ACC_KEY, replacement, [C2], T5), true)
+      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(replacement, [C1, C2]))
+    }
+  },
+  {
+    name: 'replaces the snapshot when the instant is newer',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      await seed(store, ACC, T5, [C1])
+      const replacement = snapshotOf(ACC, T6, REPLACEMENT_SOURCE)
+      assert.equal(await store.putSnapshot(ACC_KEY, replacement, [C2], T6), true)
+      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(replacement, [C1, C2]))
     }
   },
   {
@@ -375,6 +394,16 @@ const staleCases: readonly StoreConformanceCase[] = [
       await seed(store, 'fresh', T9, [])
       const keys = await collect((cursor) => store.listStaleKeys(T5, 10, cursor), 10)
       assert.deepEqual(keys, [keyOf('old')])
+    }
+  },
+  {
+    name: 'judges a key stale by the fetch instant of its snapshot',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      await seed(store, 'early', T9, [], T1)
+      await seed(store, 'late', T1, [], T9)
+      const keys = await collect((cursor) => store.listStaleKeys(T5, 10, cursor), 10)
+      assert.deepEqual(keys, [keyOf('early')])
     }
   },
   {

@@ -115,14 +115,17 @@ export class FakeSubscriptionSource implements SubscriptionSource {
     this.#states.set(account, snapshot)
   }
 
-  /** Makes the next read reject with the given error. Several calls queue several failures. */
+  /**
+   * Makes the next read to start reject with the given error, once it is released if it is also
+   * held. Several calls queue several failures, one per read, in the order the reads start.
+   */
   failNextRead(error: unknown): void {
     this.#failures.push(error)
   }
 
   /**
-   * Holds the next read until the returned function is called. Several calls hold several reads,
-   * in order; no timer is involved.
+   * Holds the next read to start until the returned function is called. Several calls hold several
+   * reads, in the order the reads start; no timer is involved.
    */
   delayNextRead(): () => void {
     let release!: () => void
@@ -180,9 +183,14 @@ export class FakeSubscriptionSource implements SubscriptionSource {
   async readAccount(account: AccountReference): Promise<SubscriptionSnapshot> {
     this.#totalReads += 1
     this.#reads.set(account, this.readCount(account) + 1)
-    await this.#gates.shift()
-    if (this.#failures.length > 0) {
-      throw this.#failures.shift()
+    // The hold and the failure belong to this call from its start: a read that starts while this
+    // one is held takes the next of each, never this one's.
+    const gate = this.#gates.shift()
+    const fails = this.#failures.length > 0
+    const failure = this.#failures.shift()
+    await gate
+    if (fails) {
+      throw failure
     }
     return (
       this.#states.get(account) ??

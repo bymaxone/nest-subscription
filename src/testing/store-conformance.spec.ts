@@ -3,6 +3,7 @@
  * each deliberately broken store fails on the named cases that state the guarantee it breaks.
  * @layer testing
  */
+import type { KeyPage } from '@bymax-one/nest-subscription/internal'
 import { createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
 import { BROKEN_STORES, VALID_VARIANTS } from './broken-stores.fixture'
 import { InMemorySubscriptionStore } from './in-memory.store'
@@ -34,7 +35,8 @@ const CASE = {
   accountsApart: 'keeps the snapshots of two accounts apart',
   tenantsApart: 'keeps the same account of two tenants apart',
   olderRefused: 'refuses an older snapshot and keeps the newer one',
-  equalReplaces: 'replaces the snapshot when the instant is equal or newer',
+  equalReplaces: 'replaces the snapshot when the instant is equal',
+  newerReplaces: 'replaces the snapshot when the instant is newer',
   olderAddsNoChanges: 'adds no changes when it refuses an older snapshot',
   interleaved: 'keeps the newer snapshot when two writes interleave, in either order',
   overlapKeepsChanges:
@@ -52,6 +54,7 @@ const CASE = {
   forgetOnlyNamed: 'forgets nothing but the named event identifier',
   retention: 'deletes the event identifiers recorded before an instant and keeps the others',
   staleOnly: 'lists only the keys fetched before the threshold',
+  staleByFetch: 'judges a key stale by the fetch instant of its snapshot',
   stalePaged: 'lists stale keys in bounded pages by cursor, each key once',
   staleNone: 'lists nothing when no key is stale'
 }
@@ -68,11 +71,39 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   retentionDeletesTheBoundary: [CASE.retention],
   noOrdering: [CASE.olderRefused, CASE.olderAddsNoChanges, CASE.interleaved],
   refusesAnEqualInstant: [CASE.equalReplaces, CASE.overlapKeepsChanges],
+  keepsTheStoredSnapshotOnAnEqualInstant: [CASE.equalReplaces],
+  keepsTheStoredSnapshotOnANewerInstant: [CASE.newerReplaces, CASE.interleaved, CASE.accumulates],
+  refusedWriteReportsTrue: [CASE.olderRefused, CASE.olderAddsNoChanges],
+  staleUsesTheWriteInstant: [CASE.staleByFetch],
+  pendingChangeAddedTwice: [CASE.accumulates],
+  pendingNewestFirst: [CASE.accumulates],
+  clearingDoesNothing: [CASE.clearsNamed, CASE.pendingUnlisted],
+  clearingAnUnknownChangeKeyFails: [CASE.clearsNamed, CASE.clearUnknown],
+  clearingResetsTheSnapshot: [CASE.clearsNamed],
+  clearingCreatesAnEntry: [CASE.clearUnknown],
+  pendingListingNeverEnds: [CASE.pendingPaged, CASE.pendingUnlisted],
+  pendingListingRepeatsAKey: [CASE.pendingPaged],
+  staleListingRepeatsAKey: [CASE.stalePaged],
+  pendingListingSkipsAKey: [CASE.pendingPaged],
+  staleListingSkipsAKey: [CASE.stalePaged],
+  staleListingIgnoresTheThreshold: [CASE.staleOnly, CASE.staleByFetch, CASE.staleNone],
+  markAlwaysSeen: [
+    CASE.eventNew,
+    CASE.twoSources,
+    CASE.eventBoundary,
+    CASE.eventConcurrent,
+    CASE.eventForgotten,
+    CASE.retention
+  ],
+  eventCheckedThenRecorded: [CASE.eventConcurrent],
+  retentionDeletesEverything: [CASE.retention],
   inventsAnUnknownSnapshot: [CASE.unknownIsNull, CASE.clearUnknown],
   dropsPendingChangesOnRead: [
     CASE.readsBack,
     CASE.accountsApart,
     CASE.tenantsApart,
+    CASE.equalReplaces,
+    CASE.newerReplaces,
     CASE.olderAddsNoChanges,
     CASE.overlapKeepsChanges,
     CASE.accumulates,
@@ -84,10 +115,16 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
     CASE.pendingPaged,
     CASE.pendingUnlisted,
     CASE.staleOnly,
+    CASE.staleByFetch,
     CASE.stalePaged
   ],
-  tenantsCollide: [CASE.tenantsApart, CASE.staleOnly],
-  pendingOverwrittenByLaterWrite: [CASE.olderAddsNoChanges, CASE.accumulates],
+  tenantsCollide: [CASE.tenantsApart, CASE.staleOnly, CASE.staleByFetch],
+  pendingOverwrittenByLaterWrite: [
+    CASE.equalReplaces,
+    CASE.newerReplaces,
+    CASE.olderAddsNoChanges,
+    CASE.accumulates
+  ],
   pendingNotClearedByKey: [CASE.clearsNamed],
   clearingAnUnknownKeyFails: [CASE.clearUnknown],
   lostUpdateWhenWritesOverlap: [CASE.overlapKeepsChanges],
@@ -95,7 +132,7 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   staleListingIgnoresLimit: [CASE.stalePaged],
   pendingListingIgnoresLimit: [CASE.pendingPaged],
   pendingListingIncludesEveryKey: [CASE.pendingPaged, CASE.pendingUnlisted],
-  staleListingNeverEnds: [CASE.staleOnly, CASE.stalePaged, CASE.staleNone],
+  staleListingNeverEnds: [CASE.staleOnly, CASE.staleByFetch, CASE.stalePaged, CASE.staleNone],
   staleListingIncludesTheThreshold: [CASE.staleOnly]
 }
 
@@ -161,6 +198,27 @@ describe('storeConformanceCases', () => {
     expect((await variant.listStaleKeys(later, 2, null)).keys).toEqual(['b', 'a'])
     expect((await variant.listKeysWithPendingChanges(2, null)).keys).toEqual([])
   })
+
+  it.each(['pendingListingRepeatsAKey', 'staleListingRepeatsAKey'])(
+    'opens the second page of the %s store with the last key of the first',
+    async (defect) => {
+      // Scenario: five keys listed two at a time; the page after the first starts with the key
+      // the first ended with and goes on from there.
+      const store = BROKEN_STORES[defect]?.() ?? new InMemorySubscriptionStore()
+      const fetchedAt = '2026-01-01T00:00:00.000Z'
+      for (const key of ['a', 'b', 'c', 'd', 'e']) {
+        const snapshot = createEmptySnapshot({ accountId: key, source: 's', fetchedAt })
+        await store.putSnapshot(key, snapshot, [{ kind: 'started', key }], fetchedAt)
+      }
+      const list = (cursor: string | null): Promise<KeyPage> =>
+        defect === 'pendingListingRepeatsAKey'
+          ? store.listKeysWithPendingChanges(2, cursor)
+          : store.listStaleKeys('2026-06-01T00:00:00.000Z', 2, cursor)
+      const first = await list(null)
+      expect(first.keys).toEqual(['a', 'b'])
+      expect((await list(first.nextCursor))?.keys).toEqual(['b', 'c'])
+    }
+  )
 
   it.each(Object.entries(BROKEN_STORES))(
     'fails the named cases with the %s store',

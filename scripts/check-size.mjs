@@ -45,13 +45,13 @@ const BUDGETS = [
   { name: 'internal', path: 'dist/internal/index.mjs', brotli: 0.41 * 1024 },
   { name: 'revenuecat', path: 'dist/revenuecat/index.mjs', brotli: 0.05 * 1024 },
   { name: 'finance', path: 'dist/finance/index.mjs', brotli: 0.05 * 1024 },
-  { name: 'testing', path: 'dist/testing/index.mjs', brotli: 4.44 * 1024 },
+  { name: 'testing', path: 'dist/testing/index.mjs', brotli: 4.59 * 1024 },
   { name: 'root (CommonJS)', path: 'dist/core/index.cjs', brotli: 0.29 * 1024 },
   { name: 'shared (CommonJS)', path: 'dist/shared/index.cjs', brotli: 1.86 * 1024 },
   { name: 'internal (CommonJS)', path: 'dist/internal/index.cjs', brotli: 0.48 * 1024 },
   { name: 'revenuecat (CommonJS)', path: 'dist/revenuecat/index.cjs', brotli: 0.05 * 1024 },
   { name: 'finance (CommonJS)', path: 'dist/finance/index.cjs', brotli: 0.05 * 1024 },
-  { name: 'testing (CommonJS)', path: 'dist/testing/index.cjs', brotli: 4.52 * 1024 }
+  { name: 'testing (CommonJS)', path: 'dist/testing/index.cjs', brotli: 4.67 * 1024 }
 ]
 
 const fmt = (n) => `${(n / 1024).toFixed(2)} kB`

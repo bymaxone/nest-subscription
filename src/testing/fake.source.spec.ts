@@ -167,6 +167,22 @@ describe('FakeSubscriptionSource reads', () => {
     expect(done).toEqual(['second', 'first'])
   })
 
+  it('gives a scripted failure to the read that was next when it was scripted', async () => {
+    // Scenario: a delay and a failure are scripted for one read; a later read starts and ends
+    // while the first is held. The later read succeeds and the held read fails once released.
+    const source = new FakeSubscriptionSource({ clock })
+    const release = source.delayNextRead()
+    const failure = new Error('scripted')
+    source.failNextRead(failure)
+    const held = source.readAccount({ accountId: 'a' }).then(
+      () => 'resolved',
+      (error: unknown) => error
+    )
+    await expect(source.readAccount({ accountId: 'b' })).resolves.toMatchObject({ accountId: 'b' })
+    release()
+    expect(await held).toBe(failure)
+  })
+
   it('delays before it fails when both are scripted for one read', async () => {
     // Scenario: the failure only surfaces after the release.
     const source = new FakeSubscriptionSource({ clock })
