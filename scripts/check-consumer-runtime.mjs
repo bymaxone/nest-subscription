@@ -64,6 +64,9 @@ const OPTIONAL_PEERS = ['@bymax-one/nest-cache', '@bymax-one/nest-core']
 /** The packages a host of the NestJS module provides and the `shared` subpath must not need. */
 const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 
+/** Every runtime name of the `testing` subpath. */
+const TESTING_EXPORTS = ['InMemorySubscriptionStore', 'storeConformanceCases']
+
 /** Every runtime name of the root entry point. */
 const ROOT_EXPORTS = [
   'SUBSCRIPTION_CACHE',
@@ -105,7 +108,12 @@ const PROBES = [
   {
     label: 'root, adapters and testing without either optional peer',
     deny: OPTIONAL_PEERS,
-    entries: { '.': ROOT_EXPORTS, './revenuecat': [], './finance': [], './testing': [] },
+    entries: {
+      '.': ROOT_EXPORTS,
+      './revenuecat': [],
+      './finance': [],
+      './testing': TESTING_EXPORTS
+    },
     // The error class of the root is the one the internal bundle defines, so a class thrown by an
     // adapter that imports the bundle is an instance of the root's.
     same: [

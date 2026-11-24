@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 5 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 6 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -44,7 +44,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 | 1.3 | Implement the empty snapshot and the entitlement resolution         | ✅ Done | P0       | M    | 1.1        |
 | 1.4 | Implement the tenant and account key encoder                        | ✅ Done | P0       | S    | 1.2        |
 | 1.5 | Define the source port, the store port and the injection tokens     | ✅ Done | P0       | M    | 1.2        |
-| 1.6 | Implement the in-memory store and the conformance suite             | 📋 ToDo | P0       | L    | 1.4, 1.5   |
+| 1.6 | Implement the in-memory store and the conformance suite             | ✅ Done | P0       | L    | 1.4, 1.5   |
 | 1.7 | Implement the fake source and prove the shared subpath stands alone | 📋 ToDo | P0       | M    | 1.5        |
 
 ---
@@ -473,7 +473,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 1.6 — Implement the in-memory store and the conformance suite
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 1.4, 1.5
@@ -484,11 +484,11 @@ Write the in-memory store for tests and development, and the conformance cases a
 
 #### Acceptance criteria
 
-- [ ] `InMemorySubscriptionStore` passes every conformance case.
-- [ ] A deliberately broken store fails on a named case for each defect: no uniqueness on event identifiers, an older snapshot replacing a newer one, keys of two tenants colliding, a stale listing that ignores its limit, pending changes dropped or overwritten by a later write, pending changes not cleared by key.
-- [ ] `storeConformanceCases` returns framework-neutral cases (a name and an async function taking a store factory) that throw through `node:assert` on failure, so they run under Jest, Vitest or `node --test`.
-- [ ] The in-memory store warns once at construction that it is not for production, through an injectable logger function, and never to the console in tests.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `InMemorySubscriptionStore` passes every conformance case.
+- [x] A deliberately broken store fails on a named case for each defect: no uniqueness on event identifiers, an older snapshot replacing a newer one, keys of two tenants colliding, a stale listing that ignores its limit, pending changes dropped or overwritten by a later write, pending changes not cleared by key.
+- [x] `storeConformanceCases` returns framework-neutral cases (a name and an async function taking a store factory) that throw through `node:assert` on failure, so they run under Jest, Vitest or `node --test`.
+- [x] The in-memory store warns once at construction that it is not for production, through an injectable logger function, and never to the console in tests.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -653,5 +653,7 @@ Completion Protocol (after the work is reported done):
 - 1.4 ✅ 2026-11-24 — encodeAccountKey: length-prefixed, injective by construction, a blank account refused; the only join of tenant and account
 
 - 1.5 ✅ 2026-11-24 — source port, store port (atomic write with pending changes, ordered by source instant, paged listings), Clock and the six symbol tokens, with every port type exported from the root
+
+- 1.6 ✅ 2026-11-24 — InMemorySubscriptionStore (not for production, warns once) and the framework-neutral store conformance cases, each failed by a named broken store, run unchanged against the in-memory store and a valid variant
 
 <!-- entries are added as tasks complete -->

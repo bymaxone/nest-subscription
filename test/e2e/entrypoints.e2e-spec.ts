@@ -61,11 +61,20 @@ describe('entry points', () => {
     expect(Object.values(internal)).toHaveLength(8)
   })
 
-  it('exposes nothing yet from the adapter and testing subpaths', () => {
+  it('exposes nothing yet from the adapter subpaths', () => {
     // Scenario: these subpaths are loaded through their aliases and hold no name.
-    for (const entry of [revenuecat, finance, testing]) {
+    for (const entry of [revenuecat, finance]) {
       expect(Object.keys(entry)).toEqual([])
     }
+  })
+
+  it('exposes exactly the names of the testing subpath', () => {
+    // Scenario: the store and the conformance cases are the only names it holds so far.
+    expect(Object.keys(testing).sort()).toEqual([
+      'InMemorySubscriptionStore',
+      'storeConformanceCases'
+    ])
+    expect(Object.values(testing)).toHaveLength(2)
   })
 
   it('raises one error class whichever entry point it is reached from', () => {

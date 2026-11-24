@@ -24,3 +24,6 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   tokens `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE`, `SUBSCRIPTION_CLOCK`,
   `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER`, and every type that crosses a port, exported from
   the root.
+- `InMemorySubscriptionStore` and `storeConformanceCases` in the `testing` subpath: an in-memory
+  store for tests and development, not for production, and the conformance cases a host runs
+  against its own store.
