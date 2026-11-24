@@ -32,13 +32,33 @@ describe('entry points', () => {
   it('exposes exactly the names of the root and the internal bundle', () => {
     // Scenario: the root re-exports the error class and the codes; the internal bundle holds the
     // class itself.
-    expect(Object.keys(core).sort()).toEqual([
-      'SUBSCRIPTION_ERROR_CODES',
-      'SubscriptionError',
-      'encodeAccountKey'
-    ])
-    expect(Object.values(core)).toHaveLength(3)
-    expect(Object.keys(internal)).toEqual(['SubscriptionError', 'encodeAccountKey'])
+    expect(Object.keys(core).sort()).toEqual(
+      [
+        'SUBSCRIPTION_CACHE',
+        'SUBSCRIPTION_CLOCK',
+        'SUBSCRIPTION_OBSERVER',
+        'SUBSCRIPTION_OPTIONS',
+        'SUBSCRIPTION_SOURCE',
+        'SUBSCRIPTION_STORE',
+        'SUBSCRIPTION_ERROR_CODES',
+        'SubscriptionError',
+        'encodeAccountKey'
+      ].sort()
+    )
+    expect(Object.values(core)).toHaveLength(9)
+    expect(Object.keys(internal).sort()).toEqual(
+      [
+        'SUBSCRIPTION_CACHE',
+        'SUBSCRIPTION_CLOCK',
+        'SUBSCRIPTION_OBSERVER',
+        'SUBSCRIPTION_OPTIONS',
+        'SUBSCRIPTION_SOURCE',
+        'SUBSCRIPTION_STORE',
+        'SubscriptionError',
+        'encodeAccountKey'
+      ].sort()
+    )
+    expect(Object.values(internal)).toHaveLength(8)
   })
 
   it('exposes nothing yet from the adapter and testing subpaths', () => {

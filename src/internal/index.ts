@@ -4,4 +4,23 @@
  */
 export { SubscriptionError } from './subscription.error'
 export { encodeAccountKey } from './account-key'
-export type { AccountKeyParts } from './account-key'
+export {
+  SUBSCRIPTION_CACHE,
+  SUBSCRIPTION_CLOCK,
+  SUBSCRIPTION_OBSERVER,
+  SUBSCRIPTION_OPTIONS,
+  SUBSCRIPTION_SOURCE,
+  SUBSCRIPTION_STORE
+} from './tokens'
+export type { Clock } from './clock'
+export type {
+  AccountReference,
+  ManagementOperation,
+  SourceCapabilities,
+  SourceNotification,
+  StopRenewalResult,
+  SubscriptionSource,
+  WebhookRequest,
+  WebhookVerification
+} from './source.port'
+export type { KeyPage, StoredSnapshot, SubscriptionStore } from './store.port'

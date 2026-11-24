@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 5 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -43,7 +43,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 | 1.2 | Define the error-code catalogue and the error class                 | ✅ Done | P0       | S    | 1.1        |
 | 1.3 | Implement the empty snapshot and the entitlement resolution         | ✅ Done | P0       | M    | 1.1        |
 | 1.4 | Implement the tenant and account key encoder                        | ✅ Done | P0       | S    | 1.2        |
-| 1.5 | Define the source port, the store port and the injection tokens     | 📋 ToDo | P0       | M    | 1.2        |
+| 1.5 | Define the source port, the store port and the injection tokens     | ✅ Done | P0       | M    | 1.2        |
 | 1.6 | Implement the in-memory store and the conformance suite             | 📋 ToDo | P0       | L    | 1.4, 1.5   |
 | 1.7 | Implement the fake source and prove the shared subpath stands alone | 📋 ToDo | P0       | M    | 1.5        |
 
@@ -384,7 +384,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 1.5 — Define the source port, the store port and the injection tokens
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 1.2
@@ -395,12 +395,12 @@ Write the two interfaces every later phase builds on, and the symbol tokens they
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionSource` has the four abilities of FR07: read one account, verify a webhook from raw bytes and headers, declare capabilities per origin, and perform the declared management operations.
-- [ ] `SubscriptionStore` can read and write a snapshot by key, record a processed event identifier atomically (telling the caller whether it was new), forget one event identifier, forget event identifiers older than a retention, and list keys whose snapshot is older than a threshold in bounded pages.
-- [ ] A snapshot write stores, in the same atomic write, the changes the host has not been told yet; the port can clear them by change key and list the keys that still have some, in bounded pages (FR33, D17).
-- [ ] The write method takes the source-updated-at instant and its contract says an older snapshot must not replace a newer one (FR27).
-- [ ] Every token is a `Symbol` with a description, and every port type is exported from the root.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionSource` has the four abilities of FR07: read one account, verify a webhook from raw bytes and headers, declare capabilities per origin, and perform the declared management operations.
+- [x] `SubscriptionStore` can read and write a snapshot by key, record a processed event identifier atomically (telling the caller whether it was new), forget one event identifier, forget event identifiers older than a retention, and list keys whose snapshot is older than a threshold in bounded pages.
+- [x] A snapshot write stores, in the same atomic write, the changes the host has not been told yet; the port can clear them by change key and list the keys that still have some, in bounded pages (FR33, D17).
+- [x] The write method takes the source-updated-at instant and its contract says an older snapshot must not replace a newer one (FR27).
+- [x] Every token is a `Symbol` with a description, and every port type is exported from the root.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -651,5 +651,7 @@ Completion Protocol (after the work is reported done):
 - 1.3 ✅ 2026-11-24 — createEmptySnapshot and the FR05 entitlement resolution (flag-only, lifetime outranks dates, overlap reported) with a typed failure for a malformed instant
 
 - 1.4 ✅ 2026-11-24 — encodeAccountKey: length-prefixed, injective by construction, a blank account refused; the only join of tenant and account
+
+- 1.5 ✅ 2026-11-24 — source port, store port (atomic write with pending changes, ordered by source instant, paged listings), Clock and the six symbol tokens, with every port type exported from the root
 
 <!-- entries are added as tasks complete -->

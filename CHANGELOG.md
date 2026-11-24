@@ -20,3 +20,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   the snapshot of an unknown account and the rule that resolves entitlements across subscriptions.
 - `encodeAccountKey`, the one function that joins a tenant and an account identifier into a key,
   exported from the root.
+- The source port `SubscriptionSource`, the store port `SubscriptionStore`, `Clock`, the injection
+  tokens `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE`, `SUBSCRIPTION_CLOCK`,
+  `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER`, and every type that crosses a port, exported from
+  the root.

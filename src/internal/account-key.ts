@@ -13,16 +13,9 @@
  *
  * Tenant and account never meet anywhere else in the library.
  */
+import type { AccountReference } from './source.port'
 import { SubscriptionError } from './subscription.error'
 import { SUBSCRIPTION_ERROR_CODES } from '../shared/error-codes'
-
-/** The identifiers a snapshot is keyed by. */
-export interface AccountKeyParts {
-  /** The tenant of the account; absent when the host is not multi-tenant. */
-  readonly tenantId?: string | undefined
-  /** The account identifier. It must not be empty or blank. */
-  readonly accountId: string
-}
 
 /** A field written as its length, a colon and its content. */
 function field(marker: string, value: string): string {
@@ -37,10 +30,12 @@ function field(marker: string, value: string): string {
  * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` when the account identifier is
  * empty or blank.
  */
-export function encodeAccountKey(parts: AccountKeyParts): string {
-  if (parts.accountId.trim().length === 0) {
+export function encodeAccountKey(account: AccountReference): string {
+  if (account.accountId.trim().length === 0) {
     throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.INVALID_INPUT)
   }
-  const account = field('a', parts.accountId)
-  return parts.tenantId === undefined ? account : `${field('t', parts.tenantId)}:${account}`
+  const encodedAccount = field('a', account.accountId)
+  return account.tenantId === undefined
+    ? encodedAccount
+    : `${field('t', account.tenantId)}:${encodedAccount}`
 }
