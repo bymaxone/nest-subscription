@@ -121,7 +121,7 @@ grep -rniE "opentelemetry|otel" src/ scripts/ test/ .github/workflows/ 2>/dev/nu
 
 ## Security invariants & review focus
 
-From the specification §8.2. Each is an auditable statement that `/bymax-quality:code-review` and `/security-review` check on every phase that touches the code it names.
+The numbered ones are from the specification §8.2. Each is an auditable statement that `/bymax-quality:code-review` and `/security-review` check on every phase that touches the code it names.
 
 - **SEC01.** No code path writes a snapshot from webhook payload content. Access comes only from a read of the source, or from a stored snapshot that came from one.
 - **SEC02.** Webhook verification runs over the raw request bytes, before parsing, with a timestamp tolerance and `crypto.timingSafeEqual`. A body is never decoded and re-encoded before it is hashed.
@@ -137,7 +137,7 @@ From the specification §8.2. Each is an auditable statement that `/bymax-qualit
 - **Honest results.** A management operation reports the snapshot read back from the source, never the request having succeeded.
 - **Provider facts.** Every RevenueCat endpoint, field and value in code traces to `docs/revenuecat-facts.md` and the page it cites.
 
-**Per-phase focus** for the phases the model policy marks sensitive:
+**Per-phase focus** for the phases the model policy runs on `inherit`:
 
 | Phase | Focus |
 |---|---|

@@ -226,7 +226,7 @@ Make sure no credential or webhook secret can leave through serialization, sprea
 #### Acceptance criteria
 
 - [ ] A helper wraps a secret so that it is read only through an explicit method, and `JSON.stringify`, object spread, `Object.entries`, `util.inspect` and `util.inspect` with `showHidden: true` all show nothing of it.
-- [ ] The same four paths applied to `ResolvedSubscriptionOptions` expose no secret.
+- [ ] The same paths applied to `ResolvedSubscriptionOptions` expose no secret.
 - [ ] A deliberate read still returns the secret, and a wrapper supports two valid values at once for rotation (SEC09).
 - [ ] The wrapper's `toJSON` and custom inspect output show a fixed placeholder, so the object does not look broken.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.

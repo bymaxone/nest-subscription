@@ -66,7 +66,7 @@ P0 ── P1 ──┬── P2 ── P3 ──┬── P4 ──────�
 ### Parallelization notes
 
 - **P4** and **P5** are independent of each other. Both start when P3 is done.
-- **P7** has two halves. The read, the verification and the mapping tables need only the source port from P1, so they can be built while P2 to P6 are in progress. Its end-to-end acceptance (AC01, AC05, AC06) drives the webhook receiver, so the phase closes only after P6.
+- **P7** has two halves. The read, the verification and the mapping tables need only the source port from P1 and the `Secret` holder from P2, so they can be built while P3 to P6 are in progress. Its end-to-end acceptance (AC01, AC05, AC06) drives the webhook receiver, so the phase closes only after P6.
 - **P8** needs the service from P3 and the RevenueCat operations from P7.
 - **P9** needs every phase from P4 to P8 closed: it documents and measures the whole first release.
 - **P10** lives in another repository and needs an installable package: the packed tarball from P9, or the published version once the owner has released it.
@@ -76,7 +76,7 @@ P0 ── P1 ──┬── P2 ── P3 ──┬── P4 ──────�
 
 ## Requirement coverage
 
-Every requirement of the specification has exactly one phase that owns it. A phase is not done while one of its rows lacks a test.
+Every requirement of the specification has a phase that owns it; where one is split, the parentheses name the part each phase owns. A phase is not done while one of its rows lacks a test.
 
 | Phase | Functional | Non-functional and security | Acceptance |
 |---|---|---|---|
@@ -334,7 +334,7 @@ The specification leaves the file layout to this roadmap. These are the director
   - [ ] End to end, a recorded purchase notification yields an active entitlement through the service (AC01), and a refund of the current period removes access on the next refresh and emits `refunded` (AC05).
   - [ ] A sandbox purchase grants nothing under the default configuration, with RevenueCat's own default of granting it reproduced in the fixture (AC06).
   - [ ] Unit tests open no socket; the suite's only HTTP is a local stand-in for the RevenueCat API.
-- **Context / preconditions**: The unit work needs P1. Closing the phase needs P6. The owner provides a RevenueCat sandbox project and its credentials, from which the fixtures are recorded (D18).
+- **Context / preconditions**: The unit work needs P1 and P2. Closing the phase needs P6. The owner provides a RevenueCat sandbox project and its credentials, from which the fixtures are recorded (D18).
 - **Rules-of-phase**:
   1. Each fact from Appendix A is re-read on the page listed in specification §12 before the code relies on it, and the three items of Appendix A.6 are resolved or kept explicitly unknown.
   2. The refund marker of version 2 is one of those items: until it is confirmed, the task records how a refund is detected and what the fixture proves.

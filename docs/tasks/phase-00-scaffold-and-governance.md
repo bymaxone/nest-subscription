@@ -8,7 +8,7 @@
 
 ## Context
 
-At the start the repository holds documents only: `README.md`, `AGENTS.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `LICENSE`, `docs/spec.md`, `docs/plan.md`, the issue templates and three workflows (`agents-sync.yml`, `ci.yml`, `no-ai-attribution.yml`). There is no `package.json` and no source.
+At the start the repository holds documents only, with the issue templates and the workflows `agents-sync.yml`, `ci.yml` and `no-ai-attribution.yml`. There is no `package.json` and no source.
 
 At the end it is a library project that builds, tests and gates an empty package the way `bymaxone/nest-telemetry` does: five public subpaths (root, `shared`, `revenuecat`, `finance`, `testing`) and the internal bundle exist as entry points with no behaviour, every gate of the family runs on them and passes, the organisation's reusable CI replaces the specification-stage job, and the repository documents describe a library instead of a specification stage. No library behaviour is written in this phase.
 
