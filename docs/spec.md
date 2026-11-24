@@ -1,8 +1,8 @@
 # Spec — @bymax-one/nest-subscription
 
-> **Status:** ✅ Approved by the owner on 2026-11-24, with one open question (Q01, §10.2)
+> **Status:** ✅ Approved by the owner on 2026-11-24
 > **Owner:** Bymax One
-> **Version:** 0.3 · **Last update:** 2026-11-24
+> **Version:** 0.4 · **Last update:** 2026-11-24
 > **Package:** `@bymax-one/nest-subscription`, a public npm library for NestJS 11
 > **Workflow:** `/bymax-workflow:spec` → reviewed specification → `/bymax-workflow:roadmap` (`plan.md`) → `/bymax-workflow:phase-tasks` (`tasks/`)
 > **Sibling precedents:** `bymaxone/nest-telemetry` (tooling, gates, packaging, release), `bymaxone/nest-auth` (module options, repositories, hooks, guards, controllers behind switches), `bymaxone/nest-notification` (provider adapters as optional peers)
@@ -237,7 +237,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 ### 3.11 Telling the host
 
-**FR32. Change notifications.** After a snapshot changes and is stored, the library calls a hook the host supplies, with the previous snapshot, the new one and a typed list of what changed:
+**FR32. Change notifications.** After a snapshot changes and is stored, the library calls a hook the host supplies, with the previous snapshot, the new one and a typed list of what changed. When a change is delivered again (FR33), the call is marked as a redelivery and carries no previous snapshot (D20). The kinds of change are:
 
 `started`, `renewed`, `trial_converted`, `will_not_renew`, `will_renew_again`, `entered_grace`, `put_on_hold`, `recovered`, `paused`, `resumed`, `product_changed`, `expired`, `refunded`, `transferred`, `overlap_detected`.
 
@@ -365,7 +365,7 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 | Id | Requirement |
 |---|---|
-| NFR01 | A guard decision makes no network call to a billing platform |
+| NFR01 | No guard decision waits for a network call to a billing platform. With a fresh snapshot none is made; with a stale one the background refresh of FR25 is started and the decision is returned before it ends (D19) |
 | NFR02 | A webhook is answered within the source's time limit, with margin, or answered as a temporary failure |
 | NFR03 | Concurrent refreshes of one account produce one source call |
 | NFR04 | Reconciliation respects the source's rate limit and is bounded per run |
@@ -426,14 +426,12 @@ The library keeps no other state. It stores no payment data, no price paid and n
 | D16 | A webhook event identifier is recorded when processing starts and removed when the event ends in the failed outcome, so the source's retry is processed | 2026-11-24 |
 | D17 | Changes are stored with the snapshot as not delivered, cleared after the host hook returns, and delivered again by reconciliation while they stay marked. This is how delivery is at least once across a process crash | 2026-11-24 |
 | D18 | The RevenueCat adapter's test fixtures are recorded from a RevenueCat sandbox project, with identifiers and secrets replaced | 2026-11-24 |
+| D19 | A guard decision never waits for the source. A guarded request with a stale snapshot still starts the background refresh of FR25 | 2026-11-24 |
+| D20 | The host hook receives the previous snapshot on the first delivery of a change. A redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot | 2026-11-24 |
 
 ### 10.2 Open
 
-A new question is added here with a proposal and is never answered on the owner's behalf.
-
-| Id | Question | Proposal |
-|---|---|---|
-| Q01 | FR32 gives the hook the previous snapshot. Under D17 only the undelivered changes are stored with the snapshot, so when reconciliation delivers a change again the previous snapshot no longer exists. What does the hook receive then? | The hook always receives the new snapshot and the change list with its keys. It receives the previous snapshot on the first delivery, and on a redelivery that field is absent and the call is marked as a redelivery. The alternative is to store the previous snapshot with the pending changes, which doubles what the host stores for every account that has a change pending |
+None. A new question is added here with a proposal and is never answered on the owner's behalf.
 
 ---
 
@@ -443,7 +441,7 @@ Stated here because the repository starts with documents only.
 
 - The scaffold of `nest-telemetry`: package metadata, TypeScript, lint, formatting, test, coverage, mutation and build configuration, the packaging and size checks, the release workflow and the security scans.
 - The library's own sections of `AGENTS.md`, plus `CLAUDE.md`, `CONTRIBUTING.md` and the Copilot instruction files.
-- The organisation's reusable CI in place of the specification-stage job, keeping the aggregate check named `CI passed`.
+- The organisation's reusable CI added to the workflow, keeping the job that checks the documents and their links and the aggregate check named `CI passed`.
 - The required status checks added to the repository ruleset.
 
 ---

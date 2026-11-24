@@ -232,7 +232,7 @@ Store the changes with the snapshot as not delivered, call the host hook after t
 - [ ] The hook is never invoked when the write did not happen, and never before the write resolved.
 - [ ] A hook that throws or rejects leaves the stored snapshot in place and the changes pending; the failure is logged with its error code and reported to the observer hook point.
 - [ ] A refresh that changes nothing calls no hook.
-- [ ] A redelivery gives the hook what the owner's decision on Q01 says, pinned by a test.
+- [ ] A redelivery is marked as one and gives the hook the new snapshot and the changes, with no previous snapshot (D20), pinned by a test.
 - [ ] The caller of `refresh` can choose not to wait for the hook, which is what the webhook receiver will need.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
@@ -258,12 +258,11 @@ PRECONDITIONS
 - P3 is ✅ Done: `SnapshotRefresher.refresh` returns `{ previous, current, written }` after every source read, and `SubscriptionService` exposes reads, refresh and reconciliation.
 - Tasks 5.1 and 5.2 are ✅ Done.
 - The module options carry the host's hook (P2).
-- Question Q01 of `docs/spec.md` §10.2 (what the hook receives on a redelivery) is answered and recorded as a decision in §10.1. If it is still open, stop and report.
 
 REQUIRED READING (only these — do not load more):
 - `AGENTS.md` (whole file: repository rules and code review rules)
 - `docs/tasks/README.md` (shared names, paths, commands and the Definition of Done every task meets)
-- `docs/spec.md` §3.9 (FR26), §3.11 (FR32, FR33), §7, §9 (R04), §10.1 (D17)
+- `docs/spec.md` §3.9 (FR26), §3.11 (FR32, FR33), §7, §9 (R04), §10.1 (D17, D20)
 - `src/core/refresh/snapshot-refresher.ts`, `src/core/reconciliation/reconciler.ts`, `src/internal/store.port.ts`
 
 TASK
@@ -279,12 +278,12 @@ DELIVERABLES
 
 4. The refresher returning the dispatch as a promise the caller may await, so a webhook answer does not wait for the host's reaction.
 
-5. The delivery guarantee stated in the doc comment of the hook option: at least once; the same change can arrive twice (after a crash, or when the hook succeeded and the clear failed), always with the same key; what a redelivery carries, as the owner decided for Q01.
+5. The delivery guarantee stated in the doc comment of the hook option: at least once; the same change can arrive twice (after a crash, or when the hook succeeded and the clear failed), always with the same key; a redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot (D20).
 
 Constraints:
 - The pending mark is the only delivery state: no in-memory queue, no timer and no retry loop of the library's own. A failed hook is retried by the next reconciliation run.
 - Never clear a change key whose hook call did not return.
-- What the hook receives on a redelivery is question Q01 in `docs/spec.md` §10.2. Do not start this task while Q01 is open: the owner's answer decides whether the store keeps the previous snapshot. Once it is answered, follow the decision recorded in §10.1.
+- The store keeps only the undelivered changes, never the previous snapshot: a redelivery carries none (D20). The hook's argument type makes the previous snapshot optional and carries a redelivery flag.
 - Test first: write the failing test, watch it fail, then implement. Every requirement this task cites gets a test that fails without the implementation.
 - TypeScript strict, no `any`. No suppression of any kind (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `istanbul ignore`, Stryker disable without a recorded reason).
 - Every new source file opens with a header stating its purpose and layer; every export has a doc comment. Functions stay within 50 lines, files within 800.

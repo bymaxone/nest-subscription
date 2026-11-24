@@ -10,7 +10,7 @@
 
 At the start the repository holds documents only, with the issue templates and the workflows `agents-sync.yml`, `ci.yml` and `no-ai-attribution.yml`. There is no `package.json` and no source.
 
-At the end it is a library project that builds, tests and gates an empty package the way `bymaxone/nest-telemetry` does: five public subpaths (root, `shared`, `revenuecat`, `finance`, `testing`) and the internal bundle exist as entry points with no behaviour, every gate of the family runs on them and passes, the organisation's reusable CI replaces the specification-stage job, and the repository documents describe a library instead of a specification stage. No library behaviour is written in this phase.
+At the end it is a library project that builds, tests and gates an empty package the way `bymaxone/nest-telemetry` does: five public subpaths (root, `shared`, `revenuecat`, `finance`, `testing`) and the internal bundle exist as entry points with no behaviour, every gate of the family runs on them and passes, the organisation's reusable CI runs beside the documents job, and the repository documents describe a library instead of a specification stage. No library behaviour is written in this phase.
 
 ---
 
@@ -43,7 +43,7 @@ At the end it is a library project that builds, tests and gates an empty package
 | 0.2 | Bring the test, coverage and mutation configuration | 📋 ToDo | P0 | M | 0.1 |
 | 0.3 | Bring the packaging, size and source gates | 📋 ToDo | P0 | M | 0.2 |
 | 0.4 | Bring the git hooks and commit rules | 📋 ToDo | P1 | S | 0.1 |
-| 0.5 | Replace the specification-stage CI with the family workflows | 📋 ToDo | P0 | M | 0.3 |
+| 0.5 | Extend the CI with the family workflows | 📋 ToDo | P0 | M | 0.3 |
 | 0.6 | Write the repository documents for a library | 📋 ToDo | P0 | M | 0.3 |
 | 0.7 | Require the status checks and close the phase | 📋 ToDo | P0 | S | 0.5, 0.6 |
 
@@ -394,7 +394,7 @@ Completion Protocol (after the work is reported done):
 
 ---
 
-### Task 0.5 — Replace the specification-stage CI with the family workflows
+### Task 0.5 — Extend the CI with the family workflows
 
 - **Status**: 📋 ToDo
 - **Priority**: P0
@@ -416,7 +416,7 @@ Call the organisation's reusable library CI and security workflows, add the rele
 
 #### Files to create / modify
 
-- ✎ `.github/workflows/ci.yml` — replaced
+- ✎ `.github/workflows/ci.yml` — the family's jobs added around the documents job, which stays
 - ✚ `.github/workflows/release.yml`, `codeql.yml`, `osv-scanner.yml`, `scorecard.yml`, `api-surface.yml`, `mutation-full.yml`, `peer-advisory-drift.yml`
 - ✚ `.github/dependabot.yml`, `osv-scanner.toml`
 - — `.github/workflows/agents-sync.yml` and `no-ai-attribution.yml` stay as they are
@@ -445,7 +445,7 @@ REQUIRED READING (only these — do not load more):
 - `bymaxone/.github`: `README.md`, the sections on `node-lib-ci.yml`, `security.yml` and `agents-sync.yml`, and `.github/workflow-templates/dependabot.yml`
 
 TASK
-Replace the documents-only CI job with the family's reusable library pipeline and add the sibling's other workflows, adapted to this package.
+Add the family's reusable library pipeline to the CI workflow, keeping its documents job, and add the sibling's other workflows, adapted to this package.
 
 DELIVERABLES
 

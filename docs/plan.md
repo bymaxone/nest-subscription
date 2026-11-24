@@ -148,7 +148,7 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Turn the documents-only repository into a library project that builds, tests and gates an empty package the same way `nest-telemetry` does.
 - **Scope**:
-  - In: package metadata with the five subpaths of D08 as empty entry points plus the internal bundle; TypeScript, lint, formatting, Jest (unit, end-to-end, combined coverage), Stryker and build configuration; the gate scripts under `scripts/`; Husky and commitlint; the organisation's reusable library CI and security workflows in place of the specification-stage job, keeping the aggregate check named `CI passed`; the release workflow; CodeQL, OSV and Scorecard workflows; Dependabot, including the group that moves the pinned `agents-sync` reference; the library sections of `AGENTS.md` (design principles, security specification, testing strategy, packaging invariants, pitfalls) and its statement of the `docs/` language; `CLAUDE.md`, `CONTRIBUTING.md`, `CHANGELOG.md` and the Copilot instruction files; the required status checks in the repository ruleset.
+  - In: package metadata with the five subpaths of D08 as empty entry points plus the internal bundle; TypeScript, lint, formatting, Jest (unit, end-to-end, combined coverage), Stryker and build configuration; the gate scripts under `scripts/`; Husky and commitlint; the organisation's reusable library CI and security workflows added to the CI workflow, keeping its documents job and the aggregate check named `CI passed`; the release workflow; CodeQL, OSV and Scorecard workflows; Dependabot, including the group that moves the pinned `agents-sync` reference; the library sections of `AGENTS.md` (design principles, security specification, testing strategy, packaging invariants, pitfalls) and its statement of the `docs/` language; `CLAUDE.md`, `CONTRIBUTING.md`, `CHANGELOG.md` and the Copilot instruction files; the required status checks in the repository ruleset.
   - Out: any library behaviour; the public README beyond what the gates need; publishing.
 - **Definition of Done**:
   - [ ] `pnpm install`, `typecheck`, `lint`, `test`, `test:e2e`, `test:cov:all`, `build` and `mutation` all pass locally on Node.js 26 on a tree that exports nothing but the empty entry points.
@@ -250,7 +250,7 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Protect a route with one decorator, and make the answer under failure an explicit choice that defaults to refusal.
 - **Scope**:
-  - In: the decorator naming an entitlement and the guard that enforces it; the account resolver the host supplies, and the unauthenticated refusal when it yields no account (FR29); the stable refusal codes that separate "no subscription" from "subscription exists and gives no access", with no detail about any other account (FR30); the fail policy with its two values, refuse by default and last known state within a tolerance (FR31, SEC04); no guard decision waiting on a network call (NFR01).
+  - In: the decorator naming an entitlement and the guard that enforces it; the account resolver the host supplies, and the unauthenticated refusal when it yields no account (FR29); the stable refusal codes that separate "no subscription" from "subscription exists and gives no access", with no detail about any other account (FR30); the fail policy with its two values, refuse by default and last known state within a tolerance (FR31, SEC04); no guard decision waiting on a network call (NFR01, D19).
   - Out: change notifications; the error envelope of a host that does not use `@bymax-one/nest-core`, beyond the documented default.
 - **Definition of Done**:
   - [ ] An end-to-end test protects a route with the decorator and gets access, the "no subscription" refusal and the "gives no access" refusal from three accounts.
@@ -275,7 +275,7 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Tell the host what changed, at least once and idempotently, and give operations counters that carry no personal data.
 - **Scope**:
-  - In: the comparison of the previous and the new snapshot into the typed change list of FR32, including `overlap_detected` (FR05) and `transferred`; the hook call after the store write, with the previous snapshot, the new one and the list (FR32); at-least-once delivery through changes stored with the snapshot as not delivered, cleared after the hook returns and delivered again by reconciliation (FR33, D17); the stable key per change, and containment of a hook that throws (FR33); the optional observer with counters and timings for webhooks by outcome, refreshes, source errors, cache hits and guard decisions (FR34); account identifiers absent from observer payloads and logs, or present only as a short hash (SEC06).
+  - In: the comparison of the previous and the new snapshot into the typed change list of FR32, including `overlap_detected` (FR05) and `transferred`; the hook call after the store write, with the previous snapshot, the new one and the list, and without the previous snapshot on a redelivery (FR32, D20); at-least-once delivery through changes stored with the snapshot as not delivered, cleared after the hook returns and delivered again by reconciliation (FR33, D17); the stable key per change, and containment of a hook that throws (FR33); the optional observer with counters and timings for webhooks by outcome, refreshes, source errors, cache hits and guard decisions (FR34); account identifiers absent from observer payloads and logs, or present only as a short hash (SEC06).
   - Out: a queue, a timer or a retry loop of the library's own; the webhook receiver that will later be one of the callers.
 - **Definition of Done**:
   - [ ] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces none for two equal snapshots.
@@ -284,7 +284,7 @@ The specification leaves the file layout to this roadmap. These are the director
   - [ ] A crash simulated between the write and the hook is followed by a reconciliation run that delivers the same change keys.
   - [ ] The hook is never invoked before the store write has succeeded.
   - [ ] Every observer payload in the suite is asserted free of account identifiers and payload content.
-- **Context / preconditions**: P3 is done. P4 is independent and may be in progress. Question Q01 of the specification (§10.2) is answered before the hook delivery is built.
+- **Context / preconditions**: P3 is done. P4 is independent and may be in progress.
 - **Rules-of-phase**:
   1. The change list is a pure function of two snapshots. It never reads a webhook payload.
   2. Delivery is specified as at-least-once: the documentation and the types tell the host to be idempotent, and no code claims exactly-once.
