@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,7 +42,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 | 1.1 | Define the snapshot model and its closed value sets                 | ✅ Done | P0       | M    | —          |
 | 1.2 | Define the error-code catalogue and the error class                 | ✅ Done | P0       | S    | 1.1        |
 | 1.3 | Implement the empty snapshot and the entitlement resolution         | ✅ Done | P0       | M    | 1.1        |
-| 1.4 | Implement the tenant and account key encoder                        | 📋 ToDo | P0       | S    | 1.2        |
+| 1.4 | Implement the tenant and account key encoder                        | ✅ Done | P0       | S    | 1.2        |
 | 1.5 | Define the source port, the store port and the injection tokens     | 📋 ToDo | P0       | M    | 1.2        |
 | 1.6 | Implement the in-memory store and the conformance suite             | 📋 ToDo | P0       | L    | 1.4, 1.5   |
 | 1.7 | Implement the fake source and prove the shared subpath stands alone | 📋 ToDo | P0       | M    | 1.5        |
@@ -304,7 +304,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 1.4 — Implement the tenant and account key encoder
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.2
@@ -315,11 +315,11 @@ Write the one function that turns a tenant identifier and an account identifier 
 
 #### Acceptance criteria
 
-- [ ] Two different (tenant, account) pairs never produce the same key, including pairs whose text contains the delimiter, an empty tenant, and unicode.
-- [ ] The key of an account with no tenant differs from the key of any account with a tenant.
-- [ ] An empty or blank account identifier is refused with a `SubscriptionError`.
-- [ ] A property-style test over generated pairs asserts injectivity, and a fixed table pins the known collision shapes (`("a:b","c")` against `("a","b:c")`).
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Two different (tenant, account) pairs never produce the same key, including pairs whose text contains the delimiter, an empty tenant, and unicode.
+- [x] The key of an account with no tenant differs from the key of any account with a tenant.
+- [x] An empty or blank account identifier is refused with a `SubscriptionError`.
+- [x] A property-style test over generated pairs asserts injectivity, and a fixed table pins the known collision shapes (`("a:b","c")` against `("a","b:c")`).
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -649,5 +649,7 @@ Completion Protocol (after the work is reported done):
 - 1.2 ✅ 2026-11-24 — closed SUBSCRIPTION_ error-code catalogue with fixed messages in shared and SubscriptionError in the internal bundle, re-exported from the root and proven one constructor in the packed tarball
 
 - 1.3 ✅ 2026-11-24 — createEmptySnapshot and the FR05 entitlement resolution (flag-only, lifetime outranks dates, overlap reported) with a typed failure for a malformed instant
+
+- 1.4 ✅ 2026-11-24 — encodeAccountKey: length-prefixed, injective by construction, a blank account refused; the only join of tenant and account
 
 <!-- entries are added as tasks complete -->

@@ -3,3 +3,5 @@
  * @layer internal
  */
 export { SubscriptionError } from './subscription.error'
+export { encodeAccountKey } from './account-key'
+export type { AccountKeyParts } from './account-key'

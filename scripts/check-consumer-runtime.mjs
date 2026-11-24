@@ -65,7 +65,7 @@ const OPTIONAL_PEERS = ['@bymax-one/nest-cache', '@bymax-one/nest-core']
 const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 
 /** Every runtime name of the root entry point. */
-const ROOT_EXPORTS = ['SUBSCRIPTION_ERROR_CODES', 'SubscriptionError']
+const ROOT_EXPORTS = ['SUBSCRIPTION_ERROR_CODES', 'SubscriptionError', 'encodeAccountKey']
 
 /** Every runtime name of the `shared` subpath: the closed value sets, the error codes
  * and the pure functions of the model. */

@@ -18,3 +18,5 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   `shared` subpath, and `SubscriptionError` with the catalogue exported from the root.
 - `createEmptySnapshot`, `resolveEntitlements` and `SubscriptionInputError` in the `shared` subpath:
   the snapshot of an unknown account and the rule that resolves entitlements across subscriptions.
+- `encodeAccountKey`, the one function that joins a tenant and an account identifier into a key,
+  exported from the root.

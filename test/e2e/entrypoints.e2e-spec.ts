@@ -32,9 +32,13 @@ describe('entry points', () => {
   it('exposes exactly the names of the root and the internal bundle', () => {
     // Scenario: the root re-exports the error class and the codes; the internal bundle holds the
     // class itself.
-    expect(Object.keys(core).sort()).toEqual(['SUBSCRIPTION_ERROR_CODES', 'SubscriptionError'])
-    expect(Object.values(core)).toHaveLength(2)
-    expect(Object.keys(internal)).toEqual(['SubscriptionError'])
+    expect(Object.keys(core).sort()).toEqual([
+      'SUBSCRIPTION_ERROR_CODES',
+      'SubscriptionError',
+      'encodeAccountKey'
+    ])
+    expect(Object.values(core)).toHaveLength(3)
+    expect(Object.keys(internal)).toEqual(['SubscriptionError', 'encodeAccountKey'])
   })
 
   it('exposes nothing yet from the adapter and testing subpaths', () => {
@@ -48,6 +52,7 @@ describe('entry points', () => {
     // Scenario: the root re-exports the class the internal bundle defines, so one constructor
     // serves every instanceof check, and its serialized form holds the code and message only.
     expect(core.SubscriptionError).toBe(internal.SubscriptionError)
+    expect(core.encodeAccountKey).toBe(internal.encodeAccountKey)
     const error = new core.SubscriptionError(core.SUBSCRIPTION_ERROR_CODES.NO_ACCESS)
     expect(error).toBeInstanceOf(internal.SubscriptionError)
     expect(JSON.parse(JSON.stringify(error))).toEqual({
