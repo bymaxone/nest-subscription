@@ -10,7 +10,7 @@
 
 At the start the library stores correct snapshots and tells nobody when one changes.
 
-At the end every stored change is compared with the previous snapshot into a typed list of what changed, each entry with a key that is stable for the same change, and the host's hook is called after the store write with the previous snapshot, the new one and that list. A hook that throws does not undo the stored state. An optional observer receives counters and timings that carry no account identifier and no payload. P4 (the guard) is independent of this phase and may be in progress.
+At the end every stored change is compared with the previous snapshot into a typed list of what changed, each entry with a key that is stable for the same change, and the host's hook is called after the store write with the previous snapshot, the new one and that list; a change delivered again comes without the previous snapshot. A hook that throws does not undo the stored state. An optional observer receives counters and timings that carry no account identifier and no payload. P4 (the guard) is independent of this phase and may be in progress.
 
 ---
 
@@ -272,9 +272,9 @@ DELIVERABLES
 
 1. In the refresher: `diffSnapshots` runs before the write, and its result is passed to `putSnapshot` as the pending changes.
 
-2. `change-dispatcher.ts`: after a successful write, calls the hook with `{ previous, current, changes }`, awaiting it or not according to the caller, contains any failure, and on return calls `clearPendingChanges` with the delivered keys.
+2. `change-dispatcher.ts`: after a successful write, calls the hook with `{ previous, current, changes, redelivery: false }`, awaiting it or not according to the caller, contains any failure, and on return calls `clearPendingChanges` with the delivered keys.
 
-3. In the reconciler: a pass over `listKeysWithPendingChanges` that calls the hook for each account's pending changes and clears what was delivered, inside the same batch bound.
+3. In the reconciler: a pass over `listKeysWithPendingChanges` that calls the hook for each account's pending changes with `{ current, changes, redelivery: true }` and no previous snapshot (D20), and clears what was delivered, inside the same batch bound.
 
 4. The refresher returning the dispatch as a promise the caller may await, so a webhook answer does not wait for the host's reaction.
 

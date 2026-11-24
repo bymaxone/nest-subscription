@@ -153,7 +153,7 @@ The specification leaves the file layout to this roadmap. These are the director
 - **Definition of Done**:
   - [ ] `pnpm install`, `typecheck`, `lint`, `test`, `test:e2e`, `test:cov:all`, `build` and `mutation` all pass locally on Node.js 26 on a tree that exports nothing but the empty entry points.
   - [ ] The packed tarball loads each of the five subpaths in ESM and in CommonJS, and the strict type-resolution check passes on it.
-  - [ ] The pull request shows `CI passed` green, produced by the organisation's reusable workflow, and the ruleset requires it.
+  - [ ] The pull request shows `CI passed` green, with the organisation's reusable workflows among the jobs it depends on, and the ruleset requires it.
   - [ ] `AGENTS.md` no longer says the repository is at the specification stage, and nothing in it describes `nest-telemetry`'s domain.
   - [ ] No file brought from `nest-telemetry` still names OpenTelemetry, a telemetry script or a telemetry baseline.
 - **Context / preconditions**: The repository holds documents and three workflows. `nest-telemetry` is the scaffold to mirror (specification §11); its mutation thresholds are already 100.
@@ -226,7 +226,7 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Keep one correct snapshot per account in the store and let the host read it, refresh it and reconcile it.
 - **Scope**:
-  - In: the service's two reads, which touch the store and never the source (FR28); refresh on demand, with concurrent refreshes of one account collapsed into one source call (FR24, NFR03); the age on every snapshot and the background refresh of a stale one on its next read (FR25); the rule that an older snapshot never replaces a newer one (FR27); reconciliation in bounded batches under a rate limit, as a method the host schedules (FR26, NFR04); the optional read-through cache with invalidation on every change (FR23); the tenant in every key, taken from the caller and never from a body (SEC08).
+  - In: the service's two reads, which answer from the store and never wait for the source (FR28); refresh on demand, with concurrent refreshes of one account collapsed into one source call (FR24, NFR03); the age on every snapshot and the background refresh of a stale one on its next read (FR25); the rule that an older snapshot never replaces a newer one (FR27); reconciliation in bounded batches under a rate limit, as a method the host schedules (FR26, NFR04); the optional read-through cache with invalidation on every change (FR23); the tenant in every key, taken from the caller and never from a body (SEC08).
   - Out: the guard (P4); telling the host about a change (P5); webhooks (P6).
 - **Definition of Done**:
   - [ ] Reading a fresh snapshot or asking for an entitlement on one makes zero calls on the fake source, and no read ever waits for a source call unless a refresh was requested.

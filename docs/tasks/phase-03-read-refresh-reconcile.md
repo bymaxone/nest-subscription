@@ -10,7 +10,7 @@
 
 At the start the module boots and wires a source and a store, and no service reads or writes a snapshot.
 
-At the end `SubscriptionService` answers the two questions a host asks (what is this account's state, does it have this entitlement) from the store alone, refreshes one account from the source on demand with concurrent calls collapsed into one, refreshes a stale snapshot in the background, never lets an older snapshot replace a newer one, reads through an optional cache, and reconciles old snapshots in bounded, rate-limited batches the host schedules. The guard, the change notifications and the webhooks are later phases that call what this phase builds.
+At the end `SubscriptionService` answers the two questions a host asks (what is this account's state, does it have this entitlement) from the store, without waiting for the source, refreshes one account from the source on demand with concurrent calls collapsed into one, refreshes a stale snapshot in the background, never lets an older snapshot replace a newer one, reads through an optional cache, and reconciles old snapshots in bounded, rate-limited batches the host schedules. The guard, the change notifications and the webhooks are later phases that call what this phase builds.
 
 ---
 
@@ -141,11 +141,11 @@ Completion Protocol (after the work is reported done):
 
 #### Description
 
-Write `SubscriptionService` with its two reads and the on-demand refresh, reading the store and never the source unless asked (FR28, FR04).
+Write `SubscriptionService` with its two reads and the on-demand refresh, answering from the store and never waiting for the source unless asked (FR28, FR04).
 
 #### Acceptance criteria
 
-- [ ] `getSnapshot(account)` and `hasEntitlement(account, name)` make zero source calls, asserted with the fake source's read counter.
+- [ ] On a fresh snapshot `getSnapshot(account)` and `hasEntitlement(account, name)` make zero source calls, asserted with the fake source's read counter, and neither ever waits for a source call.
 - [ ] An account with no stored snapshot yields the empty snapshot and `false`, not an error.
 - [ ] `hasEntitlement` answers from the entitlement's active flag, which comes from the source's access flag, and is `false` for an entitlement the account lacks.
 - [ ] `refresh(account)` delegates to `SnapshotRefresher` and returns the stored snapshot.

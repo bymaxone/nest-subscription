@@ -224,7 +224,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 ### 3.10 Reading and guarding
 
-**FR28. Service.** Read an account's snapshot. Ask whether an account has a named entitlement now. Both read the store, never the source, unless a refresh is requested.
+**FR28. Service.** Read an account's snapshot. Ask whether an account has a named entitlement now. Both answer from the store and never wait for the source, unless a refresh is requested.
 
 **FR29. Guard and decorator.** A decorator marks a route as needing an entitlement by name, and a guard enforces it. The guard obtains the account from the request through a resolver the host supplies. A request with no account is refused as unauthenticated, not as unsubscribed.
 
