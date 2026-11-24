@@ -15,34 +15,34 @@ It says **what** the library does and **why**. File layout, phases and task brea
 
 **Identifiers.** They are stable and are cited by the roadmap and the task files.
 
-| Prefix | Meaning |
-|---|---|
-| FR | Functional requirement |
-| NFR | Non-functional requirement |
-| SEC | Security requirement |
-| AC | Acceptance criterion |
-| R | Risk |
-| D | Decision already taken by the owner, with its date |
+| Prefix | Meaning                                            |
+| ------ | -------------------------------------------------- |
+| FR     | Functional requirement                             |
+| NFR    | Non-functional requirement                         |
+| SEC    | Security requirement                               |
+| AC     | Acceptance criterion                               |
+| R      | Risk                                               |
+| D      | Decision already taken by the owner, with its date |
 
-**Evidence labels.** *Verified* means read in the provider's official documentation on 2026-11-24; the URL is in §12. *Planned contract* means read in the specification of a platform that is not released yet and can change. *Proposed* means a design recommendation the owner has not confirmed.
+**Evidence labels.** _Verified_ means read in the provider's official documentation on 2026-11-24; the URL is in §12. _Planned contract_ means read in the specification of a platform that is not released yet and can change. _Proposed_ means a design recommendation the owner has not confirmed.
 
 **Vocabulary.**
 
-| Term | Meaning in this document |
-|---|---|
-| Host | The NestJS application that installs the library |
-| Account | The host's own user or customer, named by an identifier the host chooses |
-| Source | The system that knows the truth about subscriptions: a billing platform |
-| Adapter | The code that speaks to one source |
-| Origin | Where the person bought: App Store, Google Play, web, or a grant |
+| Term        | Meaning in this document                                                 |
+| ----------- | ------------------------------------------------------------------------ |
+| Host        | The NestJS application that installs the library                         |
+| Account     | The host's own user or customer, named by an identifier the host chooses |
+| Source      | The system that knows the truth about subscriptions: a billing platform  |
+| Adapter     | The code that speaks to one source                                       |
+| Origin      | Where the person bought: App Store, Google Play, web, or a grant         |
 | Entitlement | A named access right, such as `premium`, that one or more products grant |
-| Snapshot | The library's normalized record of one account's subscription state |
+| Snapshot    | The library's normalized record of one account's subscription state      |
 
 ---
 
 ## 1. Goal
 
-"My backend has paying users. Some subscribed on an iPhone, some on Android, some on our website. In every route that needs it I want to ask one question, *does this account have `premium`, until when, and where did they buy it*, and get one typed answer. I do not want to learn each billing platform's webhooks, retries, states and edge cases in every product I build, and I want to change billing platform without rewriting my product."
+"My backend has paying users. Some subscribed on an iPhone, some on Android, some on our website. In every route that needs it I want to ask one question, _does this account have `premium`, until when, and where did they buy it_, and get one typed answer. I do not want to learn each billing platform's webhooks, retries, states and edge cases in every product I build, and I want to change billing platform without rewriting my product."
 
 ### 1.1 What the library is
 
@@ -87,11 +87,11 @@ The two are independent. Neither requires the other, and the host's code is the 
 
 ### 3.2 Out of scope
 
-- Starting a purchase, a checkout or a refund. *Reason: these belong to the app and to the billing platform.*
-- Talking directly to the App Store Server API or the Google Play Developer API. *Reason: the source does that. A direct store adapter is a different product.*
-- One-time purchases and consumables, such as credit packs. *Reason: they are not subscription state. See §3.3.*
-- A database schema or an ORM. *Reason: family rule; the host implements a small port.*
-- A scheduler. *Reason: the library exposes reconciliation methods and the host calls them from its own job runner.*
+- Starting a purchase, a checkout or a refund. _Reason: these belong to the app and to the billing platform._
+- Talking directly to the App Store Server API or the Google Play Developer API. _Reason: the source does that. A direct store adapter is a different product._
+- One-time purchases and consumables, such as credit packs. _Reason: they are not subscription state. See §3.3._
+- A database schema or an ORM. _Reason: family rule; the host implements a small port._
+- A scheduler. _Reason: the library exposes reconciliation methods and the host calls them from its own job runner._
 - Product rules: trial eligibility, promotional prices, what to do on renewal, how long an offline client may trust a cached answer.
 - A client or React package for purchase screens.
 
@@ -106,40 +106,41 @@ The two are independent. Neither requires the other, and the host's code is the 
 
 **FR01. Snapshot.** For one account the library holds one snapshot:
 
-| Field | Meaning |
-|---|---|
-| Account identifier, and tenant identifier when the host is multi-tenant | Whose state this is |
-| Entitlements | A list. Each has a name, whether it is active now, until when, and which subscription grants it |
-| Subscriptions | A list, usually of one. Each is described in FR02 |
-| Source and source customer reference | Which adapter produced this, and how the source names the account |
-| Fetched at, and source updated at | When the library read it, and how fresh the source says it is |
+| Field                                                                   | Meaning                                                                                                                                        |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account identifier, and tenant identifier when the host is multi-tenant | Whose state this is                                                                                                                            |
+| Entitlements                                                            | A list. Each has a name, whether it is active now, until when, and which subscription grants it                                                |
+| Subscriptions                                                           | A list, usually of one. Each is described in FR02                                                                                              |
+| Source and source customer reference                                    | Which adapter produced this, and how the source names the account. The customer reference is null when the source has no record of the account |
+| Fetched at, and source updated at                                       | When the library read it, and how fresh the source says it is                                                                                  |
 
 **FR02. Subscription record.** Each subscription in a snapshot carries:
 
-| Field | Values |
-|---|---|
-| Status | `trialing`, `active`, `in_grace`, `on_hold`, `paused`, `expired`, `unknown` |
-| Gives access | Boolean, as the source reports it. The guard reads this, never the status name |
-| Will renew | `yes`, `no`, `changes_product`, `pauses`, `unknown` |
-| Origin | `app_store`, `play_store`, `web`, `promotional`, `other` |
-| Environment | `production` or `sandbox` |
-| Product reference and billing interval | As named by the source |
-| Period | Current period start and end |
-| Access until | The instant access ends if nothing else happens. Null for a lifetime grant |
-| Billing issue since, cancelled at, refunded at | Null when not applicable |
-| Management reference | Where the person manages it, when the source provides one |
+| Field                                          | Values                                                                                                                                  |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Subscription reference                         | How the source names this subscription, stable across refreshes. An entitlement names the subscription that grants it by this reference |
+| Status                                         | `trialing`, `active`, `in_grace`, `on_hold`, `paused`, `expired`, `unknown`                                                             |
+| Gives access                                   | Boolean, as the source reports it. The guard reads this, never the status name                                                          |
+| Will renew                                     | `yes`, `no`, `changes_product`, `pauses`, `unknown`                                                                                     |
+| Origin                                         | `app_store`, `play_store`, `web`, `promotional`, `other`                                                                                |
+| Environment                                    | `production` or `sandbox`                                                                                                               |
+| Product reference and billing interval         | As named by the source                                                                                                                  |
+| Period                                         | Current period start and end                                                                                                            |
+| Access until                                   | The instant access ends if nothing else happens. Null for a lifetime grant                                                              |
+| Billing issue since, cancelled at, refunded at | Null when not applicable                                                                                                                |
+| Management reference                           | Where the person manages it, when the source provides one                                                                               |
 
 **FR03. Status meanings.** These are fixed, so every adapter maps into the same words.
 
-| Status | Meaning | Access |
-|---|---|---|
-| `trialing` | In a trial period | Yes |
-| `active` | In a paid period. A subscription that will not renew stays `active` until its period ends, with will renew `no` | Yes |
-| `in_grace` | A renewal payment failed and the source still grants access while it retries | Yes |
-| `on_hold` | A renewal payment failed and access is suspended while the source retries | No |
-| `paused` | Paused by the person or the platform | No |
-| `expired` | Ended | No |
-| `unknown` | The source reports a state the adapter does not recognise. The adapter passes the source's own access flag through | As the source says |
+| Status     | Meaning                                                                                                            | Access             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| `trialing` | In a trial period                                                                                                  | Yes                |
+| `active`   | In a paid period. A subscription that will not renew stays `active` until its period ends, with will renew `no`    | Yes                |
+| `in_grace` | A renewal payment failed and the source still grants access while it retries                                       | Yes                |
+| `on_hold`  | A renewal payment failed and access is suspended while the source retries                                          | No                 |
+| `paused`   | Paused by the person or the platform                                                                               | No                 |
+| `expired`  | Ended                                                                                                              | No                 |
+| `unknown`  | The source reports a state the adapter does not recognise. The adapter passes the source's own access flag through | As the source says |
 
 **FR04. No subscription is a value, not an error.** An account the source does not know has a snapshot with no entitlements and no subscriptions.
 
@@ -162,7 +163,7 @@ The two are independent. Neither requires the other, and the host's code is the 
 
 ### 3.6 RevenueCat adapter
 
-*Verified* facts it is built on are in Appendix A.
+_Verified_ facts it is built on are in Appendix A.
 
 **FR10. Read.** It reads a customer's subscriptions and active entitlements from version 2 of the RevenueCat REST API, which reports an explicit status, an access flag and a renewal status for each subscription, and maps them into the model. Version 1 is used only for the Google Play stop-renewal operation, which exists only there (D06).
 
@@ -180,7 +181,7 @@ The two are independent. Neither requires the other, and the host's code is the 
 
 ### 3.7 Bymax Finance adapter
 
-*Planned contract.* Bymax Finance is not released. This adapter is specified against its planned public API and is built when that API exists (D03). Appendix B lists what the adapter needs from it.
+_Planned contract._ Bymax Finance is not released. This adapter is specified against its planned public API and is built when that API exists (D03). Appendix B lists what the adapter needs from it.
 
 **FR15.** It reads a customer's subscription and entitlements through the Finance API with a tenant API key, verifies Finance's signed webhooks, and maps Finance's subscription states into the model. It has no dependency on RevenueCat and works for a host that sells only through Finance.
 
@@ -251,11 +252,11 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 **FR36. Stop renewal.** Where the source allows a server to do it, the library asks the source to stop the renewal, then refreshes. Where it does not, the result is not an error: it says the person must do it themselves and gives the management reference.
 
-| Origin | RevenueCat adapter | Bymax Finance adapter |
-|---|---|---|
-| App Store | Not possible from a server. Returns the management reference | Not applicable |
-| Google Play | Possible | Not applicable |
-| Web | Possible for RevenueCat's own web billing. For Stripe tracked by RevenueCat the host cancels in Stripe | Possible, at period end |
+| Origin      | RevenueCat adapter                                                                                     | Bymax Finance adapter   |
+| ----------- | ------------------------------------------------------------------------------------------------------ | ----------------------- |
+| App Store   | Not possible from a server. Returns the management reference                                           | Not applicable          |
+| Google Play | Possible                                                                                               | Not applicable          |
+| Web         | Possible for RevenueCat's own web billing. For Stripe tracked by RevenueCat the host cancels in Stripe | Possible, at period end |
 
 **FR37. Management reference.** Return the place where the person manages the subscription, when the source provides one.
 
@@ -283,18 +284,18 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 ### 5.1 Acceptance
 
-| Id | Criterion | How it is verified |
-|---|---|---|
-| AC01 | A verified purchase notification results in an active entitlement readable through the service | End-to-end test with the fake source and with recorded provider payloads |
-| AC02 | A notification with a wrong signature, a wrong authorization header, a stale timestamp or a body altered after signing is refused and changes nothing | Unit and end-to-end tests |
-| AC03 | The same event delivered five times causes one source read and one host notification | End-to-end test |
-| AC04 | Events delivered in reverse order leave the snapshot equal to the source's current state | End-to-end test |
-| AC05 | A refund of the current period removes access on the next refresh and emits `refunded` | Test with recorded payloads |
-| AC06 | A sandbox purchase grants nothing under the default configuration | Unit and end-to-end tests |
-| AC07 | With the source down, the guard follows the configured policy exactly, in both values | End-to-end test |
-| AC08 | Replacing the RevenueCat adapter with the fake or the Finance adapter requires no change in a host's routes or hook | The example application runs its suite against each |
-| AC09 | No secret and no account identifier appears in any log line, error message, observer payload or serialized instance | Tests over the paths SEC05 names, and over captured logs |
-| AC10 | Every state in Appendix A and Appendix B maps as its table says, and an unrecognised one maps to `unknown` | Table-driven tests generated from the appendices |
+| Id   | Criterion                                                                                                                                             | How it is verified                                                       |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| AC01 | A verified purchase notification results in an active entitlement readable through the service                                                        | End-to-end test with the fake source and with recorded provider payloads |
+| AC02 | A notification with a wrong signature, a wrong authorization header, a stale timestamp or a body altered after signing is refused and changes nothing | Unit and end-to-end tests                                                |
+| AC03 | The same event delivered five times causes one source read and one host notification                                                                  | End-to-end test                                                          |
+| AC04 | Events delivered in reverse order leave the snapshot equal to the source's current state                                                              | End-to-end test                                                          |
+| AC05 | A refund of the current period removes access on the next refresh and emits `refunded`                                                                | Test with recorded payloads                                              |
+| AC06 | A sandbox purchase grants nothing under the default configuration                                                                                     | Unit and end-to-end tests                                                |
+| AC07 | With the source down, the guard follows the configured policy exactly, in both values                                                                 | End-to-end test                                                          |
+| AC08 | Replacing the RevenueCat adapter with the fake or the Finance adapter requires no change in a host's routes or hook                                   | The example application runs its suite against each                      |
+| AC09 | No secret and no account identifier appears in any log line, error message, observer payload or serialized instance                                   | Tests over the paths SEC05 names, and over captured logs                 |
+| AC10 | Every state in Appendix A and Appendix B maps as its table says, and an unrecognised one maps to `unknown`                                            | Table-driven tests generated from the appendices                         |
 
 ### 5.2 Quality gates
 
@@ -337,7 +338,7 @@ Configured with `forRoot` and `forRootAsync`, like the sibling libraries. The op
 
 ### 6.4 Errors
 
-A closed catalogue of error codes with a stable prefix, exported from the shared subpath, covering: refused webhook, unknown account, entitlement required, subscription gives no access, source unavailable, operation not possible for this origin, and configuration errors.
+A closed catalogue of error codes with a stable prefix, exported from the shared subpath, covering: refused webhook, unknown account, entitlement required, subscription gives no access, source unavailable, operation not possible for this origin, a malformed argument from the caller, and configuration errors.
 
 ---
 
@@ -345,10 +346,10 @@ A closed catalogue of error codes with a stable prefix, exported from the shared
 
 A sketch of the two records behind the store port. Names and columns are the host's.
 
-| Record | Holds | Key |
-|---|---|---|
-| Snapshot | The normalized state of one account as a document, its source customer reference, fetched at, source updated at, and the changes not delivered to the host yet | Tenant and account |
-| Processed event | Event identifier, source, received at | Source and event identifier |
+| Record          | Holds                                                                                                                                                          | Key                         |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| Snapshot        | The normalized state of one account as a document, its source customer reference, fetched at, source updated at, and the changes not delivered to the host yet | Tenant and account          |
+| Processed event | Event identifier, source, received at                                                                                                                          | Source and event identifier |
 
 The library keeps no other state. It stores no payment data, no price paid and no raw webhook payload (SEC06).
 
@@ -357,48 +358,48 @@ The library keeps no other state. It stores no payment data, no price paid and n
 ## 8. Constraints
 
 - **Runtime:** Node.js 26 or newer, NestJS 11 (D09). A backend moves to Node.js 26 before it installs this library.
-- **Family rules:** zero direct dependencies; every peer that is not NestJS itself is optional; injection tokens are symbols; explicit injection on every provider; one place reads the environment, and the library itself reads none.
+- **Family rules:** zero direct dependencies; NestJS and the two packages NestJS itself requires (`reflect-metadata` and `rxjs`) are required peers, and every other peer is optional; injection tokens are symbols; explicit injection on every provider; one place reads the environment, and the library itself reads none.
 - **Language:** everything in the repository and on GitHub is English.
 - **Release:** the first publish and every version bump need the owner's explicit instruction. Breaking changes are announced in the changelog with a note on how a derived backend applies them.
 
 ### 8.1 Non-functional requirements
 
-| Id | Requirement |
-|---|---|
+| Id    | Requirement                                                                                                                                                                                                        |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | NFR01 | No guard decision waits for a network call to a billing platform. With a fresh snapshot none is made; with a stale one the background refresh of FR25 is started and the decision is returned before it ends (D19) |
-| NFR02 | A webhook is answered within the source's time limit, with margin, or answered as a temporary failure |
-| NFR03 | Concurrent refreshes of one account produce one source call |
-| NFR04 | Reconciliation respects the source's rate limit and is bounded per run |
-| NFR05 | An adapter that is not configured loads none of its code |
+| NFR02 | A webhook is answered within the source's time limit, with margin, or answered as a temporary failure                                                                                                              |
+| NFR03 | Concurrent refreshes of one account produce one source call                                                                                                                                                        |
+| NFR04 | Reconciliation respects the source's rate limit and is bounded per run                                                                                                                                             |
+| NFR05 | An adapter that is not configured loads none of its code                                                                                                                                                           |
 
 ### 8.2 Security requirements
 
-| Id | Requirement |
-|---|---|
-| SEC01 | No access is ever granted from a webhook payload. Access comes only from a read of the source, or from a stored snapshot that came from one |
-| SEC02 | Signature verification runs over the raw request bytes, before parsing, with a timestamp tolerance and a constant-time comparison |
-| SEC03 | A refused webhook answers without telling which check failed |
-| SEC04 | The default on a missing snapshot, an unreadable store or an unreachable source is to refuse. Trusting a last known state is an explicit option with a bounded tolerance |
-| SEC05 | Credentials and webhook secrets are held so that serialization, spread and inspection of a library object never expose them. They never appear in an error or a log |
-| SEC06 | The library stores and logs no payment data and no raw payload. Account identifiers are absent from logs and observer payloads, or present only as a short hash |
-| SEC07 | Sandbox purchases grant nothing unless the host enabled it explicitly, and enabling it in a production environment is refused at boot unless a second, separate option confirms it |
+| Id    | Requirement                                                                                                                                                                         |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SEC01 | No access is ever granted from a webhook payload. Access comes only from a read of the source, or from a stored snapshot that came from one                                         |
+| SEC02 | Signature verification runs over the raw request bytes, before parsing, with a timestamp tolerance and a constant-time comparison                                                   |
+| SEC03 | A refused webhook answers without telling which check failed                                                                                                                        |
+| SEC04 | The default on a missing snapshot, an unreadable store or an unreachable source is to refuse. Trusting a last known state is an explicit option with a bounded tolerance            |
+| SEC05 | Credentials and webhook secrets are held so that serialization, spread and inspection of a library object never expose them. They never appear in an error or a log                 |
+| SEC06 | The library stores and logs no payment data and no raw payload. Account identifiers are absent from logs and observer payloads, or present only as a short hash                     |
+| SEC07 | Sandbox purchases grant nothing unless the host enabled it explicitly, and enabling it in a production environment is refused at boot unless a second, separate option confirms it  |
 | SEC08 | One account can never read or change another's snapshot. In a multi-tenant host the tenant is part of every key and comes from the authenticated request, never from a request body |
-| SEC09 | Secret rotation is supported without downtime where the source allows two valid secrets, and documented as a restart where it does not |
-| SEC10 | A management operation acts only on a subscription that belongs to the authenticated account |
+| SEC09 | Secret rotation is supported without downtime where the source allows two valid secrets, and documented as a restart where it does not                                              |
+| SEC10 | A management operation acts only on a subscription that belongs to the authenticated account                                                                                        |
 
 ---
 
 ## 9. Risks
 
-| Id | Risk | Level | Mitigation |
-|---|---|---|---|
-| R01 | Bymax Finance is not released, and its planned API does not report purchases made in the app stores | HIGH | The Finance adapter is built when the API exists (D03). Hosts with a native app use the RevenueCat adapter. The requirements in Appendix B are sent to the Finance project |
-| R02 | The two sources disagree on what a state means (for example how long access lasts after a failed payment) | MEDIUM | The model carries the source's own access flag, and the guard reads that. Status names are descriptive only |
-| R03 | A source changes its webhook or API | MEDIUM | Unknown kinds and fields are tolerated (FR20). Mapping tables are tested from recorded payloads, and a scheduled job checks the provider's changelog |
-| R04 | A host's hook is slow or throws, and the product misses a renewal | MEDIUM | Changes stored as not delivered until the hook returns (D17), a stable key per change (FR33), and reconciliation, which delivers them again |
-| R05 | The store port is implemented without the uniqueness the library relies on, and events are processed twice | MEDIUM | The reference implementation and a conformance test suite the host runs against its own store |
-| R06 | Reading the source on every webhook hits its rate limit during a spike | MEDIUM | One read per account at a time (NFR03), de-duplication before the read (FR19), and a temporary failure answer that lets the source retry |
-| R07 | The family's gates (100% coverage and mutation) make each mapping rule expensive | LOW | Mapping is pure and table-driven, which is the cheapest code to cover |
+| Id  | Risk                                                                                                       | Level  | Mitigation                                                                                                                                                                 |
+| --- | ---------------------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R01 | Bymax Finance is not released, and its planned API does not report purchases made in the app stores        | HIGH   | The Finance adapter is built when the API exists (D03). Hosts with a native app use the RevenueCat adapter. The requirements in Appendix B are sent to the Finance project |
+| R02 | The two sources disagree on what a state means (for example how long access lasts after a failed payment)  | MEDIUM | The model carries the source's own access flag, and the guard reads that. Status names are descriptive only                                                                |
+| R03 | A source changes its webhook or API                                                                        | MEDIUM | Unknown kinds and fields are tolerated (FR20). Mapping tables are tested from recorded payloads, and a scheduled job checks the provider's changelog                       |
+| R04 | A host's hook is slow or throws, and the product misses a renewal                                          | MEDIUM | Changes stored as not delivered until the hook returns (D17), a stable key per change (FR33), and reconciliation, which delivers them again                                |
+| R05 | The store port is implemented without the uniqueness the library relies on, and events are processed twice | MEDIUM | The reference implementation and a conformance test suite the host runs against its own store                                                                              |
+| R06 | Reading the source on every webhook hits its rate limit during a spike                                     | MEDIUM | One read per account at a time (NFR03), de-duplication before the read (FR19), and a temporary failure answer that lets the source retry                                   |
+| R07 | The family's gates (100% coverage and mutation) make each mapping rule expensive                           | LOW    | Mapping is pure and table-driven, which is the cheapest code to cover                                                                                                      |
 
 ---
 
@@ -406,28 +407,32 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ### 10.1 Taken by the owner
 
-| Id | Decision | Date |
-|---|---|---|
-| D01 | Subscription state is a library, not code in the backend template or in each product | 2026-11-24 |
-| D02 | The library serves a host that uses RevenueCat and, independently, a host that uses Bymax Finance with no RevenueCat | 2026-11-24 |
-| D03 | The Bymax Finance adapter is specified now and built when the Finance API exists | 2026-11-24 |
-| D04 | The package is `@bymax-one/nest-subscription`, public, in the repository `bymaxone/nest-subscription` | 2026-11-24 |
-| D05 | The repository, its documents and everything on GitHub are in English | 2026-11-24 |
-| D06 | The RevenueCat adapter reads from version 2 of the REST API and uses version 1 only for the Google Play stop-renewal operation | 2026-11-24 |
-| D07 | For Bymax Finance, the host maps plan identifiers to entitlement names in the module options, so product code uses the same names with either adapter | 2026-11-24 |
-| D08 | Subpaths: the root, `shared`, `revenuecat`, `finance` and `testing` | 2026-11-24 |
-| D09 | The library requires Node.js 26 or newer | 2026-11-24 |
-| D10 | The first release ships both the webhook controller, off by default, and the processor | 2026-11-24 |
-| D11 | The library ships the store port, an in-memory store for tests and a conformance suite; a store for a relational table is documented, not shipped | 2026-11-24 |
-| D12 | The default staleness limit and the default tolerance for a last known state are both 24 hours | 2026-11-24 |
-| D13 | The first release includes the stop-renewal operation | 2026-11-24 |
-| D14 | The example repository is `nest-subscription-example` | 2026-11-24 |
-| D15 | The Finance adapter stores the pair of host account identifier and Finance customer identifier at first contact, and uses a lookup by external reference once Finance offers one | 2026-11-24 |
-| D16 | A webhook event identifier is recorded when processing starts and removed when the event ends in the failed outcome, so the source's retry is processed | 2026-11-24 |
+| Id  | Decision                                                                                                                                                                                                               | Date       |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D01 | Subscription state is a library, not code in the backend template or in each product                                                                                                                                   | 2026-11-24 |
+| D02 | The library serves a host that uses RevenueCat and, independently, a host that uses Bymax Finance with no RevenueCat                                                                                                   | 2026-11-24 |
+| D03 | The Bymax Finance adapter is specified now and built when the Finance API exists                                                                                                                                       | 2026-11-24 |
+| D04 | The package is `@bymax-one/nest-subscription`, public, in the repository `bymaxone/nest-subscription`                                                                                                                  | 2026-11-24 |
+| D05 | The repository, its documents and everything on GitHub are in English                                                                                                                                                  | 2026-11-24 |
+| D06 | The RevenueCat adapter reads from version 2 of the REST API and uses version 1 only for the Google Play stop-renewal operation                                                                                         | 2026-11-24 |
+| D07 | For Bymax Finance, the host maps plan identifiers to entitlement names in the module options, so product code uses the same names with either adapter                                                                  | 2026-11-24 |
+| D08 | Subpaths: the root, `shared`, `revenuecat`, `finance` and `testing`                                                                                                                                                    | 2026-11-24 |
+| D09 | The library requires Node.js 26 or newer                                                                                                                                                                               | 2026-11-24 |
+| D10 | The first release ships both the webhook controller, off by default, and the processor                                                                                                                                 | 2026-11-24 |
+| D11 | The library ships the store port, an in-memory store for tests and a conformance suite; a store for a relational table is documented, not shipped                                                                      | 2026-11-24 |
+| D12 | The default staleness limit and the default tolerance for a last known state are both 24 hours                                                                                                                         | 2026-11-24 |
+| D13 | The first release includes the stop-renewal operation                                                                                                                                                                  | 2026-11-24 |
+| D14 | The example repository is `nest-subscription-example`                                                                                                                                                                  | 2026-11-24 |
+| D15 | The Finance adapter stores the pair of host account identifier and Finance customer identifier at first contact, and uses a lookup by external reference once Finance offers one                                       | 2026-11-24 |
+| D16 | A webhook event identifier is recorded when processing starts and removed when the event ends in the failed outcome, so the source's retry is processed                                                                | 2026-11-24 |
 | D17 | Changes are stored with the snapshot as not delivered, cleared after the host hook returns, and delivered again by reconciliation while they stay marked. This is how delivery is at least once across a process crash | 2026-11-24 |
-| D18 | The RevenueCat adapter's test fixtures are recorded from a RevenueCat sandbox project, with identifiers and secrets replaced | 2026-11-24 |
-| D19 | A guard decision never waits for the source. A guarded request with a stale snapshot still starts the background refresh of FR25 | 2026-11-24 |
-| D20 | The host hook receives the previous snapshot on the first delivery of a change. A redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot | 2026-11-24 |
+| D18 | The RevenueCat adapter's test fixtures are recorded from a RevenueCat sandbox project, with identifiers and secrets replaced                                                                                           | 2026-11-24 |
+| D19 | A guard decision never waits for the source. A guarded request with a stale snapshot still starts the background refresh of FR25                                                                                       | 2026-11-24 |
+| D20 | The host hook receives the previous snapshot on the first delivery of a change. A redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot                              | 2026-11-24 |
+| D21 | There is one error class, `SubscriptionError`, defined in the `shared` subpath and re-exported by the root, so a host catches one class whichever part of the library raised it                                        | 2026-11-24 |
+| D22 | A malformed argument from the caller raises its own code, `SUBSCRIPTION_INVALID_INPUT`, so a host can tell a programming error from an unknown account or a configuration error                                        | 2026-11-24 |
+| D23 | A subscription record carries a subscription reference, and the source customer reference of a snapshot is null when the source has no record of the account                                                           | 2026-11-24 |
+| D24 | `reflect-metadata` and `rxjs` are required peers beside the NestJS packages, because NestJS does not load without them. The optional peers are the integrations, `@bymax-one/nest-cache` and `@bymax-one/nest-core`    | 2026-11-24 |
 
 ### 10.2 Open
 
@@ -469,21 +474,21 @@ Stores, read on 2026-11-24:
 
 ## Appendix A — RevenueCat facts and mapping
 
-*Verified* on 2026-11-24 unless marked. Re-read the linked page before relying on an exact wording.
+_Verified_ on 2026-11-24 unless marked. Re-read the linked page before relying on an exact wording.
 
 ### A.1 Webhooks
 
-| Fact | Detail |
-|---|---|
-| Authentication | A static `Authorization` header value set in the dashboard. Optionally, an HMAC signature in `X-RevenueCat-Webhook-Signature`, of the form `t=<unix timestamp>,v1=<hex>`, computed with HMAC-SHA256 over `<timestamp>.<raw body>` |
-| Signature per attempt | Each retry is signed again; a replay tolerance of about five minutes is suggested |
-| Delivery | At least once. Nothing is stated about order |
-| Retries | Up to five, with exponential backoff, over about 80 minutes |
-| Success | HTTP 200. Any other status is a failure |
-| Time limit | The connection is dropped after 60 seconds |
-| De-duplication | The event `id`. A retry reuses the same `id` |
-| Recommended handling | Call the REST API for the customer after receiving any webhook |
-| Forward compatibility | New event types and fields can appear |
+| Fact                  | Detail                                                                                                                                                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication        | A static `Authorization` header value set in the dashboard. Optionally, an HMAC signature in `X-RevenueCat-Webhook-Signature`, of the form `t=<unix timestamp>,v1=<hex>`, computed with HMAC-SHA256 over `<timestamp>.<raw body>` |
+| Signature per attempt | Each retry is signed again; a replay tolerance of about five minutes is suggested                                                                                                                                                 |
+| Delivery              | At least once. Nothing is stated about order                                                                                                                                                                                      |
+| Retries               | Up to five, with exponential backoff, over about 80 minutes                                                                                                                                                                       |
+| Success               | HTTP 200. Any other status is a failure                                                                                                                                                                                           |
+| Time limit            | The connection is dropped after 60 seconds                                                                                                                                                                                        |
+| De-duplication        | The event `id`. A retry reuses the same `id`                                                                                                                                                                                      |
+| Recommended handling  | Call the REST API for the customer after receiving any webhook                                                                                                                                                                    |
+| Forward compatibility | New event types and fields can appear                                                                                                                                                                                             |
 
 ### A.2 Event kinds
 
@@ -500,14 +505,14 @@ Rules that are easy to get wrong:
 
 ### A.3 Status mapping (REST API version 2)
 
-| RevenueCat status | Library status |
-|---|---|
-| `trialing` | `trialing` |
-| `active` | `active` |
-| `in_grace_period` | `in_grace` |
-| `in_billing_retry` | `on_hold` |
-| `paused` | `paused` |
-| `expired` | `expired` |
+| RevenueCat status       | Library status                                 |
+| ----------------------- | ---------------------------------------------- |
+| `trialing`              | `trialing`                                     |
+| `active`                | `active`                                       |
+| `in_grace_period`       | `in_grace`                                     |
+| `in_billing_retry`      | `on_hold`                                      |
+| `paused`                | `paused`                                       |
+| `expired`               | `expired`                                      |
 | `incomplete`, `unknown` | `unknown`, with the access flag passed through |
 
 Renewal status maps to will renew: `will_renew` to `yes`, `will_not_renew` to `no`, `will_change_product` to `changes_product`, `will_pause` to `pauses`, the others to `unknown`.
@@ -516,12 +521,12 @@ Store maps to origin: `app_store` and `mac_app_store` to `app_store`; `play_stor
 
 ### A.4 What a server can do
 
-| Origin | Stop renewal from a server |
-|---|---|
-| Google Play | Yes, through the version 1 API. Access continues until the period ends |
-| App Store | No. RevenueCat states that Apple does not allow developers to manage subscriptions on behalf of users |
-| RevenueCat web billing | Yes, through the version 2 API |
-| Stripe tracked by RevenueCat | Not through RevenueCat; through Stripe |
+| Origin                       | Stop renewal from a server                                                                            |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Google Play                  | Yes, through the version 1 API. Access continues until the period ends                                |
+| App Store                    | No. RevenueCat states that Apple does not allow developers to manage subscriptions on behalf of users |
+| RevenueCat web billing       | Yes, through the version 2 API                                                                        |
+| Stripe tracked by RevenueCat | Not through RevenueCat; through Stripe                                                                |
 
 ### A.5 Identity
 
@@ -540,30 +545,30 @@ Store maps to origin: `app_store` and `mac_app_store` to `app_store`; `play_stor
 
 ## Appendix B — What the Bymax Finance adapter needs
 
-*Planned contract.* Bymax Finance is not released. This appendix states the adapter's requirements; it is not a description of a public API.
+_Planned contract._ Bymax Finance is not released. This appendix states the adapter's requirements; it is not a description of a public API.
 
-| Need | Why |
-|---|---|
-| A read of one customer's subscription with: state, plan and price reference, billing interval, current period start and end, whether it renews, cancelled at, and the instant access ends | To fill the subscription record (FR02) |
-| A read of one customer's resolved entitlements | To fill the entitlements (FR01) |
-| A lookup of a customer by the host's own account identifier | To find the customer at first contact (D15) |
-| Signed webhooks with a timestamp, a unique event identifier and a documented signature scheme with rotation | Verification and de-duplication (FR15, FR19) |
-| A list of past events with a stated retention | Reconciliation after a missed delivery (FR26) |
-| A stop-renewal operation that keeps access until the period ends | FR36 |
-| A reference to the place where the customer manages the subscription | FR37 |
-| A marker that separates test data from live data | SEC07 |
+| Need                                                                                                                                                                                      | Why                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| A read of one customer's subscription with: state, plan and price reference, billing interval, current period start and end, whether it renews, cancelled at, and the instant access ends | To fill the subscription record (FR02)        |
+| A read of one customer's resolved entitlements                                                                                                                                            | To fill the entitlements (FR01)               |
+| A lookup of a customer by the host's own account identifier                                                                                                                               | To find the customer at first contact (D15)   |
+| Signed webhooks with a timestamp, a unique event identifier and a documented signature scheme with rotation                                                                               | Verification and de-duplication (FR15, FR19)  |
+| A list of past events with a stated retention                                                                                                                                             | Reconciliation after a missed delivery (FR26) |
+| A stop-renewal operation that keeps access until the period ends                                                                                                                          | FR36                                          |
+| A reference to the place where the customer manages the subscription                                                                                                                      | FR37                                          |
+| A marker that separates test data from live data                                                                                                                                          | SEC07                                         |
 
 State mapping, from the states in Finance's planned specification:
 
-| Finance state | Library status | Access |
-|---|---|---|
-| Pending first payment | No subscription record | No |
-| Trial | `trialing` | Yes |
-| Active | `active` | Yes |
-| Past due, inside the grace period | `in_grace` | Yes |
-| Unpaid, after the grace period | `on_hold` | No |
-| Suspended or paused | `paused` | No |
+| Finance state                     | Library status                | Access                     |
+| --------------------------------- | ----------------------------- | -------------------------- |
+| Pending first payment             | No subscription record        | No                         |
+| Trial                             | `trialing`                    | Yes                        |
+| Active                            | `active`                      | Yes                        |
+| Past due, inside the grace period | `in_grace`                    | Yes                        |
+| Unpaid, after the grace period    | `on_hold`                     | No                         |
+| Suspended or paused               | `paused`                      | No                         |
 | Cancelled, before the period ends | `active` with will renew `no` | Yes, until the period ends |
-| Expired | `expired` | No |
+| Expired                           | `expired`                     | No                         |
 
 For a host with a native mobile app, Finance would also need to report subscriptions bought through the App Store and Google Play before it can replace the RevenueCat adapter there (R01).

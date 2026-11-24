@@ -2,12 +2,65 @@
  * @fileoverview Pins the names the `core` entry point exports.
  * @layer core
  */
+import * as internal from '@bymax-one/nest-subscription/internal'
+import { resolveEntitlements } from '@bymax-one/nest-subscription/shared'
 import * as entry from './index'
+import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 describe('core entry point', () => {
-  it('exports no name', () => {
+  it('exports exactly the names it promises', () => {
     // Scenario: the entry point is loaded by its relative path; a name exported without its own
     // test would appear here and fail the case.
-    expect(Object.keys(entry)).toEqual([])
+    expect(Object.keys(entry).sort()).toEqual([
+      'SUBSCRIPTION_CACHE',
+      'SUBSCRIPTION_CLOCK',
+      'SUBSCRIPTION_ERROR_CODES',
+      'SUBSCRIPTION_OBSERVER',
+      'SUBSCRIPTION_OPTIONS',
+      'SUBSCRIPTION_SOURCE',
+      'SUBSCRIPTION_STORE',
+      'SubscriptionError',
+      'encodeAccountKey'
+    ])
+  })
+
+  it('re-exports the values of their origin, not copies', () => {
+    // Scenario: each name the root takes from the internal bundle or from `shared` is the very
+    // value of its origin, so one constructor and one set of symbols serve every entry point.
+    expect(entry.SUBSCRIPTION_ERROR_CODES).toBe(SUBSCRIPTION_ERROR_CODES)
+    for (const [name, value] of Object.entries(internal)) {
+      expect(entry[name as keyof typeof entry]).toBe(value)
+    }
+  })
+
+  it('raises one error class from the model, the internal bundle and the root', () => {
+    // Scenario: the model refuses an invalid instant; the error is an instance of the class the
+    // root exports and of the class the internal bundle exports, which are one class.
+    const subscription = {
+      subscriptionReference: 's1',
+      status: 'active',
+      givesAccess: true,
+      willRenew: 'yes',
+      origin: 'web',
+      environment: 'production',
+      productReference: 'pro',
+      billingInterval: 'month',
+      currentPeriodStart: '2026-01-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-02-01T00:00:00.000Z',
+      accessUntil: 'not a date',
+      billingIssueSince: null,
+      cancelledAt: null,
+      refundedAt: null,
+      managementReference: null
+    } as const
+    let failure: unknown
+    try {
+      resolveEntitlements([subscription], new Map([['s1', ['pro']]]))
+    } catch (error) {
+      failure = error
+    }
+    expect(failure).toBeInstanceOf(entry.SubscriptionError)
+    expect(failure).toBeInstanceOf(internal.SubscriptionError)
+    expect(entry.SubscriptionError).toBe(internal.SubscriptionError)
   })
 })

@@ -10,15 +10,15 @@
 - `bymaxone/nest-telemetry` is the repository this one mirrors for tooling, gates, packaging and release. A script or configuration is taken from it only after being read, and only what serves any `@bymax-one` library is kept.
 - Directories and subpaths (`@bymax-one/nest-subscription` is the package name):
 
-  | Directory                         | Subpath                     | Holds                                                               |
-  | --------------------------------- | --------------------------- | ------------------------------------------------------------------- |
-  | `src/shared/`                     | `/shared`                   | the model, closed value sets and error codes; no runtime dependency |
-  | `src/internal/`                   | `/internal` (not for hosts) | classes and tokens more than one entry point needs                  |
-  | `src/core/`                       | the root                    | module, service, guard, webhook processor, notifications            |
-  | `src/revenuecat/`, `src/finance/` | `/revenuecat`, `/finance`   | one adapter each                                                    |
-  | `src/testing/`                    | `/testing`                  | in-memory store, conformance cases, fake source, request builders   |
-  | `test/e2e/`, `test/fixtures/`     | none                        | end-to-end suite and recorded provider payloads                     |
-  | `scripts/`                        | none                        | the gate scripts                                                    |
+  | Directory                         | Subpath                     | Holds                                                                                |
+  | --------------------------------- | --------------------------- | ------------------------------------------------------------------------------------ |
+  | `src/shared/`                     | `/shared`                   | the model, closed value sets, error codes and the error class; no runtime dependency |
+  | `src/internal/`                   | `/internal` (not for hosts) | classes and tokens more than one entry point needs                                   |
+  | `src/core/`                       | the root                    | module, service, guard, webhook processor, notifications                             |
+  | `src/revenuecat/`, `src/finance/` | `/revenuecat`, `/finance`   | one adapter each                                                                     |
+  | `src/testing/`                    | `/testing`                  | in-memory store, conformance cases, fake source, request builders                    |
+  | `test/e2e/`, `test/fixtures/`     | none                        | end-to-end suite and recorded provider payloads                                      |
+  | `scripts/`                        | none                        | the gate scripts                                                                     |
 
 - Commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`, `pnpm mutation`, `pnpm check:exports`, `pnpm check:runtime`, `pnpm check:api`, `pnpm check:docs`, `pnpm check:published`, `pnpm size`. What each proves is in `docs/tasks/README.md` §4.
 
@@ -240,7 +240,7 @@ rewrite published history.
 - **A webhook is a trigger, not a source of state.** A payload never writes a snapshot. It causes a read of the source, and only that read writes (FR16, SEC01).
 - **Two ports, one direction.** `SubscriptionSource` reads the billing platform and `SubscriptionStore` holds snapshots; adapters and stores plug in through them. `core` never imports an adapter: the host imports the adapter's factory from its subpath and passes the result in the module options, so an adapter that is not configured loads none of its code (NFR05).
 - **The library is the mechanism, the host is the policy.** Prices, benefits, limits, the fail policy and the staleness limits are options of the host with refusing defaults.
-- **Zero direct dependencies.** NestJS packages are peers, every other peer is optional, and adapters use the runtime's `fetch` and `node:crypto`, with no provider SDK.
+- **Zero direct dependencies.** NestJS packages and the two packages NestJS itself requires (`reflect-metadata` and `rxjs`) are peers, every other peer is optional, and adapters use the runtime's `fetch` and `node:crypto`, with no provider SDK.
 - **No environment reads.** The library reads no environment variable; the host passes every value in.
 - **Time is injected.** Code reads the clock through the injected `Clock`, and no test waits on a real timer.
 
@@ -277,7 +277,7 @@ What the repository runs today is the scaffold's own protection: the lint rule s
 
 - `exports` declares `types` per condition: `import` to `.d.ts`, `require` to `.d.cts`. A single shared `types` key makes CommonJS consumers resolve ESM declarations, because `"type": "module"` marks a plain `.d.ts` as ESM.
 - Every subpath also has a `typesVersions` entry, because `moduleResolution: node` predates `exports` and ignores it. `pnpm check:exports` runs the strict `attw` profile; never weaken it to silence a row.
-- Each entry point is a separate bundle. A module reached from two of them by a relative path would be copied into each, and a copied class is a second injection token and a second `instanceof` target. So `src/internal/` is built as its own bundle and every other entry point imports it by package specifier (`@bymax-one/nest-subscription/internal`), which `tsup.config.ts` marks external. Never import it by relative path.
+- Each entry point is a separate bundle. A module reached from two of them by a relative path would be copied into each, and a copied class is a second injection token and a second `instanceof` target. So `src/internal/` is built as its own bundle and every other entry point imports it by package specifier (`@bymax-one/nest-subscription/internal`), which `tsup.config.ts` marks external. Never import it by relative path. The same holds for `src/shared/`, which defines `SubscriptionError`: every other directory imports it as `@bymax-one/nest-subscription/shared`, which `tsup.config.ts` marks external, so the class is one and `instanceof` holds across entry points. `pnpm lint` fails a relative import of it.
 - The tarball holds `dist/` and the package documents only; `pnpm check:runtime` loads every subpath from the packed tarball in ESM and CommonJS and checks the contents.
 - `pnpm size` holds a brotli budget per bundle. A budget is re-derived from the built artifact with modest headroom, never nudged, and never met by shortening a message.
 
@@ -290,6 +290,7 @@ What the repository runs today is the scaffold's own protection: the lint rule s
 - String injection tokens or a missing `@Inject(TOKEN)`: tokens are `Symbol()`, and every provider injects explicitly.
 - Reading `process.env`, or the real clock, outside the one place that is allowed to.
 - `core` importing an adapter, or an adapter importing `core` by relative path.
+- Importing `shared` by relative path from another directory: the bundler copies `SubscriptionError` into that bundle and `instanceof` fails across entry points.
 - `any`, `@ts-ignore`, `@ts-expect-error`, `eslint-disable`, `istanbul ignore`: fix the cause.
 - Lowering a threshold, widening an ignore list or raising a size budget to make a gate pass.
 

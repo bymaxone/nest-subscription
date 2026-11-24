@@ -3,5 +3,32 @@
  * error codes, with no runtime dependency.
  * @layer shared
  */
-export { SUBSCRIPTION_ENVIRONMENTS } from './values'
-export type { SubscriptionEnvironment } from './values'
+export {
+  CHANGE_KINDS,
+  SUBSCRIPTION_ENVIRONMENTS,
+  SUBSCRIPTION_ORIGINS,
+  SUBSCRIPTION_STATUSES,
+  WILL_RENEW_VALUES
+} from './values'
+export type {
+  ChangeKind,
+  SubscriptionEnvironment,
+  SubscriptionOrigin,
+  SubscriptionStatus,
+  WillRenew
+} from './values'
+export type {
+  EntitlementState,
+  SourceCustomerReference,
+  SubscriptionRecord,
+  SubscriptionSnapshot
+} from './snapshot.types'
+export type { SubscriptionChange } from './change.types'
+export { SUBSCRIPTION_ERROR_CODES } from './error-codes'
+export type { SubscriptionErrorCode } from './error-codes'
+export { createEmptySnapshot } from './empty-snapshot'
+export type { EmptySnapshotInput } from './empty-snapshot'
+export { SubscriptionError } from './subscription.error'
+export { parseInstant } from './instant'
+export { resolveEntitlements } from './entitlements'
+export type { EntitlementResolution } from './entitlements'

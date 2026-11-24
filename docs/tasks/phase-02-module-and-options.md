@@ -37,13 +37,13 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 2.1 | Define the module options and their defaults | 📋 ToDo | P0 | M | — |
-| 2.2 | Validate the options into one aggregated error | 📋 ToDo | P0 | M | 2.1 |
-| 2.3 | Contain the secrets in the resolved options | 📋 ToDo | P0 | M | 2.1 |
-| 2.4 | Implement the module with forRoot and forRootAsync | 📋 ToDo | P0 | L | 2.2, 2.3 |
-| 2.5 | Prove that an unused adapter loads no code | 📋 ToDo | P0 | S | 2.4 |
+| ID  | Task                                               | Status  | Priority | Size | Depends on |
+| --- | -------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 2.1 | Define the module options and their defaults       | 📋 ToDo | P0       | M    | —          |
+| 2.2 | Validate the options into one aggregated error     | 📋 ToDo | P0       | M    | 2.1        |
+| 2.3 | Contain the secrets in the resolved options        | 📋 ToDo | P0       | M    | 2.1        |
+| 2.4 | Implement the module with forRoot and forRootAsync | 📋 ToDo | P0       | L    | 2.2, 2.3   |
+| 2.5 | Prove that an unused adapter loads no code         | 📋 ToDo | P0       | S    | 2.4        |
 
 ---
 
@@ -77,7 +77,7 @@ Write the option types the host fills in, the resolved form the library uses int
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -86,7 +86,7 @@ TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + Co
 CURRENT PHASE: P2 (module-and-options) — Task 2.1 of 5 (FIRST of this phase)
 
 PRECONDITIONS
-- P1 is ✅ Done: the model in `src/shared/`, the ports, tokens, `SubscriptionError`, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
+- P1 is ✅ Done: the model and `SubscriptionError` in `src/shared/`, the ports, tokens, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
 
 REQUIRED READING (only these — do not load more):
 - `AGENTS.md` (whole file: repository rules and code review rules)
@@ -128,7 +128,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -158,7 +158,7 @@ Refuse an invalid configuration at boot with a single error that lists every off
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -167,7 +167,7 @@ TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + Co
 CURRENT PHASE: P2 (module-and-options) — Task 2.2 of 5 (MIDDLE of this phase)
 
 PRECONDITIONS
-- P1 is ✅ Done: the model in `src/shared/`, the ports, tokens, `SubscriptionError`, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
+- P1 is ✅ Done: the model and `SubscriptionError` in `src/shared/`, the ports, tokens, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
 - Task 2.1 is ✅ Done: the option types, defaults and `resolveOptions` exist.
 
 REQUIRED READING (only these — do not load more):
@@ -208,7 +208,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -240,7 +240,7 @@ Make sure no credential or webhook secret can leave through serialization, sprea
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -249,7 +249,7 @@ TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + Co
 CURRENT PHASE: P2 (module-and-options) — Task 2.3 of 5 (MIDDLE of this phase)
 
 PRECONDITIONS
-- P1 is ✅ Done: the model in `src/shared/`, the ports, tokens, `SubscriptionError`, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
+- P1 is ✅ Done: the model and `SubscriptionError` in `src/shared/`, the ports, tokens, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
 - Task 2.1 is ✅ Done.
 
 REQUIRED READING (only these — do not load more):
@@ -292,7 +292,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -326,7 +326,7 @@ Write `SubscriptionModule`, which validates the options at boot and provides the
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -335,7 +335,7 @@ TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + Co
 CURRENT PHASE: P2 (module-and-options) — Task 2.4 of 5 (MIDDLE of this phase)
 
 PRECONDITIONS
-- P1 is ✅ Done: the model in `src/shared/`, the ports, tokens, `SubscriptionError`, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
+- P1 is ✅ Done: the model and `SubscriptionError` in `src/shared/`, the ports, tokens, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
 - Tasks 2.1 to 2.3 are ✅ Done: `resolveOptions`, `validateOptions` and `Secret` exist.
 
 REQUIRED READING (only these — do not load more):
@@ -380,7 +380,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -411,7 +411,7 @@ Add the packaging proof for NFR05 and close the phase: with one adapter configur
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -420,7 +420,7 @@ TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + Co
 CURRENT PHASE: P2 (module-and-options) — Task 2.5 of 5 (LAST of this phase)
 
 PRECONDITIONS
-- P1 is ✅ Done: the model in `src/shared/`, the ports, tokens, `SubscriptionError`, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
+- P1 is ✅ Done: the model and `SubscriptionError` in `src/shared/`, the ports, tokens, `Clock` and `encodeAccountKey` in `src/internal/`, and `InMemorySubscriptionStore` and `FakeSubscriptionSource` in `src/testing/` exist.
 - Task 2.4 is ✅ Done: the module boots from the built package.
 
 REQUIRED READING (only these — do not load more):
@@ -464,7 +464,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

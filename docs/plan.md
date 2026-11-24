@@ -25,28 +25,28 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 📋 0 / 12 phases done (0%)
-**Active phase**: P0 — scaffold-and-governance
+**Overall progress**: 🔄 1 / 12 phases done (8%)
+**Active phase**: P1 — model-ports-and-test-doubles
 **Blocked**: P11, until the Bymax Finance API exists (D03)
 
 ---
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                   | Status         | Progress | Size | Last updated |
-| --- | ------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | 🔄 In Progress | 6/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | 📋 ToDo        | 0/7      | L    | —            |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 📋 ToDo        | 0/5      | M    | —            |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo        | 0/5      | L    | —            |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo        | 0/4      | M    | —            |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo        | 0/5      | M    | —            |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline             | 📋 ToDo        | 0/5      | L    | —            |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables                | 📋 ToDo        | 0/7      | L    | —            |
-| P8  | management-operations — capabilities, stop renewal and the management reference                         | 📋 ToDo        | 0/4      | M    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                   | 📋 ToDo        | 0/5      | M    | —            |
-| P10 | example-repository — `nest-subscription-example`, one suite run against each source                     | 📋 ToDo        | 0/5      | M    | —            |
-| P11 | finance-adapter — the Bymax Finance adapter, built when its API exists                                  | ⛔ Blocked     | 0/5      | L    | —            |
+| ID  | Phase                                                                                                   | Status     | Progress | Size | Last updated |
+| --- | ------------------------------------------------------------------------------------------------------- | ---------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done    | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | 👀 Review  | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 📋 ToDo    | 0/5      | M    | —            |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo    | 0/5      | L    | —            |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo    | 0/4      | M    | —            |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo    | 0/5      | M    | —            |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline             | 📋 ToDo    | 0/5      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables                | 📋 ToDo    | 0/7      | L    | —            |
+| P8  | management-operations — capabilities, stop renewal and the management reference                         | 📋 ToDo    | 0/4      | M    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                   | 📋 ToDo    | 0/5      | M    | —            |
+| P10 | example-repository — `nest-subscription-example`, one suite run against each source                     | 📋 ToDo    | 0/5      | M    | —            |
+| P11 | finance-adapter — the Bymax Finance adapter, built when its API exists                                  | ⛔ Blocked | 0/5      | L    | —            |
 
 ---
 
@@ -112,7 +112,7 @@ The specification leaves the file layout to this roadmap. These are the director
 | `test/fixtures/`  | Recorded provider payloads, with every identifier and secret replaced                                                                | —             |
 | `scripts/`        | The gate scripts brought from `nest-telemetry`                                                                                       | —             |
 
-`src/internal/` exists because of a measured failure in the family: a module reached from two entry points is copied into each bundle, and a copied class is a second injection token and a second `instanceof` target. An adapter subpath and the root both need the source port's token, so both import it from the shared internal bundle by package specifier.
+`src/internal/` exists because of a measured failure in the family: a module reached from two entry points is copied into each bundle, and a copied class is a second injection token and a second `instanceof` target. An adapter subpath and the root both need the source port's token, so both import it from the shared internal bundle by package specifier. The `shared` subpath is reached the same way, because it defines the error class.
 
 ---
 
@@ -120,23 +120,23 @@ The specification leaves the file layout to this roadmap. These are the director
 
 > Rules every phase respects. They come from the specification §5.2 and §8, from `AGENTS.md`, and from the scaffold of `bymaxone/nest-telemetry`.
 
-| Area               | Rule                                                                                                                                                                              |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime            | Node.js 26 or newer, NestJS 11 (D09)                                                                                                                                              |
-| Package manager    | pnpm, pinned in `packageManager`, with its settings in `pnpm-workspace.yaml`. Publishing uses `npm`, never `pnpm`                                                                 |
-| Dependencies       | Zero direct dependencies. NestJS packages are peers; every other peer is optional. Adapters use the runtime's `fetch` and `node:crypto`, no provider SDK                          |
-| TypeScript         | Strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. No `any`                                                                                                |
-| Suppressions       | None, in any form: no `eslint-disable`, no `@ts-ignore`, no `istanbul ignore`, no Stryker disable without a recorded reason                                                       |
-| Injection          | Tokens are symbols. Every provider injects explicitly. The library reads no environment variable                                                                                  |
-| Secrets            | A secret never sits in an enumerable property. A class that owns one holds it in a `#private` field; a resolved options object exposes it through a non-enumerable getter (SEC05) |
-| Keys               | A key built from more than one field encodes each field so that no content can move the boundary between them (`AGENTS.md` §3)                                                    |
-| Size               | A function is at most 50 lines, a file at most 800. Each source file opens with a header naming its purpose and layer; each export has a doc comment                              |
-| Comments           | English. A comment states a constraint that still holds, never a phase, a task or a review round                                                                                  |
-| Tests              | Test first. 100% statement, branch, function and line coverage in the unit suite, in the end-to-end suite and in both together. Mutation score 100. Unit tests open no socket     |
-| Packaging          | ESM and CommonJS with declarations for each, checked against the packed tarball, plus a bundle size budget and an API surface check                                               |
-| Provider facts     | A statement about RevenueCat, a store or Bymax Finance is re-read at its source in specification §12 before code relies on it, and the task cites the page                        |
-| Commits and review | Conventional Commits. Changes reach `main` through a pull request. No attribution to an AI tool anywhere                                                                          |
-| Release            | The first publish and every version bump need the owner's explicit instruction                                                                                                    |
+| Area               | Rule                                                                                                                                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Runtime            | Node.js 26 or newer, NestJS 11 (D09)                                                                                                                                                                                                 |
+| Package manager    | pnpm, pinned in `packageManager`, with its settings in `pnpm-workspace.yaml`. Publishing uses `npm`, never `pnpm`                                                                                                                    |
+| Dependencies       | Zero direct dependencies. NestJS packages and the two packages NestJS itself requires (`reflect-metadata` and `rxjs`) are peers; every other peer is optional. Adapters use the runtime's `fetch` and `node:crypto`, no provider SDK |
+| TypeScript         | Strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. No `any`                                                                                                                                                   |
+| Suppressions       | None, in any form: no `eslint-disable`, no `@ts-ignore`, no `istanbul ignore`, no Stryker disable without a recorded reason                                                                                                          |
+| Injection          | Tokens are symbols. Every provider injects explicitly. The library reads no environment variable                                                                                                                                     |
+| Secrets            | A secret never sits in an enumerable property. A class that owns one holds it in a `#private` field; a resolved options object exposes it through a non-enumerable getter (SEC05)                                                    |
+| Keys               | A key built from more than one field encodes each field so that no content can move the boundary between them (`AGENTS.md` §3)                                                                                                       |
+| Size               | A function is at most 50 lines, a file at most 800. Each source file opens with a header naming its purpose and layer; each export has a doc comment                                                                                 |
+| Comments           | English. A comment states a constraint that still holds, never a phase, a task or a review round                                                                                                                                     |
+| Tests              | Test first. 100% statement, branch, function and line coverage in the unit suite, in the end-to-end suite and in both together. Mutation score 100. Unit tests open no socket                                                        |
+| Packaging          | ESM and CommonJS with declarations for each, checked against the packed tarball, plus a bundle size budget and an API surface check                                                                                                  |
+| Provider facts     | A statement about RevenueCat, a store or Bymax Finance is re-read at its source in specification §12 before code relies on it, and the task cites the page                                                                           |
+| Commits and review | Conventional Commits. Changes reach `main` through a pull request. No attribution to an AI tool anywhere                                                                                                                             |
+| Release            | The first publish and every version bump need the owner's explicit instruction                                                                                                                                                       |
 
 **Done, for every phase:** the phase's pull request is merged with `CI passed` green, every requirement in its row of the coverage table has a test that fails without the implementation, and no gate threshold or ignore list was loosened to get there.
 
@@ -151,11 +151,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: package metadata with the five subpaths of D08 as empty entry points plus the internal bundle; TypeScript, lint, formatting, Jest (unit, end-to-end, combined coverage), Stryker and build configuration; the gate scripts under `scripts/`; Husky and commitlint; the organisation's reusable library CI and security workflows added to the CI workflow, keeping its documents job and the aggregate check named `CI passed`; the release workflow; CodeQL, OSV and Scorecard workflows; Dependabot, including the group that moves the pinned `agents-sync` reference; the library sections of `AGENTS.md` (design principles, security specification, testing strategy, packaging invariants, pitfalls) and its statement of the `docs/` language; `CLAUDE.md`, `CONTRIBUTING.md`, `CHANGELOG.md` and the Copilot instruction files; the required status checks in the repository ruleset.
   - Out: any library behaviour; the public README beyond what the gates need; publishing.
 - **Definition of Done**:
-  - [ ] `pnpm install`, `typecheck`, `lint`, `test`, `test:e2e`, `test:cov:all`, `build` and `mutation` all pass locally on Node.js 26 on a tree that exports nothing but the empty entry points.
-  - [ ] The packed tarball loads each of the five subpaths in ESM and in CommonJS, and the strict type-resolution check passes on it.
-  - [ ] The pull request shows `CI passed` green, with the organisation's reusable workflows among the jobs it depends on, and the ruleset requires it.
-  - [ ] `AGENTS.md` no longer says the repository is at the specification stage, and nothing in it describes `nest-telemetry`'s domain.
-  - [ ] No file brought from `nest-telemetry` still names OpenTelemetry, a telemetry script or a telemetry baseline.
+  - [x] `pnpm install`, `typecheck`, `lint`, `test`, `test:e2e`, `test:cov:all`, `build` and `mutation` all pass locally on Node.js 26 on a tree that exports nothing but the empty entry points.
+  - [x] The packed tarball loads each of the five subpaths in ESM and in CommonJS, and the strict type-resolution check passes on it.
+  - [x] The pull request shows `CI passed` green, with the organisation's reusable workflows among the jobs it depends on, and the ruleset requires it.
+  - [x] `AGENTS.md` no longer says the repository is at the specification stage, and nothing in it describes `nest-telemetry`'s domain.
+  - [x] No file brought from `nest-telemetry` still names OpenTelemetry, a telemetry script or a telemetry baseline.
 - **Context / preconditions**: The repository holds documents and three workflows. `nest-telemetry` is the scaffold to mirror (specification §11); its mutation thresholds are already 100.
 - **Rules-of-phase**:
   1. Copy the mechanism, not the domain: every script and baseline is read before it is kept, and one that only serves telemetry is dropped.
@@ -460,6 +460,8 @@ When a phase moves status:
 ## Completion log
 
 > Append-only. One line per phase completion.
+
+- P0 ✅ 2026-11-24 — scaffold, gates, CI and repository documents merged in #4; CI passed is a required check
 
 ---
 

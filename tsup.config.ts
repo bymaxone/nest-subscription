@@ -13,12 +13,14 @@ const common = {
   // Peers are never bundled: a bundled copy would be a second instance of the package the host
   // already loaded (a different injection token). The internal bundle is external for the same
   // reason: a class copied into two bundles is two injection tokens and two `instanceof` targets,
-  // so every entry point reaches it by package specifier and resolves one instance.
+  // so every entry point reaches it by package specifier and resolves one instance. The `shared`
+  // subpath is external to every other bundle for the same reason: it defines the error class.
   external: [
     /^@nestjs\//,
     /^@bymax-one\/nest-cache/,
     /^@bymax-one\/nest-core/,
     /^@bymax-one\/nest-subscription\/internal$/,
+    /^@bymax-one\/nest-subscription\/shared$/,
     'reflect-metadata',
     'rxjs'
   ],

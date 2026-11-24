@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 7 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -10,7 +10,7 @@
 
 At the start the package is an empty, fully gated scaffold: the entry points under `src/shared/`, `src/internal/`, `src/core/`, `src/revenuecat/`, `src/finance/` and `src/testing/` export nothing.
 
-At the end the library has its vocabulary and its two seams. The `shared` subpath carries the normalized model, the closed value sets, the change kinds and the error-code catalogue, with no runtime dependency. The internal bundle carries the source port, the store port, the injection tokens, the error class and the account key encoder. The `testing` subpath carries an in-memory store, a conformance suite a host runs against its own store, and a scriptable fake source. There is still no NestJS module and no network call.
+At the end the library has its vocabulary and its two seams. The `shared` subpath carries the normalized model, the closed value sets, the change kinds, the error-code catalogue and the error class, with no runtime dependency. The internal bundle carries the source port, the store port, the injection tokens and the account key encoder. The `testing` subpath carries an in-memory store, a conformance suite a host runs against its own store, and a scriptable fake source. There is still no NestJS module and no network call.
 
 ---
 
@@ -37,15 +37,15 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 1.1 | Define the snapshot model and its closed value sets | 📋 ToDo | P0 | M | — |
-| 1.2 | Define the error-code catalogue and the error class | 📋 ToDo | P0 | S | 1.1 |
-| 1.3 | Implement the empty snapshot and the entitlement resolution | 📋 ToDo | P0 | M | 1.1 |
-| 1.4 | Implement the tenant and account key encoder | 📋 ToDo | P0 | S | 1.2 |
-| 1.5 | Define the source port, the store port and the injection tokens | 📋 ToDo | P0 | M | 1.2 |
-| 1.6 | Implement the in-memory store and the conformance suite | 📋 ToDo | P0 | L | 1.4, 1.5 |
-| 1.7 | Implement the fake source and prove the shared subpath stands alone | 📋 ToDo | P0 | M | 1.5 |
+| ID  | Task                                                                | Status  | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 1.1 | Define the snapshot model and its closed value sets                 | ✅ Done | P0       | M    | —          |
+| 1.2 | Define the error-code catalogue and the error class                 | ✅ Done | P0       | S    | 1.1        |
+| 1.3 | Implement the empty snapshot and the entitlement resolution         | ✅ Done | P0       | M    | 1.1        |
+| 1.4 | Implement the tenant and account key encoder                        | ✅ Done | P0       | S    | 1.2        |
+| 1.5 | Define the source port, the store port and the injection tokens     | ✅ Done | P0       | M    | 1.2        |
+| 1.6 | Implement the in-memory store and the conformance suite             | ✅ Done | P0       | L    | 1.4, 1.5   |
+| 1.7 | Implement the fake source and prove the shared subpath stands alone | ✅ Done | P0       | M    | 1.5        |
 
 ---
 
@@ -53,7 +53,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 
 ### Task 1.1 — Define the snapshot model and its closed value sets
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -64,11 +64,11 @@ Write the types of the snapshot, the subscription record and the entitlement, an
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionSnapshot`, `SubscriptionRecord`, `EntitlementState` and `SourceCustomerReference` carry every field of the FR01 and FR02 tables, with instants as ISO 8601 strings and "not applicable" as `null`.
-- [ ] Each value set is a frozen `as const` tuple with its union type derived from it, and a test pins the exact members of each set against the specification.
-- [ ] A table-driven test states, for every status of FR03, whether it means access, and asserts that no exported function takes a status and returns access.
-- [ ] The `shared` entry point exports these names and imports nothing at run time.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionSnapshot`, `SubscriptionRecord`, `EntitlementState` and `SourceCustomerReference` carry every field of the FR01 and FR02 tables, with instants as ISO 8601 strings and "not applicable" as `null`.
+- [x] Each value set is a frozen `as const` tuple with its union type derived from it, and a test pins the exact members of each set against the specification.
+- [x] A table-driven test states, for every status of FR03, whether it means access, and asserts that no exported function takes a status and returns access.
+- [x] The `shared` entry point exports these names and imports nothing at run time.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -79,7 +79,7 @@ Write the types of the snapshot, the subscription record and the entitlement, an
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -132,28 +132,28 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 1.2 — Define the error-code catalogue and the error class
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.1
 
 #### Description
 
-Write the closed catalogue of error codes in `shared` and the one error class that carries a code, in the internal bundle (specification §6.4).
+Write the closed catalogue of error codes in `shared` and the one error class that carries a code, in `shared` (specification §6.4).
 
 #### Acceptance criteria
 
-- [ ] The catalogue has one code for each case of §6.4: refused webhook, unknown account, entitlement required, subscription gives no access, source unavailable, operation not possible for this origin, and the configuration errors.
-- [ ] Every code starts with `SUBSCRIPTION_`, and a test fails when two entries share a value.
-- [ ] `SubscriptionError` carries a code, a message from the catalogue and an optional cause, and its serialized form contains nothing but the code and the message.
-- [ ] An `instanceof SubscriptionError` check holds across the root and an adapter subpath, proven from the built package.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The catalogue has one code for each case of §6.4: refused webhook, unknown account, entitlement required, subscription gives no access, source unavailable, operation not possible for this origin, and the configuration errors.
+- [x] Every code starts with `SUBSCRIPTION_`, and a test fails when two entries share a value.
+- [x] `SubscriptionError` carries a code, a message from the catalogue and an optional cause, and its serialized form contains nothing but the code and the message.
+- [x] An `instanceof SubscriptionError` check holds across the root and an adapter subpath, proven from the built package.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -164,7 +164,7 @@ Write the closed catalogue of error codes in `shared` and the one error class th
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -183,13 +183,13 @@ REQUIRED READING (only these — do not load more):
 - `docs/plan.md` § "Target layout" (why `src/internal/` exists)
 
 TASK
-Create `SUBSCRIPTION_ERROR_CODES` in the shared subpath and `SubscriptionError` in the internal bundle, re-exported from the root.
+Create `SUBSCRIPTION_ERROR_CODES` in the shared subpath and `SubscriptionError` in `shared` too, re-exported from the internal bundle and the root.
 
 DELIVERABLES
 
 1. `src/shared/error-codes.ts`: a frozen object mapping names to code strings, the `SubscriptionErrorCode` union, and a frozen map from code to its fixed English message. Messages never interpolate an identifier, a secret or a provider payload.
 
-2. `src/internal/subscription.error.ts`: `SubscriptionError extends Error` with `code`, a `cause` passed through the standard options bag, and a `toJSON` that returns only `{ code, message }`.
+2. `src/shared/subscription.error.ts`: `SubscriptionError extends Error` with `code`, a `cause` passed through the standard options bag, and a `toJSON` that returns only `{ code, message }`.
 
 3. Root re-exports of the class and the codes. An end-to-end assertion that the class imported from the root and from `revenuecat` is the same constructor in the built package, in ESM and CommonJS.
 
@@ -216,13 +216,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 1.3 — Implement the empty snapshot and the entitlement resolution
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 1.1
@@ -233,11 +233,11 @@ Write the two pure functions of the model: the snapshot of an account the source
 
 #### Acceptance criteria
 
-- [ ] `createEmptySnapshot` returns a snapshot with no entitlements and no subscriptions, and never throws for an unknown account.
-- [ ] `resolveEntitlements` marks an entitlement active when any subscription that grants it gives access, and sets its "until" to the latest `accessUntil` among them, with `null` (lifetime) winning over any date.
-- [ ] A table-driven test covers: one subscription; two granting the same entitlement with one inactive; two both active with different ends; a lifetime grant beside a dated one; a subscription with `unknown` status whose access flag is true; no subscriptions.
-- [ ] The function reports the overlap (more than one subscription giving access to the same entitlement) in its result, for the notification phase to use.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `createEmptySnapshot` returns a snapshot with no entitlements and no subscriptions, and never throws for an unknown account.
+- [x] `resolveEntitlements` marks an entitlement active when any subscription that grants it gives access, and sets its "until" to the latest `accessUntil` among them, with `null` (lifetime) winning over any date.
+- [x] A table-driven test covers: one subscription; two granting the same entitlement with one inactive; two both active with different ends; a lifetime grant beside a dated one; a subscription with `unknown` status whose access flag is true; no subscriptions.
+- [x] The function reports the overlap (more than one subscription giving access to the same entitlement) in its result, for the notification phase to use.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -247,7 +247,7 @@ Write the two pure functions of the model: the snapshot of an account the source
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -298,13 +298,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 1.4 — Implement the tenant and account key encoder
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.2
@@ -315,11 +315,11 @@ Write the one function that turns a tenant identifier and an account identifier 
 
 #### Acceptance criteria
 
-- [ ] Two different (tenant, account) pairs never produce the same key, including pairs whose text contains the delimiter, an empty tenant, and unicode.
-- [ ] The key of an account with no tenant differs from the key of any account with a tenant.
-- [ ] An empty or blank account identifier is refused with a `SubscriptionError`.
-- [ ] A property-style test over generated pairs asserts injectivity, and a fixed table pins the known collision shapes (`("a:b","c")` against `("a","b:c")`).
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Two different (tenant, account) pairs never produce the same key, including pairs whose text contains the delimiter, an empty tenant, and unicode.
+- [x] The key of an account with no tenant differs from the key of any account with a tenant.
+- [x] An empty or blank account identifier is refused with a `SubscriptionError`.
+- [x] A property-style test over generated pairs asserts injectivity, and a fixed table pins the known collision shapes (`("a:b","c")` against `("a","b:c")`).
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -328,7 +328,7 @@ Write the one function that turns a tenant identifier and an account identifier 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -378,13 +378,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 1.5 — Define the source port, the store port and the injection tokens
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 1.2
@@ -395,12 +395,12 @@ Write the two interfaces every later phase builds on, and the symbol tokens they
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionSource` has the four abilities of FR07: read one account, verify a webhook from raw bytes and headers, declare capabilities per origin, and perform the declared management operations.
-- [ ] `SubscriptionStore` can read and write a snapshot by key, record a processed event identifier atomically (telling the caller whether it was new), forget one event identifier, forget event identifiers older than a retention, and list keys whose snapshot is older than a threshold in bounded pages.
-- [ ] A snapshot write stores, in the same atomic write, the changes the host has not been told yet; the port can clear them by change key and list the keys that still have some, in bounded pages (FR33, D17).
-- [ ] The write method takes the source-updated-at instant and its contract says an older snapshot must not replace a newer one (FR27).
-- [ ] Every token is a `Symbol` with a description, and every port type is exported from the root.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionSource` has the four abilities of FR07: read one account, verify a webhook from raw bytes and headers, declare capabilities per origin, and perform the declared management operations.
+- [x] `SubscriptionStore` can read and write a snapshot by key, record a processed event identifier atomically (telling the caller whether it was new), forget one event identifier, forget event identifiers older than a retention, and list keys whose snapshot is older than a threshold in bounded pages.
+- [x] A snapshot write stores, in the same atomic write, the changes the host has not been told yet; the port can clear them by change key and list the keys that still have some, in bounded pages (FR33, D17).
+- [x] The write method takes the source-updated-at instant and its contract says an older snapshot must not replace a newer one (FR27).
+- [x] Every token is a `Symbol` with a description, and every port type is exported from the root.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -412,7 +412,7 @@ Write the two interfaces every later phase builds on, and the symbol tokens they
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -467,13 +467,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 1.6 — Implement the in-memory store and the conformance suite
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 1.4, 1.5
@@ -484,11 +484,11 @@ Write the in-memory store for tests and development, and the conformance cases a
 
 #### Acceptance criteria
 
-- [ ] `InMemorySubscriptionStore` passes every conformance case.
-- [ ] A deliberately broken store fails on a named case for each defect: no uniqueness on event identifiers, an older snapshot replacing a newer one, keys of two tenants colliding, a stale listing that ignores its limit, pending changes dropped or overwritten by a later write, pending changes not cleared by key.
-- [ ] `storeConformanceCases` returns framework-neutral cases (a name and an async function taking a store factory) that throw through `node:assert` on failure, so they run under Jest, Vitest or `node --test`.
-- [ ] The in-memory store warns once at construction that it is not for production, through an injectable logger function, and never to the console in tests.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `InMemorySubscriptionStore` passes every conformance case.
+- [x] A deliberately broken store fails on a named case for each defect: no uniqueness on event identifiers, an older snapshot replacing a newer one, keys of two tenants colliding, a stale listing that ignores its limit, pending changes dropped or overwritten by a later write, pending changes not cleared by key.
+- [x] `storeConformanceCases` returns framework-neutral cases (a name and an async function taking a store factory) that throw through `node:assert` on failure, so they run under Jest, Vitest or `node --test`.
+- [x] The in-memory store warns once at construction that it is not for production, through an injectable logger function, and never to the console in tests.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -499,7 +499,7 @@ Write the in-memory store for tests and development, and the conformance cases a
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -551,13 +551,13 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.6 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ### Task 1.7 — Implement the fake source and prove the shared subpath stands alone
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 1.5
@@ -568,11 +568,11 @@ Write the scriptable fake source (FR39) and the packaging tests that close the p
 
 #### Acceptance criteria
 
-- [ ] `FakeSubscriptionSource` implements `SubscriptionSource` and lets a test set an account's state, queue a notification, fail the next read, delay the next read, and count reads per account.
-- [ ] Its `verifyWebhook` accepts requests built by its own `buildRequest` helper and refuses any other body.
-- [ ] Loading `@bymax-one/nest-subscription/shared` from the packed tarball in a directory with no `@nestjs/*` installed succeeds in ESM and CommonJS.
-- [ ] A test file that implements a source using only root exports compiles and runs.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `FakeSubscriptionSource` implements `SubscriptionSource` and lets a test set an account's state, queue a notification, fail the next read, delay the next read, and count reads per account.
+- [x] Its `verifyWebhook` accepts requests built by its own `buildRequest` helper and refuses any other body.
+- [x] Loading `@bymax-one/nest-subscription/shared` from the packed tarball in a directory with no `@nestjs/*` installed succeeds in ESM and CommonJS.
+- [x] A test file that implements a source using only root exports compiles and runs.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -583,7 +583,7 @@ Write the scriptable fake source (FR39) and the packaging tests that close the p
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -636,12 +636,26 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.7 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
 ## Completion log
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
+
+- 1.1 ✅ 2026-11-24 — snapshot model types, the closed value sets and the change type in the shared subpath; no function from status to access exists
+
+- 1.2 ✅ 2026-11-24 — closed SUBSCRIPTION_ error-code catalogue with fixed messages in shared and SubscriptionError in the internal bundle, re-exported from the root and proven one constructor in the packed tarball
+
+- 1.3 ✅ 2026-11-24 — createEmptySnapshot and the FR05 entitlement resolution (flag-only, lifetime outranks dates, overlap reported) with a typed failure for a malformed instant
+
+- 1.4 ✅ 2026-11-24 — encodeAccountKey: length-prefixed, injective by construction, a blank account refused; the only join of tenant and account
+
+- 1.5 ✅ 2026-11-24 — source port, store port (atomic write with pending changes, ordered by source instant, paged listings), Clock and the symbol tokens, with every port type exported from the root
+
+- 1.6 ✅ 2026-11-24 — InMemorySubscriptionStore (not for production, warns once) and the framework-neutral store conformance cases, each failed by a named broken store, run unchanged against the in-memory store and a valid variant
+
+- 1.7 ✅ 2026-11-24 — FakeSubscriptionSource (scripted state, queued signed notifications, delayed and failed reads, read counters, no private entry), a host-written source against root exports only, and the shared subpath proven standalone from the packed tarball
 
 <!-- entries are added as tasks complete -->

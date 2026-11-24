@@ -12,22 +12,22 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 > Mirrors the phase dashboard of [`docs/plan.md`](../plan.md). Both are updated together.
 
-**Phases done**: 0 / 12 · **Tasks done**: 6 / 64
+**Phases done**: 1 / 12 · **Tasks done**: 14 / 64
 
-| ID  | Task file                                                                                        | Status         | Progress | Last updated |
-| --- | ------------------------------------------------------------------------------------------------ | -------------- | -------- | ------------ |
-| P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | 🔄 In Progress | 6/7      | 2026-11-24   |
-| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | 📋 ToDo        | 0/7      | —            |
-| P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | 📋 ToDo        | 0/5      | —            |
-| P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | 📋 ToDo        | 0/5      | —            |
-| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 📋 ToDo        | 0/4      | —            |
-| P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | 📋 ToDo        | 0/5      | —            |
-| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 📋 ToDo        | 0/5      | —            |
-| P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | 📋 ToDo        | 0/7      | —            |
-| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 📋 ToDo        | 0/4      | —            |
-| P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo        | 0/5      | —            |
-| P10 | [`phase-10-example-repository.md`](phase-10-example-repository.md)                               | 📋 ToDo        | 0/5      | —            |
-| P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | ⛔ Blocked     | 0/5      | —            |
+| ID  | Task file                                                                                        | Status     | Progress | Last updated |
+| --- | ------------------------------------------------------------------------------------------------ | ---------- | -------- | ------------ |
+| P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | ✅ Done    | 7/7      | 2026-11-24   |
+| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | 👀 Review  | 7/7      | 2026-11-24   |
+| P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | 📋 ToDo    | 0/5      | —            |
+| P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | 📋 ToDo    | 0/5      | —            |
+| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 📋 ToDo    | 0/4      | —            |
+| P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | 📋 ToDo    | 0/5      | —            |
+| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 📋 ToDo    | 0/5      | —            |
+| P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | 📋 ToDo    | 0/7      | —            |
+| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 📋 ToDo    | 0/4      | —            |
+| P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo    | 0/5      | —            |
+| P10 | [`phase-10-example-repository.md`](phase-10-example-repository.md)                               | 📋 ToDo    | 0/5      | —            |
+| P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | ⛔ Blocked | 0/5      | —            |
 
 ---
 
@@ -78,6 +78,7 @@ These are the scripts of the scaffold P0 brings from `bymaxone/nest-telemetry`. 
 | `src/testing/`    | `@bymax-one/nest-subscription/testing`                                                           | `shared`, `internal`, and the adapters only for their request builders |
 
 - An entry point reaches `internal` by package specifier, never by relative path, and the build marks it external. A relative import would copy the classes and tokens into each bundle.
+- Every directory other than `src/shared/` reaches `shared` by package specifier too (`@bymax-one/nest-subscription/shared`), never by relative path, and the build marks it external. `shared` defines `SubscriptionError`, and a relative import would copy that class into each bundle, so `instanceof` would fail between a class thrown by one entry point and the class another entry point exports. `pnpm lint` fails a relative import of `shared` from the other directories.
 - `src/core/` never imports an adapter. The host imports the adapter's factory from its subpath and passes the result in the module options. That is how an adapter that is not configured loads none of its code (NFR05).
 - Unit tests sit beside their source as `*.spec.ts`. End-to-end tests are `test/e2e/<topic>.e2e-spec.ts`. Recorded provider payloads are under `test/fixtures/<source>/`.
 
@@ -85,27 +86,28 @@ These are the scripts of the scaffold P0 brings from `bymaxone/nest-telemetry`. 
 
 ### 6.1 Model (`src/shared/`)
 
-| Name                                                                                                                                                                                                                                     | Kind                                                  | File                |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------- |
-| `SubscriptionSnapshot`, `SubscriptionRecord`, `EntitlementState`, `SourceCustomerReference`                                                                                                                                              | types                                                 | `snapshot.types.ts` |
-| `SUBSCRIPTION_STATUSES`, `WILL_RENEW_VALUES`, `SUBSCRIPTION_ORIGINS`, `SUBSCRIPTION_ENVIRONMENTS`, `CHANGE_KINDS` and their union types `SubscriptionStatus`, `WillRenew`, `SubscriptionOrigin`, `SubscriptionEnvironment`, `ChangeKind` | closed value sets                                     | `values.ts`         |
-| `SUBSCRIPTION_ERROR_CODES`, `SubscriptionErrorCode`                                                                                                                                                                                      | closed catalogue, every code prefixed `SUBSCRIPTION_` | `error-codes.ts`    |
-| `createEmptySnapshot`                                                                                                                                                                                                                    | function                                              | `empty-snapshot.ts` |
-| `resolveEntitlements`                                                                                                                                                                                                                    | pure function (FR05)                                  | `entitlements.ts`   |
-| `SubscriptionChange`                                                                                                                                                                                                                     | type: a change kind plus its stable key               | `change.types.ts`   |
+| Name                                                                                                                                                                                                                                     | Kind                                                                                                               | File                    |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| `SubscriptionSnapshot`, `SubscriptionRecord`, `EntitlementState`, `SourceCustomerReference`                                                                                                                                              | types                                                                                                              | `snapshot.types.ts`     |
+| `SUBSCRIPTION_STATUSES`, `WILL_RENEW_VALUES`, `SUBSCRIPTION_ORIGINS`, `SUBSCRIPTION_ENVIRONMENTS`, `CHANGE_KINDS` and their union types `SubscriptionStatus`, `WillRenew`, `SubscriptionOrigin`, `SubscriptionEnvironment`, `ChangeKind` | closed value sets                                                                                                  | `values.ts`             |
+| `SUBSCRIPTION_ERROR_CODES`, `SubscriptionErrorCode`                                                                                                                                                                                      | closed catalogue, every code prefixed `SUBSCRIPTION_`                                                              | `error-codes.ts`        |
+| `SubscriptionError`                                                                                                                                                                                                                      | the one error class, carrying a `SubscriptionErrorCode`; re-exported from `internal` and the root                  | `subscription.error.ts` |
+| `parseInstant`                                                                                                                                                                                                                           | pure function: an ISO 8601 instant with a zone to milliseconds, or `SubscriptionError` with the invalid-input code | `instant.ts`            |
+| `createEmptySnapshot`                                                                                                                                                                                                                    | function                                                                                                           | `empty-snapshot.ts`     |
+| `resolveEntitlements`                                                                                                                                                                                                                    | pure function (FR05)                                                                                               | `entitlements.ts`       |
+| `SubscriptionChange`                                                                                                                                                                                                                     | type: a change kind plus its stable key                                                                            | `change.types.ts`       |
 
 ### 6.2 Seams (`src/internal/`, re-exported from the root)
 
-| Name                                                                                                                                     | Kind                                                                                                  | File                    |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------- |
-| `SubscriptionSource`, `SourceCapabilities`, `WebhookRequest`, `WebhookVerification`, `SourceNotification`, `StopRenewalResult`           | the source port (FR07)                                                                                | `source.port.ts`        |
-| `SubscriptionStore`, `StoredSnapshot`                                                                                                    | the store port (FR22)                                                                                 | `store.port.ts`         |
-| `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE`, `SUBSCRIPTION_CLOCK`, `SUBSCRIPTION_CACHE`, `SUBSCRIPTION_OBSERVER` | injection tokens, all symbols                                                                         | `tokens.ts`             |
-| `SubscriptionError`                                                                                                                      | the one error class, carrying a `SubscriptionErrorCode`                                               | `subscription.error.ts` |
-| `encodeAccountKey`                                                                                                                       | builds the tenant and account key (SEC08)                                                             | `account-key.ts`        |
-| `Clock`                                                                                                                                  | type with one method returning the current instant                                                    | `clock.ts`              |
-| `Secret`                                                                                                                                 | holds a secret out of every enumerable property, with two valid values during rotation (SEC05, SEC09) | `secret.ts`             |
-| `hashAccountKey`                                                                                                                         | short one-way hash of an account key, for correlation in logs (SEC06)                                 | `account-hash.ts`       |
+| Name                                                                                                                                     | Kind                                                                                                  | File              |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------- |
+| `SubscriptionSource`, `SourceCapabilities`, `WebhookRequest`, `WebhookVerification`, `SourceNotification`, `StopRenewalResult`           | the source port (FR07)                                                                                | `source.port.ts`  |
+| `SubscriptionStore`, `StoredSnapshot`                                                                                                    | the store port (FR22)                                                                                 | `store.port.ts`   |
+| `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE`, `SUBSCRIPTION_CLOCK`, `SUBSCRIPTION_CACHE`, `SUBSCRIPTION_OBSERVER` | injection tokens, all symbols                                                                         | `tokens.ts`       |
+| `encodeAccountKey`                                                                                                                       | builds the tenant and account key (SEC08)                                                             | `account-key.ts`  |
+| `Clock`                                                                                                                                  | type with one method returning the current instant                                                    | `clock.ts`        |
+| `Secret`                                                                                                                                 | holds a secret out of every enumerable property, with two valid values during rotation (SEC05, SEC09) | `secret.ts`       |
+| `hashAccountKey`                                                                                                                         | short one-way hash of an account key, for correlation in logs (SEC06)                                 | `account-hash.ts` |
 
 ### 6.3 Library (`src/core/`)
 

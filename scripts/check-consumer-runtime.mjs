@@ -23,9 +23,12 @@
  * 5. A positive control: a probe that asks for a denied specifier must FAIL, which proves the
  *    resolve hook can see a load and that the denials above are not vacuous.
  *
- * Entry points are separate bundles, so a module reached from two of them by a relative path is
- * copied into each, and a copied class is a different injection token. These probes verify
- * loading and export names; they do not verify instance identity across entries.
+ * 6. One error class: `SubscriptionError` is the same value from the root, from `./internal` and
+ *    from `./shared`, and an error thrown by the model (`./shared`) or by the in-memory store
+ *    (`./testing`) is an instance of the root's class, in each module format. Entry points are
+ *    separate bundles, so a module reached from two of them by a relative path is copied into
+ *    each and a copied class is a different class; the entry points reach `shared` by package
+ *    specifier so that one copy exists.
  *
  * It shells out to `npm pack` and `tar`, both of which have to be on PATH. That is deliberate:
  * packing through npm itself is what makes the gate inspect the same tarball a publish would
@@ -64,6 +67,41 @@ const OPTIONAL_PEERS = ['@bymax-one/nest-cache', '@bymax-one/nest-core']
 /** The packages a host of the NestJS module provides and the `shared` subpath must not need. */
 const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 
+/** Every runtime name of the `testing` subpath. */
+const TESTING_EXPORTS = [
+  'FakeSubscriptionSource',
+  'InMemorySubscriptionStore',
+  'storeConformanceCases'
+]
+
+/** Every runtime name of the root entry point. */
+const ROOT_EXPORTS = [
+  'SUBSCRIPTION_CACHE',
+  'SUBSCRIPTION_CLOCK',
+  'SUBSCRIPTION_ERROR_CODES',
+  'SUBSCRIPTION_OBSERVER',
+  'SUBSCRIPTION_OPTIONS',
+  'SUBSCRIPTION_SOURCE',
+  'SUBSCRIPTION_STORE',
+  'SubscriptionError',
+  'encodeAccountKey'
+]
+
+/** Every runtime name of the `shared` subpath: the closed value sets, the error codes
+ * and the pure functions of the model. */
+const SHARED_EXPORTS = [
+  'CHANGE_KINDS',
+  'SUBSCRIPTION_ENVIRONMENTS',
+  'SUBSCRIPTION_ERROR_CODES',
+  'SUBSCRIPTION_ORIGINS',
+  'SUBSCRIPTION_STATUSES',
+  'SubscriptionError',
+  'WILL_RENEW_VALUES',
+  'createEmptySnapshot',
+  'parseInstant',
+  'resolveEntitlements'
+]
+
 /**
  * The probes: which subpaths load together, which namespaces are denied and what is exported.
  * `expectDenied` marks a positive control: the probe must FAIL because the resolve hook fired,
@@ -73,17 +111,50 @@ const PROBES = [
   {
     label: 'shared without NestJS, its companions or either optional peer',
     deny: [...FRAMEWORK, ...OPTIONAL_PEERS],
-    entries: { './shared': ['SUBSCRIPTION_ENVIRONMENTS'] }
+    entries: { './shared': SHARED_EXPORTS }
   },
   {
     label: 'root, adapters and testing without either optional peer',
     deny: OPTIONAL_PEERS,
-    entries: { '.': [], './revenuecat': [], './finance': [], './testing': [] }
+    entries: {
+      '.': ROOT_EXPORTS,
+      './revenuecat': [],
+      './finance': [],
+      './testing': TESTING_EXPORTS
+    },
+    // The error class of the root is the one the internal bundle defines, so a class thrown by an
+    // adapter that imports the bundle is an instance of the root's.
+    same: [
+      [
+        ['.', 'SubscriptionError'],
+        ['./internal', 'SubscriptionError']
+      ]
+    ]
+  },
+  {
+    label: 'one error class across the root, internal, shared and testing',
+    deny: OPTIONAL_PEERS,
+    entries: { '.': ROOT_EXPORTS, './shared': SHARED_EXPORTS },
+    same: [
+      [
+        ['.', 'SubscriptionError'],
+        ['./shared', 'SubscriptionError']
+      ],
+      [
+        ['./internal', 'SubscriptionError'],
+        ['./shared', 'SubscriptionError']
+      ]
+    ],
+    // Each thrower raises an error that must be an instance of the root's class.
+    thrown: [
+      ['shared resolveEntitlements', '.'],
+      ['testing markEventProcessed', '.']
+    ]
   },
   {
     label: 'positive control: a load of a denied specifier is seen',
     deny: [`${packageName}/shared`],
-    entries: { './shared': ['SUBSCRIPTION_ENVIRONMENTS'] },
+    entries: { './shared': SHARED_EXPORTS },
     expectDenied: true
   }
 ]
@@ -108,6 +179,18 @@ const ENTRIES = JSON.parse(process.env.PROBE_ENTRIES)
 const load = (specifier) => ${format === 'ESM' ? 'import(specifier)' : 'Promise.resolve(require(specifier))'}
 const specifierOf = (subpath) => '${packageName}' + subpath.slice(1)
 
+// Each thrower makes one part of the library raise its error for an invalid instant.
+const THROWERS = {
+  'shared resolveEntitlements': async () => {
+    const { resolveEntitlements } = await load(specifierOf('./shared'))
+    resolveEntitlements([{ accessUntil: 'not a date' }], new Map())
+  },
+  'testing markEventProcessed': async () => {
+    const { InMemorySubscriptionStore } = await load(specifierOf('./testing'))
+    await new InMemorySubscriptionStore({ logger: () => undefined }).markEventProcessed('s', 'e', 'x')
+  }
+}
+
 async function run() {
   const failures = []
   for (const [subpath, names] of Object.entries(ENTRIES)) {
@@ -117,6 +200,27 @@ async function run() {
     const extra = present.filter((name) => !names.includes(name))
     if (absent.length > 0) failures.push(subpath + ' does not export: ' + absent.join(', '))
     if (extra.length > 0) failures.push(subpath + ' exports more than it promises: ' + extra.join(', '))
+  }
+  // A name that two entry points both reach must be one value, or an instanceof check across them
+  // would fail in a host that mixes them.
+  for (const [[subpathA, nameA], [subpathB, nameB]] of JSON.parse(process.env.PROBE_SAME ?? '[]')) {
+    const first = (await load(specifierOf(subpathA)))[nameA]
+    const second = (await load(specifierOf(subpathB)))[nameB]
+    if (first === undefined || first !== second) {
+      failures.push(subpathA + ' ' + nameA + ' is not the same value as ' + subpathB + ' ' + nameB)
+    }
+  }
+  for (const [thrower, subpath] of JSON.parse(process.env.PROBE_THROWN ?? '[]')) {
+    const expected = (await load(specifierOf(subpath))).SubscriptionError
+    let caught
+    try {
+      await THROWERS[thrower]()
+    } catch (error) {
+      caught = error
+    }
+    if (expected === undefined || !(caught instanceof expected)) {
+      failures.push(thrower + ' does not raise an instance of the SubscriptionError of ' + subpath)
+    }
   }
   return failures
 }
@@ -192,6 +296,53 @@ function missingExportTargets(packageDir) {
   return exportTargets(manifest.exports).filter((target) => !existsSync(join(packageDir, target)))
 }
 
+/**
+ * Loads `shared` from the tarball in a directory that holds nothing but the package: no NestJS, no
+ * companion library and no `node_modules` above it. A file that imports only this subpath must
+ * load there in both module formats. Returns whether it did.
+ */
+function standaloneSharedLoads(tarball) {
+  const dir = mkdtempSync(join(tmpdir(), 'nest-subscription-standalone-'))
+  console.log('  shared alone, in a directory with no @nestjs package')
+  try {
+    const packageDir = join(dir, 'node_modules', packageName)
+    mkdirSync(packageDir, { recursive: true })
+    run('tar', ['-xzf', tarball, '-C', packageDir, '--strip-components=1'])
+    if (existsSync(join(dir, 'node_modules', '@nestjs'))) {
+      console.error('  ✗ the scratch directory holds @nestjs')
+      return false
+    }
+    writeFileSync(
+      join(dir, 'package.json'),
+      `${JSON.stringify({ name: 'standalone-shared-check', private: true, version: '0.0.0', type: 'module' })}\n`
+    )
+    writeFileSync(join(dir, 'probe.mjs'), esmProbe)
+    writeFileSync(join(dir, 'probe.cjs'), cjsProbe)
+    for (const file of ['probe.mjs', 'probe.cjs']) {
+      process.stdout.write(
+        run('node', [file], {
+          cwd: dir,
+          env: { ...process.env, PROBE_ENTRIES: JSON.stringify({ './shared': SHARED_EXPORTS }) }
+        })
+      )
+    }
+    return true
+  } catch (error) {
+    process.stdout.write(error.stdout ?? '')
+    process.stderr.write(String(error.stderr ?? error.message))
+    return false
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+/** The lines of a built `shared` file that import or require a module: there must be none. */
+function runtimeImportsOf(file) {
+  return readFileSync(file, 'utf8')
+    .split('\n')
+    .filter((line) => /^\s*import\b|\brequire\(|^\s*export\b.*\bfrom\b/.test(line))
+}
+
 console.log('Consumer runtime gate')
 
 // With `PACKAGE_TARBALL` the gate inspects that file, so a working tree without `dist/` is fine.
@@ -257,6 +408,17 @@ try {
     join(consumerDir, 'package.json'),
     `${JSON.stringify({ name: 'consumer-runtime-check', private: true, version: '0.0.0', type: 'module' }, null, 2)}\n`
   )
+  const sharedImports = ['index.mjs', 'index.cjs'].flatMap((name) =>
+    runtimeImportsOf(join(packageDir, 'dist', 'shared', name))
+  )
+  if (sharedImports.length > 0) {
+    console.error(`  ✗ the built shared files import a module: ${sharedImports.join(' | ')}`)
+    failed = true
+  } else {
+    console.log('  ✓ the built shared files import nothing at run time')
+  }
+  if (!standaloneSharedLoads(tarball)) failed = true
+
   writeFileSync(join(consumerDir, 'deny.mjs'), denyHook)
   writeFileSync(join(consumerDir, 'probe.mjs'), esmProbe)
   writeFileSync(join(consumerDir, 'probe.cjs'), cjsProbe)
@@ -270,7 +432,9 @@ try {
           env: {
             ...process.env,
             DENY_PREFIXES: JSON.stringify(probe.deny),
-            PROBE_ENTRIES: JSON.stringify(probe.entries)
+            PROBE_ENTRIES: JSON.stringify(probe.entries),
+            PROBE_SAME: JSON.stringify(probe.same ?? []),
+            PROBE_THROWN: JSON.stringify(probe.thrown ?? [])
           }
         })
         if (probe.expectDenied) {
