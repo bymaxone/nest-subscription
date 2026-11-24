@@ -37,15 +37,15 @@ At the end it is a library project that builds, tests and gates an empty package
 
 ## Task index
 
-| ID  | Task                                                | Status  | Priority | Size | Depends on |
-| --- | --------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 0.1 | Bring the package metadata and the build toolchain  | ✅ Done | P0       | L    | —          |
-| 0.2 | Bring the test, coverage and mutation configuration | ✅ Done | P0       | M    | 0.1        |
-| 0.3 | Bring the packaging, size and source gates          | ✅ Done | P0       | M    | 0.2        |
-| 0.4 | Bring the git hooks and commit rules                | ✅ Done | P1       | S    | 0.1        |
-| 0.5 | Extend the CI with the family workflows             | ✅ Done | P0       | M    | 0.3        |
-| 0.6 | Write the repository documents for a library        | ✅ Done | P0       | M    | 0.3        |
-| 0.7 | Require the status checks and close the phase       | 📋 ToDo | P0       | S    | 0.5, 0.6   |
+| ID  | Task                                                | Status         | Priority | Size | Depends on |
+| --- | --------------------------------------------------- | -------------- | -------- | ---- | ---------- |
+| 0.1 | Bring the package metadata and the build toolchain  | ✅ Done        | P0       | L    | —          |
+| 0.2 | Bring the test, coverage and mutation configuration | ✅ Done        | P0       | M    | 0.1        |
+| 0.3 | Bring the packaging, size and source gates          | ✅ Done        | P0       | M    | 0.2        |
+| 0.4 | Bring the git hooks and commit rules                | ✅ Done        | P1       | S    | 0.1        |
+| 0.5 | Extend the CI with the family workflows             | ✅ Done        | P0       | M    | 0.3        |
+| 0.6 | Write the repository documents for a library        | ✅ Done        | P0       | M    | 0.3        |
+| 0.7 | Require the status checks and close the phase       | 🔄 In Progress | P0       | S    | 0.5, 0.6   |
 
 ---
 
@@ -576,7 +576,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 0.7 — Require the status checks and close the phase
 
-- **Status**: 📋 ToDo
+- **Status**: 🔄 In Progress
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 0.5, 0.6
