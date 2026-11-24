@@ -25,28 +25,28 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 1 / 12 phases done (8%)
-**Active phase**: P1 — model-ports-and-test-doubles
+**Overall progress**: 🔄 2 / 12 phases done (17%)
+**Active phase**: P2 — module-and-options
 **Blocked**: P11, until the Bymax Finance API exists (D03)
 
 ---
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                   | Status     | Progress | Size | Last updated |
-| --- | ------------------------------------------------------------------------------------------------------- | ---------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done    | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | 👀 Review  | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 📋 ToDo    | 0/5      | M    | —            |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo    | 0/5      | L    | —            |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo    | 0/4      | M    | —            |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo    | 0/5      | M    | —            |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline             | 📋 ToDo    | 0/5      | L    | —            |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables                | 📋 ToDo    | 0/7      | L    | —            |
-| P8  | management-operations — capabilities, stop renewal and the management reference                         | 📋 ToDo    | 0/4      | M    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                   | 📋 ToDo    | 0/5      | M    | —            |
-| P10 | example-repository — `nest-subscription-example`, one suite run against each source                     | 📋 ToDo    | 0/5      | M    | —            |
-| P11 | finance-adapter — the Bymax Finance adapter, built when its API exists                                  | ⛔ Blocked | 0/5      | L    | —            |
+| ID  | Phase                                                                                                   | Status         | Progress | Size | Last updated |
+| --- | ------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 🔄 In Progress | 0/5      | M    | 2026-11-24   |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo        | 0/5      | L    | —            |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo        | 0/4      | M    | —            |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo        | 0/5      | M    | —            |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline             | 📋 ToDo        | 0/5      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables                | 📋 ToDo        | 0/7      | L    | —            |
+| P8  | management-operations — capabilities, stop renewal and the management reference                         | 📋 ToDo        | 0/4      | M    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                   | 📋 ToDo        | 0/5      | M    | —            |
+| P10 | example-repository — `nest-subscription-example`, one suite run against each source                     | 📋 ToDo        | 0/5      | M    | —            |
+| P11 | finance-adapter — the Bymax Finance adapter, built when its API exists                                  | ⛔ Blocked     | 0/5      | L    | —            |
 
 ---
 
@@ -178,11 +178,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the snapshot and subscription record types and their closed value sets (FR01, FR02, FR03); the empty snapshot for an unknown account (FR04); the pure rule that resolves entitlements across several subscriptions (FR05); the `shared` subpath with no runtime dependency, carrying the model, the notification kinds and the error-code catalogue (FR06, §6.4); the source port with its four abilities and the rule against inferring state from a payload (FR07, FR09); registration of a host's own adapter through the same public entry the shipped ones use (FR08); the store port for snapshots, their undelivered changes and processed event identifiers (D17), the in-memory store marked as not for production, and the conformance suite a host runs against its own store (FR22, D11); the scriptable fake source (FR39); tenant and account key construction (SEC08).
   - Out: the NestJS module; any network call; the relational reference store, which is documentation and belongs to P9.
 - **Definition of Done**:
-  - [ ] A file that imports only the `shared` subpath loads with NestJS absent from the module graph, proven by a packaging test on the tarball.
-  - [ ] The in-memory store passes the conformance suite, and a deliberately broken store (no uniqueness on event identifiers, no ordering on writes) fails it, each on a named case.
-  - [ ] A table-driven test covers every status of FR03 with its access meaning, and the FR05 overlap rule over one, two and conflicting subscriptions.
-  - [ ] A test proves that two different tenant and account pairs can never produce the same key, including pairs whose text contains the delimiter.
-  - [ ] The fake source can set a state, emit a notification and fail its next read, and implements the port with no private entry.
+  - [x] A file that imports only the `shared` subpath loads with NestJS absent from the module graph, proven by a packaging test on the tarball.
+  - [x] The in-memory store passes the conformance suite, and a deliberately broken store (no uniqueness on event identifiers, no ordering on writes) fails it, each on a named case.
+  - [x] A table-driven test covers every status of FR03 with its access meaning, and the FR05 overlap rule over one, two and conflicting subscriptions.
+  - [x] A test proves that two different tenant and account pairs can never produce the same key, including pairs whose text contains the delimiter.
+  - [x] The fake source can set a state, emit a notification and fail its next read, and implements the port with no private entry.
 - **Context / preconditions**: P0 is done. The subpaths exist as empty entry points.
 - **Rules-of-phase**:
   1. The guard-relevant truth is the "gives access" flag from the source. No helper derives access from a status name (FR02, R02).
@@ -462,6 +462,7 @@ When a phase moves status:
 > Append-only. One line per phase completion.
 
 - P0 ✅ 2026-11-24 — scaffold, gates, CI and repository documents merged in #4; CI passed is a required check
+- P1 ✅ 2026-11-24 — the model, the two ports, the in-memory store, the conformance suite and the fake source merged in #6
 
 ---
 
