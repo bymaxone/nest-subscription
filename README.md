@@ -18,6 +18,16 @@ Subscription state library for NestJS 11: normalized entitlements across App Sto
 - Charge anyone, hold card data, or talk to the App Store or Google Play on the device. Purchases happen in the app and in the billing platform.
 - Decide what a subscription is worth in a product. Prices, benefits and limits belong to the host.
 
+## The shared model
+
+The model's types and closed value sets live in the `shared` subpath, which needs no NestJS package. The first of them is the set of environments a subscription can come from:
+
+```ts
+import { SUBSCRIPTION_ENVIRONMENTS } from '@bymax-one/nest-subscription/shared'
+
+const environments: readonly string[] = SUBSCRIPTION_ENVIRONMENTS
+```
+
 ## Documentation
 
 - [Specification](docs/spec.md)

@@ -128,7 +128,7 @@
     "mutation:full": "node -e \"require('node:fs').rmSync('reports/stryker-incremental.json',{force:true,recursive:true})\" && stryker run",
     "mutation:dry-run": "stryker run --dryRunOnly",
     "prepare": "husky",
-    "prepublishOnly": "pnpm clean && pnpm typecheck && pnpm lint && pnpm check:mutants && pnpm check:docs && pnpm test:cov && pnpm test:e2e && pnpm test:cov:all && pnpm build && pnpm check:published",
+    "prepublishOnly": "pnpm clean && pnpm typecheck && pnpm lint && pnpm check:mutants && pnpm check:docs && pnpm test:cov && pnpm test:e2e && pnpm test:cov:all && pnpm build && pnpm check:exports && pnpm check:runtime && pnpm check:api && pnpm size && pnpm check:file-length && pnpm check:function-length && pnpm check:spec-headers && pnpm check:published",
     "release": "npm publish --provenance --access public",
     "size": "node scripts/check-dist-fresh.mjs --tarball-ok --also tsup.config.ts --also package.json --also tsconfig.json --also tsconfig.build.json && node scripts/check-size.mjs",
     "test": "jest",

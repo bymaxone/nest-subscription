@@ -1,6 +1,6 @@
 # Phase 0 — Scaffold and governance
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P0 — scaffold-and-governance
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -41,7 +41,7 @@ At the end it is a library project that builds, tests and gates an empty package
 |---|---|---|---|---|---|
 | 0.1 | Bring the package metadata and the build toolchain | ✅ Done | P0 | L | — |
 | 0.2 | Bring the test, coverage and mutation configuration | ✅ Done | P0 | M | 0.1 |
-| 0.3 | Bring the packaging, size and source gates | 📋 ToDo | P0 | M | 0.2 |
+| 0.3 | Bring the packaging, size and source gates | ✅ Done | P0 | M | 0.2 |
 | 0.4 | Bring the git hooks and commit rules | 📋 ToDo | P1 | S | 0.1 |
 | 0.5 | Extend the CI with the family workflows | 📋 ToDo | P0 | M | 0.3 |
 | 0.6 | Write the repository documents for a library | 📋 ToDo | P0 | M | 0.3 |
@@ -230,7 +230,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 0.3 — Bring the packaging, size and source gates
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.2
@@ -241,10 +241,10 @@ Add the gate scripts that check the packed tarball, the API surface, the bundle 
 
 #### Acceptance criteria
 
-- [ ] `pnpm check:exports` and `pnpm check:runtime` pass against the packed tarball for all five public subpaths, in ESM and in CommonJS.
-- [ ] `pnpm check:api`, `pnpm size`, `pnpm check:docs`, `pnpm check:published`, `pnpm check:file-length`, `pnpm check:function-length`, `pnpm check:spec-headers` and `pnpm check:mutants` pass.
-- [ ] No script kept from the sibling loads a telemetry module, and no baseline lists a telemetry file.
-- [ ] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
+- [x] `pnpm check:exports` and `pnpm check:runtime` pass against the packed tarball for all five public subpaths, in ESM and in CommonJS.
+- [x] `pnpm check:api`, `pnpm size`, `pnpm check:docs`, `pnpm check:published`, `pnpm check:file-length`, `pnpm check:function-length`, `pnpm check:spec-headers` and `pnpm check:mutants` pass.
+- [x] No script kept from the sibling loads a telemetry module, and no baseline lists a telemetry file.
+- [x] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
 
 #### Files to create / modify
 
@@ -655,4 +655,5 @@ Completion Protocol (after the work is reported done):
 
 - 0.1 ✅ 2026-11-24 — package manifest, the six empty entry points, TypeScript, lint, format and tsup configuration; build emits ESM, CJS and both declaration formats for every entry
 - 0.2 ✅ 2026-11-24 — Jest unit, end-to-end and combined configs, no-socket gate with a runtime spec, Stryker at 100; the empty package has no mutants, so the run completes with no score
+- 0.3 ✅ 2026-11-24 — gate scripts triaged and adapted (runtime, exports map, size, api, docs, published surface, length, spec headers, mutation directives); baselines regenerated empty; OpenTelemetry-specific scripts dropped
 <!-- entries are added as tasks complete -->
