@@ -53,12 +53,13 @@ This document says in which order the specification is built and when each part 
 ## Dependency graph
 
 ```
-P0 ── P1 ──┬── P2 ── P3 ──┬── P4 ─────────────────┐
-           │              └── P5 ── P6 ──┐        │
-           │                             ├── P8 ──┼── P9 ── P10
-           ├── P7 (unit work) ───────────┘        │
-           │      P7 closes after P6 ─────────────┘
-           └── P11 (blocked outside this repository; closes after P6)
+P0 ── P1 ── P2 ──┬── P3 ──┬── P4 ─────────────────┐
+                 │        └── P5 ── P6 ──┐        │
+                 │                       ├── P8 ──┼── P9 ── P10 ──┐
+                 ├── P7 (unit work) ─────┘        │               │
+                 │      P7 closes after P6 ───────┘               │
+                 └── P11 (blocked outside this repository) ───────┘
+                        P11 closes after P8 and P10
 ```
 
 **Critical path**: P0 → P1 → P2 → P3 → P5 → P6 → P7 → P8 → P9 → P10.
@@ -70,7 +71,7 @@ P0 ── P1 ──┬── P2 ── P3 ──┬── P4 ──────�
 - **P8** needs the service from P3 and the RevenueCat operations from P7.
 - **P9** needs every phase from P4 to P8 closed: it documents and measures the whole first release.
 - **P10** lives in another repository and needs an installable package: the packed tarball from P9, or the published version once the owner has released it.
-- **P11** is blocked by something outside this repository (D03, R01). Nothing in the first release waits for it. When it is unblocked it needs P1 for the port and P6 for its end-to-end tests.
+- **P11** is blocked by something outside this repository (D03, R01). Nothing in the first release waits for it. When it is unblocked its unit work needs P1 and P2, and it closes after P8 (the management service) and P10 (the example suite it must pass).
 
 ---
 

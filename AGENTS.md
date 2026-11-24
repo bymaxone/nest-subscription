@@ -6,7 +6,7 @@
 ## 1. Where things are
 
 - [`docs/spec.md`](docs/spec.md) is the specification: what the library does, its public surface, its constraints and its open decisions. Read it before proposing or writing anything.
-- The roadmap and the phase task files are written from the specification and will live in `docs/plan.md` and `docs/tasks/`.
+- The roadmap and the phase task files are written from the specification and live in `docs/plan.md` and `docs/tasks/`.
 - The repository this one mirrors for tooling, gates, packaging and release is `bymaxone/nest-telemetry`. The first implementation phase brings its scaffold here and adds the library sections of this file (design principles, security specification, testing strategy, packaging invariants, pitfalls), together with `CLAUDE.md`, `CONTRIBUTING.md` and the Copilot instruction files.
 
 ## 2. Rules that already apply

@@ -45,7 +45,7 @@ At the end `financeSource(options)` returns a `SubscriptionSource` for a host th
 | 11.1 | Re-read the released Finance API against Appendix B | ⛔ Blocked | P0 | M | — |
 | 11.2 | Add the adapter options, the client and the identity pair | ⛔ Blocked | P0 | M | 11.1 |
 | 11.3 | Map Finance states and plans into the model | ⛔ Blocked | P0 | M | 11.2 |
-| 11.4 | Verify and parse Finance webhooks | ⛔ Blocked | P0 | M | 11.2 |
+| 11.4 | Verify and parse Finance webhooks | ⛔ Blocked | P0 | M | 11.2, 11.3 |
 | 11.5 | Add the management operations and complete AC08 | ⛔ Blocked | P0 | L | 11.3, 11.4 |
 
 ---
@@ -310,7 +310,7 @@ Completion Protocol (after the work is reported done):
 - **Status**: ⛔ Blocked
 - **Priority**: P0
 - **Size**: M
-- **Depends on**: 11.2
+- **Depends on**: 11.2, 11.3
 
 #### Description
 

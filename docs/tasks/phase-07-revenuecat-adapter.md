@@ -47,7 +47,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | 7.3 | Implement the mapping tables | 📋 ToDo | P0 | M | 7.1 |
 | 7.4 | Read a customer into a snapshot | 📋 ToDo | P0 | L | 7.2, 7.3 |
 | 7.5 | Verify RevenueCat webhooks | 📋 ToDo | P0 | M | 7.2 |
-| 7.6 | Parse events and handle identity | 📋 ToDo | P0 | M | 7.5 |
+| 7.6 | Parse events and handle identity | 📋 ToDo | P0 | M | 7.4, 7.5 |
 | 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0 | L | 7.6 |
 
 ---
@@ -481,7 +481,7 @@ Completion Protocol (after the work is reported done):
 - **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: M
-- **Depends on**: 7.5
+- **Depends on**: 7.4, 7.5
 
 #### Description
 
