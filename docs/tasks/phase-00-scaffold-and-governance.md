@@ -1,6 +1,6 @@
 # Phase 0 — Scaffold and governance
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P0 — scaffold-and-governance
 > **Source spec**: [`docs/spec.md`](../spec.md)
 

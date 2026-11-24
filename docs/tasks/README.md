@@ -16,7 +16,7 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 | ID | Task file | Status | Progress | Last updated |
 |---|---|---|---|---|
-| P0 | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md) | 📋 ToDo | 0/7 | — |
+| P0 | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md) | 🔄 In Progress | 0/7 | 2026-11-24 |
 | P1 | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md) | 📋 ToDo | 0/7 | — |
 | P2 | [`phase-02-module-and-options.md`](phase-02-module-and-options.md) | 📋 ToDo | 0/5 | — |
 | P3 | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md) | 📋 ToDo | 0/5 | — |
