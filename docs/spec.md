@@ -293,8 +293,8 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 | AC06 | A sandbox purchase grants nothing under the default configuration | Unit and end-to-end tests |
 | AC07 | With the source down, the guard follows the configured policy exactly, in both values | End-to-end test |
 | AC08 | Replacing the RevenueCat adapter with the fake or the Finance adapter requires no change in a host's routes or hook | The example application runs its suite against each |
-| AC09 | No secret and no account identifier appears in any log line, error message, observer payload or serialized instance | Tests over the four serialization paths, and over captured logs |
-| AC10 | Every state in Appendix A and Appendix B maps to exactly one status, and an unrecognised one maps to `unknown` | Table-driven tests generated from the appendices |
+| AC09 | No secret and no account identifier appears in any log line, error message, observer payload or serialized instance | Tests over the paths SEC05 names, and over captured logs |
+| AC10 | Every state in Appendix A and Appendix B maps as its table says, and an unrecognised one maps to `unknown` | Table-driven tests generated from the appendices |
 
 ### 5.2 Quality gates
 
@@ -322,7 +322,7 @@ The family's gates, as in `nest-telemetry`: 100% statement, branch, function and
 └──────────────────────────────────────────────────┘
 ```
 
-Reads on a request path go to the store. Only a webhook, an explicit refresh or reconciliation reaches the billing platform.
+Reads on a request path go to the store.
 
 ### 6.2 Package
 
@@ -543,7 +543,7 @@ Store maps to origin: `app_store` and `mac_app_store` to `app_store`; `play_stor
 | A read of one customer's subscription with: state, plan and price reference, billing interval, current period start and end, whether it renews, cancelled at, and the instant access ends | To fill the subscription record (FR02) |
 | A read of one customer's resolved entitlements | To fill the entitlements (FR01) |
 | A lookup of a customer by the host's own account identifier | To find the customer at first contact (Q10) |
-| Signed webhooks with a timestamp, a unique event identifier and a documented signature scheme with rotation | Verification and de-duplication (FR12, FR19) |
+| Signed webhooks with a timestamp, a unique event identifier and a documented signature scheme with rotation | Verification and de-duplication (FR15, FR19) |
 | A list of past events with a stated retention | Reconciliation after a missed delivery (FR26) |
 | A stop-renewal operation that keeps access until the period ends | FR36 |
 | A reference to the place where the customer manages the subscription | FR37 |
