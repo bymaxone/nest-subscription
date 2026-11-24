@@ -53,13 +53,13 @@ This document says in which order the specification is built and when each part 
 ## Dependency graph
 
 ```
-P0 ── P1 ── P2 ──┬── P3 ──┬── P4 ─────────────────┐
-                 │        └── P5 ── P6 ──┬────────┼── P8 ── P9 ── P10
-                 │                       │        │
-                 └── P7 (unit work) ─────┘        │
-                        P7 closes after P6 ───────┘
-
-P11 (blocked outside this repository) starts after P6 and closes after P8 and P10
+P0 → P1 → P2 → P3
+P3 → P4
+P3 → P5 → P6
+P2 → P7 (unit work)        P6 → P7 (closing)
+P3, P7 → P8
+P4, P5, P6, P7, P8 → P9 → P10
+P7 → P11 (start, once unblocked)        P8, P10 → P11 (closing)
 ```
 
 **Critical path**: P0 → P1 → P2 → P3 → P5 → P6 → P7 → P8 → P9 → P10.

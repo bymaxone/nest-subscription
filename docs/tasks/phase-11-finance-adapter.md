@@ -90,7 +90,7 @@ CURRENT PHASE: P11 (finance-adapter) — Task 11.1 of 5 (FIRST of this phase)
 
 PRECONDITIONS
 - The Bymax Finance public API is released and documented. Until it is, this task does not start (D03).
-- P6 is ✅ Done: the webhook receiver exists. `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
+- P7 is ✅ Done: the webhook receiver exists and `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
 
 REQUIRED READING (only these — do not load more):
 - `AGENTS.md` (whole file: repository rules and code review rules)
@@ -170,7 +170,7 @@ CURRENT PHASE: P11 (finance-adapter) — Task 11.2 of 5 (MIDDLE of this phase)
 
 PRECONDITIONS
 - The Bymax Finance public API is released and documented. Until it is, this task does not start (D03).
-- P6 is ✅ Done: the webhook receiver exists. `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
+- P7 is ✅ Done: the webhook receiver exists and `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
 - Task 11.1 is ✅ Done and the phase is unblocked in `docs/plan.md`.
 
 REQUIRED READING (only these — do not load more):
@@ -257,7 +257,7 @@ CURRENT PHASE: P11 (finance-adapter) — Task 11.3 of 5 (MIDDLE of this phase)
 
 PRECONDITIONS
 - The Bymax Finance public API is released and documented. Until it is, this task does not start (D03).
-- P6 is ✅ Done: the webhook receiver exists. `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
+- P7 is ✅ Done: the webhook receiver exists and `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
 - Task 11.2 is ✅ Done.
 
 REQUIRED READING (only these — do not load more):
@@ -344,7 +344,7 @@ CURRENT PHASE: P11 (finance-adapter) — Task 11.4 of 5 (MIDDLE of this phase)
 
 PRECONDITIONS
 - The Bymax Finance public API is released and documented. Until it is, this task does not start (D03).
-- P6 is ✅ Done: the webhook receiver exists. `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
+- P7 is ✅ Done: the webhook receiver exists and `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
 - Tasks 11.2 and 11.3 are ✅ Done.
 
 REQUIRED READING (only these — do not load more):
@@ -434,7 +434,7 @@ CURRENT PHASE: P11 (finance-adapter) — Task 11.5 of 5 (LAST of this phase)
 
 PRECONDITIONS
 - The Bymax Finance public API is released and documented. Until it is, this task does not start (D03).
-- P6 is ✅ Done: the webhook receiver exists. `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
+- P7 is ✅ Done: the webhook receiver exists and `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
 - Tasks 11.1 to 11.4 are ✅ Done.
 - P8 and P10 are ✅ Done: the management service and the example repository exist.
 
