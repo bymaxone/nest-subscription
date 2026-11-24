@@ -653,7 +653,7 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
-- 0.1 ✅ 2026-11-24 — package manifest, the six empty entry points, TypeScript, lint, format and tsup configuration; build emits ESM, CJS and both declaration formats for every entry
+- 0.1 ✅ 2026-11-24 — package manifest, the empty entry points, TypeScript, lint, format and tsup configuration; build emits ESM, CJS and both declaration formats for every entry
 - 0.2 ✅ 2026-11-24 — Jest unit, end-to-end and combined configs, no-socket gate with a runtime spec, Stryker at 100; the empty package has no mutants, so the run completes with no score
 - 0.3 ✅ 2026-11-24 — gate scripts triaged and adapted (runtime, exports map, size, api, docs, published surface, length, spec headers, mutation directives); baselines regenerated empty; OpenTelemetry-specific scripts dropped
 - 0.4 ✅ 2026-11-24 — Husky hooks, commitlint with the no-attribution plugin, commit template and editor settings; a trailer naming an AI tool is rejected, a bare subject is not (the shared plugin reads trailers and addresses only)

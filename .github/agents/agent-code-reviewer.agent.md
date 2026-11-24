@@ -73,7 +73,6 @@ You are a **senior code reviewer** for `@bymax-one/nest-subscription`, a public 
 ## Project Context (quick reference)
 
 - **Zero `dependencies`** — NestJS packages are peers, every other peer is optional.
-- **Subpaths**: `.` (module, service, guard, webhook processor), `./shared` (model, no NestJS), `./revenuecat` and `./finance` (adapters), `./testing` (doubles and request builders).
 - **Library = mechanism, host = policy** — the fail policy, the staleness limits and the sandbox switch are host options with refusing defaults.
 - **100% coverage (unit, e2e and combined) + 100% mutation score** — both are hard gates.
 - See `.github/copilot-instructions.md` for the command reference and rule list.

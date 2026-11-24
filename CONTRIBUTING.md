@@ -55,7 +55,7 @@ Commit messages are validated by commitlint through the `commit-msg` hook:
 <type>(<scope>): <subject>
 ```
 
-Types: `feat | fix | docs | refactor | perf | test | build | ci | chore | revert`. The header and each body line are at most 100 characters; keep the subject to 72. A message that names an AI tool as author or reviewer is rejected. The `pre-commit` hook runs lint-staged (ESLint and Prettier on staged files).
+The header and each body line are at most 100 characters; keep the subject to 72. A message that names an AI tool as author or reviewer is rejected. The `pre-commit` hook runs lint-staged (ESLint and Prettier on staged files).
 
 ## Pull requests
 

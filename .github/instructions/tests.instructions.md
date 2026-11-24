@@ -6,7 +6,7 @@ applyTo: '**/*.spec.ts,**/*.e2e-spec.ts'
 
 ## Coverage gate
 
-`pnpm test:cov:all` enforces **100% statements, branches, functions, and lines** over the unit and e2e suites together, and `pnpm test:cov` and `pnpm test:e2e` hold each suite alone to the same 100. Nothing is excluded and `passWithNoTests` is off. Any PR that drops coverage on a touched source file must not be approved.
+`pnpm test:cov:all` enforces **100% statements, branches, functions, and lines** over the unit and e2e suites together, and `pnpm test:cov` and `pnpm test:e2e` hold each suite alone to the same 100. `passWithNoTests` is off. Any PR that drops coverage on a touched source file must not be approved.
 
 ## Mutation testing threshold
 
@@ -20,7 +20,7 @@ Every `it()` carries a comment stating the scenario it covers, and a title that 
 
 ## Unit and e2e split
 
-A unit spec (`src/**/*.spec.ts`) opens no socket, starts no server and spawns no process; `pnpm check:socket-gate` enforces the first two. A case that needs a local stand-in for a provider or a real NestJS application belongs in `test/e2e/` (`*.e2e-spec.ts`).
+A unit spec (`src/**/*.spec.ts`) opens no socket and starts no server; `pnpm check:socket-gate` enforces both. A case that needs a local stand-in for a provider or a real NestJS application belongs in `test/e2e/` (`*.e2e-spec.ts`).
 
 ## Time and provider data
 

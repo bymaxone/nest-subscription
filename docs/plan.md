@@ -122,7 +122,7 @@ The specification leaves the file layout to this roadmap. These are the director
 
 | Area               | Rule                                                                                                                                                                              |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime            | Node.js 26 or newer, NestJS 11 (D09). The scaffold's `engines` field is raised from the sibling's value                                                                           |
+| Runtime            | Node.js 26 or newer, NestJS 11 (D09)                                                                                                                                              |
 | Package manager    | pnpm, pinned in `packageManager`, with its settings in `pnpm-workspace.yaml`. Publishing uses `npm`, never `pnpm`                                                                 |
 | Dependencies       | Zero direct dependencies. NestJS packages are peers; every other peer is optional. Adapters use the runtime's `fetch` and `node:crypto`, no provider SDK                          |
 | TypeScript         | Strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. No `any`                                                                                                |

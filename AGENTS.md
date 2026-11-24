@@ -1,7 +1,7 @@
 # @bymax-one/nest-subscription — Agent Specification
 
 > **Type:** npm public library (not an application)
-> **Stage:** scaffolded. The build, the gates and the CI run on six entry points that export almost nothing; the library's behaviour is written phase by phase from `docs/plan.md`. Nothing is published.
+> **Stage:** scaffolded. The build, the gates and the CI run on entry points that export almost nothing; the library's behaviour is written phase by phase from `docs/plan.md`. Nothing is published.
 
 ## 1. Where things are
 
@@ -261,7 +261,7 @@ Each requirement below is stated in `docs/spec.md` §8.2 and is built by the pha
 | SEC09 | Secret rotation without downtime where the source allows two secrets                       | P2, P7   |
 | SEC10 | A management operation acts only on the authenticated account's subscription               | P8       |
 
-What the repository runs today is the scaffold's own protection: the lint rule set (no `any`, no suppression, no dynamic code evaluation, `node:`-prefixed crypto only), the no-socket gate for unit tests, the dependency scan in CI, and the commit rule that rejects AI attribution.
+What the repository runs today is the scaffold's own protection: the lint rule set, the no-socket gate for unit tests, the dependency scan in CI, and the commit rule that rejects AI attribution.
 
 ## 7. Testing strategy
 
