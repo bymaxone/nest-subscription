@@ -1,6 +1,6 @@
 # Phase 0 — Scaffold and governance
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P0 — scaffold-and-governance
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,7 +39,7 @@ At the end it is a library project that builds, tests and gates an empty package
 
 | ID | Task | Status | Priority | Size | Depends on |
 |---|---|---|---|---|---|
-| 0.1 | Bring the package metadata and the build toolchain | 📋 ToDo | P0 | L | — |
+| 0.1 | Bring the package metadata and the build toolchain | ✅ Done | P0 | L | — |
 | 0.2 | Bring the test, coverage and mutation configuration | 📋 ToDo | P0 | M | 0.1 |
 | 0.3 | Bring the packaging, size and source gates | 📋 ToDo | P0 | M | 0.2 |
 | 0.4 | Bring the git hooks and commit rules | 📋 ToDo | P1 | S | 0.1 |
@@ -53,7 +53,7 @@ At the end it is a library project that builds, tests and gates an empty package
 
 ### Task 0.1 — Bring the package metadata and the build toolchain
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: —
@@ -64,11 +64,11 @@ Create the package manifest, the TypeScript projects, the bundler configuration 
 
 #### Acceptance criteria
 
-- [ ] `pnpm install` succeeds with a committed lockfile, and `package.json` has an empty `dependencies` field, `engines.node` at `>=26.0.0`, and NestJS packages as peers.
-- [ ] `pnpm build` emits ESM, CommonJS and both declaration formats for `.`, `./shared`, `./revenuecat`, `./finance`, `./testing` and the internal bundle.
-- [ ] The `exports` map gives each condition its own `types` entry, and `main`, `module`, `types` and `typesVersions` are present at the top level.
-- [ ] `pnpm typecheck` and `pnpm lint` pass.
-- [ ] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
+- [x] `pnpm install` succeeds with a committed lockfile, and `package.json` has an empty `dependencies` field, `engines.node` at `>=26.0.0`, and NestJS packages as peers.
+- [x] `pnpm build` emits ESM, CommonJS and both declaration formats for `.`, `./shared`, `./revenuecat`, `./finance`, `./testing` and the internal bundle.
+- [x] The `exports` map gives each condition its own `types` entry, and `main`, `module`, `types` and `typesVersions` are present at the top level.
+- [x] `pnpm typecheck` and `pnpm lint` pass.
+- [x] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
 
 #### Files to create / modify
 
@@ -653,4 +653,5 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
+- 0.1 ✅ 2026-11-24 — package manifest, the six empty entry points, TypeScript, lint, format and tsup configuration; build emits ESM, CJS and both declaration formats for every entry
 <!-- entries are added as tasks complete -->

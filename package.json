@@ -1,0 +1,224 @@
+{
+  "name": "@bymax-one/nest-subscription",
+  "version": "0.0.0",
+  "description": "One normalized subscription snapshot per account for NestJS 11, fed by one billing source through an adapter. Access is granted only from a read of the source, never from a webhook payload.",
+  "author": "Bymax One <support@bymax.one>",
+  "license": "MIT",
+  "homepage": "https://github.com/bymaxone/nest-subscription#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bymaxone/nest-subscription.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bymaxone/nest-subscription/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/core/index.d.ts",
+        "default": "./dist/core/index.mjs"
+      },
+      "require": {
+        "types": "./dist/core/index.d.cts",
+        "default": "./dist/core/index.cjs"
+      }
+    },
+    "./shared": {
+      "import": {
+        "types": "./dist/shared/index.d.ts",
+        "default": "./dist/shared/index.mjs"
+      },
+      "require": {
+        "types": "./dist/shared/index.d.cts",
+        "default": "./dist/shared/index.cjs"
+      }
+    },
+    "./revenuecat": {
+      "import": {
+        "types": "./dist/revenuecat/index.d.ts",
+        "default": "./dist/revenuecat/index.mjs"
+      },
+      "require": {
+        "types": "./dist/revenuecat/index.d.cts",
+        "default": "./dist/revenuecat/index.cjs"
+      }
+    },
+    "./finance": {
+      "import": {
+        "types": "./dist/finance/index.d.ts",
+        "default": "./dist/finance/index.mjs"
+      },
+      "require": {
+        "types": "./dist/finance/index.d.cts",
+        "default": "./dist/finance/index.cjs"
+      }
+    },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing/index.d.ts",
+        "default": "./dist/testing/index.mjs"
+      },
+      "require": {
+        "types": "./dist/testing/index.d.cts",
+        "default": "./dist/testing/index.cjs"
+      }
+    },
+    "./internal": {
+      "import": {
+        "types": "./dist/internal/index.d.ts",
+        "default": "./dist/internal/index.mjs"
+      },
+      "require": {
+        "types": "./dist/internal/index.d.cts",
+        "default": "./dist/internal/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/core/index.cjs",
+  "module": "./dist/core/index.mjs",
+  "types": "./dist/core/index.d.cts",
+  "typesVersions": {
+    "*": {
+      "shared": [
+        "./dist/shared/index.d.cts",
+        "./dist/shared/index.d.ts"
+      ],
+      "revenuecat": [
+        "./dist/revenuecat/index.d.cts",
+        "./dist/revenuecat/index.d.ts"
+      ],
+      "finance": [
+        "./dist/finance/index.d.cts",
+        "./dist/finance/index.d.ts"
+      ],
+      "testing": [
+        "./dist/testing/index.d.cts",
+        "./dist/testing/index.d.ts"
+      ],
+      "internal": [
+        "./dist/internal/index.d.cts",
+        "./dist/internal/index.d.ts"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "pnpm clean && tsup",
+    "check:exports": "attw --pack . --profile strict",
+    "check:api": "node scripts/check-api-surface.mjs",
+    "check:docs": "node scripts/check-doc-snippets.mjs",
+    "check:mutants": "node scripts/check-mutation-directives.mjs",
+    "check:published": "node scripts/check-published-surface.mjs",
+    "check:file-length": "node scripts/check-file-length.mjs",
+    "check:function-length": "node scripts/check-function-length.mjs",
+    "clean": "rm -rf dist coverage",
+    "check:socket-gate": "node scripts/check-socket-gate.mjs",
+    "check:spec-headers": "node scripts/check-spec-headers.mjs",
+    "lint": "eslint src scripts test '*.config.ts' '*.config.mjs' '*.config.cjs' && pnpm check:socket-gate && pnpm check:spec-headers && node --test scripts/check-spec-headers.test.mjs scripts/check-dist-fresh.test.mjs scripts/check-size-wiring.test.mjs",
+    "lint:fix": "eslint src scripts test '*.config.ts' '*.config.mjs' '*.config.cjs' --fix",
+    "mutation": "stryker run",
+    "mutation:full": "node -e \"require('node:fs').rmSync('reports/stryker-incremental.json',{force:true,recursive:true})\" && stryker run",
+    "mutation:dry-run": "stryker run --dryRunOnly",
+    "prepare": "husky",
+    "prepublishOnly": "pnpm clean && pnpm typecheck && pnpm lint && pnpm check:mutants && pnpm check:docs && pnpm test:cov && pnpm test:e2e && pnpm test:cov:all && pnpm build && pnpm check:published",
+    "release": "npm publish --provenance --access public",
+    "size": "node scripts/check-dist-fresh.mjs --tarball-ok --also tsup.config.ts --also package.json --also tsconfig.json --also tsconfig.build.json && node scripts/check-size.mjs",
+    "test": "jest",
+    "test:all": "pnpm test && pnpm test:e2e",
+    "test:cov": "jest --coverage",
+    "test:cov:all": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.coverage.config.ts --coverage",
+    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.e2e.config.ts --coverage",
+    "test:watch": "jest --watch",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json && tsc --noEmit -p tsconfig.e2e.json",
+    "check:runtime": "node scripts/check-consumer-runtime.mjs"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@bymax-one/nest-cache": "^1.2.1",
+    "@bymax-one/nest-core": "^1.1.0",
+    "@nestjs/common": "^11.0.16",
+    "@nestjs/core": "^11.1.18",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0"
+  },
+  "peerDependenciesMeta": {
+    "@bymax-one/nest-cache": {
+      "optional": true
+    },
+    "@bymax-one/nest-core": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "@eslint/js": "^9.39.4",
+    "@nestjs/common": "^11.1.20",
+    "@nestjs/core": "^11.1.20",
+    "@nestjs/platform-express": "^11.1.20",
+    "@nestjs/testing": "^11.1.20",
+    "@stryker-mutator/core": "^9",
+    "@stryker-mutator/jest-runner": "^9",
+    "@stryker-mutator/typescript-checker": "^9",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26",
+    "@types/supertest": "^7.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-security": "^4.0.0",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "jest": "^30.4.2",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
+    "tsup": "^9.0.0",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "nestjs",
+    "subscription",
+    "entitlement",
+    "billing",
+    "revenuecat",
+    "webhook",
+    "guard",
+    "node"
+  ],
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

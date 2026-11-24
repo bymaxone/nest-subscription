@@ -1,0 +1,24 @@
+# Generated lockfile — pnpm owns its format; Prettier must never reformat it.
+# Reformatting churns thousands of lines and breaks `pnpm install --frozen-lockfile`
+# in CI (the on-disk lockfile no longer matches what pnpm generates).
+pnpm-lock.yaml
+
+# Build / coverage / report output (also gitignored) — never source-format.
+dist/
+coverage/
+reports/
+
+# Copied byte for byte from bymaxone/.github (.github/script-templates/check-function-length), so a
+# formatter must not touch them: the family check compares them with the template.
+scripts/check-function-length.mjs
+scripts/function-length-key.mjs
+src/check-function-length.spec.ts
+src/check-function-length.baseline.spec.ts
+src/check-function-length.key.spec.ts
+
+# Copied byte for byte from bymaxone/.github (.github/script-templates/commitlint-no-ai-attribution).
+scripts/commitlint-no-ai-attribution.cjs
+
+# Copied byte for byte from bymaxone/.github (.github/script-templates/check-dist-fresh).
+scripts/check-dist-fresh.mjs
+scripts/check-dist-fresh.test.mjs
