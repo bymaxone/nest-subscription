@@ -65,7 +65,11 @@ const OPTIONAL_PEERS = ['@bymax-one/nest-cache', '@bymax-one/nest-core']
 const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 
 /** Every runtime name of the `testing` subpath. */
-const TESTING_EXPORTS = ['InMemorySubscriptionStore', 'storeConformanceCases']
+const TESTING_EXPORTS = [
+  'FakeSubscriptionSource',
+  'InMemorySubscriptionStore',
+  'storeConformanceCases'
+]
 
 /** Every runtime name of the root entry point. */
 const ROOT_EXPORTS = [
@@ -244,6 +248,53 @@ function missingExportTargets(packageDir) {
   return exportTargets(manifest.exports).filter((target) => !existsSync(join(packageDir, target)))
 }
 
+/**
+ * Loads `shared` from the tarball in a directory that holds nothing but the package: no NestJS, no
+ * companion library and no `node_modules` above it. A file that imports only this subpath must
+ * load there in both module formats. Returns whether it did.
+ */
+function standaloneSharedLoads(tarball) {
+  const dir = mkdtempSync(join(tmpdir(), 'nest-subscription-standalone-'))
+  console.log('  shared alone, in a directory with no @nestjs package')
+  try {
+    const packageDir = join(dir, 'node_modules', packageName)
+    mkdirSync(packageDir, { recursive: true })
+    run('tar', ['-xzf', tarball, '-C', packageDir, '--strip-components=1'])
+    if (existsSync(join(dir, 'node_modules', '@nestjs'))) {
+      console.error('  ✗ the scratch directory holds @nestjs')
+      return false
+    }
+    writeFileSync(
+      join(dir, 'package.json'),
+      `${JSON.stringify({ name: 'standalone-shared-check', private: true, version: '0.0.0', type: 'module' })}\n`
+    )
+    writeFileSync(join(dir, 'probe.mjs'), esmProbe)
+    writeFileSync(join(dir, 'probe.cjs'), cjsProbe)
+    for (const file of ['probe.mjs', 'probe.cjs']) {
+      process.stdout.write(
+        run('node', [file], {
+          cwd: dir,
+          env: { ...process.env, PROBE_ENTRIES: JSON.stringify({ './shared': SHARED_EXPORTS }) }
+        })
+      )
+    }
+    return true
+  } catch (error) {
+    process.stdout.write(error.stdout ?? '')
+    process.stderr.write(String(error.stderr ?? error.message))
+    return false
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+/** The lines of a built `shared` file that import or require a module: there must be none. */
+function runtimeImportsOf(file) {
+  return readFileSync(file, 'utf8')
+    .split('\n')
+    .filter((line) => /^\s*import\b|\brequire\(|^\s*export\b.*\bfrom\b/.test(line))
+}
+
 console.log('Consumer runtime gate')
 
 // With `PACKAGE_TARBALL` the gate inspects that file, so a working tree without `dist/` is fine.
@@ -309,6 +360,17 @@ try {
     join(consumerDir, 'package.json'),
     `${JSON.stringify({ name: 'consumer-runtime-check', private: true, version: '0.0.0', type: 'module' }, null, 2)}\n`
   )
+  const sharedImports = ['index.mjs', 'index.cjs'].flatMap((name) =>
+    runtimeImportsOf(join(packageDir, 'dist', 'shared', name))
+  )
+  if (sharedImports.length > 0) {
+    console.error(`  ✗ the built shared files import a module: ${sharedImports.join(' | ')}`)
+    failed = true
+  } else {
+    console.log('  ✓ the built shared files import nothing at run time')
+  }
+  if (!standaloneSharedLoads(tarball)) failed = true
+
   writeFileSync(join(consumerDir, 'deny.mjs'), denyHook)
   writeFileSync(join(consumerDir, 'probe.mjs'), esmProbe)
   writeFileSync(join(consumerDir, 'probe.cjs'), cjsProbe)

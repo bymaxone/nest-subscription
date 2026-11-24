@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 6 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 7 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -45,7 +45,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 | 1.4 | Implement the tenant and account key encoder                        | ✅ Done | P0       | S    | 1.2        |
 | 1.5 | Define the source port, the store port and the injection tokens     | ✅ Done | P0       | M    | 1.2        |
 | 1.6 | Implement the in-memory store and the conformance suite             | ✅ Done | P0       | L    | 1.4, 1.5   |
-| 1.7 | Implement the fake source and prove the shared subpath stands alone | 📋 ToDo | P0       | M    | 1.5        |
+| 1.7 | Implement the fake source and prove the shared subpath stands alone | ✅ Done | P0       | M    | 1.5        |
 
 ---
 
@@ -557,7 +557,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 1.7 — Implement the fake source and prove the shared subpath stands alone
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 1.5
@@ -568,11 +568,11 @@ Write the scriptable fake source (FR39) and the packaging tests that close the p
 
 #### Acceptance criteria
 
-- [ ] `FakeSubscriptionSource` implements `SubscriptionSource` and lets a test set an account's state, queue a notification, fail the next read, delay the next read, and count reads per account.
-- [ ] Its `verifyWebhook` accepts requests built by its own `buildRequest` helper and refuses any other body.
-- [ ] Loading `@bymax-one/nest-subscription/shared` from the packed tarball in a directory with no `@nestjs/*` installed succeeds in ESM and CommonJS.
-- [ ] A test file that implements a source using only root exports compiles and runs.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `FakeSubscriptionSource` implements `SubscriptionSource` and lets a test set an account's state, queue a notification, fail the next read, delay the next read, and count reads per account.
+- [x] Its `verifyWebhook` accepts requests built by its own `buildRequest` helper and refuses any other body.
+- [x] Loading `@bymax-one/nest-subscription/shared` from the packed tarball in a directory with no `@nestjs/*` installed succeeds in ESM and CommonJS.
+- [x] A test file that implements a source using only root exports compiles and runs.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -655,5 +655,7 @@ Completion Protocol (after the work is reported done):
 - 1.5 ✅ 2026-11-24 — source port, store port (atomic write with pending changes, ordered by source instant, paged listings), Clock and the six symbol tokens, with every port type exported from the root
 
 - 1.6 ✅ 2026-11-24 — InMemorySubscriptionStore (not for production, warns once) and the framework-neutral store conformance cases, each failed by a named broken store, run unchanged against the in-memory store and a valid variant
+
+- 1.7 ✅ 2026-11-24 — FakeSubscriptionSource (scripted state, queued signed notifications, delayed and failed reads, read counters, no private entry), a host-written source against root exports only, and the shared subpath proven standalone from the packed tarball
 
 <!-- entries are added as tasks complete -->

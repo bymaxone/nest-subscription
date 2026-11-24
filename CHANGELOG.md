@@ -27,3 +27,5 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - `InMemorySubscriptionStore` and `storeConformanceCases` in the `testing` subpath: an in-memory
   store for tests and development, not for production, and the conformance cases a host runs
   against its own store.
+- `FakeSubscriptionSource` in the `testing` subpath: a scriptable billing source that sets an
+  account's state, queues signed notifications, delays or fails the next read and counts reads.

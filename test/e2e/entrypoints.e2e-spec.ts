@@ -71,10 +71,11 @@ describe('entry points', () => {
   it('exposes exactly the names of the testing subpath', () => {
     // Scenario: the store and the conformance cases are the only names it holds so far.
     expect(Object.keys(testing).sort()).toEqual([
+      'FakeSubscriptionSource',
       'InMemorySubscriptionStore',
       'storeConformanceCases'
     ])
-    expect(Object.values(testing)).toHaveLength(2)
+    expect(Object.values(testing)).toHaveLength(3)
   })
 
   it('raises one error class whichever entry point it is reached from', () => {
