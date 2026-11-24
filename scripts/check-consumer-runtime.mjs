@@ -18,7 +18,8 @@
  *    neither optional peer (`@bymax-one/nest-cache`, `@bymax-one/nest-core`) resolvable: the
  *    library runs without them.
  * 3. Every entry exports the names its subpath promises.
- * 4. Every file the `exports` map names, the internal bundle included, is in the tarball.
+ * 4. Every file the `exports` map names, the internal bundle included, is in the tarball, and the
+ *    tarball holds nothing but `dist/` and the package's own documents.
  * 5. A positive control: a probe that asks for a denied specifier must FAIL, which proves the
  *    resolve hook can see a load and that the denials above are not vacuous.
  *
@@ -164,6 +165,21 @@ function cleanup() {
   rmSync(consumerDir, { recursive: true, force: true })
 }
 
+/** The members a published tarball may hold: the build and the documents the manifest names. */
+const ALLOWED_TARBALL_PATHS = ['package.json', 'README.md', 'CHANGELOG.md', 'LICENSE', 'dist/']
+
+/** The members of `tarball`, without the `package/` prefix npm adds, that are not allowed. */
+function unexpectedMembers(tarball) {
+  return run('tar', ['-tzf', tarball])
+    .split('\n')
+    .map((line) => line.replace(/^package\//, '').trim())
+    .filter((line) => line !== '' && line !== 'package')
+    .filter(
+      (line) =>
+        !ALLOWED_TARBALL_PATHS.some((allowed) => line === allowed || line.startsWith(allowed))
+    )
+}
+
 /** Every file path the `exports` map names, flattened from its nested conditions. */
 function exportTargets(value) {
   if (typeof value === 'string') return [value]
@@ -218,6 +234,16 @@ try {
   const packageDir = join(consumerDir, 'node_modules', packageName)
   mkdirSync(packageDir, { recursive: true })
   run('tar', ['-xzf', tarball, '-C', packageDir, '--strip-components=1'])
+
+  const unexpected = unexpectedMembers(tarball)
+  if (unexpected.length > 0) {
+    console.error(
+      `  ✗ the tarball holds files outside dist/ and the documents: ${unexpected.join(', ')}`
+    )
+    failed = true
+  } else {
+    console.log('  ✓ the tarball holds only dist/ and the package documents')
+  }
 
   const missing = missingExportTargets(packageDir)
   if (missing.length > 0) {

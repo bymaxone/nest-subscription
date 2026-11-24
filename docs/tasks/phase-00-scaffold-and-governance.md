@@ -1,6 +1,6 @@
 # Phase 0 — Scaffold and governance
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 5 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P0 — scaffold-and-governance
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -43,7 +43,7 @@ At the end it is a library project that builds, tests and gates an empty package
 | 0.2 | Bring the test, coverage and mutation configuration | ✅ Done | P0       | M    | 0.1        |
 | 0.3 | Bring the packaging, size and source gates          | ✅ Done | P0       | M    | 0.2        |
 | 0.4 | Bring the git hooks and commit rules                | ✅ Done | P1       | S    | 0.1        |
-| 0.5 | Extend the CI with the family workflows             | 📋 ToDo | P0       | M    | 0.3        |
+| 0.5 | Extend the CI with the family workflows             | ✅ Done | P0       | M    | 0.3        |
 | 0.6 | Write the repository documents for a library        | 📋 ToDo | P0       | M    | 0.3        |
 | 0.7 | Require the status checks and close the phase       | 📋 ToDo | P0       | S    | 0.5, 0.6   |
 
@@ -396,7 +396,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 0.5 — Extend the CI with the family workflows
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.3
@@ -407,12 +407,12 @@ Call the organisation's reusable library CI and security workflows, add the rele
 
 #### Acceptance criteria
 
-- [ ] The pull request shows the aggregate check `CI passed` green, produced by jobs that call `bymaxone/.github` reusables at `@v1`.
-- [ ] The job that checks the required documents and the relative Markdown links is kept, and the aggregate check depends on it.
-- [ ] `agents-sync.yml` is still pinned to a release commit, and `.github/dependabot.yml` has the group that moves that pin.
-- [ ] Every third-party action is pinned by commit SHA with its version in a trailing comment.
-- [ ] The release workflow publishes only from a version tag, through the `npm-publish` environment, and nothing in this task creates a tag.
-- [ ] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
+- [x] The pull request shows the aggregate check `CI passed` green, produced by jobs that call `bymaxone/.github` reusables at `@v1`.
+- [x] The job that checks the required documents and the relative Markdown links is kept, and the aggregate check depends on it.
+- [x] `agents-sync.yml` is still pinned to a release commit, and `.github/dependabot.yml` has the group that moves that pin.
+- [x] Every third-party action is pinned by commit SHA with its version in a trailing comment.
+- [x] The release workflow publishes only from a version tag, through the `npm-publish` environment, and nothing in this task creates a tag.
+- [x] The commands this task introduces pass locally on Node.js 26, and nothing brought from `nest-telemetry` names OpenTelemetry or telemetry.
 
 #### Files to create / modify
 
@@ -657,5 +657,7 @@ Completion Protocol (after the work is reported done):
 - 0.2 ✅ 2026-11-24 — Jest unit, end-to-end and combined configs, no-socket gate with a runtime spec, Stryker at 100; the empty package has no mutants, so the run completes with no score
 - 0.3 ✅ 2026-11-24 — gate scripts triaged and adapted (runtime, exports map, size, api, docs, published surface, length, spec headers, mutation directives); baselines regenerated empty; OpenTelemetry-specific scripts dropped
 - 0.4 ✅ 2026-11-24 — Husky hooks, commitlint with the no-attribution plugin, commit template and editor settings; a trailer naming an AI tool is rejected, a bare subject is not (the shared plugin reads trailers and addresses only)
+
+- 0.5 ✅ 2026-11-24 — CI calls the organisation's reusable pipeline beside the documents job, the aggregate stays CI passed; release, CodeQL, OSV, Scorecard, API surface, full mutation and peer drift workflows and Dependabot with the agents-sync group
 
 <!-- entries are added as tasks complete -->
