@@ -3,7 +3,7 @@
  * but type imports, and a signature that changes fails to compile here.
  * @layer internal
  */
-import type { SubscriptionRecord, SubscriptionSnapshot } from '../shared'
+import type { SubscriptionRecord, SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 import type { Clock } from './clock'
 import type {
   AccountReference,

@@ -112,7 +112,7 @@ The specification leaves the file layout to this roadmap. These are the director
 | `test/fixtures/`  | Recorded provider payloads, with every identifier and secret replaced                                                                | —             |
 | `scripts/`        | The gate scripts brought from `nest-telemetry`                                                                                       | —             |
 
-`src/internal/` exists because of a measured failure in the family: a module reached from two entry points is copied into each bundle, and a copied class is a second injection token and a second `instanceof` target. An adapter subpath and the root both need the source port's token, so both import it from the shared internal bundle by package specifier.
+`src/internal/` exists because of a measured failure in the family: a module reached from two entry points is copied into each bundle, and a copied class is a second injection token and a second `instanceof` target. An adapter subpath and the root both need the source port's token, so both import it from the shared internal bundle by package specifier. The `shared` subpath is reached the same way, because it defines the error class.
 
 ---
 

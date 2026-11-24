@@ -73,36 +73,18 @@ describe('value sets', () => {
   })
 })
 
-describe('status meanings', () => {
-  // The access meaning of each status as the specification states it. A status never decides
-  // access in the library; this table records what the source's flag is expected to say.
-  const meanings: ReadonlyArray<
-    readonly [SubscriptionStatus, 'yes' | 'no' | 'as the source says']
-  > = [
-    ['trialing', 'yes'],
-    ['active', 'yes'],
-    ['in_grace', 'yes'],
-    ['on_hold', 'no'],
-    ['paused', 'no'],
-    ['expired', 'no'],
-    ['unknown', 'as the source says']
-  ]
-
-  it('states a meaning for every status and for no other', () => {
-    // Scenario: the table covers each member of the set exactly once, in the set's order.
-    expect(meanings.map(([status]) => status)).toEqual([...SUBSCRIPTION_STATUSES])
-  })
-
+describe('status and access', () => {
   it('exports no function that takes a status and returns access', () => {
-    // Scenario: the only functions the entry point exports are the three listed; none is named for
+    // Scenario: the only functions the entry point exports are the ones listed; none is named for
     // a status, and the behaviour below shows the resolution follows the flag for every status.
     const functions = Object.entries(entry)
       .filter(([, value]) => typeof value === 'function')
       .map(([name]) => name)
       .sort()
     expect(functions).toEqual([
-      'SubscriptionInputError',
+      'SubscriptionError',
       'createEmptySnapshot',
+      'parseInstant',
       'resolveEntitlements'
     ])
   })

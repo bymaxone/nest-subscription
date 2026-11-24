@@ -1,9 +1,9 @@
 /**
  * @fileoverview The one error class of the library. It carries a code from the closed catalogue
  * and the catalogue's fixed message, and serializes to nothing else.
- * @layer internal
+ * @layer shared
  */
-import { SUBSCRIPTION_ERROR_MESSAGES, type SubscriptionErrorCode } from '../shared/error-codes'
+import { SUBSCRIPTION_ERROR_MESSAGES, type SubscriptionErrorCode } from './error-codes'
 
 /**
  * The error every part of the library raises. The message is the fixed text of the code, so it

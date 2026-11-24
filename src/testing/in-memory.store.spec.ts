@@ -4,13 +4,22 @@
  * @layer testing
  */
 import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
-import { createEmptySnapshot, type SubscriptionChange } from '../shared'
+import { createEmptySnapshot, type SubscriptionChange } from '@bymax-one/nest-subscription/shared'
 import { InMemorySubscriptionStore } from './in-memory.store'
 
 const AT = '2026-01-01T00:00:00.000Z'
 
 function quiet(): InMemorySubscriptionStore {
   return new InMemorySubscriptionStore({ logger: () => undefined })
+}
+
+/** A type whose properties a test may assign, so it can tamper with a value the port returns. */
+type Tamperable<T> = { -readonly [K in keyof T]: T[K] }
+
+/** Changes the text fields of a snapshot in place, as a caller that keeps a reference would. */
+function tamper(target: Tamperable<ReturnType<typeof createEmptySnapshot>>): void {
+  target.source = 'tampered'
+  target.fetchedAt = 'tampered'
 }
 
 function snapshot(accountId: string): ReturnType<typeof createEmptySnapshot> {
@@ -47,6 +56,22 @@ describe('InMemorySubscriptionStore', () => {
     await expect(store.listStaleKeys('x', 5, null)).rejects.toMatchObject(code)
   })
 
+  it('refuses a snapshot whose fetch instant is malformed and stores nothing', async () => {
+    // Scenario: the write is refused with the catalogue code and leaves the key empty, so a later
+    // listing of stale keys still answers.
+    const store = quiet()
+    const malformed = { ...snapshot('bad'), fetchedAt: 'x' }
+    await expect(store.putSnapshot('bad', malformed, [], AT)).rejects.toMatchObject({
+      code: 'SUBSCRIPTION_INVALID_INPUT'
+    })
+    expect(await store.getSnapshot('bad')).toBeNull()
+    await store.putSnapshot('good', snapshot('good'), [], AT)
+    expect(await store.listStaleKeys('2026-06-01T00:00:00.000Z', 5, null)).toEqual({
+      keys: ['good'],
+      nextCursor: null
+    })
+  })
+
   it.each([0, -1, 1.5, Number.NaN])('refuses the page limit %s', async (limit) => {
     // Scenario: a page holds a positive whole number of keys.
     const store = quiet()
@@ -57,15 +82,23 @@ describe('InMemorySubscriptionStore', () => {
   })
 
   it('is not changed by an object the caller passed in or received', async () => {
-    // Scenario: the caller mutates what it wrote and what it read; the stored value stays.
+    // Scenario: the caller mutates the snapshot and the changes it wrote, then the snapshot and
+    // the changes it read; what is stored stays as it was first written.
     const store = quiet()
-    const written = { ...snapshot('a'), accountId: 'a' }
+    const written = snapshot('a')
     const changes: SubscriptionChange[] = [{ kind: 'started', key: 'c1' }]
     await store.putSnapshot('k', written, changes, AT)
     changes[0] = { kind: 'expired', key: 'changed' }
+    tamper(written)
     const read = await store.getSnapshot('k')
-    if (read !== null) (read.pendingChanges as SubscriptionChange[]).length = 0
-    expect((await store.getSnapshot('k'))?.pendingChanges).toEqual([{ kind: 'started', key: 'c1' }])
+    if (read !== null) {
+      ;(read.pendingChanges as SubscriptionChange[]).length = 0
+      tamper(read.snapshot)
+    }
+    expect(await store.getSnapshot('k')).toEqual({
+      snapshot: snapshot('a'),
+      pendingChanges: [{ kind: 'started', key: 'c1' }]
+    })
   })
 
   it('leaves the snapshot alone when it clears changes of another key', async () => {

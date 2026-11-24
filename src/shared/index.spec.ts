@@ -5,7 +5,9 @@
 import * as entry from './index'
 import { createEmptySnapshot } from './empty-snapshot'
 import { SUBSCRIPTION_ERROR_CODES } from './error-codes'
-import { SubscriptionInputError, resolveEntitlements } from './entitlements'
+import { resolveEntitlements } from './entitlements'
+import { parseInstant } from './instant'
+import { SubscriptionError } from './subscription.error'
 import * as values from './values'
 
 describe('shared entry point', () => {
@@ -18,9 +20,10 @@ describe('shared entry point', () => {
       'SUBSCRIPTION_ERROR_CODES',
       'SUBSCRIPTION_ORIGINS',
       'SUBSCRIPTION_STATUSES',
-      'SubscriptionInputError',
+      'SubscriptionError',
       'WILL_RENEW_VALUES',
       'createEmptySnapshot',
+      'parseInstant',
       'resolveEntitlements'
     ])
     expect(entry.CHANGE_KINDS).toBe(values.CHANGE_KINDS)
@@ -28,7 +31,8 @@ describe('shared entry point', () => {
     expect(entry.SUBSCRIPTION_ERROR_CODES).toBe(SUBSCRIPTION_ERROR_CODES)
     expect(entry.createEmptySnapshot).toBe(createEmptySnapshot)
     expect(entry.resolveEntitlements).toBe(resolveEntitlements)
-    expect(entry.SubscriptionInputError).toBe(SubscriptionInputError)
+    expect(entry.SubscriptionError).toBe(SubscriptionError)
+    expect(entry.parseInstant).toBe(parseInstant)
     expect(entry.SUBSCRIPTION_ORIGINS).toBe(values.SUBSCRIPTION_ORIGINS)
     expect(entry.SUBSCRIPTION_STATUSES).toBe(values.SUBSCRIPTION_STATUSES)
     expect(entry.WILL_RENEW_VALUES).toBe(values.WILL_RENEW_VALUES)

@@ -23,9 +23,12 @@
  * 5. A positive control: a probe that asks for a denied specifier must FAIL, which proves the
  *    resolve hook can see a load and that the denials above are not vacuous.
  *
- * Entry points are separate bundles, so a module reached from two of them by a relative path is
- * copied into each, and a copied class is a different injection token. These probes verify
- * loading and export names; they do not verify instance identity across entries.
+ * 6. One error class: `SubscriptionError` is the same value from the root, from `./internal` and
+ *    from `./shared`, and an error thrown by the model (`./shared`) or by the in-memory store
+ *    (`./testing`) is an instance of the root's class, in each module format. Entry points are
+ *    separate bundles, so a module reached from two of them by a relative path is copied into
+ *    each and a copied class is a different class; the entry points reach `shared` by package
+ *    specifier so that one copy exists.
  *
  * It shells out to `npm pack` and `tar`, both of which have to be on PATH. That is deliberate:
  * packing through npm itself is what makes the gate inspect the same tarball a publish would
@@ -92,9 +95,10 @@ const SHARED_EXPORTS = [
   'SUBSCRIPTION_ERROR_CODES',
   'SUBSCRIPTION_ORIGINS',
   'SUBSCRIPTION_STATUSES',
-  'SubscriptionInputError',
+  'SubscriptionError',
   'WILL_RENEW_VALUES',
   'createEmptySnapshot',
+  'parseInstant',
   'resolveEntitlements'
 ]
 
@@ -128,6 +132,26 @@ const PROBES = [
     ]
   },
   {
+    label: 'one error class across the root, internal, shared and testing',
+    deny: OPTIONAL_PEERS,
+    entries: { '.': ROOT_EXPORTS, './shared': SHARED_EXPORTS },
+    same: [
+      [
+        ['.', 'SubscriptionError'],
+        ['./shared', 'SubscriptionError']
+      ],
+      [
+        ['./internal', 'SubscriptionError'],
+        ['./shared', 'SubscriptionError']
+      ]
+    ],
+    // Each thrower raises an error that must be an instance of the root's class.
+    thrown: [
+      ['shared resolveEntitlements', '.'],
+      ['testing markEventProcessed', '.']
+    ]
+  },
+  {
     label: 'positive control: a load of a denied specifier is seen',
     deny: [`${packageName}/shared`],
     entries: { './shared': SHARED_EXPORTS },
@@ -155,6 +179,18 @@ const ENTRIES = JSON.parse(process.env.PROBE_ENTRIES)
 const load = (specifier) => ${format === 'ESM' ? 'import(specifier)' : 'Promise.resolve(require(specifier))'}
 const specifierOf = (subpath) => '${packageName}' + subpath.slice(1)
 
+// Each thrower makes one part of the library raise its error for an invalid instant.
+const THROWERS = {
+  'shared resolveEntitlements': async () => {
+    const { resolveEntitlements } = await load(specifierOf('./shared'))
+    resolveEntitlements([{ accessUntil: 'not a date' }], new Map())
+  },
+  'testing markEventProcessed': async () => {
+    const { InMemorySubscriptionStore } = await load(specifierOf('./testing'))
+    await new InMemorySubscriptionStore({ logger: () => undefined }).markEventProcessed('s', 'e', 'x')
+  }
+}
+
 async function run() {
   const failures = []
   for (const [subpath, names] of Object.entries(ENTRIES)) {
@@ -172,6 +208,18 @@ async function run() {
     const second = (await load(specifierOf(subpathB)))[nameB]
     if (first === undefined || first !== second) {
       failures.push(subpathA + ' ' + nameA + ' is not the same value as ' + subpathB + ' ' + nameB)
+    }
+  }
+  for (const [thrower, subpath] of JSON.parse(process.env.PROBE_THROWN ?? '[]')) {
+    const expected = (await load(specifierOf(subpath))).SubscriptionError
+    let caught
+    try {
+      await THROWERS[thrower]()
+    } catch (error) {
+      caught = error
+    }
+    if (expected === undefined || !(caught instanceof expected)) {
+      failures.push(thrower + ' does not raise an instance of the SubscriptionError of ' + subpath)
     }
   }
   return failures
@@ -385,7 +433,8 @@ try {
             ...process.env,
             DENY_PREFIXES: JSON.stringify(probe.deny),
             PROBE_ENTRIES: JSON.stringify(probe.entries),
-            PROBE_SAME: JSON.stringify(probe.same ?? [])
+            PROBE_SAME: JSON.stringify(probe.same ?? []),
+            PROBE_THROWN: JSON.stringify(probe.thrown ?? [])
           }
         })
         if (probe.expectDenied) {

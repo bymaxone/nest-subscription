@@ -6,10 +6,14 @@
  * @layer testing
  */
 import assert from 'node:assert/strict'
+import { isDeepStrictEqual } from 'node:util'
 
 import { encodeAccountKey, type SubscriptionStore } from '@bymax-one/nest-subscription/internal'
-
-import { createEmptySnapshot, type SubscriptionChange, type SubscriptionSnapshot } from '../shared'
+import {
+  createEmptySnapshot,
+  type SubscriptionChange,
+  type SubscriptionSnapshot
+} from '@bymax-one/nest-subscription/shared'
 
 /** Gives each case a fresh, empty store. */
 export type StoreFactory = () => SubscriptionStore | Promise<SubscriptionStore>
@@ -72,6 +76,7 @@ const CLEAR_KEYS = ['c1', 'c3', 'unknown']
 const PAGE_BUDGET = Array.from({ length: 50 }, (_, page) => page)
 const NEVER_ENDS = 'the listing did not end within its page budget'
 const OVER_LIMIT = 'a page holds more keys than the limit'
+const CHANGE_LOST = 'a pending change was lost when two writes overlapped'
 
 /** What a store holds for a key: the snapshot and the changes not yet cleared. */
 function held(
@@ -126,6 +131,33 @@ async function interleave(createStore: StoreFactory, instants: readonly string[]
     instants.map((instant) => store.putSnapshot(ACC_KEY, snapshotOf(ACC, instant), [], instant))
   )
   assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, T8), []))
+}
+
+/**
+ * Starts two writes of one key at once, in the order given, each at the same instant and with its
+ * own change, so the port accepts both whichever the store applies first; every change is then
+ * pending.
+ */
+async function overlapWithChanges(
+  createStore: StoreFactory,
+  first: SubscriptionChange,
+  second: SubscriptionChange
+): Promise<void> {
+  const store = await createStore()
+  const answers = await Promise.all(
+    [first, second].map((added) => store.putSnapshot(ACC_KEY, snapshotOf(ACC, T5), [added], T5))
+  )
+  assert.deepEqual(answers, [true, true])
+  // Which write the store applied first is its own choice, so both orders of the changes are valid.
+  const stored = await store.getSnapshot(ACC_KEY)
+  const valid = [
+    held(snapshotOf(ACC, T5), [first, second]),
+    held(snapshotOf(ACC, T5), [second, first])
+  ]
+  assert.ok(
+    valid.some((expected) => isDeepStrictEqual(stored, expected)),
+    CHANGE_LOST
+  )
 }
 
 const snapshotCases: readonly StoreConformanceCase[] = [
@@ -205,6 +237,13 @@ const orderingCases: readonly StoreConformanceCase[] = [
 ]
 
 const pendingCases: readonly StoreConformanceCase[] = [
+  {
+    name: 'keeps every pending change when overlapping writes carry different changes, in either order',
+    run: async (createStore): Promise<void> => {
+      await overlapWithChanges(createStore, C1, C2)
+      await overlapWithChanges(createStore, C2, C1)
+    }
+  },
   {
     name: 'accumulates pending changes across writes, oldest first, without repeating a key',
     run: async (createStore): Promise<void> => {

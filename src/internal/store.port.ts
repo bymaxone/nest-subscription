@@ -4,7 +4,7 @@
  * suite of the `testing` subpath tests every guarantee stated here, through this port alone.
  * @layer internal
  */
-import type { SubscriptionChange, SubscriptionSnapshot } from '../shared'
+import type { SubscriptionChange, SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 
 /** A stored snapshot with the changes the host has not been told about yet. */
 export interface StoredSnapshot {

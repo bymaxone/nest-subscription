@@ -33,6 +33,25 @@ const LOADS_SUPERTEST = [
   `ImportExpression[source.quasis.0.value.cooked=${SUPERTEST}]`
 ]
 
+// The packages the crypto guard-rail refuses, shared by every block that restates the rule.
+const CRYPTO_PATHS = [
+  { name: 'crypto', message: "Use 'node:crypto' with the node: prefix instead." },
+  { name: 'bcrypt', message: 'Use node:crypto scrypt instead.' },
+  { name: 'argon2', message: 'Use node:crypto scrypt instead.' },
+  { name: 'uuid', message: 'Use crypto.randomUUID() from node:crypto instead.' },
+  { name: 'nanoid', message: 'Use crypto.randomBytes() from node:crypto instead.' },
+  { name: 'crypto-js', message: 'Use node:crypto instead.' }
+]
+
+// Every entry point other than `shared` reaches it by package specifier. A relative path would make
+// the bundler copy `shared` into that entry point's bundle, and a class copied into two bundles is
+// two classes, so an `instanceof` check in a host would fail across them.
+const SHARED_BY_SPECIFIER = {
+  regex: '^\\.{1,2}/(?:.*/)?shared(?:/|$)',
+  message:
+    "Import the shared subpath by its package specifier, '@bymax-one/nest-subscription/shared', never by a relative path."
+}
+
 export default [
   // Global ignores — only build artifacts and coverage, NOT config files
   {
@@ -142,14 +161,7 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            { name: 'crypto', message: "Use 'node:crypto' with the node: prefix instead." },
-            { name: 'bcrypt', message: 'Use node:crypto scrypt instead.' },
-            { name: 'argon2', message: 'Use node:crypto scrypt instead.' },
-            { name: 'uuid', message: 'Use crypto.randomUUID() from node:crypto instead.' },
-            { name: 'nanoid', message: 'Use crypto.randomBytes() from node:crypto instead.' },
-            { name: 'crypto-js', message: 'Use node:crypto instead.' }
-          ]
+          paths: CRYPTO_PATHS
         }
       ],
 
@@ -269,14 +281,7 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            { name: 'crypto', message: "Use 'node:crypto' with the node: prefix instead." },
-            { name: 'bcrypt', message: 'Use node:crypto scrypt instead.' },
-            { name: 'argon2', message: 'Use node:crypto scrypt instead.' },
-            { name: 'uuid', message: 'Use crypto.randomUUID() from node:crypto instead.' },
-            { name: 'nanoid', message: 'Use crypto.randomBytes() from node:crypto instead.' },
-            { name: 'crypto-js', message: 'Use node:crypto instead.' }
-          ]
+          paths: CRYPTO_PATHS
         }
       ],
       'security/detect-object-injection': 'warn'
@@ -316,6 +321,21 @@ export default [
     }
   },
 
+  // The entry points other than `shared` reach it by package specifier. The block restates the
+  // crypto guard-rail because a later block replaces the whole `no-restricted-imports` rule.
+  {
+    files: [
+      'src/internal/**/*.ts',
+      'src/core/**/*.ts',
+      'src/testing/**/*.ts',
+      'src/revenuecat/**/*.ts',
+      'src/finance/**/*.ts'
+    ],
+    rules: {
+      'no-restricted-imports': ['error', { paths: CRYPTO_PATHS, patterns: [SHARED_BY_SPECIFIER] }]
+    }
+  },
+
   // A unit spec under `src/` opens no socket: it drives the code with request and response doubles.
   // A case that needs a real listening server belongs in `test/e2e`, where sockets are allowed.
   //
@@ -338,7 +358,13 @@ export default [
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [{ group: ['supertest', 'supertest/**'], message: NO_SOCKET }] }
+        {
+          paths: CRYPTO_PATHS,
+          patterns: [
+            { group: ['supertest', 'supertest/**'], message: NO_SOCKET },
+            SHARED_BY_SPECIFIER
+          ]
+        }
       ],
       'no-restricted-syntax': [
         'error',

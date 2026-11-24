@@ -17,14 +17,13 @@ import type {
   WebhookRequest,
   WebhookVerification
 } from '@bymax-one/nest-subscription'
-
 import {
   SUBSCRIPTION_ENVIRONMENTS,
   createEmptySnapshot,
   type SubscriptionOrigin,
   type SubscriptionRecord,
   type SubscriptionSnapshot
-} from '../shared'
+} from '@bymax-one/nest-subscription/shared'
 
 /** Options of {@link FakeSubscriptionSource}. */
 export interface FakeSourceOptions {

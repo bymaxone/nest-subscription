@@ -8,8 +8,12 @@ import type {
   StoredSnapshot,
   SubscriptionStore
 } from '@bymax-one/nest-subscription/internal'
+import {
+  createEmptySnapshot,
+  parseInstant,
+  type SubscriptionChange
+} from '@bymax-one/nest-subscription/shared'
 
-import { createEmptySnapshot } from '../shared'
 import { InMemorySubscriptionStore } from './in-memory.store'
 
 /** An instant later than any a test uses, so a write carrying it is never refused as older. */
@@ -43,7 +47,7 @@ function good(): InMemorySubscriptionStore {
 
 /** The instant one millisecond after an ISO 8601 instant. */
 function justAfter(instant: string): string {
-  return new Date(Date.parse(instant) + 1).toISOString()
+  return new Date(parseInstant(instant) + 1).toISOString()
 }
 
 /** The store with some of its methods replaced; the others reach it unchanged. */
@@ -114,7 +118,7 @@ const snapshotDefects: Readonly<Record<string, () => SubscriptionStore>> = {
     const last = new Map<string, number>()
     return withDefect(base, {
       putSnapshot: async (key, snapshot, changes, at) => {
-        const instant = Date.parse(at)
+        const instant = parseInstant(at)
         if (instant <= (last.get(key) ?? Number.NEGATIVE_INFINITY)) return false
         last.set(key, instant)
         return base.putSnapshot(key, snapshot, changes, at)
@@ -185,6 +189,7 @@ const pendingDefects: Readonly<Record<string, () => SubscriptionStore>> = {
       }
     })
   },
+  lostUpdateWhenWritesOverlap: lostUpdate,
   changesWrittenApartFromTheSnapshot: () => {
     const base = good()
     return withDefect(base, {
@@ -197,6 +202,46 @@ const pendingDefects: Readonly<Record<string, () => SubscriptionStore>> = {
       }
     })
   }
+}
+
+/**
+ * A store that keeps the pending changes itself and writes them back as read-then-write: it reads
+ * the list, waits for the snapshot write, then stores the list it read plus its own changes. Two
+ * overlapping writes both read the same list, and the later one overwrites the earlier one's
+ * changes.
+ */
+function lostUpdate(): SubscriptionStore {
+  const base = good()
+  const pending = new Map<string, readonly SubscriptionChange[]>()
+  const pendingOf = (key: string): readonly SubscriptionChange[] => pending.get(key) ?? []
+  return withDefect(base, {
+    getSnapshot: async (key) => {
+      const held = await base.getSnapshot(key)
+      return held === null ? null : { snapshot: held.snapshot, pendingChanges: pendingOf(key) }
+    },
+    putSnapshot: async (key, snapshot, changes, at) => {
+      const read = pendingOf(key)
+      const written = await base.putSnapshot(key, snapshot, [], at)
+      if (written) {
+        pending.set(key, [...read, ...changes.filter((c) => !read.some((r) => r.key === c.key))])
+      }
+      return written
+    },
+    clearPendingChanges: async (key, keys) => {
+      pending.set(
+        key,
+        pendingOf(key).filter((change) => !keys.includes(change.key))
+      )
+    },
+    listKeysWithPendingChanges: async (limit, cursor) => {
+      // A store that lists what it holds: the listing is the in-memory store's over the same keys.
+      const listing = good()
+      for (const [key, held] of pending) {
+        await listing.putSnapshot(key, INVENTED, held, FAR_FUTURE)
+      }
+      return listing.listKeysWithPendingChanges(limit, cursor)
+    }
+  })
 }
 
 /** The stores whose paged listings are mishandled. */

@@ -10,7 +10,7 @@
 
 At the start the package is an empty, fully gated scaffold: the entry points under `src/shared/`, `src/internal/`, `src/core/`, `src/revenuecat/`, `src/finance/` and `src/testing/` export nothing.
 
-At the end the library has its vocabulary and its two seams. The `shared` subpath carries the normalized model, the closed value sets, the change kinds and the error-code catalogue, with no runtime dependency. The internal bundle carries the source port, the store port, the injection tokens, the error class and the account key encoder. The `testing` subpath carries an in-memory store, a conformance suite a host runs against its own store, and a scriptable fake source. There is still no NestJS module and no network call.
+At the end the library has its vocabulary and its two seams. The `shared` subpath carries the normalized model, the closed value sets, the change kinds, the error-code catalogue and the error class, with no runtime dependency. The internal bundle carries the source port, the store port, the injection tokens and the account key encoder. The `testing` subpath carries an in-memory store, a conformance suite a host runs against its own store, and a scriptable fake source. There is still no NestJS module and no network call.
 
 ---
 
@@ -145,7 +145,7 @@ Completion Protocol (after the work is reported done):
 
 #### Description
 
-Write the closed catalogue of error codes in `shared` and the one error class that carries a code, in the internal bundle (specification §6.4).
+Write the closed catalogue of error codes in `shared` and the one error class that carries a code, in `shared` (specification §6.4).
 
 #### Acceptance criteria
 
@@ -183,13 +183,13 @@ REQUIRED READING (only these — do not load more):
 - `docs/plan.md` § "Target layout" (why `src/internal/` exists)
 
 TASK
-Create `SUBSCRIPTION_ERROR_CODES` in the shared subpath and `SubscriptionError` in the internal bundle, re-exported from the root.
+Create `SUBSCRIPTION_ERROR_CODES` in the shared subpath and `SubscriptionError` in `shared` too, re-exported from the internal bundle and the root.
 
 DELIVERABLES
 
 1. `src/shared/error-codes.ts`: a frozen object mapping names to code strings, the `SubscriptionErrorCode` union, and a frozen map from code to its fixed English message. Messages never interpolate an identifier, a secret or a provider payload.
 
-2. `src/internal/subscription.error.ts`: `SubscriptionError extends Error` with `code`, a `cause` passed through the standard options bag, and a `toJSON` that returns only `{ code, message }`.
+2. `src/shared/subscription.error.ts`: `SubscriptionError extends Error` with `code`, a `cause` passed through the standard options bag, and a `toJSON` that returns only `{ code, message }`.
 
 3. Root re-exports of the class and the codes. An end-to-end assertion that the class imported from the root and from `revenuecat` is the same constructor in the built package, in ESM and CommonJS.
 

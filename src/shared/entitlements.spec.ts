@@ -3,7 +3,9 @@
  * a table of cases named by the rule each protects.
  * @layer shared
  */
-import { SubscriptionInputError, resolveEntitlements } from './entitlements'
+import { resolveEntitlements } from './entitlements'
+import { SUBSCRIPTION_ERROR_MESSAGES } from './error-codes'
+import { SubscriptionError } from './subscription.error'
 import type { EntitlementState, SubscriptionRecord } from './snapshot.types'
 
 const JAN = '2026-01-01T00:00:00.000Z'
@@ -230,7 +232,14 @@ describe('resolveEntitlements', () => {
     // Scenario: a caller passes a subscription whose end is not a date.
     expect(() =>
       resolveEntitlements([sub('s1', { accessUntil: 'not-a-date' })], new Map([['s1', ['pro']]]))
-    ).toThrow(SubscriptionInputError)
+    ).toThrow(SubscriptionError)
+  })
+
+  it('refuses an instant that is not ISO 8601, though a lenient reader would accept it', () => {
+    // Scenario: a day-first date reads as a date to `Date.parse`; the rule refuses it.
+    expect(() =>
+      resolveEntitlements([sub('s1', { accessUntil: '01/02/2026' })], new Map([['s1', ['pro']]]))
+    ).toThrow(SubscriptionError)
   })
 
   it('refuses a malformed instant that the ranking would never compare', () => {
@@ -244,14 +253,14 @@ describe('resolveEntitlements', () => {
           ['s2', ['pro']]
         ])
       )
-    ).toThrow(SubscriptionInputError)
+    ).toThrow(SubscriptionError)
   })
 
   it('refuses a malformed instant on a subscription that grants nothing', () => {
     // Scenario: the subscription has no grant entry, yet its date is checked.
     expect(() =>
       resolveEntitlements([sub('s1', { accessUntil: 'not-a-date' })], new Map())
-    ).toThrow(SubscriptionInputError)
+    ).toThrow(SubscriptionError)
   })
 
   it('raises an error with the catalogue code and a message that holds no value', () => {
@@ -264,11 +273,12 @@ describe('resolveEntitlements', () => {
       }
       return undefined
     })()
-    expect(failure).toBeInstanceOf(RangeError)
-    expect(failure).toBeInstanceOf(SubscriptionInputError)
-    expect((failure as SubscriptionInputError).code).toBe('SUBSCRIPTION_INVALID_INPUT')
-    expect((failure as SubscriptionInputError).name).toBe('SubscriptionInputError')
-    expect((failure as SubscriptionInputError).message).toBe('An argument is invalid.')
+    expect(failure).toBeInstanceOf(SubscriptionError)
+    expect((failure as SubscriptionError).code).toBe('SUBSCRIPTION_INVALID_INPUT')
+    expect((failure as SubscriptionError).message).toBe(
+      SUBSCRIPTION_ERROR_MESSAGES.SUBSCRIPTION_INVALID_INPUT
+    )
+    expect((failure as SubscriptionError).message).not.toContain('secret-looking-text')
   })
 
   it('changes none of its arguments and returns the same result twice', () => {

@@ -2,9 +2,10 @@
  * @fileoverview Pins the names the `internal` entry point exports.
  * @layer internal
  */
+import { SubscriptionError } from '@bymax-one/nest-subscription/shared'
+
 import { encodeAccountKey } from './account-key'
 import * as entry from './index'
-import { SubscriptionError } from './subscription.error'
 import * as tokens from './tokens'
 
 describe('internal entry point', () => {

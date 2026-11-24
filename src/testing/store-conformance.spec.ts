@@ -3,7 +3,7 @@
  * each deliberately broken store fails on the named cases that state the guarantee it breaks.
  * @layer testing
  */
-import { createEmptySnapshot } from '../shared'
+import { createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
 import { BROKEN_STORES, VALID_VARIANTS } from './broken-stores.fixture'
 import { InMemorySubscriptionStore } from './in-memory.store'
 import {
@@ -37,6 +37,8 @@ const CASE = {
   equalReplaces: 'replaces the snapshot when the instant is equal or newer',
   olderAddsNoChanges: 'adds no changes when it refuses an older snapshot',
   interleaved: 'keeps the newer snapshot when two writes interleave, in either order',
+  overlapKeepsChanges:
+    'keeps every pending change when overlapping writes carry different changes, in either order',
   accumulates: 'accumulates pending changes across writes, oldest first, without repeating a key',
   clearsNamed: 'clears the named pending changes and no others',
   clearUnknown: 'ignores clearing on a key that holds nothing',
@@ -65,13 +67,14 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   retentionDeletesNothing: [CASE.retention],
   retentionDeletesTheBoundary: [CASE.retention],
   noOrdering: [CASE.olderRefused, CASE.olderAddsNoChanges, CASE.interleaved],
-  refusesAnEqualInstant: [CASE.equalReplaces],
+  refusesAnEqualInstant: [CASE.equalReplaces, CASE.overlapKeepsChanges],
   inventsAnUnknownSnapshot: [CASE.unknownIsNull, CASE.clearUnknown],
   dropsPendingChangesOnRead: [
     CASE.readsBack,
     CASE.accountsApart,
     CASE.tenantsApart,
     CASE.olderAddsNoChanges,
+    CASE.overlapKeepsChanges,
     CASE.accumulates,
     CASE.clearsNamed
   ],
@@ -87,6 +90,7 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   pendingOverwrittenByLaterWrite: [CASE.olderAddsNoChanges, CASE.accumulates],
   pendingNotClearedByKey: [CASE.clearsNamed],
   clearingAnUnknownKeyFails: [CASE.clearUnknown],
+  lostUpdateWhenWritesOverlap: [CASE.overlapKeepsChanges],
   changesWrittenApartFromTheSnapshot: [CASE.olderAddsNoChanges],
   staleListingIgnoresLimit: [CASE.stalePaged],
   pendingListingIgnoresLimit: [CASE.pendingPaged],

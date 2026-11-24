@@ -26,7 +26,7 @@ export type {
   WebhookRequest,
   WebhookVerification
 } from '@bymax-one/nest-subscription/internal'
-export { SUBSCRIPTION_ERROR_CODES } from '../shared'
+export { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 export type {
   ChangeKind,
   EmptySnapshotInput,
@@ -41,4 +41,4 @@ export type {
   SubscriptionSnapshot,
   SubscriptionStatus,
   WillRenew
-} from '../shared'
+} from '@bymax-one/nest-subscription/shared'

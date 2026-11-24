@@ -5,7 +5,11 @@
  */
 import { createHash } from 'node:crypto'
 import type { SourceNotification, SubscriptionSource } from '@bymax-one/nest-subscription'
-import { createEmptySnapshot, type SubscriptionRecord, type SubscriptionSnapshot } from '../shared'
+import {
+  createEmptySnapshot,
+  type SubscriptionRecord,
+  type SubscriptionSnapshot
+} from '@bymax-one/nest-subscription/shared'
 import { FakeSubscriptionSource } from './fake.source'
 
 const NOW = new Date('2026-03-01T12:00:00.000Z')

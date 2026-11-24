@@ -1,9 +1,9 @@
 /**
  * @fileoverview Pins the behaviour of `SubscriptionError`: code, fixed message, cause and the
  * serialized form.
- * @layer internal
+ * @layer shared
  */
-import { SUBSCRIPTION_ERROR_CODES, SUBSCRIPTION_ERROR_MESSAGES } from '../shared/error-codes'
+import { SUBSCRIPTION_ERROR_CODES, SUBSCRIPTION_ERROR_MESSAGES } from './error-codes'
 import { SubscriptionError } from './subscription.error'
 
 describe('SubscriptionError', () => {

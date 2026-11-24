@@ -4,7 +4,7 @@
  * @layer e2e
  */
 import {
-  SubscriptionInputError,
+  SubscriptionError,
   createEmptySnapshot,
   resolveEntitlements,
   type SubscriptionRecord
@@ -113,7 +113,7 @@ describe('model through the shared subpath', () => {
   it('refuses a malformed instant with a typed error', () => {
     // Scenario: a caller passes a subscription whose end is not a date.
     expect(() => resolveEntitlements([record('s1', { accessUntil: 'x' })], new Map())).toThrow(
-      SubscriptionInputError
+      SubscriptionError
     )
   })
 })

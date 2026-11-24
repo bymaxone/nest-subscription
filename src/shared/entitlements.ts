@@ -4,22 +4,8 @@
  * nothing else, so no status name ever decides access.
  * @layer shared
  */
-import { SUBSCRIPTION_ERROR_CODES } from './error-codes'
+import { parseInstant } from './instant'
 import type { EntitlementState, SubscriptionRecord } from './snapshot.types'
-
-/**
- * Raised when an instant the caller supplied is not a valid ISO 8601 date. The message is fixed and
- * holds no value, so it can be logged as it is.
- */
-export class SubscriptionInputError extends RangeError {
-  /** The catalogue code for a malformed caller argument. */
-  readonly code = SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
-
-  constructor() {
-    super('An argument is invalid.')
-    this.name = 'SubscriptionInputError'
-  }
-}
 
 /** The result of resolving the entitlements of one account. */
 export interface EntitlementResolution {
@@ -27,15 +13,6 @@ export interface EntitlementResolution {
   readonly entitlements: readonly EntitlementState[]
   /** The names that more than one subscription gives access to, in the same order. */
   readonly overlapping: readonly string[]
-}
-
-/** The instant of an ISO 8601 string, in milliseconds; a malformed one is a caller error. */
-function parseInstant(value: string): number {
-  const instant = Date.parse(value)
-  if (Number.isNaN(instant)) {
-    throw new SubscriptionInputError()
-  }
-  return instant
 }
 
 /** When access ends in milliseconds; a lifetime grant has no end, so it is infinitely late. */
@@ -102,7 +79,7 @@ function groupByName(
  * subscription with no entry grants nothing. The function is pure: it reads no clock and changes
  * none of its arguments.
  *
- * @throws {SubscriptionInputError} when any subscription's `accessUntil` is not an ISO 8601 date.
+ * @throws {SubscriptionError} when any subscription's `accessUntil` is not an ISO 8601 date.
  */
 export function resolveEntitlements(
   subscriptions: readonly SubscriptionRecord[],

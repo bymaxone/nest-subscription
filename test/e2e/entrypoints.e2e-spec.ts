@@ -20,18 +20,19 @@ describe('entry points', () => {
       'SUBSCRIPTION_ERROR_CODES',
       'SUBSCRIPTION_ORIGINS',
       'SUBSCRIPTION_STATUSES',
-      'SubscriptionInputError',
+      'SubscriptionError',
       'WILL_RENEW_VALUES',
       'createEmptySnapshot',
+      'parseInstant',
       'resolveEntitlements'
     ])
-    expect(Object.values(shared)).toHaveLength(9)
+    expect(Object.values(shared)).toHaveLength(10)
     expect([...shared.SUBSCRIPTION_ENVIRONMENTS]).toEqual(['production', 'sandbox'])
   })
 
   it('exposes exactly the names of the root and the internal bundle', () => {
-    // Scenario: the root re-exports the error class and the codes; the internal bundle holds the
-    // class itself.
+    // Scenario: the root and the internal bundle re-export the error class that the shared subpath
+    // defines, so all three name one class.
     expect(Object.keys(core).sort()).toEqual(
       [
         'SUBSCRIPTION_CACHE',
@@ -59,6 +60,8 @@ describe('entry points', () => {
       ].sort()
     )
     expect(Object.values(internal)).toHaveLength(8)
+    expect(core.SubscriptionError).toBe(shared.SubscriptionError)
+    expect(internal.SubscriptionError).toBe(shared.SubscriptionError)
   })
 
   it('exposes nothing yet from the adapter subpaths', () => {

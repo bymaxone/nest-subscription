@@ -9,12 +9,12 @@ import {
   type StoredSnapshot,
   type SubscriptionStore
 } from '@bymax-one/nest-subscription/internal'
-
 import {
   SUBSCRIPTION_ERROR_CODES,
+  parseInstant,
   type SubscriptionChange,
   type SubscriptionSnapshot
-} from '../shared'
+} from '@bymax-one/nest-subscription/shared'
 
 /** Options of {@link InMemorySubscriptionStore}. */
 export interface InMemoryStoreOptions {
@@ -44,15 +44,6 @@ function copy<T>(value: T): T {
 const NOT_FOR_PRODUCTION =
   'InMemorySubscriptionStore is for tests and development only and is not for production: it ' +
   'persists nothing and shares nothing between processes.'
-
-/** An instant in milliseconds; a malformed one is a caller error. */
-function instantOf(value: string): number {
-  const instant = Date.parse(value)
-  if (Number.isNaN(instant)) {
-    throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.INVALID_INPUT)
-  }
-  return instant
-}
 
 /** A page limit is a positive integer. */
 function checkLimit(limit: number): void {
@@ -100,7 +91,9 @@ export class InMemorySubscriptionStore implements SubscriptionStore {
     pendingChanges: readonly SubscriptionChange[],
     sourceUpdatedAt: string
   ): Promise<boolean> {
-    const orderedAt = instantOf(sourceUpdatedAt)
+    const orderedAt = parseInstant(sourceUpdatedAt)
+    // A snapshot whose fetch instant cannot be read would make every later stale listing fail.
+    parseInstant(snapshot.fetchedAt)
     const existing = this.#entries.get(key)
     if (existing !== undefined && orderedAt < existing.orderedAt) {
       return false
@@ -133,7 +126,7 @@ export class InMemorySubscriptionStore implements SubscriptionStore {
   }
 
   async markEventProcessed(source: string, eventId: string, receivedAt: string): Promise<boolean> {
-    const received = instantOf(receivedAt)
+    const received = parseInstant(receivedAt)
     const events = this.#events.get(source) ?? new Map<string, number>()
     this.#events.set(source, events)
     if (events.has(eventId)) {
@@ -148,7 +141,7 @@ export class InMemorySubscriptionStore implements SubscriptionStore {
   }
 
   async deleteEventsOlderThan(instant: string): Promise<void> {
-    const threshold = instantOf(instant)
+    const threshold = parseInstant(instant)
     for (const events of this.#events.values()) {
       for (const [eventId, received] of events) {
         if (received < threshold) events.delete(eventId)
@@ -157,9 +150,9 @@ export class InMemorySubscriptionStore implements SubscriptionStore {
   }
 
   async listStaleKeys(olderThan: string, limit: number, cursor: string | null): Promise<KeyPage> {
-    const threshold = instantOf(olderThan)
+    const threshold = parseInstant(olderThan)
     const keys = [...this.#entries]
-      .filter(([, entry]) => instantOf(entry.snapshot.fetchedAt) < threshold)
+      .filter(([, entry]) => parseInstant(entry.snapshot.fetchedAt) < threshold)
       .map(([key]) => key)
       .sort()
     return pageOf(keys, limit, cursor)

@@ -13,9 +13,9 @@
  *
  * Tenant and account never meet anywhere else in the library.
  */
+import { SUBSCRIPTION_ERROR_CODES, SubscriptionError } from '@bymax-one/nest-subscription/shared'
+
 import type { AccountReference } from './source.port'
-import { SubscriptionError } from './subscription.error'
-import { SUBSCRIPTION_ERROR_CODES } from '../shared/error-codes'
 
 /** A field written as its length, a colon and its content. */
 function field(marker: string, value: string): string {

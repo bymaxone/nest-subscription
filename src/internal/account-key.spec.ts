@@ -4,7 +4,8 @@
  * refused.
  * @layer internal
  */
-import { SubscriptionError } from './subscription.error'
+import { SubscriptionError } from '@bymax-one/nest-subscription/shared'
+
 import { encodeAccountKey } from './account-key'
 
 /** Every string of up to two characters over an alphabet chosen to hurt a naive join. */

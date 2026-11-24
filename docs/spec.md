@@ -428,6 +428,7 @@ The library keeps no other state. It stores no payment data, no price paid and n
 | D18 | The RevenueCat adapter's test fixtures are recorded from a RevenueCat sandbox project, with identifiers and secrets replaced                                                                                           | 2026-11-24 |
 | D19 | A guard decision never waits for the source. A guarded request with a stale snapshot still starts the background refresh of FR25                                                                                       | 2026-11-24 |
 | D20 | The host hook receives the previous snapshot on the first delivery of a change. A redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot                              | 2026-11-24 |
+| D21 | There is one error class, `SubscriptionError`, defined in the `shared` subpath and re-exported by the root, so a host catches one class whichever part of the library raised it                                        | 2026-11-24 |
 
 ### 10.2 Open
 

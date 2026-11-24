@@ -3,7 +3,11 @@
  * so a host writes an adapter with nothing imported beyond these declarations.
  * @layer internal
  */
-import type { SubscriptionEnvironment, SubscriptionRecord, SubscriptionSnapshot } from '../shared'
+import type {
+  SubscriptionEnvironment,
+  SubscriptionRecord,
+  SubscriptionSnapshot
+} from '@bymax-one/nest-subscription/shared'
 
 /** An account of the host, as every port names it. */
 export interface AccountReference {
