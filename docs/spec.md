@@ -2,7 +2,7 @@
 
 > **Status:** 📝 Draft, waiting for owner review
 > **Owner:** Bymax One
-> **Version:** 0.2 · **Last update:** 2026-11-24 (0.2: the ten open questions answered by the owner)
+> **Version:** 0.2 · **Last update:** 2026-11-24
 > **Package:** `@bymax-one/nest-subscription`, a public npm library for NestJS 11
 > **Workflow:** `/bymax-workflow:spec` → reviewed specification → `/bymax-workflow:roadmap` (`plan.md`) → `/bymax-workflow:phase-tasks` (`tasks/`)
 > **Sibling precedents:** `bymaxone/nest-telemetry` (tooling, gates, packaging, release), `bymaxone/nest-auth` (module options, repositories, hooks, guards, controllers behind switches), `bymaxone/nest-notification` (provider adapters as optional peers)
@@ -356,7 +356,7 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ## 8. Constraints
 
-- **Runtime:** Node.js 26 or newer, NestJS 11 (D09). The sibling libraries and the backend template still declare 24, so a backend moves to Node.js 26 before it installs this library.
+- **Runtime:** Node.js 26 or newer, NestJS 11 (D09). A backend moves to Node.js 26 before it installs this library.
 - **Family rules:** zero direct dependencies; every peer that is not NestJS itself is optional; injection tokens are symbols; explicit injection on every provider; one place reads the environment, and the library itself reads none.
 - **Language:** everything in the repository and on GitHub is English.
 - **Release:** the first publish and every version bump need the owner's explicit instruction. Breaking changes are announced in the changelog with a note on how a derived backend applies them.
