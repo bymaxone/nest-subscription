@@ -1,8 +1,8 @@
 # Spec — @bymax-one/nest-subscription
 
-> **Status:** 📝 Draft, waiting for owner review
+> **Status:** ✅ Approved by the owner on 2026-11-24
 > **Owner:** Bymax One
-> **Version:** 0.2 · **Last update:** 2026-11-24
+> **Version:** 0.4 · **Last update:** 2026-11-24
 > **Package:** `@bymax-one/nest-subscription`, a public npm library for NestJS 11
 > **Workflow:** `/bymax-workflow:spec` → reviewed specification → `/bymax-workflow:roadmap` (`plan.md`) → `/bymax-workflow:phase-tasks` (`tasks/`)
 > **Sibling precedents:** `bymaxone/nest-telemetry` (tooling, gates, packaging, release), `bymaxone/nest-auth` (module options, repositories, hooks, guards, controllers behind switches), `bymaxone/nest-notification` (provider adapters as optional peers)
@@ -202,7 +202,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 **FR18. Outcomes.** Accepted and processed, accepted and already seen, accepted and ignored (an event kind that changes nothing), refused (verification failed), and failed (the source could not be read). The HTTP answer follows the source's contract: success for the first three so the source stops retrying, an authentication failure for a refusal, and a temporary failure for the last so the source retries.
 
-**FR19. De-duplication.** Each event identifier is recorded before the response is sent, for a retention the host can set. A repeated identifier is answered as already seen without reading the source again.
+**FR19. De-duplication.** Each event identifier is recorded when its processing starts, for a retention the host can set. A repeated identifier is answered as already seen without reading the source again. When an event ends in the failed outcome (FR18, FR21), its identifier is removed, so the source's retry of that event is processed (D16).
 
 **FR20. Unknown event kinds and fields** are accepted and trigger a refresh. A new kind added by a source must never break the receiver.
 
@@ -210,7 +210,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 ### 3.9 Storage, refresh and reconciliation
 
-**FR22. Store port.** The host implements a small port to persist snapshots and processed event identifiers. The library ships an in-memory implementation for tests and development, marked as not for production, and documents a reference implementation over a relational table. It imports no database client. It also ships a conformance suite the host runs against its own implementation (D11).
+**FR22. Store port.** The host implements a small port to persist snapshots, with the changes of each that the host has not been told yet (FR33), and processed event identifiers. The library ships an in-memory implementation for tests and development, marked as not for production, and documents a reference implementation over a relational table. It imports no database client. It also ships a conformance suite the host runs against its own implementation (D11).
 
 **FR23. Optional cache.** When the host provides a cache, the library reads through it in front of the store, with a short lifetime, and invalidates it on every change.
 
@@ -218,13 +218,13 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 **FR25. Staleness.** Every snapshot carries its age. The host sets a maximum age; the default is 24 hours (D12). A snapshot older than that is refreshed in the background on its next read, and the read returns the stored value meanwhile.
 
-**FR26. Reconciliation.** The service exposes a method that refreshes the accounts whose snapshot is older than a threshold, in bounded batches, with a rate limit that respects the source's. The host calls it from its own scheduled job. This covers a lost webhook.
+**FR26. Reconciliation.** The service exposes a method that refreshes the accounts whose snapshot is older than a threshold, in bounded batches, with a rate limit that respects the source's. The host calls it from its own scheduled job. This covers a lost webhook. The same run delivers the changes that are still marked as not delivered (FR33).
 
 **FR27. Writes are ordered.** A stored snapshot is never replaced by one that the source reports as older.
 
 ### 3.10 Reading and guarding
 
-**FR28. Service.** Read an account's snapshot. Ask whether an account has a named entitlement now. Both read the store, never the source, unless a refresh is requested.
+**FR28. Service.** Read an account's snapshot. Ask whether an account has a named entitlement now. Both answer from the store and never wait for the source, unless a refresh is requested.
 
 **FR29. Guard and decorator.** A decorator marks a route as needing an entitlement by name, and a guard enforces it. The guard obtains the account from the request through a resolver the host supplies. A request with no account is refused as unauthenticated, not as unsubscribed.
 
@@ -237,11 +237,11 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 ### 3.11 Telling the host
 
-**FR32. Change notifications.** After a snapshot changes and is stored, the library calls a hook the host supplies, with the previous snapshot, the new one and a typed list of what changed:
+**FR32. Change notifications.** After a snapshot changes and is stored, the library calls a hook the host supplies, with the previous snapshot, the new one and a typed list of what changed. When a change is delivered again (FR33), the call is marked as a redelivery and carries no previous snapshot (D20). The kinds of change are:
 
 `started`, `renewed`, `trial_converted`, `will_not_renew`, `will_renew_again`, `entered_grace`, `put_on_hold`, `recovered`, `paused`, `resumed`, `product_changed`, `expired`, `refunded`, `transferred`, `overlap_detected`.
 
-**FR33. Delivery.** At least once, after the store write, never inside the webhook's response deadline. Each notification carries a key that is stable for the same change (for a renewal, the subscription and the period), so the host can make its reaction idempotent. A hook that throws does not undo the stored state; the failure is logged and reported to the observer.
+**FR33. Delivery.** At least once, after the store write, never inside the webhook's response deadline. The changes are stored with the snapshot, in the same write, marked as not delivered; the mark is cleared after the hook returns, and reconciliation delivers what is still marked (D17). Each notification carries a key that is stable for the same change (for a renewal, the subscription and the period), so the host can make its reaction idempotent. A hook that throws does not undo the stored state; the failure is logged and reported to the observer, and the changes stay marked.
 
 **FR34. Observer.** An optional observer receives counters and timings: webhooks by outcome, refreshes, source errors, cache hits, guard decisions. No account identifier and no payload in it.
 
@@ -347,7 +347,7 @@ A sketch of the two records behind the store port. Names and columns are the hos
 
 | Record | Holds | Key |
 |---|---|---|
-| Snapshot | The normalized state of one account as a document, its source customer reference, fetched at, source updated at | Tenant and account |
+| Snapshot | The normalized state of one account as a document, its source customer reference, fetched at, source updated at, and the changes not delivered to the host yet | Tenant and account |
 | Processed event | Event identifier, source, received at | Source and event identifier |
 
 The library keeps no other state. It stores no payment data, no price paid and no raw webhook payload (SEC06).
@@ -365,7 +365,7 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 | Id | Requirement |
 |---|---|
-| NFR01 | A guard decision makes no network call to a billing platform |
+| NFR01 | No guard decision waits for a network call to a billing platform. With a fresh snapshot none is made; with a stale one the background refresh of FR25 is started and the decision is returned before it ends (D19) |
 | NFR02 | A webhook is answered within the source's time limit, with margin, or answered as a temporary failure |
 | NFR03 | Concurrent refreshes of one account produce one source call |
 | NFR04 | Reconciliation respects the source's rate limit and is bounded per run |
@@ -395,7 +395,7 @@ The library keeps no other state. It stores no payment data, no price paid and n
 | R01 | Bymax Finance is not released, and its planned API does not report purchases made in the app stores | HIGH | The Finance adapter is built when the API exists (D03). Hosts with a native app use the RevenueCat adapter. The requirements in Appendix B are sent to the Finance project |
 | R02 | The two sources disagree on what a state means (for example how long access lasts after a failed payment) | MEDIUM | The model carries the source's own access flag, and the guard reads that. Status names are descriptive only |
 | R03 | A source changes its webhook or API | MEDIUM | Unknown kinds and fields are tolerated (FR20). Mapping tables are tested from recorded payloads, and a scheduled job checks the provider's changelog |
-| R04 | A host's hook is slow or throws, and the product misses a renewal | MEDIUM | At-least-once delivery after the write, a stable key per change (FR33), and reconciliation |
+| R04 | A host's hook is slow or throws, and the product misses a renewal | MEDIUM | Changes stored as not delivered until the hook returns (D17), a stable key per change (FR33), and reconciliation, which delivers them again |
 | R05 | The store port is implemented without the uniqueness the library relies on, and events are processed twice | MEDIUM | The reference implementation and a conformance test suite the host runs against its own store |
 | R06 | Reading the source on every webhook hits its rate limit during a spike | MEDIUM | One read per account at a time (NFR03), de-duplication before the read (FR19), and a temporary failure answer that lets the source retry |
 | R07 | The family's gates (100% coverage and mutation) make each mapping rule expensive | LOW | Mapping is pure and table-driven, which is the cheapest code to cover |
@@ -423,6 +423,11 @@ The library keeps no other state. It stores no payment data, no price paid and n
 | D13 | The first release includes the stop-renewal operation | 2026-11-24 |
 | D14 | The example repository is `nest-subscription-example` | 2026-11-24 |
 | D15 | The Finance adapter stores the pair of host account identifier and Finance customer identifier at first contact, and uses a lookup by external reference once Finance offers one | 2026-11-24 |
+| D16 | A webhook event identifier is recorded when processing starts and removed when the event ends in the failed outcome, so the source's retry is processed | 2026-11-24 |
+| D17 | Changes are stored with the snapshot as not delivered, cleared after the host hook returns, and delivered again by reconciliation while they stay marked. This is how delivery is at least once across a process crash | 2026-11-24 |
+| D18 | The RevenueCat adapter's test fixtures are recorded from a RevenueCat sandbox project, with identifiers and secrets replaced | 2026-11-24 |
+| D19 | A guard decision never waits for the source. A guarded request with a stale snapshot still starts the background refresh of FR25 | 2026-11-24 |
+| D20 | The host hook receives the previous snapshot on the first delivery of a change. A redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot | 2026-11-24 |
 
 ### 10.2 Open
 
@@ -436,7 +441,7 @@ Stated here because the repository starts with documents only.
 
 - The scaffold of `nest-telemetry`: package metadata, TypeScript, lint, formatting, test, coverage, mutation and build configuration, the packaging and size checks, the release workflow and the security scans.
 - The library's own sections of `AGENTS.md`, plus `CLAUDE.md`, `CONTRIBUTING.md` and the Copilot instruction files.
-- The organisation's reusable CI in place of the specification-stage job, keeping the aggregate check named `CI passed`.
+- The organisation's reusable CI added to the workflow, keeping the job that checks the documents and their links and the aggregate check named `CI passed`.
 - The required status checks added to the repository ruleset.
 
 ---
