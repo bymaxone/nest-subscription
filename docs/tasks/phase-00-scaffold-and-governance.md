@@ -1,6 +1,6 @@
 # Phase 0 — Scaffold and governance
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 5 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 6 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P0 — scaffold-and-governance
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -44,7 +44,7 @@ At the end it is a library project that builds, tests and gates an empty package
 | 0.3 | Bring the packaging, size and source gates          | ✅ Done | P0       | M    | 0.2        |
 | 0.4 | Bring the git hooks and commit rules                | ✅ Done | P1       | S    | 0.1        |
 | 0.5 | Extend the CI with the family workflows             | ✅ Done | P0       | M    | 0.3        |
-| 0.6 | Write the repository documents for a library        | 📋 ToDo | P0       | M    | 0.3        |
+| 0.6 | Write the repository documents for a library        | ✅ Done | P0       | M    | 0.3        |
 | 0.7 | Require the status checks and close the phase       | 📋 ToDo | P0       | S    | 0.5, 0.6   |
 
 ---
@@ -488,7 +488,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 0.6 — Write the repository documents for a library
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 0.3
@@ -499,11 +499,11 @@ Add the library sections of `AGENTS.md`, and write `CLAUDE.md`, `CONTRIBUTING.md
 
 #### Acceptance criteria
 
-- [ ] `AGENTS.md` no longer says the repository is at the specification stage, and has the sections: design principles, security specification, testing strategy, packaging invariants, pitfalls.
-- [ ] Below the shared block of §3, `AGENTS.md` states the language policy for `docs/` (English) and the rules specific to this repository.
-- [ ] The shared block between `<!-- shared:begin -->` and its closing marker is byte-identical to what it was.
-- [ ] `CLAUDE.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `.github/copilot-instructions.md`, `.github/instructions/code.instructions.md` and `.github/instructions/tests.instructions.md` exist and name no telemetry concept.
-- [ ] `README.md` states the stage truthfully: scaffolded, no behaviour, not published.
+- [x] `AGENTS.md` no longer says the repository is at the specification stage, and has the sections: design principles, security specification, testing strategy, packaging invariants, pitfalls.
+- [x] Below the shared block of §3, `AGENTS.md` states the language policy for `docs/` (English) and the rules specific to this repository.
+- [x] The shared block between `<!-- shared:begin -->` and its closing marker is byte-identical to what it was.
+- [x] `CLAUDE.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `.github/copilot-instructions.md`, `.github/instructions/code.instructions.md` and `.github/instructions/tests.instructions.md` exist and name no telemetry concept.
+- [x] `README.md` states the stage truthfully: scaffolded, no behaviour, not published.
 
 #### Files to create / modify
 
@@ -659,5 +659,7 @@ Completion Protocol (after the work is reported done):
 - 0.4 ✅ 2026-11-24 — Husky hooks, commitlint with the no-attribution plugin, commit template and editor settings; a trailer naming an AI tool is rejected, a bare subject is not (the shared plugin reads trailers and addresses only)
 
 - 0.5 ✅ 2026-11-24 — CI calls the organisation's reusable pipeline beside the documents job, the aggregate stays CI passed; release, CodeQL, OSV, Scorecard, API surface, full mutation and peer drift workflows and Dependabot with the agents-sync group
+
+- 0.6 ✅ 2026-11-24 — AGENTS.md library sections below the shared block, CLAUDE.md, CONTRIBUTING.md, CHANGELOG.md, Copilot instruction files and reviewer agent; README and docs index state the scaffolded stage
 
 <!-- entries are added as tasks complete -->

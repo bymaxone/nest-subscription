@@ -6,7 +6,7 @@ alwaysApply: true
 # Commit message conventions
 
 **HARD LIMITS — commitlint will reject the commit if violated:**
-- Subject line: **≤ 72 characters**
+- Subject line: **≤ 72 characters** by convention (commitlint rejects a header over 100)
 - Every body line individually: **≤ 100 characters** — this includes bullet points
 - Never write a bullet point sentence that wraps beyond 100 chars. Break it into two lines.
 - A message never names an AI tool as author or reviewer: the `no-ai-attribution` rule rejects it.

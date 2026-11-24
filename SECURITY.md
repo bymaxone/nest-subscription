@@ -4,7 +4,7 @@
 
 ## Supported versions
 
-The library is at the specification stage and has no published version yet. Once it is published, only the most recent minor receives security fixes.
+The library is scaffolded, with no behaviour written yet and no published version. Once it is published, only the most recent minor receives security fixes.
 
 ## Reporting a vulnerability
 

@@ -5,4 +5,8 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 
 ## [Unreleased]
 
-The repository holds the scaffold only: no library behaviour is written and nothing is published.
+### Added
+
+- The package scaffold: the build, the quality gates and the CI for the root, `shared`,
+  `revenuecat`, `finance` and `testing` subpaths and the internal bundle.
+- `SUBSCRIPTION_ENVIRONMENTS` and `SubscriptionEnvironment` in the `shared` subpath.
