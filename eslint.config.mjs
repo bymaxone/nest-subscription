@@ -52,6 +52,81 @@ const SHARED_BY_SPECIFIER = {
     "Import the shared subpath by its package specifier, '@bymax-one/nest-subscription/shared', never by a relative path."
 }
 
+// The package name every entry point is reached by, and the message of each boundary.
+const PACKAGE = '@bymax-one/nest-subscription'
+const BOUNDARY_MESSAGE =
+  'This directory may not import that one. See the layout table in docs/tasks/README.md, section 5.'
+
+/** A pattern that refuses a package subpath. */
+const subpath = (name) => ({ group: [`${PACKAGE}/${name}`], message: BOUNDARY_MESSAGE })
+
+/** A pattern that refuses a relative import of sibling directories. */
+const sibling = (names, message = BOUNDARY_MESSAGE) => ({
+  regex: `^\\.{1,2}/(?:${names.join('|')})(?:/|$)`,
+  message
+})
+
+// What each directory may not import, and from which it may. `sourceOnly` entries are refused in
+// the library source and allowed in its specs, which use the test doubles. `shared` imports
+// nothing at run time, so the `shared` entry has its own pattern.
+const BOUNDARIES = {
+  shared: {
+    patterns: [
+      {
+        regex: '^(?:@|node:|\\.\\./)',
+        message:
+          'The shared directory imports nothing: a value it needs at run time is a literal in it.'
+      }
+    ]
+  },
+  internal: {
+    paths: [{ name: PACKAGE, message: BOUNDARY_MESSAGE }],
+    patterns: [
+      subpath('revenuecat'),
+      subpath('finance'),
+      subpath('testing'),
+      sibling(['core', 'revenuecat', 'finance', 'testing'])
+    ]
+  },
+  core: {
+    paths: [{ name: PACKAGE, message: BOUNDARY_MESSAGE }],
+    patterns: [
+      subpath('revenuecat'),
+      subpath('finance'),
+      sibling(['revenuecat', 'finance', 'testing', 'internal'])
+    ],
+    sourceOnly: [subpath('testing')]
+  },
+  revenuecat: {
+    paths: [{ name: PACKAGE, message: BOUNDARY_MESSAGE }],
+    patterns: [subpath('finance'), sibling(['core', 'finance', 'testing', 'internal'])],
+    sourceOnly: [subpath('testing')]
+  },
+  finance: {
+    paths: [{ name: PACKAGE, message: BOUNDARY_MESSAGE }],
+    patterns: [subpath('revenuecat'), sibling(['core', 'revenuecat', 'testing', 'internal'])],
+    sourceOnly: [subpath('testing')]
+  },
+  testing: {
+    patterns: [sibling(['core', 'internal'])]
+  }
+}
+
+/** The `no-restricted-imports` options of one directory, for its source or for its specs. */
+function restrictionsFor(directory, boundary, spec) {
+  const fromShared = directory === 'shared' ? [] : [SHARED_BY_SPECIFIER]
+  return {
+    paths: [...CRYPTO_PATHS, ...(boundary.paths ?? [])],
+    patterns: [
+      ...fromShared,
+      ...(directory === 'shared' && spec ? [] : boundary.patterns),
+      ...(spec
+        ? [{ group: ['supertest', 'supertest/**'], message: NO_SOCKET }]
+        : (boundary.sourceOnly ?? []))
+    ]
+  }
+}
+
 export default [
   // Global ignores — only build artifacts and coverage, NOT config files
   {
@@ -321,20 +396,21 @@ export default [
     }
   },
 
-  // The entry points other than `shared` reach it by package specifier. The block restates the
-  // crypto guard-rail because a later block replaces the whole `no-restricted-imports` rule.
-  {
-    files: [
-      'src/internal/**/*.ts',
-      'src/core/**/*.ts',
-      'src/testing/**/*.ts',
-      'src/revenuecat/**/*.ts',
-      'src/finance/**/*.ts'
-    ],
-    rules: {
-      'no-restricted-imports': ['error', { paths: CRYPTO_PATHS, patterns: [SHARED_BY_SPECIFIER] }]
+  // The import boundaries of each directory (docs/tasks/README.md section 5), one block for the
+  // library source and one for its specs. `no-restricted-imports` is replaced as a whole by the
+  // last block that matches a file, so each block restates the crypto guard-rail, the shared-by-
+  // specifier rule and, for specs, the socket rule.
+  ...Object.entries(BOUNDARIES).flatMap(([directory, boundary]) => [
+    {
+      files: [`src/${directory}/**/*.ts`],
+      ignores: ['**/*.spec.ts'],
+      rules: { 'no-restricted-imports': ['error', restrictionsFor(directory, boundary, false)] }
+    },
+    {
+      files: [`src/${directory}/**/*.spec.ts`],
+      rules: { 'no-restricted-imports': ['error', restrictionsFor(directory, boundary, true)] }
     }
-  },
+  ]),
 
   // A unit spec under `src/` opens no socket: it drives the code with request and response doubles.
   // A case that needs a real listening server belongs in `test/e2e`, where sockets are allowed.
@@ -356,16 +432,6 @@ export default [
   {
     files: ['src/**/*.spec.ts'],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: CRYPTO_PATHS,
-          patterns: [
-            { group: ['supertest', 'supertest/**'], message: NO_SOCKET },
-            SHARED_BY_SPECIFIER
-          ]
-        }
-      ],
       'no-restricted-syntax': [
         'error',
         ...LOADS_SUPERTEST.map((selector) => ({ selector, message: NO_SOCKET })),

@@ -1,6 +1,6 @@
 # Phase 2 — Module and options
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P2 — module-and-options
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -43,7 +43,7 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 | 2.2 | Validate the options into one aggregated error     | ✅ Done | P0       | M    | 2.1        |
 | 2.3 | Contain the secrets in the resolved options        | ✅ Done | P0       | M    | 2.1        |
 | 2.4 | Implement the module with forRoot and forRootAsync | ✅ Done | P0       | L    | 2.2, 2.3   |
-| 2.5 | Prove that an unused adapter loads no code         | 📋 ToDo | P0       | S    | 2.4        |
+| 2.5 | Prove that an unused adapter loads no code         | ✅ Done | P0       | S    | 2.4        |
 
 ---
 
@@ -386,7 +386,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 2.5 — Prove that an unused adapter loads no code
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 2.4
@@ -397,11 +397,11 @@ Add the packaging proof for NFR05 and close the phase: with one adapter configur
 
 #### Acceptance criteria
 
-- [ ] A script loads the root and one adapter subpath from the packed tarball and asserts that no file of the other adapter's bundle was loaded, in ESM and in CommonJS.
-- [ ] Loading the root alone loads neither adapter.
-- [ ] A lint rule or a test fails when a file under `src/core/` imports from `src/revenuecat/` or `src/finance/`.
-- [ ] Every Definition of Done item of P2 in `docs/plan.md` has a named test.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A script loads the root and one adapter subpath from the packed tarball and asserts that no file of the other adapter's bundle was loaded, in ESM and in CommonJS.
+- [x] Loading the root alone loads neither adapter.
+- [x] A lint rule or a test fails when a file under `src/core/` imports from `src/revenuecat/` or `src/finance/`.
+- [x] Every Definition of Done item of P2 in `docs/plan.md` has a named test.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -476,3 +476,4 @@ Completion Protocol (after the work is reported done):
 - 2.2 ✅ 2026-11-24 — table-driven validator that aggregates every offending option into one error without any supplied value
 - 2.3 ✅ 2026-11-24 — Secret holder, non-enumerable secret accessor on the resolved options and the sentinel sweep over the four paths
 - 2.4 ✅ 2026-11-24 — SubscriptionModule with forRoot and forRootAsync, boot e2e in both forms and the secret sweep over every provider
+- 2.5 ✅ 2026-11-24 — adapter isolation proven on the packed tarball in both formats and the import boundaries enforced per directory by lint
