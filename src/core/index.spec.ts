@@ -12,6 +12,7 @@ describe('core entry point', () => {
     // Scenario: the entry point is loaded by its relative path; a name exported without its own
     // test would appear here and fail the case.
     expect(Object.keys(entry).sort()).toEqual([
+      'SECRET_PLACEHOLDER',
       'SUBSCRIPTION_CACHE',
       'SUBSCRIPTION_CLOCK',
       'SUBSCRIPTION_ERROR_CODES',
@@ -19,6 +20,7 @@ describe('core entry point', () => {
       'SUBSCRIPTION_OPTIONS',
       'SUBSCRIPTION_SOURCE',
       'SUBSCRIPTION_STORE',
+      'Secret',
       'SubscriptionError',
       'encodeAccountKey',
       'resolveOptions',

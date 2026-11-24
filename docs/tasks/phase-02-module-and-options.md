@@ -1,6 +1,6 @@
 # Phase 2 — Module and options
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P2 — module-and-options
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -41,7 +41,7 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 | --- | -------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 2.1 | Define the module options and their defaults       | ✅ Done | P0       | M    | —          |
 | 2.2 | Validate the options into one aggregated error     | ✅ Done | P0       | M    | 2.1        |
-| 2.3 | Contain the secrets in the resolved options        | 📋 ToDo | P0       | M    | 2.1        |
+| 2.3 | Contain the secrets in the resolved options        | ✅ Done | P0       | M    | 2.1        |
 | 2.4 | Implement the module with forRoot and forRootAsync | 📋 ToDo | P0       | L    | 2.2, 2.3   |
 | 2.5 | Prove that an unused adapter loads no code         | 📋 ToDo | P0       | S    | 2.4        |
 
@@ -214,7 +214,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 2.3 — Contain the secrets in the resolved options
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 2.1
@@ -225,11 +225,11 @@ Make sure no credential or webhook secret can leave through serialization, sprea
 
 #### Acceptance criteria
 
-- [ ] A helper wraps a secret so that it is read only through an explicit method, and `JSON.stringify`, object spread, `util.inspect` and `util.inspect` with `showHidden: true` all show nothing of it.
-- [ ] The same paths applied to `ResolvedSubscriptionOptions` expose no secret.
-- [ ] A deliberate read still returns the secret, and a wrapper supports two valid values at once for rotation (SEC09).
-- [ ] The wrapper's `toJSON` and custom inspect output show a fixed placeholder, so the object does not look broken.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A helper wraps a secret so that it is read only through an explicit method, and `JSON.stringify`, object spread, `util.inspect` and `util.inspect` with `showHidden: true` all show nothing of it.
+- [x] The same paths applied to `ResolvedSubscriptionOptions` expose no secret.
+- [x] A deliberate read still returns the secret, and a wrapper supports two valid values at once for rotation (SEC09).
+- [x] The wrapper's `toJSON` and custom inspect output show a fixed placeholder, so the object does not look broken.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -474,3 +474,4 @@ Completion Protocol (after the work is reported done):
 
 - 2.1 ✅ 2026-11-24 — option types, defaults pinned to the specification, frozen resolved form and the system clock
 - 2.2 ✅ 2026-11-24 — table-driven validator that aggregates every offending option into one error without any supplied value
+- 2.3 ✅ 2026-11-24 — Secret holder, non-enumerable secret accessor on the resolved options and the sentinel sweep over the four paths

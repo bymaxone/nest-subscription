@@ -40,3 +40,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - `validateOptions`, which refuses an invalid configuration with one `SubscriptionError` that names
   every offending option and carries none of the supplied values. `SubscriptionError` gains an
   optional `optionPaths` list, appended to its message, for configuration errors.
+- `Secret` and `SecretInput`, exported from the root: the holder of every credential and webhook
+  secret, which keeps its values out of serialization, spread, enumeration and `util.inspect`, holds
+  two valid values during a rotation and compares in constant time. The module options accept an
+  optional `webhookSecret`, which the resolved options hold in a non-enumerable accessor.

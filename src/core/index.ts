@@ -8,7 +8,9 @@ export {
   SUBSCRIPTION_OBSERVER,
   SUBSCRIPTION_OPTIONS,
   SUBSCRIPTION_SOURCE,
+  SECRET_PLACEHOLDER,
   SUBSCRIPTION_STORE,
+  Secret,
   SubscriptionError,
   encodeAccountKey
 } from '@bymax-one/nest-subscription/internal'
@@ -17,6 +19,7 @@ export type {
   Clock,
   KeyPage,
   ManagementOperation,
+  SecretInput,
   SourceCapabilities,
   SourceNotification,
   StopRenewalResult,

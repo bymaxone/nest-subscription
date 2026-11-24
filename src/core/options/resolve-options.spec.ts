@@ -3,6 +3,9 @@
  * resolved form is frozen, complete and built without touching the host's object.
  * @layer core
  */
+import { inspect } from 'node:util'
+
+import { Secret } from '@bymax-one/nest-subscription/internal'
 import {
   FakeSubscriptionSource,
   InMemorySubscriptionStore
@@ -135,5 +138,97 @@ describe('resolveOptions', () => {
     // Scenario: an unknown field on the input never reaches the resolved object.
     const resolved = resolveOptions({ ...minimal(), surplus: 'x' } as SubscriptionOptionsInput)
     expect(Object.keys(resolved)).not.toContain('surplus')
+  })
+})
+
+const SENTINEL = 'sentinel-webhook-secret-41e8d0'
+const PREVIOUS = 'sentinel-previous-secret-77ab3c'
+
+function withSecret(): SubscriptionOptionsInput {
+  return { ...minimal(), webhookSecret: { current: SENTINEL, previous: PREVIOUS } }
+}
+
+function noLeak(output: string): void {
+  expect(output).not.toContain(SENTINEL)
+  expect(output).not.toContain(PREVIOUS)
+}
+
+describe('resolveOptions secret containment (SEC05)', () => {
+  it('holds the webhook secret in a Secret that returns both values on a deliberate read', () => {
+    // Scenario: a rotation pair is given; the deliberate read returns it (SEC09).
+    const resolved = resolveOptions(withSecret())
+    expect(resolved.webhookSecret).toBeInstanceOf(Secret)
+    expect(resolved.webhookSecret?.candidates()).toEqual([SENTINEL, PREVIOUS])
+  })
+
+  it('has no webhook secret when the host set none', () => {
+    // Scenario: the accessor answers null, and still is not enumerable.
+    const resolved = resolveOptions(minimal())
+    expect(resolved.webhookSecret).toBeNull()
+    expect(Object.keys(resolved)).not.toContain('webhookSecret')
+  })
+
+  it('keeps the secret out of serialization, spread, enumeration and inspection', () => {
+    // Scenario: the four paths the specification names, and the other ways to list properties.
+    const resolved = resolveOptions(withSecret())
+    noLeak(JSON.stringify(resolved))
+    noLeak(JSON.stringify({ ...resolved }))
+    noLeak(inspect(resolved))
+    noLeak(inspect(resolved, { showHidden: true }))
+    noLeak(inspect(resolved, { showHidden: true, depth: null }))
+    noLeak(inspect(resolved, { showHidden: true, depth: null, getters: true }))
+    noLeak(JSON.stringify(Object.entries(resolved)))
+    noLeak(JSON.stringify(Object.keys(resolved)))
+    noLeak(JSON.stringify(Object.getOwnPropertyNames(resolved)))
+    noLeak(JSON.stringify(Object.assign({}, resolved)))
+    const seen: string[] = []
+    for (const key in resolved) seen.push(key)
+    noLeak(seen.join())
+    expect('webhookSecret' in { ...resolved }).toBe(false)
+  })
+
+  it('exposes the secret through a non-enumerable accessor and nothing else', () => {
+    // Scenario: the descriptor of the property is inspected.
+    const resolved = resolveOptions(withSecret())
+    const descriptor = Object.getOwnPropertyDescriptor(resolved, 'webhookSecret')
+    expect(descriptor?.enumerable).toBe(false)
+    expect(typeof descriptor?.get).toBe('function')
+    expect(descriptor?.value).toBeUndefined()
+  })
+
+  it('wraps a single string and returns a Secret it was given unchanged', () => {
+    // Scenario: the shorthand and the holder an adapter already made.
+    expect(resolveOptions({ ...minimal(), webhookSecret: SENTINEL }).webhookSecret?.reveal()).toBe(
+      SENTINEL
+    )
+    const secret = new Secret(SENTINEL)
+    expect(resolveOptions({ ...minimal(), webhookSecret: secret }).webhookSecret).toBe(secret)
+  })
+
+  it('never writes to or redefines a property of the host object', () => {
+    // Scenario: the host's object, its pair and its descriptors are identical after resolving.
+    const pair = { current: SENTINEL, previous: PREVIOUS }
+    const input = { ...minimal(), webhookSecret: pair }
+    const descriptors = Object.getOwnPropertyDescriptors(input)
+    resolveOptions(input)
+    expect(Object.getOwnPropertyDescriptors(input)).toEqual(descriptors)
+    expect(input.webhookSecret).toBe(pair)
+    expect(pair).toEqual({ current: SENTINEL, previous: PREVIOUS })
+    expect(Object.isFrozen(pair)).toBe(false)
+    expect(Object.isFrozen(input)).toBe(false)
+  })
+
+  it('keeps a secret of the wrong shape out of the error', () => {
+    // Scenario: the secret is given as an object of the wrong shape carrying a sentinel.
+    try {
+      resolveOptions({ ...minimal(), webhookSecret: { current: 5, previous: SENTINEL } })
+    } catch (error) {
+      noLeak(String(error))
+      noLeak(JSON.stringify(error))
+      noLeak(inspect(error, { showHidden: true, depth: null }))
+      expect(String(error)).toContain('webhookSecret')
+      return
+    }
+    throw new Error('the options were accepted')
   })
 })

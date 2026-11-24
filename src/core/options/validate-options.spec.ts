@@ -6,7 +6,7 @@
  */
 import { inspect } from 'node:util'
 
-import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
+import { Secret, SubscriptionError } from '@bymax-one/nest-subscription/internal'
 import {
   FakeSubscriptionSource,
   InMemorySubscriptionStore
@@ -156,6 +156,22 @@ const ROWS: readonly Row[] = [
   },
   { path: 'observer', good: { observer: {} }, bad: [SENTINEL, null, 3] },
   {
+    path: 'webhookSecret',
+    good: { webhookSecret: SENTINEL },
+    bad: [
+      '',
+      null,
+      5,
+      [],
+      { current: '' },
+      { current: 5, previous: SENTINEL },
+      { current: SENTINEL, previous: '' },
+      { current: SENTINEL, previous: 5 },
+      { previous: SENTINEL },
+      { reveal: () => SENTINEL }
+    ]
+  },
+  {
     path: 'clock',
     good: { clock: { now: () => new Date(0) } },
     bad: [SENTINEL, null, {}, { now: SENTINEL }]
@@ -166,6 +182,15 @@ describe('validateOptions', () => {
   it('accepts the three required options alone', () => {
     // Scenario: a source, a store and a resolver are all a host has to pass.
     expect(() => validateOptions(valid())).not.toThrow()
+  })
+
+  it.each([
+    ['a pair', { current: SENTINEL, previous: `${SENTINEL}-2` }],
+    ['a pair without a previous value', { current: SENTINEL }],
+    ['a Secret', new Secret(SENTINEL)]
+  ])('accepts a webhook secret given as %s', (_name, webhookSecret) => {
+    // Scenario: every shape the option documents is accepted.
+    expect(() => validateOptions({ ...valid(), webhookSecret })).not.toThrow()
   })
 
   it.each(ROWS)('accepts a valid $path', ({ good }) => {
@@ -283,7 +308,8 @@ describe('validateOptions', () => {
       // all contains the sentinel nowhere it can be read from.
       const everyWrong = {
         ...Object.fromEntries(ROWS.map((row) => [row.path, SENTINEL])),
-        webhookPath: `${SENTINEL}?`
+        webhookPath: `${SENTINEL}?`,
+        webhookSecret: { current: 5, previous: SENTINEL }
       }
       const error = problems(everyWrong)
       expect(error.optionPaths.length).toBe(ROWS.length)

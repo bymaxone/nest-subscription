@@ -18,10 +18,10 @@
 
 The chain runs **P0 to P9**. It stops there.
 
-| Phase | Why the chain does not run it |
-|---|---|
+| Phase                  | Why the chain does not run it                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P10 example-repository | It is built in another repository, `bymaxone/nest-subscription-example`, which the owner creates. It is run as its own chain from that repository. |
-| P11 finance-adapter | ⛔ Blocked until the Bymax Finance public API exists (D03). |
+| P11 finance-adapter    | ⛔ Blocked until the Bymax Finance public API exists (D03).                                                                                        |
 
 Neither is a failure of the run: when P9 is ✅ Done the chain reports completion of its boundary.
 
@@ -29,18 +29,18 @@ Neither is a failure of the run: when P9 is ✅ Done the chain reports completio
 
 Autopilot never polls an external event. A failed check is reported exactly and the phase is parked.
 
-| Applies to | Check (exit 0 = OK) | On failure |
-|---|---|---|
-| launch | `node -e "process.exit(Number(process.versions.node.split('.')[0]) >= 26 ? 0 : 1)"` | STOP — the operator installs Node.js 26 (D09). The gates of every phase run on it |
-| launch | `pnpm --version` | STOP — the operator installs pnpm |
-| launch | `gh api repos/bymaxone/nest-telemetry --jq .full_name` | STOP — the scaffold source is unreachable |
-| launch | `python3 ~/.claude/bymax-review/review_flow.py codex-check` | STOP — the second reviewer of every phase cannot run; the operator runs `/bymax-quality:codex-setup` |
-| launch | `git diff --quiet origin/main -- docs/plan.md docs/tasks docs/spec.md docs/AUTOPILOT.md` | STOP — the planning documents the chain reads are not on `main` yet |
+| Applies to        | Check (exit 0 = OK)                                                                                                                                                    | On failure                                                                                                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| launch            | `node -e "process.exit(Number(process.versions.node.split('.')[0]) >= 26 ? 0 : 1)"`                                                                                    | STOP — the operator installs Node.js 26 (D09). The gates of every phase run on it                                                                                |
+| launch            | `pnpm --version`                                                                                                                                                       | STOP — the operator installs pnpm                                                                                                                                |
+| launch            | `gh api repos/bymaxone/nest-telemetry --jq .full_name`                                                                                                                 | STOP — the scaffold source is unreachable                                                                                                                        |
+| launch            | `python3 ~/.claude/bymax-review/review_flow.py codex-check`                                                                                                            | STOP — the second reviewer of every phase cannot run; the operator runs `/bymax-quality:codex-setup`                                                             |
+| launch            | `git diff --quiet origin/main -- docs/plan.md docs/tasks docs/spec.md docs/AUTOPILOT.md`                                                                               | STOP — the planning documents the chain reads are not on `main` yet                                                                                              |
 | phase 0, task 0.7 | the operator's standing confirmation, recorded in the launch message, that the chain may add `CI passed` to the repository ruleset `nest-subscription-pr-and-ci-gates` | The chain finishes P0 without the ruleset change, lists it as owed in the pull request, and marks P0 🟡 Partial. It never changes a ruleset on its own authority |
-| phase 7 | `test -n "$REVENUECAT_SANDBOX_API_KEY" && test -n "$REVENUECAT_SANDBOX_PROJECT_ID"` | Mark P7 ⛔ blocked on the RevenueCat sandbox credentials (D18) and park it. P8 and P9 depend on P7, so the chain then stops |
-| phase 9 | none beyond launch | — |
-| phase 10 | `gh repo view bymaxone/nest-subscription-example --json name` | Outside the chain boundary; reported, not attempted |
-| phase 11 | the Bymax Finance public API is released | Outside the chain boundary; stays ⛔ |
+| phase 7           | `test -n "$REVENUECAT_SANDBOX_API_KEY" && test -n "$REVENUECAT_SANDBOX_PROJECT_ID"`                                                                                    | Mark P7 ⛔ blocked on the RevenueCat sandbox credentials (D18) and park it. P8 and P9 depend on P7, so the chain then stops                                      |
+| phase 9           | none beyond launch                                                                                                                                                     | —                                                                                                                                                                |
+| phase 10          | `gh repo view bymaxone/nest-subscription-example --json name`                                                                                                          | Outside the chain boundary; reported, not attempted                                                                                                              |
+| phase 11          | the Bymax Finance public API is released                                                                                                                               | Outside the chain boundary; stays ⛔                                                                                                                             |
 
 The RevenueCat variables live in the orchestrator's environment only. They are never written to a file, a fixture, a commit, a pull request or a log.
 
@@ -48,18 +48,18 @@ The RevenueCat variables live in the orchestrator's environment only. They are n
 
 `inherit` is the orchestrator's model, the strong tier. A fix sub-agent escalates to `inherit` whenever a phase stalls on review or CI findings.
 
-| Phase | Model | Rationale |
-|---|---|---|
-| 0 | inherit | Not a mechanical copy: every script and baseline of `nest-telemetry` is triaged, and a gate brought in weakened is the failure mode |
-| 1 | inherit | Defines the model and both ports that every later phase builds on, plus the tenant and account key (SEC08) and the conformance suite |
-| 2 | inherit | Security-sensitive: secret containment (SEC05) and the sandbox boot refusal (SEC07) |
-| 3 | sonnet | Service work on established wiring, fully specified: single flight, ordered writes, staleness, cache, reconciliation |
-| 4 | inherit | Security-sensitive: the guard, the refusal codes and the fail policy (SEC04) |
-| 5 | sonnet | A pure comparison of two snapshots and a dispatcher on a decided contract (D17) |
-| 6 | inherit | Security-sensitive: webhook verification order, the single refusal answer, de-duplication (SEC01 to SEC03, D16) |
-| 7 | inherit | First contact with an external API: invented RevenueCat endpoints and fields are the failure mode |
-| 8 | inherit | Changes state at the source and enforces ownership (SEC10); a second contact with the RevenueCat API |
-| 9 | inherit | Final hardening: public claims, the whole-package sweep and the full mutation run |
+| Phase | Model   | Rationale                                                                                                                            |
+| ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 0     | inherit | Not a mechanical copy: every script and baseline of `nest-telemetry` is triaged, and a gate brought in weakened is the failure mode  |
+| 1     | inherit | Defines the model and both ports that every later phase builds on, plus the tenant and account key (SEC08) and the conformance suite |
+| 2     | inherit | Security-sensitive: secret containment (SEC05) and the sandbox boot refusal (SEC07)                                                  |
+| 3     | sonnet  | Service work on established wiring, fully specified: single flight, ordered writes, staleness, cache, reconciliation                 |
+| 4     | inherit | Security-sensitive: the guard, the refusal codes and the fail policy (SEC04)                                                         |
+| 5     | sonnet  | A pure comparison of two snapshots and a dispatcher on a decided contract (D17)                                                      |
+| 6     | inherit | Security-sensitive: webhook verification order, the single refusal answer, de-duplication (SEC01 to SEC03, D16)                      |
+| 7     | inherit | First contact with an external API: invented RevenueCat endpoints and fields are the failure mode                                    |
+| 8     | inherit | Changes state at the source and enforces ownership (SEC10); a second contact with the RevenueCat API                                 |
+| 9     | inherit | Final hardening: public claims, the whole-package sweep and the full mutation run                                                    |
 
 **Heavy phases** (silent-death watch widened to about 120 minutes): 0 (first install and every gate brought up), 1, 3, 6, 7 and 9. Every phase runs Stryker at a threshold of 100 before its pull request; these are the ones where that run is long.
 
@@ -67,19 +67,19 @@ The RevenueCat variables live in the orchestrator's environment only. They are n
 
 The commands exist from P0 on (they are what P0 delivers). Before P0 is merged the only CI is the documents job.
 
-| Gate (local command) | Active from |
-|---|---|
-| `pnpm typecheck && pnpm lint` | phase 0 |
-| `pnpm test` (unit suite, 100% coverage, no sockets) | phase 0 |
-| `pnpm test:e2e` (end-to-end suite, 100% coverage on its own) | phase 0 |
-| `pnpm test:cov:all` (both suites together, 100%) | phase 0 |
-| `pnpm build && pnpm check:exports && pnpm check:runtime` (packed tarball, ESM and CommonJS) | phase 0 |
-| `pnpm check:api && pnpm size` | phase 0 |
-| `pnpm check:file-length && pnpm check:function-length && pnpm check:spec-headers && pnpm check:mutants` | phase 0 |
-| `pnpm mutation` (Stryker, thresholds 100) | phase 0, on the files the phase touched |
-| `pnpm check:docs && pnpm check:published` | phase 0; meaningful from phase 9, when the README has snippets |
-| `pnpm mutation:full` | phase 9 |
-| `npm publish --dry-run` | phase 9 |
+| Gate (local command)                                                                                    | Active from                                                    |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `pnpm typecheck && pnpm lint`                                                                           | phase 0                                                        |
+| `pnpm test` (unit suite, 100% coverage, no sockets)                                                     | phase 0                                                        |
+| `pnpm test:e2e` (end-to-end suite, 100% coverage on its own)                                            | phase 0                                                        |
+| `pnpm test:cov:all` (both suites together, 100%)                                                        | phase 0                                                        |
+| `pnpm build && pnpm check:exports && pnpm check:runtime` (packed tarball, ESM and CommonJS)             | phase 0                                                        |
+| `pnpm check:api && pnpm size`                                                                           | phase 0                                                        |
+| `pnpm check:file-length && pnpm check:function-length && pnpm check:spec-headers && pnpm check:mutants` | phase 0                                                        |
+| `pnpm mutation` (Stryker, thresholds 100)                                                               | phase 0, on the files the phase touched                        |
+| `pnpm check:docs && pnpm check:published`                                                               | phase 0; meaningful from phase 9, when the README has snippets |
+| `pnpm mutation:full`                                                                                    | phase 9                                                        |
+| `npm publish --dry-run`                                                                                 | phase 9                                                        |
 
 **Required CI check**: `CI passed`, the aggregate job. Its name is contractual: the ruleset references it by literal name.
 
@@ -139,16 +139,16 @@ The numbered ones are from the specification §8.2. Each is an auditable stateme
 
 **Per-phase focus** for the phases the model policy runs on `inherit`:
 
-| Phase | Focus |
-|---|---|
-| 0 | A gate, threshold, ignore glob or baseline weaker than the sibling's. `agents-sync.yml` pinned to a release commit; every third-party action pinned by SHA |
-| 1 | Injectivity of `encodeAccountKey`; the conformance suite failing each broken store; pending changes stored in the same write as the snapshot (D17) |
-| 2 | SEC05 on the four paths; a validation message that contains a supplied value; a property redefined on an object the host owns |
-| 4 | SEC04 boundary at the tolerance; an error path that allows; an identifier read from a body, query or header by the guard itself |
-| 6 | SEC01 to SEC03; a verification exception treated as "failed" instead of "refused"; the identifier of a failed event not removed (D16); a timer left pending |
-| 7 | SEC02 and SEC07; a field or endpoint not in the facts file; a fixture holding a real identifier or secret; the sandbox credentials reaching any file |
-| 8 | SEC10; a result derived from an HTTP status instead of the read-back |
-| 9 | A documented guarantee without its limit; a security control claimed that the repository does not run; a badge with an unmeasured number |
+| Phase | Focus                                                                                                                                                       |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | A gate, threshold, ignore glob or baseline weaker than the sibling's. `agents-sync.yml` pinned to a release commit; every third-party action pinned by SHA  |
+| 1     | Injectivity of `encodeAccountKey`; the conformance suite failing each broken store; pending changes stored in the same write as the snapshot (D17)          |
+| 2     | SEC05 on the four paths; a validation message that contains a supplied value; a property redefined on an object the host owns                               |
+| 4     | SEC04 boundary at the tolerance; an error path that allows; an identifier read from a body, query or header by the guard itself                             |
+| 6     | SEC01 to SEC03; a verification exception treated as "failed" instead of "refused"; the identifier of a failed event not removed (D16); a timer left pending |
+| 7     | SEC02 and SEC07; a field or endpoint not in the facts file; a fixture holding a real identifier or secret; the sandbox credentials reaching any file        |
+| 8     | SEC10; a result derived from an HTTP status instead of the read-back                                                                                        |
+| 9     | A documented guarantee without its limit; a security control claimed that the repository does not run; a badge with an unmeasured number                    |
 
 ## Review bot
 

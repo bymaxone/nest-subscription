@@ -4,6 +4,8 @@
  * own object is never written to.
  * @layer core
  */
+import { Secret } from '@bymax-one/nest-subscription/internal'
+
 import {
   DEFAULT_ALLOW_SANDBOX,
   DEFAULT_FAIL_POLICY,
@@ -31,9 +33,14 @@ export function resolveOptions(candidate: unknown): ResolvedSubscriptionOptions 
   return build(candidate)
 }
 
-/** Builds the frozen form field by field, so nothing the host added rides along. */
+/**
+ * Builds the frozen form field by field, so nothing the host added rides along. The webhook secret
+ * is wrapped here, once, and is exposed only through an accessor made non-enumerable on the new
+ * object: the host's own object is never touched.
+ */
 function build(input: SubscriptionOptionsInput): ResolvedSubscriptionOptions {
-  return Object.freeze({
+  const webhookSecret = input.webhookSecret === undefined ? null : Secret.from(input.webhookSecret)
+  const resolved: ResolvedSubscriptionOptions = {
     source: input.source,
     store: input.store,
     accountResolver: input.accountResolver,
@@ -51,6 +58,11 @@ function build(input: SubscriptionOptionsInput): ResolvedSubscriptionOptions {
     webhookController: input.webhookController ?? DEFAULT_WEBHOOK_CONTROLLER,
     webhookPath: input.webhookPath ?? null,
     multiTenant: input.multiTenant ?? false,
-    clock: input.clock ?? systemClock
-  })
+    clock: input.clock ?? systemClock,
+    get webhookSecret(): Secret | null {
+      return webhookSecret
+    }
+  }
+  Object.defineProperty(resolved, 'webhookSecret', { enumerable: false })
+  return Object.freeze(resolved)
 }
