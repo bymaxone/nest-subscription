@@ -64,6 +64,15 @@ const OPTIONAL_PEERS = ['@bymax-one/nest-cache', '@bymax-one/nest-core']
 /** The packages a host of the NestJS module provides and the `shared` subpath must not need. */
 const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 
+/** Every runtime name of the `shared` subpath: the closed value sets. */
+const SHARED_EXPORTS = [
+  'CHANGE_KINDS',
+  'SUBSCRIPTION_ENVIRONMENTS',
+  'SUBSCRIPTION_ORIGINS',
+  'SUBSCRIPTION_STATUSES',
+  'WILL_RENEW_VALUES'
+]
+
 /**
  * The probes: which subpaths load together, which namespaces are denied and what is exported.
  * `expectDenied` marks a positive control: the probe must FAIL because the resolve hook fired,
@@ -73,7 +82,7 @@ const PROBES = [
   {
     label: 'shared without NestJS, its companions or either optional peer',
     deny: [...FRAMEWORK, ...OPTIONAL_PEERS],
-    entries: { './shared': ['SUBSCRIPTION_ENVIRONMENTS'] }
+    entries: { './shared': SHARED_EXPORTS }
   },
   {
     label: 'root, adapters and testing without either optional peer',
@@ -83,7 +92,7 @@ const PROBES = [
   {
     label: 'positive control: a load of a denied specifier is seen',
     deny: [`${packageName}/shared`],
-    entries: { './shared': ['SUBSCRIPTION_ENVIRONMENTS'] },
+    entries: { './shared': SHARED_EXPORTS },
     expectDenied: true
   }
 ]

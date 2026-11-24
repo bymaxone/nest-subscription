@@ -15,7 +15,13 @@ describe('entry points', () => {
     // Scenario: a consumer imports the package root and each subpath; every alias must reach a
     // module of its own directory, and a name exported without its owning code would show here
     // and fail the case.
-    expect(Object.keys(shared)).toEqual(['SUBSCRIPTION_ENVIRONMENTS'])
+    expect(Object.keys(shared).sort()).toEqual([
+      'CHANGE_KINDS',
+      'SUBSCRIPTION_ENVIRONMENTS',
+      'SUBSCRIPTION_ORIGINS',
+      'SUBSCRIPTION_STATUSES',
+      'WILL_RENEW_VALUES'
+    ])
     // Reading the export resolves its re-export to the real value.
     expect([...shared.SUBSCRIPTION_ENVIRONMENTS]).toEqual(['production', 'sandbox'])
     for (const entry of [core, internal, revenuecat, finance, testing]) {

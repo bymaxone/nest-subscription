@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,7 +39,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 
 | ID  | Task                                                                | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 1.1 | Define the snapshot model and its closed value sets                 | 📋 ToDo | P0       | M    | —          |
+| 1.1 | Define the snapshot model and its closed value sets                 | ✅ Done | P0       | M    | —          |
 | 1.2 | Define the error-code catalogue and the error class                 | 📋 ToDo | P0       | S    | 1.1        |
 | 1.3 | Implement the empty snapshot and the entitlement resolution         | 📋 ToDo | P0       | M    | 1.1        |
 | 1.4 | Implement the tenant and account key encoder                        | 📋 ToDo | P0       | S    | 1.2        |
@@ -53,7 +53,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 
 ### Task 1.1 — Define the snapshot model and its closed value sets
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -64,11 +64,11 @@ Write the types of the snapshot, the subscription record and the entitlement, an
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionSnapshot`, `SubscriptionRecord`, `EntitlementState` and `SourceCustomerReference` carry every field of the FR01 and FR02 tables, with instants as ISO 8601 strings and "not applicable" as `null`.
-- [ ] Each value set is a frozen `as const` tuple with its union type derived from it, and a test pins the exact members of each set against the specification.
-- [ ] A table-driven test states, for every status of FR03, whether it means access, and asserts that no exported function takes a status and returns access.
-- [ ] The `shared` entry point exports these names and imports nothing at run time.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionSnapshot`, `SubscriptionRecord`, `EntitlementState` and `SourceCustomerReference` carry every field of the FR01 and FR02 tables, with instants as ISO 8601 strings and "not applicable" as `null`.
+- [x] Each value set is a frozen `as const` tuple with its union type derived from it, and a test pins the exact members of each set against the specification.
+- [x] A table-driven test states, for every status of FR03, whether it means access, and asserts that no exported function takes a status and returns access.
+- [x] The `shared` entry point exports these names and imports nothing at run time.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -643,5 +643,7 @@ Completion Protocol (after the work is reported done):
 ## Completion log
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
+
+- 1.1 ✅ 2026-11-24 — snapshot model types, the five closed value sets and the change type in the shared subpath; no function from status to access exists
 
 <!-- entries are added as tasks complete -->

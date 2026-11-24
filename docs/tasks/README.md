@@ -12,12 +12,12 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 > Mirrors the phase dashboard of [`docs/plan.md`](../plan.md). Both are updated together.
 
-**Phases done**: 1 / 12 · **Tasks done**: 7 / 64
+**Phases done**: 1 / 12 · **Tasks done**: 8 / 64
 
 | ID  | Task file                                                                                        | Status         | Progress | Last updated |
 | --- | ------------------------------------------------------------------------------------------------ | -------------- | -------- | ------------ |
 | P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | ✅ Done        | 7/7      | 2026-11-24   |
-| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | 🔄 In Progress | 0/7      | 2026-11-24   |
+| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | 🔄 In Progress | 1/7      | 2026-11-24   |
 | P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | 📋 ToDo        | 0/5      | —            |
 | P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | 📋 ToDo        | 0/5      | —            |
 | P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 📋 ToDo        | 0/4      | —            |

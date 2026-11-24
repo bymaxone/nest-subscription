@@ -10,3 +10,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - The package scaffold: the build, the quality gates and the CI for the root, `shared`,
   `revenuecat`, `finance` and `testing` subpaths and the internal bundle.
 - `SUBSCRIPTION_ENVIRONMENTS` and `SubscriptionEnvironment` in the `shared` subpath.
+- The normalized model in the `shared` subpath: `SubscriptionSnapshot`, `SubscriptionRecord`,
+  `EntitlementState`, `SourceCustomerReference` and `SubscriptionChange`, with the closed value
+  sets `SUBSCRIPTION_STATUSES`, `WILL_RENEW_VALUES`, `SUBSCRIPTION_ORIGINS` and `CHANGE_KINDS` and
+  their union types.
