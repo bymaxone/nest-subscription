@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -37,15 +37,15 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 1.1 | Define the snapshot model and its closed value sets | 📋 ToDo | P0 | M | — |
-| 1.2 | Define the error-code catalogue and the error class | 📋 ToDo | P0 | S | 1.1 |
-| 1.3 | Implement the empty snapshot and the entitlement resolution | 📋 ToDo | P0 | M | 1.1 |
-| 1.4 | Implement the tenant and account key encoder | 📋 ToDo | P0 | S | 1.2 |
-| 1.5 | Define the source port, the store port and the injection tokens | 📋 ToDo | P0 | M | 1.2 |
-| 1.6 | Implement the in-memory store and the conformance suite | 📋 ToDo | P0 | L | 1.4, 1.5 |
-| 1.7 | Implement the fake source and prove the shared subpath stands alone | 📋 ToDo | P0 | M | 1.5 |
+| ID  | Task                                                                | Status  | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 1.1 | Define the snapshot model and its closed value sets                 | 📋 ToDo | P0       | M    | —          |
+| 1.2 | Define the error-code catalogue and the error class                 | 📋 ToDo | P0       | S    | 1.1        |
+| 1.3 | Implement the empty snapshot and the entitlement resolution         | 📋 ToDo | P0       | M    | 1.1        |
+| 1.4 | Implement the tenant and account key encoder                        | 📋 ToDo | P0       | S    | 1.2        |
+| 1.5 | Define the source port, the store port and the injection tokens     | 📋 ToDo | P0       | M    | 1.2        |
+| 1.6 | Implement the in-memory store and the conformance suite             | 📋 ToDo | P0       | L    | 1.4, 1.5   |
+| 1.7 | Implement the fake source and prove the shared subpath stands alone | 📋 ToDo | P0       | M    | 1.5        |
 
 ---
 
@@ -79,7 +79,7 @@ Write the types of the snapshot, the subscription record and the entitlement, an
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -132,7 +132,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -164,7 +164,7 @@ Write the closed catalogue of error codes in `shared` and the one error class th
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -216,7 +216,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -247,7 +247,7 @@ Write the two pure functions of the model: the snapshot of an account the source
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -298,7 +298,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -328,7 +328,7 @@ Write the one function that turns a tenant identifier and an account identifier 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -378,7 +378,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -412,7 +412,7 @@ Write the two interfaces every later phase builds on, and the symbol tokens they
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -467,7 +467,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -499,7 +499,7 @@ Write the in-memory store for tests and development, and the conformance cases a
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -551,7 +551,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.6 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -583,7 +583,7 @@ Write the scriptable fake source (FR39) and the packaging tests that close the p
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -636,7 +636,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P1 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 1.7 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

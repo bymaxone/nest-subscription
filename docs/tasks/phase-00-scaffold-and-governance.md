@@ -1,6 +1,6 @@
 # Phase 0 — Scaffold and governance
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 6 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: ✅ Done &nbsp;·&nbsp; **Progress**: 7 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P0 — scaffold-and-governance
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -37,15 +37,15 @@ At the end it is a library project that builds, tests and gates an empty package
 
 ## Task index
 
-| ID  | Task                                                | Status         | Priority | Size | Depends on |
-| --- | --------------------------------------------------- | -------------- | -------- | ---- | ---------- |
-| 0.1 | Bring the package metadata and the build toolchain  | ✅ Done        | P0       | L    | —          |
-| 0.2 | Bring the test, coverage and mutation configuration | ✅ Done        | P0       | M    | 0.1        |
-| 0.3 | Bring the packaging, size and source gates          | ✅ Done        | P0       | M    | 0.2        |
-| 0.4 | Bring the git hooks and commit rules                | ✅ Done        | P1       | S    | 0.1        |
-| 0.5 | Extend the CI with the family workflows             | ✅ Done        | P0       | M    | 0.3        |
-| 0.6 | Write the repository documents for a library        | ✅ Done        | P0       | M    | 0.3        |
-| 0.7 | Require the status checks and close the phase       | 🔄 In Progress | P0       | S    | 0.5, 0.6   |
+| ID  | Task                                                | Status  | Priority | Size | Depends on |
+| --- | --------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 0.1 | Bring the package metadata and the build toolchain  | ✅ Done | P0       | L    | —          |
+| 0.2 | Bring the test, coverage and mutation configuration | ✅ Done | P0       | M    | 0.1        |
+| 0.3 | Bring the packaging, size and source gates          | ✅ Done | P0       | M    | 0.2        |
+| 0.4 | Bring the git hooks and commit rules                | ✅ Done | P1       | S    | 0.1        |
+| 0.5 | Extend the CI with the family workflows             | ✅ Done | P0       | M    | 0.3        |
+| 0.6 | Write the repository documents for a library        | ✅ Done | P0       | M    | 0.3        |
+| 0.7 | Require the status checks and close the phase       | ✅ Done | P0       | S    | 0.5, 0.6   |
 
 ---
 
@@ -576,7 +576,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 0.7 — Require the status checks and close the phase
 
-- **Status**: 🔄 In Progress
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 0.5, 0.6
@@ -587,9 +587,9 @@ Add the required status checks to the repository ruleset, verify the whole phase
 
 #### Acceptance criteria
 
-- [ ] The repository ruleset for `main` requires `CI passed`, read back from the GitHub API.
-- [ ] Every Definition of Done item of P0 in `docs/plan.md` has its evidence (a command and its result) in the pull request body.
-- [ ] The packed tarball loads each of the five subpaths in ESM and CommonJS on Node.js 26.
+- [x] The repository ruleset for `main` requires `CI passed`, read back from the GitHub API.
+- [x] Every Definition of Done item of P0 in `docs/plan.md` has its evidence (a command and its result) in the pull request body.
+- [x] The packed tarball loads each of the five subpaths in ESM and CommonJS on Node.js 26.
 
 #### Files to create / modify
 
@@ -661,5 +661,7 @@ Completion Protocol (after the work is reported done):
 - 0.5 ✅ 2026-11-24 — CI calls the organisation's reusable pipeline beside the documents job, the aggregate stays CI passed; release, CodeQL, OSV, Scorecard, API surface, full mutation and peer drift workflows and Dependabot with the agents-sync group
 
 - 0.6 ✅ 2026-11-24 — AGENTS.md library sections below the shared block, CLAUDE.md, CONTRIBUTING.md, CHANGELOG.md, Copilot instruction files and reviewer agent; README and docs index state the scaffolded stage
+
+- 0.7 ✅ 2026-11-24 — the repository ruleset requires CI passed on main, read back from the API; Definition of Done evidence recorded in pull request #4
 
 <!-- entries are added as tasks complete -->

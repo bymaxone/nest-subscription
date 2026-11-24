@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 📋 0 / 12 phases done (0%)
-**Active phase**: P0 — scaffold-and-governance
+**Overall progress**: 🔄 1 / 12 phases done (8%)
+**Active phase**: P1 — model-ports-and-test-doubles
 **Blocked**: P11, until the Bymax Finance API exists (D03)
 
 ---
@@ -35,8 +35,8 @@ This document says in which order the specification is built and when each part 
 
 | ID  | Phase                                                                                                   | Status         | Progress | Size | Last updated |
 | --- | ------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | 🔄 In Progress | 6/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | 📋 ToDo        | 0/7      | L    | —            |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | 🔄 In Progress | 0/7      | L    | 2026-11-24   |
 | P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 📋 ToDo        | 0/5      | M    | —            |
 | P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo        | 0/5      | L    | —            |
 | P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo        | 0/4      | M    | —            |
@@ -151,11 +151,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: package metadata with the five subpaths of D08 as empty entry points plus the internal bundle; TypeScript, lint, formatting, Jest (unit, end-to-end, combined coverage), Stryker and build configuration; the gate scripts under `scripts/`; Husky and commitlint; the organisation's reusable library CI and security workflows added to the CI workflow, keeping its documents job and the aggregate check named `CI passed`; the release workflow; CodeQL, OSV and Scorecard workflows; Dependabot, including the group that moves the pinned `agents-sync` reference; the library sections of `AGENTS.md` (design principles, security specification, testing strategy, packaging invariants, pitfalls) and its statement of the `docs/` language; `CLAUDE.md`, `CONTRIBUTING.md`, `CHANGELOG.md` and the Copilot instruction files; the required status checks in the repository ruleset.
   - Out: any library behaviour; the public README beyond what the gates need; publishing.
 - **Definition of Done**:
-  - [ ] `pnpm install`, `typecheck`, `lint`, `test`, `test:e2e`, `test:cov:all`, `build` and `mutation` all pass locally on Node.js 26 on a tree that exports nothing but the empty entry points.
-  - [ ] The packed tarball loads each of the five subpaths in ESM and in CommonJS, and the strict type-resolution check passes on it.
-  - [ ] The pull request shows `CI passed` green, with the organisation's reusable workflows among the jobs it depends on, and the ruleset requires it.
-  - [ ] `AGENTS.md` no longer says the repository is at the specification stage, and nothing in it describes `nest-telemetry`'s domain.
-  - [ ] No file brought from `nest-telemetry` still names OpenTelemetry, a telemetry script or a telemetry baseline.
+  - [x] `pnpm install`, `typecheck`, `lint`, `test`, `test:e2e`, `test:cov:all`, `build` and `mutation` all pass locally on Node.js 26 on a tree that exports nothing but the empty entry points.
+  - [x] The packed tarball loads each of the five subpaths in ESM and in CommonJS, and the strict type-resolution check passes on it.
+  - [x] The pull request shows `CI passed` green, with the organisation's reusable workflows among the jobs it depends on, and the ruleset requires it.
+  - [x] `AGENTS.md` no longer says the repository is at the specification stage, and nothing in it describes `nest-telemetry`'s domain.
+  - [x] No file brought from `nest-telemetry` still names OpenTelemetry, a telemetry script or a telemetry baseline.
 - **Context / preconditions**: The repository holds documents and three workflows. `nest-telemetry` is the scaffold to mirror (specification §11); its mutation thresholds are already 100.
 - **Rules-of-phase**:
   1. Copy the mechanism, not the domain: every script and baseline is read before it is kept, and one that only serves telemetry is dropped.
@@ -460,6 +460,8 @@ When a phase moves status:
 ## Completion log
 
 > Append-only. One line per phase completion.
+
+- P0 ✅ 2026-11-24 — scaffold, gates, CI and repository documents merged in #4; CI passed is a required check
 
 ---
 
