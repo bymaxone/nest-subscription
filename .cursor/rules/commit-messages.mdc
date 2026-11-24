@@ -1,0 +1,90 @@
+---
+description: Commit message conventions for @bymax-one/nest-subscription. Apply whenever writing or suggesting a git commit message.
+alwaysApply: true
+---
+
+# Commit message conventions
+
+**HARD LIMITS — commitlint will reject the commit if violated:**
+- Subject line: **≤ 72 characters**
+- Every body line individually: **≤ 100 characters** — this includes bullet points
+- Never write a bullet point sentence that wraps beyond 100 chars. Break it into two lines.
+- A message never names an AI tool as author or reviewer: the `no-ai-attribution` rule rejects it.
+
+## Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+```
+
+## Allowed types
+
+`feat` | `fix` | `docs` | `refactor` | `perf` | `test` | `build` | `ci` | `chore` | `revert`
+
+## Subject rules
+
+- Lower-case after the colon
+- No period at the end
+- Max 72 characters total
+
+## Body rules
+
+- Blank line between subject and body
+- Each line max 100 characters — **count before writing**
+- Use short, direct verbs: "Add", "Fix", "Remove", "Update" — not "Introduced", "Created", "Established"
+- If a bullet would exceed 100 chars, split at a natural clause boundary and indent the continuation
+
+## Suggested scopes
+
+`config` | `shared` | `internal` | `core` | `revenuecat` | `finance` | `testing` | `scripts` | `deps` | `release`
+
+---
+
+## ✅ Correct examples
+
+```
+feat(shared): add the closed set of subscription statuses
+
+- Add the status set with its derived union type
+- Freeze the set so a host cannot change it for other callers
+- Add a spec that pins each member
+```
+
+```
+docs: add commit message conventions and repository instructions
+
+- Add Conventional Commits rule file with commitlint constraints
+- Add repository instructions with commands and source layout
+- Add code review and testing standards for contributors
+```
+
+```
+chore(deps): bump typescript to 5.9.3
+```
+
+---
+
+## ❌ Wrong examples (will be rejected)
+
+Too long subject:
+```
+feat(core): add validation for subscription module options and throw descriptive errors on misconfiguration
+```
+
+Body line over 100 chars:
+```
+- Introduced a new document outlining commit message conventions for the project, enforcing Conventional Commits.
+```
+
+Fix — split it:
+```
+- Add document outlining commit message conventions
+  enforcing Conventional Commits format
+```
+
+Or shorten:
+```
+- Add Conventional Commits guidelines with commitlint constraints
+```
