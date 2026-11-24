@@ -240,7 +240,7 @@ rewrite published history.
 - **A webhook is a trigger, not a source of state.** A payload never writes a snapshot. It causes a read of the source, and only that read writes (FR16, SEC01).
 - **Two ports, one direction.** `SubscriptionSource` reads the billing platform and `SubscriptionStore` holds snapshots; adapters and stores plug in through them. `core` never imports an adapter: the host imports the adapter's factory from its subpath and passes the result in the module options, so an adapter that is not configured loads none of its code (NFR05).
 - **The library is the mechanism, the host is the policy.** Prices, benefits, limits, the fail policy and the staleness limits are options of the host with refusing defaults.
-- **Zero direct dependencies.** NestJS packages are peers, every other peer is optional, and adapters use the runtime's `fetch` and `node:crypto`, with no provider SDK.
+- **Zero direct dependencies.** NestJS packages and the two packages NestJS itself requires (`reflect-metadata` and `rxjs`) are peers, every other peer is optional, and adapters use the runtime's `fetch` and `node:crypto`, with no provider SDK.
 - **No environment reads.** The library reads no environment variable; the host passes every value in.
 - **Time is injected.** Code reads the clock through the injected `Clock`, and no test waits on a real timer.
 

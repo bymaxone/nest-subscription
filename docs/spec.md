@@ -106,28 +106,29 @@ The two are independent. Neither requires the other, and the host's code is the 
 
 **FR01. Snapshot.** For one account the library holds one snapshot:
 
-| Field                                                                   | Meaning                                                                                         |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Account identifier, and tenant identifier when the host is multi-tenant | Whose state this is                                                                             |
-| Entitlements                                                            | A list. Each has a name, whether it is active now, until when, and which subscription grants it |
-| Subscriptions                                                           | A list, usually of one. Each is described in FR02                                               |
-| Source and source customer reference                                    | Which adapter produced this, and how the source names the account                               |
-| Fetched at, and source updated at                                       | When the library read it, and how fresh the source says it is                                   |
+| Field                                                                   | Meaning                                                                                                                                        |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account identifier, and tenant identifier when the host is multi-tenant | Whose state this is                                                                                                                            |
+| Entitlements                                                            | A list. Each has a name, whether it is active now, until when, and which subscription grants it                                                |
+| Subscriptions                                                           | A list, usually of one. Each is described in FR02                                                                                              |
+| Source and source customer reference                                    | Which adapter produced this, and how the source names the account. The customer reference is null when the source has no record of the account |
+| Fetched at, and source updated at                                       | When the library read it, and how fresh the source says it is                                                                                  |
 
 **FR02. Subscription record.** Each subscription in a snapshot carries:
 
-| Field                                          | Values                                                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------------------ |
-| Status                                         | `trialing`, `active`, `in_grace`, `on_hold`, `paused`, `expired`, `unknown`    |
-| Gives access                                   | Boolean, as the source reports it. The guard reads this, never the status name |
-| Will renew                                     | `yes`, `no`, `changes_product`, `pauses`, `unknown`                            |
-| Origin                                         | `app_store`, `play_store`, `web`, `promotional`, `other`                       |
-| Environment                                    | `production` or `sandbox`                                                      |
-| Product reference and billing interval         | As named by the source                                                         |
-| Period                                         | Current period start and end                                                   |
-| Access until                                   | The instant access ends if nothing else happens. Null for a lifetime grant     |
-| Billing issue since, cancelled at, refunded at | Null when not applicable                                                       |
-| Management reference                           | Where the person manages it, when the source provides one                      |
+| Field                                          | Values                                                                                                                                  |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Subscription reference                         | How the source names this subscription, stable across refreshes. An entitlement names the subscription that grants it by this reference |
+| Status                                         | `trialing`, `active`, `in_grace`, `on_hold`, `paused`, `expired`, `unknown`                                                             |
+| Gives access                                   | Boolean, as the source reports it. The guard reads this, never the status name                                                          |
+| Will renew                                     | `yes`, `no`, `changes_product`, `pauses`, `unknown`                                                                                     |
+| Origin                                         | `app_store`, `play_store`, `web`, `promotional`, `other`                                                                                |
+| Environment                                    | `production` or `sandbox`                                                                                                               |
+| Product reference and billing interval         | As named by the source                                                                                                                  |
+| Period                                         | Current period start and end                                                                                                            |
+| Access until                                   | The instant access ends if nothing else happens. Null for a lifetime grant                                                              |
+| Billing issue since, cancelled at, refunded at | Null when not applicable                                                                                                                |
+| Management reference                           | Where the person manages it, when the source provides one                                                                               |
 
 **FR03. Status meanings.** These are fixed, so every adapter maps into the same words.
 
@@ -337,7 +338,7 @@ Configured with `forRoot` and `forRootAsync`, like the sibling libraries. The op
 
 ### 6.4 Errors
 
-A closed catalogue of error codes with a stable prefix, exported from the shared subpath, covering: refused webhook, unknown account, entitlement required, subscription gives no access, source unavailable, operation not possible for this origin, and configuration errors.
+A closed catalogue of error codes with a stable prefix, exported from the shared subpath, covering: refused webhook, unknown account, entitlement required, subscription gives no access, source unavailable, operation not possible for this origin, a malformed argument from the caller, and configuration errors.
 
 ---
 
@@ -357,7 +358,7 @@ The library keeps no other state. It stores no payment data, no price paid and n
 ## 8. Constraints
 
 - **Runtime:** Node.js 26 or newer, NestJS 11 (D09). A backend moves to Node.js 26 before it installs this library.
-- **Family rules:** zero direct dependencies; every peer that is not NestJS itself is optional; injection tokens are symbols; explicit injection on every provider; one place reads the environment, and the library itself reads none.
+- **Family rules:** zero direct dependencies; NestJS and the two packages NestJS itself requires (`reflect-metadata` and `rxjs`) are required peers, and every other peer is optional; injection tokens are symbols; explicit injection on every provider; one place reads the environment, and the library itself reads none.
 - **Language:** everything in the repository and on GitHub is English.
 - **Release:** the first publish and every version bump need the owner's explicit instruction. Breaking changes are announced in the changelog with a note on how a derived backend applies them.
 
@@ -429,12 +430,13 @@ The library keeps no other state. It stores no payment data, no price paid and n
 | D19 | A guard decision never waits for the source. A guarded request with a stale snapshot still starts the background refresh of FR25                                                                                       | 2026-11-24 |
 | D20 | The host hook receives the previous snapshot on the first delivery of a change. A redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot                              | 2026-11-24 |
 | D21 | There is one error class, `SubscriptionError`, defined in the `shared` subpath and re-exported by the root, so a host catches one class whichever part of the library raised it                                        | 2026-11-24 |
+| D22 | A malformed argument from the caller raises its own code, `SUBSCRIPTION_INVALID_INPUT`, so a host can tell a programming error from an unknown account or a configuration error                                        | 2026-11-24 |
+| D23 | A subscription record carries a subscription reference, and the source customer reference of a snapshot is null when the source has no record of the account                                                           | 2026-11-24 |
+| D24 | `reflect-metadata` and `rxjs` are required peers beside the NestJS packages, because NestJS does not load without them. The optional peers are the integrations, `@bymax-one/nest-cache` and `@bymax-one/nest-core`    | 2026-11-24 |
 
 ### 10.2 Open
 
-**Q1. Which code does a malformed caller argument raise?** §6.4 names no code for an argument that is malformed rather than unknown: a blank account identifier given to the key encoder, or an unparseable instant given to the entitlement resolution. _Proposal_: one added code, `SUBSCRIPTION_INVALID_INPUT`, so a host can tell a programming error from an unknown account or a configuration error. The catalogue carries it until the owner decides; removing it later is a public change.
-
-A new question is added here with a proposal and is never answered on the owner's behalf.
+None. A new question is added here with a proposal and is never answered on the owner's behalf.
 
 ---
 
