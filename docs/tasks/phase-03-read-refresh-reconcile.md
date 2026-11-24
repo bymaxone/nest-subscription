@@ -36,13 +36,13 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 3.1 | Implement the refresher with single flight and ordered writes | 📋 ToDo | P0 | L | — |
-| 3.2 | Implement the service reads | 📋 ToDo | P0 | M | 3.1 |
-| 3.3 | Refresh a stale snapshot in the background | 📋 ToDo | P0 | M | 3.2 |
-| 3.4 | Read through the optional cache | 📋 ToDo | P1 | M | 3.2 |
-| 3.5 | Implement reconciliation | 📋 ToDo | P0 | M | 3.1, 3.2 |
+| ID  | Task                                                          | Status  | Priority | Size | Depends on |
+| --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 3.1 | Implement the refresher with single flight and ordered writes | 📋 ToDo | P0       | L    | —          |
+| 3.2 | Implement the service reads                                   | 📋 ToDo | P0       | M    | 3.1        |
+| 3.3 | Refresh a stale snapshot in the background                    | 📋 ToDo | P0       | M    | 3.2        |
+| 3.4 | Read through the optional cache                               | 📋 ToDo | P1       | M    | 3.2        |
+| 3.5 | Implement reconciliation                                      | 📋 ToDo | P0       | M    | 3.1, 3.2   |
 
 ---
 
@@ -76,7 +76,7 @@ Write the one component that reads an account from the source and stores the res
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -128,7 +128,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -161,7 +161,7 @@ Write `SubscriptionService` with its two reads and the on-demand refresh, answer
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -210,7 +210,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -241,7 +241,7 @@ When a read finds a snapshot older than the maximum age, start a refresh without
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -293,7 +293,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -325,7 +325,7 @@ When the host provides a cache, read through it in front of the store with a sho
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -377,7 +377,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -410,7 +410,7 @@ Expose a method that refreshes the accounts whose snapshot is older than a thres
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -463,7 +463,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

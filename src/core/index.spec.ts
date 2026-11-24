@@ -21,7 +21,8 @@ describe('core entry point', () => {
       'SUBSCRIPTION_STORE',
       'SubscriptionError',
       'encodeAccountKey',
-      'resolveOptions'
+      'resolveOptions',
+      'validateOptions'
     ])
   })
 

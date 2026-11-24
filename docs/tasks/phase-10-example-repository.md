@@ -40,13 +40,13 @@ This phase works in another repository. Friction found here is reported as an is
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 10.1 | Create and scaffold the example repository | 📋 ToDo | P0 | M | — |
-| 10.2 | Implement the relational store and pass the conformance suite | 📋 ToDo | P0 | M | 10.1 |
-| 10.3 | Wire the application the way a product would | 📋 ToDo | P0 | M | 10.2 |
-| 10.4 | Run one suite against the fake source and RevenueCat | 📋 ToDo | P0 | M | 10.3 |
-| 10.5 | Link the example and close the phase | 📋 ToDo | P0 | S | 10.4 |
+| ID   | Task                                                          | Status  | Priority | Size | Depends on |
+| ---- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 10.1 | Create and scaffold the example repository                    | 📋 ToDo | P0       | M    | —          |
+| 10.2 | Implement the relational store and pass the conformance suite | 📋 ToDo | P0       | M    | 10.1       |
+| 10.3 | Wire the application the way a product would                  | 📋 ToDo | P0       | M    | 10.2       |
+| 10.4 | Run one suite against the fake source and RevenueCat          | 📋 ToDo | P0       | M    | 10.3       |
+| 10.5 | Link the example and close the phase                          | 📋 ToDo | P0       | S    | 10.4       |
 
 ---
 
@@ -78,7 +78,7 @@ Create `bymaxone/nest-subscription-example` and give it the family's example sca
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior NestJS application engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -130,7 +130,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P10 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 10.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -160,7 +160,7 @@ Implement `SubscriptionStore` over PostgreSQL following the library's reference-
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior NestJS and PostgreSQL engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -210,7 +210,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P10 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 10.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -242,7 +242,7 @@ Configure `SubscriptionModule`, protect routes, react to changes idempotently, m
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior NestJS application engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -293,7 +293,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P10 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 10.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -323,7 +323,7 @@ Write one end-to-end suite and run it, unchanged, with the fake source and with 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior NestJS test engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -372,7 +372,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P10 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 10.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -401,7 +401,7 @@ Link the example from the library's README, record AC08's evidence, and collect 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior maintainer engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -449,7 +449,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P10 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 10.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

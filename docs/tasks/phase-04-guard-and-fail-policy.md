@@ -37,12 +37,12 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 4.1 | Add the decorator and the account resolver contract | 📋 ToDo | P0 | S | — |
-| 4.2 | Implement the guard decision and its refusal codes | 📋 ToDo | P0 | M | 4.1 |
-| 4.3 | Implement the fail policy | 📋 ToDo | P0 | M | 4.2 |
-| 4.4 | Prove the guard end to end | 📋 ToDo | P0 | M | 4.3 |
+| ID  | Task                                                | Status  | Priority | Size | Depends on |
+| --- | --------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 4.1 | Add the decorator and the account resolver contract | 📋 ToDo | P0       | S    | —          |
+| 4.2 | Implement the guard decision and its refusal codes  | 📋 ToDo | P0       | M    | 4.1        |
+| 4.3 | Implement the fail policy                           | 📋 ToDo | P0       | M    | 4.2        |
+| 4.4 | Prove the guard end to end                          | 📋 ToDo | P0       | M    | 4.3        |
 
 ---
 
@@ -75,7 +75,7 @@ Write the route decorator that names an entitlement and the contract of the reso
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -124,7 +124,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P4 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 4.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -157,7 +157,7 @@ Write the guard for the normal case: the store is readable and the snapshot exis
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -207,7 +207,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P4 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 4.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -238,7 +238,7 @@ Decide what the guard does when the snapshot is missing or the store cannot be r
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -290,7 +290,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P4 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 4.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -323,7 +323,7 @@ Write the end-to-end suite that protects real routes and closes the phase: the t
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -376,7 +376,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P4 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 4.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

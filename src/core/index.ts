@@ -43,6 +43,7 @@ export type {
   WillRenew
 } from '@bymax-one/nest-subscription/shared'
 export { resolveOptions } from './options/resolve-options'
+export { validateOptions } from './options/validate-options'
 export type {
   AccountResolverOption,
   ResolvedAccountOption,

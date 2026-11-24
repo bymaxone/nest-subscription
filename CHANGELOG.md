@@ -37,3 +37,6 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   `SubscriptionOptionsInput` and `ResolvedSubscriptionOptions`, and `resolveOptions`, which applies
   the defaults (fail policy `refuse`, 24-hour tolerance and maximum age, sandbox access off,
   webhook controller off) and returns a frozen object, exported from the root.
+- `validateOptions`, which refuses an invalid configuration with one `SubscriptionError` that names
+  every offending option and carries none of the supplied values. `SubscriptionError` gains an
+  optional `optionPaths` list, appended to its message, for configuration errors.

@@ -436,7 +436,26 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ### 10.2 Open
 
-None. A new question is added here with a proposal and is never answered on the owner's behalf.
+A new question is added here with a proposal and is never answered on the owner's behalf. Each
+proposal below is what the code does until the owner answers.
+
+- **Q01. How does the configuration error name the offending options?** `SubscriptionError` has a
+  fixed message per code (D21), and §6.3 asks for one message that names every offending option.
+  Proposal: the error takes an optional list of option paths, keeps it on `optionPaths` and appends
+  it to the fixed message (`Offending options: a, b.`). The paths are literals the library writes;
+  no supplied value reaches the error, and the error carries no `cause`.
+- **Q02. Which module option holds a webhook secret, and in which shape?** §8.2 (SEC05, SEC09)
+  needs the option shape to hold two valid webhook secrets, while the adapters own the verification
+  and their own credentials. Proposal: the module options carry no credential of their own beyond
+  the optional `webhookSecret` (a string, or `{ current, previous }` during rotation, or a `Secret`),
+  which is wrapped in `Secret` at the one place the resolved options are built; an adapter's own
+  credentials are wrapped by the adapter's factory.
+- **Q03. What are the default event retention and the default webhook path?** Neither FR19 nor D10
+  fixes one. Proposal: both stay unset (`null` in the resolved options) until the webhook phase
+  decides, and an unset retention means identifiers are not purged by the library.
+- **Q04. In `forRootAsync`, how is a store given by token resolved?** A token cannot be known when
+  the module is built. Proposal: `forRoot` accepts the store as an instance or a token; the
+  `forRootAsync` factory returns the instance, which the host obtains through `inject`.
 
 ---
 

@@ -37,13 +37,13 @@ At the end the package is publishable: the README follows the family's canonical
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 9.1 | Write the public README | 📋 ToDo | P0 | L | — |
-| 9.2 | Write the host guides | 📋 ToDo | P0 | M | 9.1 |
-| 9.3 | Sweep the captured logs of the whole suite | 📋 ToDo | P0 | M | 9.1 |
-| 9.4 | Measure the whole package | 📋 ToDo | P0 | M | 9.2, 9.3 |
-| 9.5 | Prepare the release candidate | 📋 ToDo | P0 | M | 9.4 |
+| ID  | Task                                       | Status  | Priority | Size | Depends on |
+| --- | ------------------------------------------ | ------- | -------- | ---- | ---------- |
+| 9.1 | Write the public README                    | 📋 ToDo | P0       | L    | —          |
+| 9.2 | Write the host guides                      | 📋 ToDo | P0       | M    | 9.1        |
+| 9.3 | Sweep the captured logs of the whole suite | 📋 ToDo | P0       | M    | 9.1        |
+| 9.4 | Measure the whole package                  | 📋 ToDo | P0       | M    | 9.2, 9.3   |
+| 9.5 | Prepare the release candidate              | 📋 ToDo | P0       | M    | 9.4        |
 
 ---
 
@@ -77,7 +77,7 @@ Replace the scaffold README with the public document of the package, in the fami
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior technical writer who knows the library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -128,7 +128,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -158,7 +158,7 @@ Write the two guides the specification promises to a host: how to obtain the raw
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior technical writer who knows the library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -204,7 +204,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -234,7 +234,7 @@ Prove AC09 on the whole package: no secret and no account identifier in any log 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -284,7 +284,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -317,7 +317,7 @@ Run the full, non-incremental mutation run, set the size budget and the API base
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior release engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -370,7 +370,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -403,7 +403,7 @@ Write the changelog entry, add the scheduled job that watches the provider's cha
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior release engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -459,7 +459,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

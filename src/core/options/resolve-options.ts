@@ -16,15 +16,23 @@ import type {
   SubscriptionOptionsInput
 } from './subscription-options.types'
 import { systemClock } from '../system-clock'
+import { validateOptions } from './validate-options'
 
 /**
- * Applies every default and returns the frozen options. The host's instances (source, store,
- * cache, observer, clock) are carried by reference and left as they are.
+ * Validates the options, applies every default and returns the frozen options. The host's
+ * instances (source, store, cache, observer, clock) are carried by reference and left as they are.
  *
- * @param input The options as the host passed them.
+ * @param candidate The options as the host passed them, checked before anything is read from them.
  * @returns The resolved options.
+ * @throws SubscriptionError listing every offending option when the options are invalid.
  */
-export function resolveOptions(input: SubscriptionOptionsInput): ResolvedSubscriptionOptions {
+export function resolveOptions(candidate: unknown): ResolvedSubscriptionOptions {
+  validateOptions(candidate)
+  return build(candidate)
+}
+
+/** Builds the frozen form field by field, so nothing the host added rides along. */
+function build(input: SubscriptionOptionsInput): ResolvedSubscriptionOptions {
   return Object.freeze({
     source: input.source,
     store: input.store,

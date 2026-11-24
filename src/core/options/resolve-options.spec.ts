@@ -125,6 +125,12 @@ describe('resolveOptions', () => {
     expect(Object.isFrozen(input.store)).toBe(false)
   })
 
+  it('refuses invalid options before building anything', () => {
+    // Scenario: a missing store and a negative age are reported together by the validator.
+    const input = { ...minimal(), maxSnapshotAgeMs: -1, store: undefined }
+    expect(() => resolveOptions(input)).toThrow('Offending options: store, maxSnapshotAgeMs.')
+  })
+
   it('carries no field the host added beyond the options', () => {
     // Scenario: an unknown field on the input never reaches the resolved object.
     const resolved = resolveOptions({ ...minimal(), surplus: 'x' } as SubscriptionOptionsInput)

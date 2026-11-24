@@ -1,6 +1,6 @@
 # Phase 2 — Module and options
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P2 — module-and-options
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -40,7 +40,7 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 | ID  | Task                                               | Status  | Priority | Size | Depends on |
 | --- | -------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 2.1 | Define the module options and their defaults       | ✅ Done | P0       | M    | —          |
-| 2.2 | Validate the options into one aggregated error     | 📋 ToDo | P0       | M    | 2.1        |
+| 2.2 | Validate the options into one aggregated error     | ✅ Done | P0       | M    | 2.1        |
 | 2.3 | Contain the secrets in the resolved options        | 📋 ToDo | P0       | M    | 2.1        |
 | 2.4 | Implement the module with forRoot and forRootAsync | 📋 ToDo | P0       | L    | 2.2, 2.3   |
 | 2.5 | Prove that an unused adapter loads no code         | 📋 ToDo | P0       | S    | 2.4        |
@@ -134,7 +134,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 2.2 — Validate the options into one aggregated error
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 2.1
@@ -145,11 +145,11 @@ Refuse an invalid configuration at boot with a single error that lists every off
 
 #### Acceptance criteria
 
-- [ ] Several invalid options at once produce one `SubscriptionError` with the configuration code, whose message lists every offending option name.
-- [ ] For each rule, a test supplies a recognisable sentinel value and asserts the sentinel is absent from the message, the cause and the serialized error.
-- [ ] Enabling sandbox access with `isProduction` true and without the confirming option is refused; with the confirming option it is accepted.
-- [ ] A last-known-state fail policy without a positive tolerance, a negative duration, a missing source, a missing store and a missing account resolver are each refused.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Several invalid options at once produce one `SubscriptionError` with the configuration code, whose message lists every offending option name.
+- [x] For each rule, a test supplies a recognisable sentinel value and asserts the sentinel is absent from the message, the cause and the serialized error.
+- [x] Enabling sandbox access with `isProduction` true and without the confirming option is refused; with the confirming option it is accepted.
+- [x] A last-known-state fail policy without a positive tolerance, a negative duration, a missing source, a missing store and a missing account resolver are each refused.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -473,3 +473,4 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 - 2.1 ✅ 2026-11-24 — option types, defaults pinned to the specification, frozen resolved form and the system clock
+- 2.2 ✅ 2026-11-24 — table-driven validator that aggregates every offending option into one error without any supplied value

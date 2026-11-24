@@ -42,4 +42,34 @@ describe('SubscriptionError', () => {
     expect(JSON.parse(serialized)).toEqual(error.toJSON())
     expect(serialized).not.toContain('sentinel-secret-value')
   })
+
+  it('has no option paths when none are given', () => {
+    // Scenario: an error raised without paths exposes an empty list and keeps the fixed message.
+    const error = new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID)
+    expect(error.optionPaths).toEqual([])
+    expect(error.message).toBe(SUBSCRIPTION_ERROR_MESSAGES.SUBSCRIPTION_CONFIG_INVALID)
+  })
+
+  it('appends the option paths to the fixed message, in the order given', () => {
+    // Scenario: a configuration error names two options; the message lists them after the text.
+    const error = new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID, {
+      optionPaths: ['store', 'failPolicy']
+    })
+    expect(error.message).toBe(
+      `${SUBSCRIPTION_ERROR_MESSAGES.SUBSCRIPTION_CONFIG_INVALID} Offending options: store, failPolicy.`
+    )
+    expect(error.optionPaths).toEqual(['store', 'failPolicy'])
+    expect(error.toJSON()).toEqual({ code: 'SUBSCRIPTION_CONFIG_INVALID', message: error.message })
+  })
+
+  it('keeps its own copy of the option paths', () => {
+    // Scenario: the caller mutates the array it passed after raising the error.
+    const paths = ['store']
+    const error = new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID, {
+      optionPaths: paths
+    })
+    paths.push('source')
+    expect(error.optionPaths).toEqual(['store'])
+    expect(Object.isFrozen(error.optionPaths)).toBe(true)
+  })
 })
