@@ -74,8 +74,8 @@ export interface SubscriptionSnapshot {
   readonly subscriptions: readonly SubscriptionRecord[]
   /** The name of the source that produced this snapshot. */
   readonly source: string
-  /** How the source names the account. */
-  readonly sourceCustomer: SourceCustomerReference
+  /** How the source names the account; `null` when the source has no record of it. */
+  readonly sourceCustomer: SourceCustomerReference | null
   /** When the library read the source. */
   readonly fetchedAt: string
   /** How fresh the source says its data is; `null` when it does not say. */

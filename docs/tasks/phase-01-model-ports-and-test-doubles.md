@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -41,7 +41,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 | --- | ------------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 1.1 | Define the snapshot model and its closed value sets                 | ✅ Done | P0       | M    | —          |
 | 1.2 | Define the error-code catalogue and the error class                 | ✅ Done | P0       | S    | 1.1        |
-| 1.3 | Implement the empty snapshot and the entitlement resolution         | 📋 ToDo | P0       | M    | 1.1        |
+| 1.3 | Implement the empty snapshot and the entitlement resolution         | ✅ Done | P0       | M    | 1.1        |
 | 1.4 | Implement the tenant and account key encoder                        | 📋 ToDo | P0       | S    | 1.2        |
 | 1.5 | Define the source port, the store port and the injection tokens     | 📋 ToDo | P0       | M    | 1.2        |
 | 1.6 | Implement the in-memory store and the conformance suite             | 📋 ToDo | P0       | L    | 1.4, 1.5   |
@@ -222,7 +222,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 1.3 — Implement the empty snapshot and the entitlement resolution
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 1.1
@@ -233,11 +233,11 @@ Write the two pure functions of the model: the snapshot of an account the source
 
 #### Acceptance criteria
 
-- [ ] `createEmptySnapshot` returns a snapshot with no entitlements and no subscriptions, and never throws for an unknown account.
-- [ ] `resolveEntitlements` marks an entitlement active when any subscription that grants it gives access, and sets its "until" to the latest `accessUntil` among them, with `null` (lifetime) winning over any date.
-- [ ] A table-driven test covers: one subscription; two granting the same entitlement with one inactive; two both active with different ends; a lifetime grant beside a dated one; a subscription with `unknown` status whose access flag is true; no subscriptions.
-- [ ] The function reports the overlap (more than one subscription giving access to the same entitlement) in its result, for the notification phase to use.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `createEmptySnapshot` returns a snapshot with no entitlements and no subscriptions, and never throws for an unknown account.
+- [x] `resolveEntitlements` marks an entitlement active when any subscription that grants it gives access, and sets its "until" to the latest `accessUntil` among them, with `null` (lifetime) winning over any date.
+- [x] A table-driven test covers: one subscription; two granting the same entitlement with one inactive; two both active with different ends; a lifetime grant beside a dated one; a subscription with `unknown` status whose access flag is true; no subscriptions.
+- [x] The function reports the overlap (more than one subscription giving access to the same entitlement) in its result, for the notification phase to use.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -647,5 +647,7 @@ Completion Protocol (after the work is reported done):
 - 1.1 ✅ 2026-11-24 — snapshot model types, the five closed value sets and the change type in the shared subpath; no function from status to access exists
 
 - 1.2 ✅ 2026-11-24 — closed SUBSCRIPTION_ error-code catalogue with fixed messages in shared and SubscriptionError in the internal bundle, re-exported from the root and proven one constructor in the packed tarball
+
+- 1.3 ✅ 2026-11-24 — createEmptySnapshot and the FR05 entitlement resolution (flag-only, lifetime outranks dates, overlap reported) with a typed failure for a malformed instant
 
 <!-- entries are added as tasks complete -->

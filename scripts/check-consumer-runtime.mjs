@@ -67,14 +67,18 @@ const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 /** Every runtime name of the root entry point. */
 const ROOT_EXPORTS = ['SUBSCRIPTION_ERROR_CODES', 'SubscriptionError']
 
-/** Every runtime name of the `shared` subpath: the closed value sets and the error codes. */
+/** Every runtime name of the `shared` subpath: the closed value sets, the error codes
+ * and the pure functions of the model. */
 const SHARED_EXPORTS = [
   'CHANGE_KINDS',
   'SUBSCRIPTION_ENVIRONMENTS',
   'SUBSCRIPTION_ERROR_CODES',
   'SUBSCRIPTION_ORIGINS',
   'SUBSCRIPTION_STATUSES',
-  'WILL_RENEW_VALUES'
+  'SubscriptionInputError',
+  'WILL_RENEW_VALUES',
+  'createEmptySnapshot',
+  'resolveEntitlements'
 ]
 
 /**

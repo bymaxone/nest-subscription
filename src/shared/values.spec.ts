@@ -4,6 +4,7 @@
  * @layer shared
  */
 import * as entry from './index'
+import type { SubscriptionRecord } from './snapshot.types'
 import {
   CHANGE_KINDS,
   SUBSCRIPTION_ENVIRONMENTS,
@@ -92,10 +93,46 @@ describe('status meanings', () => {
     expect(meanings.map(([status]) => status)).toEqual([...SUBSCRIPTION_STATUSES])
   })
 
-  it('exports no function from a status to access', () => {
-    // Scenario: every runtime export of the shared entry point is a frozen value set, so no
-    // function exists that takes a status and returns access.
-    const functions = Object.entries(entry).filter(([, value]) => typeof value === 'function')
-    expect(functions).toEqual([])
+  it('exports no function that takes a status and returns access', () => {
+    // Scenario: the only functions the entry point exports are the three listed; none is named for
+    // a status, and the behaviour below shows the resolution follows the flag for every status.
+    const functions = Object.entries(entry)
+      .filter(([, value]) => typeof value === 'function')
+      .map(([name]) => name)
+      .sort()
+    expect(functions).toEqual([
+      'SubscriptionInputError',
+      'createEmptySnapshot',
+      'resolveEntitlements'
+    ])
   })
+
+  it.each(
+    SUBSCRIPTION_STATUSES.flatMap((status) => [[status, true] as const, [status, false] as const])
+  )(
+    'resolves status %s with the access flag %s to the flag, not to the name',
+    (status, givesAccess) => {
+      // Scenario: every status with either flag value; the entitlement is active exactly when the
+      // flag is set, so the status name never decides.
+      const record: SubscriptionRecord = {
+        subscriptionReference: 's1',
+        status,
+        givesAccess,
+        willRenew: 'unknown',
+        origin: 'other',
+        environment: 'production',
+        productReference: 'p',
+        billingInterval: 'month',
+        currentPeriodStart: '2026-01-01T00:00:00.000Z',
+        currentPeriodEnd: '2026-02-01T00:00:00.000Z',
+        accessUntil: null,
+        billingIssueSince: null,
+        cancelledAt: null,
+        refundedAt: null,
+        managementReference: null
+      }
+      const resolution = entry.resolveEntitlements([record], new Map([['s1', ['pro']]]))
+      expect(resolution.entitlements[0]?.active).toBe(givesAccess)
+    }
+  )
 })

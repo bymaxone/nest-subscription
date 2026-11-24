@@ -26,3 +26,7 @@ export type {
 export type { SubscriptionChange } from './change.types'
 export { SUBSCRIPTION_ERROR_CODES } from './error-codes'
 export type { SubscriptionErrorCode } from './error-codes'
+export { createEmptySnapshot } from './empty-snapshot'
+export type { EmptySnapshotInput } from './empty-snapshot'
+export { SubscriptionInputError, resolveEntitlements } from './entitlements'
+export type { EntitlementResolution } from './entitlements'
