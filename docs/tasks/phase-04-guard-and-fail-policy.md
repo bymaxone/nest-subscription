@@ -10,7 +10,7 @@
 
 At the start a host can read an account's snapshot through `SubscriptionService`, and has nothing to protect a route with.
 
-At the end one decorator names the entitlement a route needs and a guard enforces it. The guard gets the account from a resolver the host supplies, refuses a request with no account as unauthenticated, separates "no subscription" from "subscription exists and gives no access", and follows one explicit policy when the snapshot is missing or the store is down: refuse by default, or trust a last known state within a tolerance. A guard decision makes no call to a billing platform.
+At the end one decorator names the entitlement a route needs and a guard enforces it. The guard gets the account from a resolver the host supplies, refuses a request with no account as unauthenticated, separates "no subscription" from "subscription exists and gives no access", and follows one explicit policy when the snapshot is missing or the store is down: refuse by default, or trust a last known state within a tolerance. A guard decision never waits for a call to a billing platform.
 
 ---
 
@@ -20,7 +20,7 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 2. The account and the tenant come from the host's resolver only: never from a request body, a query string or a header the guard reads itself.
 3. Refusal is the default in every unhandled case: an unexpected error inside the guard denies.
 4. A refusal carries a stable error code and no detail about any account.
-5. A guard decision makes zero source calls (NFR01).
+5. No guard decision waits for a source call (NFR01): the only source read a guarded request can cause is the background refresh of a stale snapshot, which the decision never awaits.
 
 ---
 
@@ -121,7 +121,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/4 tasks`)
-5. Update the P4 row in the phase dashboard of `docs/plan.md` (status, progress `N/4`, last updated)
+5. Update the P4 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 4.1 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -185,7 +185,7 @@ DELIVERABLES
 2. `entitlement.guard.ts`: a `CanActivate` that reads the metadata, calls the resolver, reads the snapshot through `SubscriptionService` and throws the matching NestJS HTTP exception built from the catalogue. When `@bymax-one/nest-core` is not installed the exception body is `{ code, message }`.
 
 Constraints:
-- Do not call `refresh` from the guard. A stale snapshot is refreshed in the background by the service's read, which is already built.
+- Do not call `refresh` from the guard. A stale snapshot is refreshed in the background by the service's read, which is already built. That background read is the only source call a guarded request can cause, and the guard never awaits it.
 - The guard works for HTTP contexts; for another context type it refuses and says so in its doc comment.
 - Test first: write the failing test, watch it fail, then implement. Every requirement this task cites gets a test that fails without the implementation.
 - TypeScript strict, no `any`. No suppression of any kind (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `istanbul ignore`, Stryker disable without a recorded reason).
@@ -204,7 +204,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/4 tasks`)
-5. Update the P4 row in the phase dashboard of `docs/plan.md` (status, progress `N/4`, last updated)
+5. Update the P4 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 4.2 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -287,7 +287,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/4 tasks`)
-5. Update the P4 row in the phase dashboard of `docs/plan.md` (status, progress `N/4`, last updated)
+5. Update the P4 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 4.3 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -303,14 +303,14 @@ Completion Protocol (after the work is reported done):
 
 #### Description
 
-Write the end-to-end suite that protects real routes and closes the phase: the three outcomes, the unauthenticated case, both policy values with the source and the store down, and zero source calls (AC07, NFR01).
+Write the end-to-end suite that protects real routes and closes the phase: the three outcomes, the unauthenticated case, both policy values with the source and the store down, and no decision that waits for the source (AC07, NFR01).
 
 #### Acceptance criteria
 
 - [ ] A real NestJS application with a decorated route returns 200, the "entitlement required" refusal and the "gives no access" refusal for three accounts.
 - [ ] A request with no resolvable account returns 401.
 - [ ] With the store failing and with the source failing, the guard behaves exactly as each policy value says (AC07).
-- [ ] The fake source's read counter stays at zero across every guard decision in the suite (NFR01).
+- [ ] With a fresh snapshot the fake source's read counter stays at zero across guard decisions; with a stale one each decision is returned while the fake source's read is still held unresolved by the test, and at most one read per account is started (NFR01).
 - [ ] No response body in the suite contains an account identifier or a tenant identifier.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
@@ -373,7 +373,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/4 tasks`)
-5. Update the P4 row in the phase dashboard of `docs/plan.md` (status, progress `N/4`, last updated)
+5. Update the P4 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 4.4 ✅ YYYY-MM-DD — <one-line summary>`
 ````

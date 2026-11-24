@@ -125,7 +125,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P5 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P5 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 5.1 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -205,7 +205,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P5 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P5 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 5.2 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -232,6 +232,7 @@ Store the changes with the snapshot as not delivered, call the host hook after t
 - [ ] The hook is never invoked when the write did not happen, and never before the write resolved.
 - [ ] A hook that throws or rejects leaves the stored snapshot in place and the changes pending; the failure is logged with its error code and reported to the observer hook point.
 - [ ] A refresh that changes nothing calls no hook.
+- [ ] A redelivery gives the hook what the owner's decision on Q01 says, pinned by a test.
 - [ ] The caller of `refresh` can choose not to wait for the hook, which is what the webhook receiver will need.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
@@ -257,6 +258,7 @@ PRECONDITIONS
 - P3 is ✅ Done: `SnapshotRefresher.refresh` returns `{ previous, current, written }` after every source read, and `SubscriptionService` exposes reads, refresh and reconciliation.
 - Tasks 5.1 and 5.2 are ✅ Done.
 - The module options carry the host's hook (P2).
+- Question Q01 of `docs/spec.md` §10.2 (what the hook receives on a redelivery) is answered and recorded as a decision in §10.1. If it is still open, stop and report.
 
 REQUIRED READING (only these — do not load more):
 - `AGENTS.md` (whole file: repository rules and code review rules)
@@ -277,12 +279,12 @@ DELIVERABLES
 
 4. The refresher returning the dispatch as a promise the caller may await, so a webhook answer does not wait for the host's reaction.
 
-5. The delivery guarantee stated in the doc comment of the hook option: at least once; the same change can arrive twice (after a crash, or when the hook succeeded and the clear failed), always with the same key; a redelivery from reconciliation carries the current snapshot and may not carry the previous one.
+5. The delivery guarantee stated in the doc comment of the hook option: at least once; the same change can arrive twice (after a crash, or when the hook succeeded and the clear failed), always with the same key; what a redelivery carries, as the owner decided for Q01.
 
 Constraints:
 - The pending mark is the only delivery state: no in-memory queue, no timer and no retry loop of the library's own. A failed hook is retried by the next reconciliation run.
 - Never clear a change key whose hook call did not return.
-- If the hook contract for a redelivery (no previous snapshot) is not acceptable for a kind of change, raise it as a question in `docs/spec.md` §10.2 with a proposal; do not widen what the store keeps on your own.
+- What the hook receives on a redelivery is question Q01 in `docs/spec.md` §10.2. Do not start this task while Q01 is open: the owner's answer decides whether the store keeps the previous snapshot. Once it is answered, follow the decision recorded in §10.1.
 - Test first: write the failing test, watch it fail, then implement. Every requirement this task cites gets a test that fails without the implementation.
 - TypeScript strict, no `any`. No suppression of any kind (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `istanbul ignore`, Stryker disable without a recorded reason).
 - Every new source file opens with a header stating its purpose and layer; every export has a doc comment. Functions stay within 50 lines, files within 800.
@@ -299,7 +301,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P5 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P5 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 5.3 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -383,7 +385,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P5 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P5 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 5.4 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -468,7 +470,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P5 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P5 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 5.5 ✅ YYYY-MM-DD — <one-line summary>`
 ````

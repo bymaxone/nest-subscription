@@ -136,7 +136,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P0 row in the phase dashboard of `docs/plan.md` (status, progress `N/7`, last updated)
+5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.1 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -221,7 +221,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P0 row in the phase dashboard of `docs/plan.md` (status, progress `N/7`, last updated)
+5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.2 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -307,7 +307,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P0 row in the phase dashboard of `docs/plan.md` (status, progress `N/7`, last updated)
+5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.3 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -387,7 +387,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P0 row in the phase dashboard of `docs/plan.md` (status, progress `N/7`, last updated)
+5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.4 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -408,6 +408,7 @@ Call the organisation's reusable library CI and security workflows, add the rele
 #### Acceptance criteria
 
 - [ ] The pull request shows the aggregate check `CI passed` green, produced by jobs that call `bymaxone/.github` reusables at `@v1`.
+- [ ] The job that checks the required documents and the relative Markdown links is kept, and the aggregate check depends on it.
 - [ ] `agents-sync.yml` is still pinned to a release commit, and `.github/dependabot.yml` has the group that moves that pin.
 - [ ] Every third-party action is pinned by commit SHA with its version in a trailing comment.
 - [ ] The release workflow publishes only from a version tag, through the `npm-publish` environment, and nothing in this task creates a tag.
@@ -448,7 +449,7 @@ Replace the documents-only CI job with the family's reusable library pipeline an
 
 DELIVERABLES
 
-1. `.github/workflows/ci.yml` calling `node-lib-ci.yml@v1` and `security.yml@v1`, plus the build verification job that runs the packaging, size, snippet and length gates, and the aggregate job named exactly `CI passed` that fails when any dependency failed or was cancelled. The header comment states what the workflow checks, with no mention of a phase.
+1. `.github/workflows/ci.yml` calling `node-lib-ci.yml@v1` and `security.yml@v1`, plus the build verification job that runs the packaging, size, snippet and length gates, the existing job that checks the required documents and the relative Markdown links (kept as it is, because later tasks add documents and verify against it), and the aggregate job named exactly `CI passed` that fails when any dependency failed or was cancelled. The header comment states what the workflow checks, with no mention of a phase.
 
 2. The release workflow (tag-triggered, `npm publish --provenance --access public` through the `npm-publish` environment), and the scheduled workflows of the sibling, each on a weekday and hour read from this repository's own schedule so they do not collide. Drop `otel-latest.yml`: it tests an OpenTelemetry peer this library does not have.
 
@@ -478,7 +479,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P0 row in the phase dashboard of `docs/plan.md` (status, progress `N/7`, last updated)
+5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.5 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -566,7 +567,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P0 row in the phase dashboard of `docs/plan.md` (status, progress `N/7`, last updated)
+5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.6 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -641,7 +642,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P0 row in the phase dashboard of `docs/plan.md` (status, progress `N/7`, last updated)
+5. Update the P0 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 0.7 ✅ YYYY-MM-DD — <one-line summary>`
 ````

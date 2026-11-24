@@ -229,7 +229,7 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the service's two reads, which touch the store and never the source (FR28); refresh on demand, with concurrent refreshes of one account collapsed into one source call (FR24, NFR03); the age on every snapshot and the background refresh of a stale one on its next read (FR25); the rule that an older snapshot never replaces a newer one (FR27); reconciliation in bounded batches under a rate limit, as a method the host schedules (FR26, NFR04); the optional read-through cache with invalidation on every change (FR23); the tenant in every key, taken from the caller and never from a body (SEC08).
   - Out: the guard (P4); telling the host about a change (P5); webhooks (P6).
 - **Definition of Done**:
-  - [ ] Reading an account or asking for an entitlement makes zero calls on the fake source unless a refresh was requested.
+  - [ ] Reading a fresh snapshot or asking for an entitlement on one makes zero calls on the fake source, and no read ever waits for a source call unless a refresh was requested.
   - [ ] One hundred concurrent refreshes of one account produce one source call; refreshes of different accounts do not wait for each other.
   - [ ] A snapshot the source reports as older than the stored one is not written, under sequential and under concurrent writes.
   - [ ] A reconciliation run refreshes only accounts older than the threshold, stops at the configured batch bound and never exceeds the configured rate.
@@ -250,13 +250,13 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Protect a route with one decorator, and make the answer under failure an explicit choice that defaults to refusal.
 - **Scope**:
-  - In: the decorator naming an entitlement and the guard that enforces it; the account resolver the host supplies, and the unauthenticated refusal when it yields no account (FR29); the stable refusal codes that separate "no subscription" from "subscription exists and gives no access", with no detail about any other account (FR30); the fail policy with its two values, refuse by default and last known state within a tolerance (FR31, SEC04); no network call on a guard decision (NFR01).
+  - In: the decorator naming an entitlement and the guard that enforces it; the account resolver the host supplies, and the unauthenticated refusal when it yields no account (FR29); the stable refusal codes that separate "no subscription" from "subscription exists and gives no access", with no detail about any other account (FR30); the fail policy with its two values, refuse by default and last known state within a tolerance (FR31, SEC04); no guard decision waiting on a network call (NFR01).
   - Out: change notifications; the error envelope of a host that does not use `@bymax-one/nest-core`, beyond the documented default.
 - **Definition of Done**:
   - [ ] An end-to-end test protects a route with the decorator and gets access, the "no subscription" refusal and the "gives no access" refusal from three accounts.
   - [ ] A request with no resolvable account is refused as unauthenticated.
   - [ ] With the store unreadable or the snapshot missing, the guard refuses under the default policy; under the last-known-state policy it allows a snapshot younger than the tolerance and refuses an older one, at the boundary exactly (AC07).
-  - [ ] The guard makes zero source calls in every case above.
+  - [ ] No guard decision waits for a source call: with a fresh snapshot the source is not called, and with a stale one the decision is returned before the background refresh resolves.
   - [ ] A refusal body contains only the error code and message of the catalogue.
 - **Context / preconditions**: P3 is done.
 - **Rules-of-phase**:
@@ -284,7 +284,7 @@ The specification leaves the file layout to this roadmap. These are the director
   - [ ] A crash simulated between the write and the hook is followed by a reconciliation run that delivers the same change keys.
   - [ ] The hook is never invoked before the store write has succeeded.
   - [ ] Every observer payload in the suite is asserted free of account identifiers and payload content.
-- **Context / preconditions**: P3 is done. P4 is independent and may be in progress.
+- **Context / preconditions**: P3 is done. P4 is independent and may be in progress. Question Q01 of the specification (§10.2) is answered before the hook delivery is built.
 - **Rules-of-phase**:
   1. The change list is a pure function of two snapshots. It never reads a webhook payload.
   2. Delivery is specified as at-least-once: the documentation and the types tell the host to be idempotent, and no code claims exactly-once.
@@ -447,7 +447,7 @@ The specification leaves the file layout to this roadmap. These are the director
 
 When a phase moves status:
 
-1. Edit the row in the **Phase dashboard** table: status emoji, progress and last-updated date.
+1. Edit the row in the **Phase dashboard** table: status emoji, progress and last-updated date. Make the same change in the phase index of [`docs/tasks/README.md`](tasks/README.md), with its counters.
 2. Update the **Overall progress** counter and percentage.
 3. Update the **Active phase** and **Blocked** lines at the top.
 4. If the phase is ✅ Done, append a one-line entry to the **Completion log** below.

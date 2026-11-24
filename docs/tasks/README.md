@@ -37,7 +37,7 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 2. Paste the task's agent prompt into a fresh conversation opened at the repository root.
 3. The prompt lists its required reading. Requirement identifiers (`FR16`, `SEC04`, `AC03`, `D11`) are defined in `docs/spec.md`.
 4. One phase is one pull request to `main`, unless its file says otherwise. Commits follow Conventional Commits.
-5. After the task is done, run its Completion Protocol.
+5. After the task is done, run its Completion Protocol. It updates the task file, the roadmap's dashboard and the phase index above.
 
 ## 3. Definition of Done for every task
 

@@ -42,7 +42,7 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 | 3.2 | Implement the service reads | 📋 ToDo | P0 | M | 3.1 |
 | 3.3 | Refresh a stale snapshot in the background | 📋 ToDo | P0 | M | 3.2 |
 | 3.4 | Read through the optional cache | 📋 ToDo | P1 | M | 3.2 |
-| 3.5 | Implement reconciliation | 📋 ToDo | P0 | M | 3.1 |
+| 3.5 | Implement reconciliation | 📋 ToDo | P0 | M | 3.1, 3.2 |
 
 ---
 
@@ -125,7 +125,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P3 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.1 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -207,7 +207,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P3 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.2 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -290,7 +290,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P3 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.3 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -374,7 +374,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P3 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.4 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -386,7 +386,7 @@ Completion Protocol (after the work is reported done):
 - **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: M
-- **Depends on**: 3.1
+- **Depends on**: 3.1, 3.2
 
 #### Description
 
@@ -420,7 +420,7 @@ CURRENT PHASE: P3 (read-refresh-reconcile) — Task 3.5 of 5 (LAST of this phase
 
 PRECONDITIONS
 - P2 is ✅ Done: `SubscriptionModule` boots with `FakeSubscriptionSource` and `InMemorySubscriptionStore`, and provides the source, store, clock, options and optional cache under the tokens of `src/internal/tokens.ts`.
-- Task 3.1 is ✅ Done.
+- Tasks 3.1 and 3.2 are ✅ Done: `SnapshotRefresher` and `SubscriptionService` exist.
 - `SubscriptionStore.listStaleKeys` exists and is covered by the conformance suite (P1).
 
 REQUIRED READING (only these — do not load more):
@@ -460,7 +460,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P3 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P3 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 3.5 ✅ YYYY-MM-DD — <one-line summary>`
 ````

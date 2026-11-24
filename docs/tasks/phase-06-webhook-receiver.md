@@ -122,7 +122,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P6 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.1 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -148,7 +148,7 @@ Write the processor: verify through the adapter, de-duplicate by event identifie
 - [ ] An unknown event kind is accepted and triggers a refresh; a kind the adapter marks as changing nothing returns the ignored outcome without a read.
 - [ ] A notification naming several accounts refreshes each of them.
 - [ ] A source read that fails returns the failed outcome and the event identifier is removed through `forgetEvent`, so a retry of that event is processed (D16).
-- [ ] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer; the event is then recovered by reconciliation.
+- [ ] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded, so the source's retries of that event are answered as already seen: the account's state is corrected only when its snapshot becomes stale and is refreshed. The task's doc comment states this limit.
 - [ ] A sandbox notification is processed like any other; whether sandbox state grants access is decided where the snapshot is read from the source, not here.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
@@ -211,7 +211,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P6 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.2 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -295,7 +295,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P6 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.3 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -379,7 +379,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P6 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.4 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -463,7 +463,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P6 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.5 ✅ YYYY-MM-DD — <one-line summary>`
 ````

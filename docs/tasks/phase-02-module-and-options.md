@@ -125,7 +125,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P2 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.1 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -205,7 +205,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P2 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.2 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -289,7 +289,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P2 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.3 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -377,7 +377,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P2 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.4 ✅ YYYY-MM-DD — <one-line summary>`
 ````
@@ -461,7 +461,7 @@ Completion Protocol (after the work is reported done):
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
 4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P2 row in the phase dashboard of `docs/plan.md` (status, progress `N/5`, last updated)
+5. Update the P2 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 2.5 ✅ YYYY-MM-DD — <one-line summary>`
 ````

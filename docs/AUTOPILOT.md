@@ -37,6 +37,7 @@ Autopilot never polls an external event. A failed check is reported exactly and 
 | launch | `python3 ~/.claude/bymax-review/review_flow.py codex-check` | STOP — the second reviewer of every phase cannot run; the operator runs `/bymax-quality:codex-setup` |
 | launch | `git diff --quiet origin/main -- docs/plan.md docs/tasks docs/spec.md docs/AUTOPILOT.md` | STOP — the planning documents the chain reads are not on `main` yet |
 | phase 0, task 0.7 | the operator's standing confirmation, recorded in the launch message, that the chain may add `CI passed` to the repository ruleset `nest-subscription-pr-and-ci-gates` | The chain finishes P0 without the ruleset change, lists it as owed in the pull request, and marks P0 🟡 Partial. It never changes a ruleset on its own authority |
+| phase 5 | `! grep -q '^| Q[0-9]' docs/spec.md` (no open question in the specification §10.2) | Mark P5 ⛔ blocked on the open question and park it. P6 to P9 depend on P5, so the chain then stops after P4 |
 | phase 7 | `test -n "$REVENUECAT_SANDBOX_API_KEY" && test -n "$REVENUECAT_SANDBOX_PROJECT_ID"` | Mark P7 ⛔ blocked on the RevenueCat sandbox credentials (D18) and park it. P8 and P9 depend on P7, so the chain then stops |
 | phase 9 | none beyond launch | — |
 | phase 10 | `gh repo view bymaxone/nest-subscription-example --json name` | Outside the chain boundary; reported, not attempted |

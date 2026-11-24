@@ -1,6 +1,6 @@
 # Spec — @bymax-one/nest-subscription
 
-> **Status:** ✅ Approved by the owner on 2026-11-24
+> **Status:** ✅ Approved by the owner on 2026-11-24, with one open question (Q01, §10.2)
 > **Owner:** Bymax One
 > **Version:** 0.3 · **Last update:** 2026-11-24
 > **Package:** `@bymax-one/nest-subscription`, a public npm library for NestJS 11
@@ -429,7 +429,11 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ### 10.2 Open
 
-None. A new question is added here with a proposal and is never answered on the owner's behalf.
+A new question is added here with a proposal and is never answered on the owner's behalf.
+
+| Id | Question | Proposal |
+|---|---|---|
+| Q01 | FR32 gives the hook the previous snapshot. Under D17 only the undelivered changes are stored with the snapshot, so when reconciliation delivers a change again the previous snapshot no longer exists. What does the hook receive then? | The hook always receives the new snapshot and the change list with its keys. It receives the previous snapshot on the first delivery, and on a redelivery that field is absent and the call is marked as a redelivery. The alternative is to store the previous snapshot with the pending changes, which doubles what the host stores for every account that has a change pending |
 
 ---
 
