@@ -64,10 +64,14 @@ const OPTIONAL_PEERS = ['@bymax-one/nest-cache', '@bymax-one/nest-core']
 /** The packages a host of the NestJS module provides and the `shared` subpath must not need. */
 const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 
-/** Every runtime name of the `shared` subpath: the closed value sets. */
+/** Every runtime name of the root entry point. */
+const ROOT_EXPORTS = ['SUBSCRIPTION_ERROR_CODES', 'SubscriptionError']
+
+/** Every runtime name of the `shared` subpath: the closed value sets and the error codes. */
 const SHARED_EXPORTS = [
   'CHANGE_KINDS',
   'SUBSCRIPTION_ENVIRONMENTS',
+  'SUBSCRIPTION_ERROR_CODES',
   'SUBSCRIPTION_ORIGINS',
   'SUBSCRIPTION_STATUSES',
   'WILL_RENEW_VALUES'
@@ -87,7 +91,15 @@ const PROBES = [
   {
     label: 'root, adapters and testing without either optional peer',
     deny: OPTIONAL_PEERS,
-    entries: { '.': [], './revenuecat': [], './finance': [], './testing': [] }
+    entries: { '.': ROOT_EXPORTS, './revenuecat': [], './finance': [], './testing': [] },
+    // The error class of the root is the one the internal bundle defines, so a class thrown by an
+    // adapter that imports the bundle is an instance of the root's.
+    same: [
+      [
+        ['.', 'SubscriptionError'],
+        ['./internal', 'SubscriptionError']
+      ]
+    ]
   },
   {
     label: 'positive control: a load of a denied specifier is seen',
@@ -126,6 +138,15 @@ async function run() {
     const extra = present.filter((name) => !names.includes(name))
     if (absent.length > 0) failures.push(subpath + ' does not export: ' + absent.join(', '))
     if (extra.length > 0) failures.push(subpath + ' exports more than it promises: ' + extra.join(', '))
+  }
+  // A name that two entry points both reach must be one value, or an instanceof check across them
+  // would fail in a host that mixes them.
+  for (const [[subpathA, nameA], [subpathB, nameB]] of JSON.parse(process.env.PROBE_SAME ?? '[]')) {
+    const first = (await load(specifierOf(subpathA)))[nameA]
+    const second = (await load(specifierOf(subpathB)))[nameB]
+    if (first === undefined || first !== second) {
+      failures.push(subpathA + ' ' + nameA + ' is not the same value as ' + subpathB + ' ' + nameB)
+    }
   }
   return failures
 }
@@ -279,7 +300,8 @@ try {
           env: {
             ...process.env,
             DENY_PREFIXES: JSON.stringify(probe.deny),
-            PROBE_ENTRIES: JSON.stringify(probe.entries)
+            PROBE_ENTRIES: JSON.stringify(probe.entries),
+            PROBE_SAME: JSON.stringify(probe.same ?? [])
           }
         })
         if (probe.expectDenied) {

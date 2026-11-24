@@ -14,3 +14,5 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   `EntitlementState`, `SourceCustomerReference` and `SubscriptionChange`, with the closed value
   sets `SUBSCRIPTION_STATUSES`, `WILL_RENEW_VALUES`, `SUBSCRIPTION_ORIGINS` and `CHANGE_KINDS` and
   their union types.
+- The closed error-code catalogue `SUBSCRIPTION_ERROR_CODES` and `SubscriptionErrorCode` in the
+  `shared` subpath, and `SubscriptionError` with the catalogue exported from the root.

@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -40,7 +40,7 @@ At the end the library has its vocabulary and its two seams. The `shared` subpat
 | ID  | Task                                                                | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 1.1 | Define the snapshot model and its closed value sets                 | ✅ Done | P0       | M    | —          |
-| 1.2 | Define the error-code catalogue and the error class                 | 📋 ToDo | P0       | S    | 1.1        |
+| 1.2 | Define the error-code catalogue and the error class                 | ✅ Done | P0       | S    | 1.1        |
 | 1.3 | Implement the empty snapshot and the entitlement resolution         | 📋 ToDo | P0       | M    | 1.1        |
 | 1.4 | Implement the tenant and account key encoder                        | 📋 ToDo | P0       | S    | 1.2        |
 | 1.5 | Define the source port, the store port and the injection tokens     | 📋 ToDo | P0       | M    | 1.2        |
@@ -138,7 +138,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 1.2 — Define the error-code catalogue and the error class
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 1.1
@@ -149,11 +149,11 @@ Write the closed catalogue of error codes in `shared` and the one error class th
 
 #### Acceptance criteria
 
-- [ ] The catalogue has one code for each case of §6.4: refused webhook, unknown account, entitlement required, subscription gives no access, source unavailable, operation not possible for this origin, and the configuration errors.
-- [ ] Every code starts with `SUBSCRIPTION_`, and a test fails when two entries share a value.
-- [ ] `SubscriptionError` carries a code, a message from the catalogue and an optional cause, and its serialized form contains nothing but the code and the message.
-- [ ] An `instanceof SubscriptionError` check holds across the root and an adapter subpath, proven from the built package.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The catalogue has one code for each case of §6.4: refused webhook, unknown account, entitlement required, subscription gives no access, source unavailable, operation not possible for this origin, and the configuration errors.
+- [x] Every code starts with `SUBSCRIPTION_`, and a test fails when two entries share a value.
+- [x] `SubscriptionError` carries a code, a message from the catalogue and an optional cause, and its serialized form contains nothing but the code and the message.
+- [x] An `instanceof SubscriptionError` check holds across the root and an adapter subpath, proven from the built package.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -645,5 +645,7 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 - 1.1 ✅ 2026-11-24 — snapshot model types, the five closed value sets and the change type in the shared subpath; no function from status to access exists
+
+- 1.2 ✅ 2026-11-24 — closed SUBSCRIPTION_ error-code catalogue with fixed messages in shared and SubscriptionError in the internal bundle, re-exported from the root and proven one constructor in the packed tarball
 
 <!-- entries are added as tasks complete -->

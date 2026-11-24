@@ -24,3 +24,5 @@ export type {
   SubscriptionSnapshot
 } from './snapshot.types'
 export type { SubscriptionChange } from './change.types'
+export { SUBSCRIPTION_ERROR_CODES } from './error-codes'
+export type { SubscriptionErrorCode } from './error-codes'

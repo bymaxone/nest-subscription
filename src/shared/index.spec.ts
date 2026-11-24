@@ -3,6 +3,7 @@
  * @layer shared
  */
 import * as entry from './index'
+import { SUBSCRIPTION_ERROR_CODES } from './error-codes'
 import * as values from './values'
 
 describe('shared entry point', () => {
@@ -12,12 +13,14 @@ describe('shared entry point', () => {
     expect(Object.keys(entry).sort()).toEqual([
       'CHANGE_KINDS',
       'SUBSCRIPTION_ENVIRONMENTS',
+      'SUBSCRIPTION_ERROR_CODES',
       'SUBSCRIPTION_ORIGINS',
       'SUBSCRIPTION_STATUSES',
       'WILL_RENEW_VALUES'
     ])
     expect(entry.CHANGE_KINDS).toBe(values.CHANGE_KINDS)
     expect(entry.SUBSCRIPTION_ENVIRONMENTS).toBe(values.SUBSCRIPTION_ENVIRONMENTS)
+    expect(entry.SUBSCRIPTION_ERROR_CODES).toBe(SUBSCRIPTION_ERROR_CODES)
     expect(entry.SUBSCRIPTION_ORIGINS).toBe(values.SUBSCRIPTION_ORIGINS)
     expect(entry.SUBSCRIPTION_STATUSES).toBe(values.SUBSCRIPTION_STATUSES)
     expect(entry.WILL_RENEW_VALUES).toBe(values.WILL_RENEW_VALUES)
