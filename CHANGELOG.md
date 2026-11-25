@@ -51,7 +51,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   ordering or a rate limit waits on a timer.
 
 - `SubscriptionService` and `AgedSnapshot`, exported from the root and provided by the module.
-  `getSnapshot` and `hasEntitlement` answer from the store and never call the source; an account
+  `getSnapshot` and `hasEntitlement` answer from the store and never wait for the source; an account
   with nothing stored reads as an empty snapshot and `false`. `refresh` reads the source now and
   returns the stored snapshot, and concurrent refreshes of one account share one source call. A
   snapshot comes back frozen and carries its age in milliseconds. A source failure on refresh

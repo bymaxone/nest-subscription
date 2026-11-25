@@ -1,7 +1,7 @@
 /**
  * @fileoverview The read-through cache in front of the store. It wraps the cache the host
- * provides, holds only snapshots the store returned (which came from a read of the source), and
- * never lets a failure of the host's cache fail a read or a write.
+ * provides, holds only snapshots the store returned, and never lets a failure of the host's cache
+ * fail a read or a write.
  * @layer core
  */
 import { encodeAccountKey, type AccountReference } from '@bymax-one/nest-subscription/internal'

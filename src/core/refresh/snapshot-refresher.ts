@@ -1,7 +1,7 @@
 /**
  * @fileoverview The refresher: the one component that reads an account from the source and stores
  * the result. Concurrent refreshes of one account become one source call, and an older snapshot
- * never replaces a newer one. A read of the source is the only way a snapshot enters the store.
+ * never replaces a newer one.
  * @layer core
  */
 import { Inject, Injectable } from '@nestjs/common'

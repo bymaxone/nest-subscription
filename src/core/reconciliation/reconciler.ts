@@ -23,7 +23,7 @@ import type { ResolvedSubscriptionOptions } from '../options/subscription-option
 import { SnapshotRefresher } from '../refresh/snapshot-refresher'
 import { hasTenant } from '../tenant'
 
-/** How many keys one listing asks for while accounts are being refreshed. */
+/** The most keys one listing asks for while accounts are being refreshed. */
 const PAGE_SIZE = 100
 /** How many keys one listing asks for while the accounts left over are being counted. */
 const COUNT_PAGE_SIZE = 1000

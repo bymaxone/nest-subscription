@@ -74,7 +74,7 @@ export class SubscriptionService {
 
   /**
    * Whether the account has the named entitlement active now, by the active flag the source's
-   * access flag gave it. An entitlement the account lacks is `false`. The source is not called.
+   * access flag gave it. An entitlement the account lacks is `false`. The source is not waited for.
    *
    * @throws {SubscriptionError} as {@link SubscriptionService.getSnapshot} does.
    */
