@@ -101,18 +101,11 @@ export class EntitlementGuard implements CanActivate {
     }
     const account = await this.#account(context)
     const read = await this.#read(account)
-    const now = this.#now()
+    // Read after the snapshot: an instant the clock gives that is not a finite date makes the
+    // staleness test, the fail policy and the access decision all refuse.
+    const now = this.options.clock.now()
     const usable = read !== null && !isStale(read, now, this.options.maxSnapshotAgeMs)
     return this.#verdict(usable ? read : this.#underFailure(read, now), required, now)
-  }
-
-  /** The instant to decide at, read after the snapshot; an unreadable one is a refusal. */
-  #now(): Date {
-    const now = this.options.clock.now()
-    if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
-      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
-    }
-    return now
   }
 
   /** The snapshot the service answers with; `null` when the store could not be read. */
