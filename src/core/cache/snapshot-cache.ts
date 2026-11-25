@@ -27,12 +27,16 @@ function isSnapshot(value: unknown): value is SubscriptionSnapshot {
   // object has none of the fields below and is refused with them.
   const candidate: Record<string, unknown> = Object(value)
   return (
-    typeof candidate['accountId'] === 'string' &&
     typeof candidate['source'] === 'string' &&
     typeof candidate['fetchedAt'] === 'string' &&
     Array.isArray(candidate['entitlements']) &&
     Array.isArray(candidate['subscriptions'])
   )
+}
+
+/** Whether a snapshot belongs to the account: the same identifier and the same tenant, or none. */
+function namesAccount(snapshot: SubscriptionSnapshot, account: AccountReference): boolean {
+  return snapshot.accountId === account.accountId && snapshot.tenantId === account.tenantId
 }
 
 /** The snapshot a cached string holds, or `null` when it holds anything else. */
@@ -90,7 +94,7 @@ export class SnapshotCache {
     const key = `${KEY_PREFIX}${accountKey}`
     const ticket = this.#open(accountKey)
     try {
-      const cached = await this.#get(key)
+      const cached = await this.#get(key, account)
       if (cached !== null) return cached
       const loaded = await load()
       if (loaded !== null && !ticket.invalidated) await this.#set(key, loaded)
@@ -133,11 +137,15 @@ export class SnapshotCache {
     if (ticket.peers.size === 0) this.#pending.delete(ticket.accountKey)
   }
 
-  /** The cached snapshot, or `null` on a miss, a failing cache or a value that is not one. */
-  async #get(key: string): Promise<SubscriptionSnapshot | null> {
+  /**
+   * The cached snapshot, or `null` on a miss, a failing cache, a value that is not a snapshot, or
+   * a snapshot of another account or tenant than the one asked for.
+   */
+  async #get(key: string, account: AccountReference): Promise<SubscriptionSnapshot | null> {
     try {
       const text = await this.cache.get(key)
-      return text === null ? null : parse(text)
+      const snapshot = text === null ? null : parse(text)
+      return snapshot !== null && namesAccount(snapshot, account) ? snapshot : null
     } catch {
       return null
     }

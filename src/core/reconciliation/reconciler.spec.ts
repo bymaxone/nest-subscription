@@ -1,6 +1,6 @@
 /**
  * @fileoverview Pins reconciliation: only accounts older than the threshold are refreshed, a run
- * stops at its batch bound and at its rate, the cursor and the remaining count let the host carry
+ * stops at its batch bound and at its rate, the cursor lets the host carry
  * on, one account's failure does not end the run, and time and waiting come from the injected
  * clock and the caller's function. No case waits on a timer.
  * @layer core
@@ -126,7 +126,7 @@ describe('Reconciler', () => {
     clock.advance(DAY + DAY / 2)
     await seed(store, 2, new Date(clock.now().getTime() - 3_600_000).toISOString(), 4)
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toEqual({ refreshed: 3, failed: 0, remaining: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 3, failed: 0, cursor: null })
     expect([1, 2, 3].map((n) => source.readCount(account(n)))).toEqual([1, 1, 1])
     expect([4, 5].map((n) => source.readCount(account(n)))).toEqual([0, 0])
   })
@@ -150,12 +150,12 @@ describe('Reconciler', () => {
     clock.advance(2 * DAY)
     const options = { olderThanMs: DAY, batchSize: 4, wait: advancing(clock) }
     const first = await reconciler.run(options)
-    expect(first).toMatchObject({ refreshed: 4, failed: 0, remaining: 6 })
+    expect(first).toMatchObject({ refreshed: 4, failed: 0 })
     expect(first.cursor).not.toBeNull()
     const second = await reconciler.run({ ...options, cursor: first.cursor })
-    expect(second).toMatchObject({ refreshed: 4, failed: 0, remaining: 2 })
+    expect(second).toMatchObject({ refreshed: 4, failed: 0 })
     const third = await reconciler.run({ ...options, cursor: second.cursor })
-    expect(third).toEqual({ refreshed: 2, failed: 0, remaining: 0, cursor: null })
+    expect(third).toEqual({ refreshed: 2, failed: 0, cursor: null })
     expect(Array.from({ length: 10 }, (_, n) => source.readCount(account(n + 1)))).toEqual(
       Array.from({ length: 10 }, () => 1)
     )
@@ -169,7 +169,7 @@ describe('Reconciler', () => {
     const options = { olderThanMs: DAY, batchSize: 4, wait: advancing(clock) }
     await reconciler.run(options)
     const next = await reconciler.run(options)
-    expect(next).toEqual({ refreshed: 2, failed: 0, remaining: 0, cursor: null })
+    expect(next).toEqual({ refreshed: 2, failed: 0, cursor: null })
     expect(source.totalReads).toBe(6)
   })
 
@@ -194,7 +194,7 @@ describe('Reconciler', () => {
       maxCallsPerSecond: 1000,
       wait: advancing(clock)
     })
-    expect(result).toEqual({ refreshed: 250, failed: 0, remaining: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 250, failed: 0, cursor: null })
     expect(listed).toEqual([100, 100, 100])
     expect(source.totalReads).toBe(250)
   })
@@ -216,17 +216,32 @@ describe('Reconciler', () => {
       maxCallsPerSecond: 1000,
       wait: advancing(clock)
     })
-    expect(result).toEqual({ refreshed: 30, failed: 0, remaining: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 30, failed: 0, cursor: null })
   })
 
-  it('counts what remains across every page after the batch is spent', async () => {
-    // Scenario: two thousand five hundred stale accounts and a batch of one; the count needs three
-    // pages of the counting scan and gives the exact number.
-    const { store, clock, reconciler } = setup()
+  it('lists no more pages than its batch needs, and never the rest of the backlog', async () => {
+    // Scenario: two thousand five hundred stale accounts and a batch of one; the store is asked
+    // for one key, once.
+    const { source, store, clock } = setup()
     await seed(store, 2500)
     clock.advance(2 * DAY)
-    const result = await reconciler.run({ olderThanMs: DAY, batchSize: 1, wait: advancing(clock) })
-    expect(result).toMatchObject({ refreshed: 1, failed: 0, remaining: 2499 })
+    const listed: number[] = []
+    const spying = delegating(store, {
+      listStaleKeys: (olderThan, limit, cursor) => {
+        listed.push(limit)
+        return store.listStaleKeys(olderThan, limit, cursor)
+      }
+    })
+    const refresher = new SnapshotRefresher(source, store, clock, null)
+    const options = resolveOptions({ source, store: spying, clock, accountResolver: () => null })
+    const result = await new Reconciler(spying, clock, refresher, options).run({
+      olderThanMs: DAY,
+      batchSize: 1,
+      wait: advancing(clock)
+    })
+    expect(result).toMatchObject({ refreshed: 1, failed: 0 })
+    expect(result.cursor).not.toBeNull()
+    expect(listed).toEqual([1])
   })
 
   it('never starts more refreshes in a window than the rate allows, measured on the clock', async () => {
@@ -255,7 +270,7 @@ describe('Reconciler', () => {
     await seed(store, 10)
     clock.advance(2 * DAY)
     const first = await reconciler.run({ olderThanMs: DAY, maxCallsPerSecond: 4 })
-    expect(first).toMatchObject({ refreshed: 4, failed: 0, remaining: 6 })
+    expect(first).toMatchObject({ refreshed: 4, failed: 0 })
     expect(source.totalReads).toBe(4)
     clock.advance(1000)
     const second = await reconciler.run({
@@ -263,17 +278,31 @@ describe('Reconciler', () => {
       maxCallsPerSecond: 4,
       cursor: first.cursor
     })
-    expect(second).toMatchObject({ refreshed: 4, remaining: 2 })
+    expect(second).toMatchObject({ refreshed: 4 })
     expect(source.totalReads).toBe(8)
   })
 
-  it('counts the accounts of later pages too when the rate ends a run in the first page', async () => {
-    // Scenario: two hundred and fifty stale accounts and four slots; the rest are 246.
-    const { store, clock, reconciler } = setup()
+  it('asks the store for no more keys than the rate has slots when it has no wait function', async () => {
+    // Scenario: two hundred and fifty stale accounts and four slots; one listing of four keys.
+    const { source, store, clock } = setup()
     await seed(store, 250)
     clock.advance(2 * DAY)
-    const result = await reconciler.run({ olderThanMs: DAY, maxCallsPerSecond: 4 })
-    expect(result).toMatchObject({ refreshed: 4, failed: 0, remaining: 246 })
+    const listed: number[] = []
+    const spying = delegating(store, {
+      listStaleKeys: (olderThan, limit, cursor) => {
+        listed.push(limit)
+        return store.listStaleKeys(olderThan, limit, cursor)
+      }
+    })
+    const refresher = new SnapshotRefresher(source, store, clock, null)
+    const options = resolveOptions({ source, store: spying, clock, accountResolver: () => null })
+    const result = await new Reconciler(spying, clock, refresher, options).run({
+      olderThanMs: DAY,
+      maxCallsPerSecond: 4
+    })
+    expect(result).toMatchObject({ refreshed: 4, failed: 0 })
+    expect(result.cursor).not.toBeNull()
+    expect(listed).toEqual([4])
   })
 
   it('accepts a threshold of zero and refreshes everything fetched before now', async () => {
@@ -286,22 +315,53 @@ describe('Reconciler', () => {
     expect(source.totalReads).toBe(2)
   })
 
-  it('keeps the cursor of the page it stopped in when the rate ends a run part-way through it', async () => {
-    // Scenario: after the first run the accounts it did refresh are no longer stale, so the second
-    // run from the same cursor meets the six that were left, none twice.
+  it('resumes after the accounts a rate-limited run attempted, even when they all failed', async () => {
+    // Scenario: ten stale accounts at four a second; the first four reads always fail. The second
+    // run, from the cursor, meets the next four and not the failed ones.
     const { source, store, clock, reconciler } = setup()
     await seed(store, 10)
     clock.advance(2 * DAY)
+    for (let n = 0; n < 4; n += 1) source.failNextRead(new Error('down'))
     const first = await reconciler.run({ olderThanMs: DAY, maxCallsPerSecond: 4 })
-    clock.advance(5000)
+    expect(first).toMatchObject({ refreshed: 0, failed: 4 })
+    clock.advance(1000)
     const second = await reconciler.run({
       olderThanMs: DAY,
-      maxCallsPerSecond: 100,
-      cursor: first.cursor,
-      wait: advancing(clock)
+      maxCallsPerSecond: 4,
+      cursor: first.cursor
     })
-    expect(second).toEqual({ refreshed: 6, failed: 0, remaining: 0, cursor: null })
-    expect(source.totalReads).toBe(10)
+    expect(second).toMatchObject({ refreshed: 4, failed: 0 })
+    expect([1, 2, 3, 4].map((n) => source.readCount(account(n)))).toEqual([1, 1, 1, 1])
+    expect([5, 6, 7, 8].map((n) => source.readCount(account(n)))).toEqual([1, 1, 1, 1])
+    expect([9, 10].map((n) => source.readCount(account(n)))).toEqual([0, 0])
+  })
+
+  it('returns a cursor, not null, when the rate ends a run inside the first page', async () => {
+    // Scenario: ten stale accounts, two slots, no wait function; keys remain.
+    const { store, clock, reconciler } = setup()
+    await seed(store, 10)
+    clock.advance(2 * DAY)
+    const result = await reconciler.run({ olderThanMs: DAY, maxCallsPerSecond: 2 })
+    expect(result.refreshed).toBe(2)
+    expect(result.cursor).not.toBeNull()
+  })
+
+  it('returns a null cursor only when the listing is exhausted', async () => {
+    // Scenario: a run that reaches the end of the listing, one that ends exactly at its batch bound
+    // with keys left, and one whose batch is the last key.
+    const { store, clock, reconciler } = setup()
+    await seed(store, 4)
+    clock.advance(2 * DAY)
+    const wait = advancing(clock)
+    const partial = await reconciler.run({ olderThanMs: DAY, batchSize: 2, wait })
+    expect(partial.cursor).not.toBeNull()
+    const last = await reconciler.run({
+      olderThanMs: DAY,
+      batchSize: 2,
+      cursor: partial.cursor,
+      wait
+    })
+    expect(last).toEqual({ refreshed: 2, failed: 0, cursor: null })
   })
 
   it('does not stop the run for an account whose source read fails', async () => {
@@ -314,7 +374,7 @@ describe('Reconciler', () => {
     const before = await store.getSnapshot(key)
     source.failNextRead(new Error('down'))
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toEqual({ refreshed: 4, failed: 1, remaining: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 4, failed: 1, cursor: null })
     expect(source.totalReads).toBe(5)
     expect(await store.getSnapshot(key)).toEqual(before)
   })
@@ -326,7 +386,7 @@ describe('Reconciler', () => {
     clock.advance(2 * DAY)
     for (let n = 0; n < 3; n += 1) source.failNextRead(new Error('down'))
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toMatchObject({ refreshed: 0, failed: 3, remaining: 0 })
+    expect(result).toMatchObject({ refreshed: 0, failed: 3 })
     const stale = await store.listStaleKeys(
       new Date(clock.now().getTime() - DAY).toISOString(),
       10,
@@ -375,7 +435,7 @@ describe('Reconciler', () => {
     await store.putSnapshot('foreign-key', fetchedAt(account(9), T0), [], T0)
     clock.advance(2 * DAY)
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toMatchObject({ refreshed: 1, failed: 1, remaining: 0 })
+    expect(result).toMatchObject({ refreshed: 1, failed: 1 })
     expect(source.totalReads).toBe(1)
   })
 
@@ -387,7 +447,7 @@ describe('Reconciler', () => {
     await seed(store, 1)
     clock.advance(2 * DAY)
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toMatchObject({ refreshed: 1, failed: 1, remaining: 0 })
+    expect(result).toMatchObject({ refreshed: 1, failed: 1 })
     expect(source.readCount(withTenant)).toBe(1)
     expect(source.readCount(account(1))).toBe(0)
   })
@@ -398,7 +458,6 @@ describe('Reconciler', () => {
     expect(await reconciler.run({})).toEqual({
       refreshed: 0,
       failed: 0,
-      remaining: 0,
       cursor: null
     })
     expect(source.totalReads).toBe(0)
@@ -455,7 +514,7 @@ describe('Reconciler', () => {
     clock.advance(2 * DAY)
     source.failNextRead(new Error('down for acc-00001'))
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(Object.keys(result).sort()).toEqual(['cursor', 'failed', 'refreshed', 'remaining'])
+    expect(Object.keys(result).sort()).toEqual(['cursor', 'failed', 'refreshed'])
     expect(JSON.stringify(result)).not.toContain('acc-00001')
   })
 })

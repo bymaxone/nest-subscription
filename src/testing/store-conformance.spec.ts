@@ -56,7 +56,9 @@ const CASE = {
   staleOnly: 'lists only the keys fetched before the threshold',
   staleByFetch: 'judges a key stale by the fetch instant of its snapshot',
   stalePaged: 'lists stale keys in bounded pages by cursor, each key once',
-  staleNone: 'lists nothing when no key is stale'
+  staleNone: 'lists nothing when no key is stale',
+  staleCursorStable:
+    'keeps listing every remaining stale key when the keys already listed stop being stale'
 }
 
 // The cases each broken store fails, by the defect it has. A defect that touches the keys or the
@@ -83,9 +85,10 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   clearingCreatesAnEntry: [CASE.clearUnknown],
   pendingListingNeverEnds: [CASE.pendingPaged, CASE.pendingUnlisted],
   pendingListingRepeatsAKey: [CASE.pendingPaged],
-  staleListingRepeatsAKey: [CASE.stalePaged],
+  staleListingRepeatsAKey: [CASE.stalePaged, CASE.staleCursorStable],
   pendingListingSkipsAKey: [CASE.pendingPaged],
-  staleListingSkipsAKey: [CASE.stalePaged],
+  staleListingSkipsAKey: [CASE.stalePaged, CASE.staleCursorStable],
+  staleListingUsesAnOffsetCursor: [CASE.staleCursorStable],
   staleListingIgnoresTheThreshold: [CASE.staleOnly, CASE.staleByFetch, CASE.staleNone],
   markAlwaysSeen: [
     CASE.eventNew,
@@ -116,7 +119,8 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
     CASE.pendingUnlisted,
     CASE.staleOnly,
     CASE.staleByFetch,
-    CASE.stalePaged
+    CASE.stalePaged,
+    CASE.staleCursorStable
   ],
   tenantsCollide: [CASE.tenantsApart, CASE.staleOnly, CASE.staleByFetch],
   pendingOverwrittenByLaterWrite: [
@@ -132,7 +136,13 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   staleListingIgnoresLimit: [CASE.stalePaged],
   pendingListingIgnoresLimit: [CASE.pendingPaged],
   pendingListingIncludesEveryKey: [CASE.pendingPaged, CASE.pendingUnlisted],
-  staleListingNeverEnds: [CASE.staleOnly, CASE.staleByFetch, CASE.stalePaged, CASE.staleNone],
+  staleListingNeverEnds: [
+    CASE.staleOnly,
+    CASE.staleByFetch,
+    CASE.stalePaged,
+    CASE.staleCursorStable,
+    CASE.staleNone
+  ],
   staleListingIncludesTheThreshold: [CASE.staleOnly]
 }
 
@@ -192,6 +202,24 @@ describe('storeConformanceCases', () => {
     const short = await variant.listStaleKeys(later, 3, null)
     expect(short.keys).toEqual(['a', 'b'])
     expect(short.nextCursor).not.toBeNull()
+  })
+
+  it('pages the offset-cursor store by position and ends its listing with no cursor', async () => {
+    // Scenario: six stale keys, three a page; the cursor is an offset and the last page has none.
+    const store =
+      BROKEN_STORES['staleListingUsesAnOffsetCursor']?.() ?? new InMemorySubscriptionStore()
+    for (const key of ['a', 'b', 'c', 'd', 'e', 'f']) {
+      const fetchedAt = '2026-01-01T00:00:00.000Z'
+      const snapshot = createEmptySnapshot({ accountId: key, source: 's', fetchedAt })
+      await store.putSnapshot(key, snapshot, [], fetchedAt)
+    }
+    const later = '2026-06-01T00:00:00.000Z'
+    const first = await store.listStaleKeys(later, 3, null)
+    expect(first).toEqual({ keys: ['a', 'b', 'c'], nextCursor: '3' })
+    expect(await store.listStaleKeys(later, 3, '3')).toEqual({
+      keys: ['d', 'e', 'f'],
+      nextCursor: null
+    })
   })
 
   it('keeps the variant different from the in-memory store, so its pass proves something', async () => {

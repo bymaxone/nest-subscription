@@ -180,6 +180,48 @@ describe('SubscriptionService reads', () => {
     }
   )
 
+  it.each([
+    ['null, a lifetime grant', null, true],
+    ['an instant after now', '2026-01-01T00:00:01.000Z', true],
+    ['exactly now', '2026-01-01T00:00:00.000Z', false],
+    ['an instant before now', '2025-12-31T23:59:59.999Z', false]
+  ])(
+    'answers an active entitlement whose until is %s with %s on the injected clock',
+    async (_name, until, expected) => {
+      // Scenario: the active flag is true; only the until instant against the injected now differs.
+      const { store, service } = setup()
+      const entitlement = { name: 'pro', active: true, until, grantingSubscriptionReference: null }
+      await store.putSnapshot(
+        encodeAccountKey(ACCOUNT),
+        { ...snapshotOf(ACCOUNT, true), entitlements: [entitlement] },
+        [],
+        T0
+      )
+      await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(expected)
+    }
+  )
+
+  it('moves from true to false as the injected clock passes the until instant', async () => {
+    // Scenario: until is ten seconds ahead; the answer flips when the clock reaches it.
+    const { store, clock, service } = setup()
+    const entitlement = {
+      name: 'pro',
+      active: true,
+      until: '2026-01-01T00:00:10.000Z',
+      grantingSubscriptionReference: null
+    }
+    await store.putSnapshot(
+      encodeAccountKey(ACCOUNT),
+      { ...snapshotOf(ACCOUNT, true), entitlements: [entitlement] },
+      [],
+      T0
+    )
+    clock.advance(9999)
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+    clock.advance(1)
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+  })
+
   it('answers false for an entitlement the account does not have', async () => {
     // Scenario: the account has `pro` and is asked about `team`.
     const { source, service } = setup()
@@ -321,7 +363,7 @@ describe('SubscriptionService reconcile', () => {
     }
     clock.advance(36 * 3_600_000)
     const result = await service.reconcile({ olderThanMs: 24 * 3_600_000 })
-    expect(result).toEqual({ refreshed: 2, failed: 0, remaining: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 2, failed: 0, cursor: null })
     expect(source.totalReads).toBe(2)
   })
 
@@ -339,7 +381,6 @@ describe('SubscriptionService reconcile', () => {
     await expect(service.reconcile()).resolves.toEqual({
       refreshed: 0,
       failed: 0,
-      remaining: 0,
       cursor: null
     })
   })
@@ -483,6 +524,32 @@ describe('SubscriptionService background refresh', () => {
     await flush()
     await nextTurn()
     expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not leave a rejection unhandled when the observer hook returns a rejected promise', async () => {
+    // Scenario: an asynchronous hook rejects; the read was answered, and nothing escapes.
+    const hook = jest.fn(() => Promise.reject(new Error('async observer broke')))
+    const { source, service } = await aged(DAY + 1, {
+      observer: { onBackgroundRefreshFailure: hook }
+    })
+    source.failNextRead(new Error('down'))
+    await expect(service.getSnapshot(ACCOUNT)).resolves.toBeDefined()
+    await flush()
+    await nextTurn()
+    expect(hook).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not wait for an observer hook that never settles', async () => {
+    // Scenario: the hook returns a promise nobody resolves; the read still resolves at once.
+    const hook = jest.fn(() => new Promise<void>(() => undefined))
+    const { source, service } = await aged(DAY + 1, {
+      observer: { onBackgroundRefreshFailure: hook }
+    })
+    source.failNextRead(new Error('down'))
+    await expect(service.getSnapshot(ACCOUNT)).resolves.toBeDefined()
+    await flush()
+    expect(hook).toHaveBeenCalledTimes(1)
   })
 
   it('reports to the log alone when the observer has no hook', async () => {

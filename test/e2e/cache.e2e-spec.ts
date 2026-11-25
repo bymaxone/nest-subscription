@@ -266,6 +266,22 @@ describe('cache', () => {
     await app.close()
   })
 
+  it('serves the store, not another account, when the host cache holds a foreign snapshot under the key', async () => {
+    // Scenario: a well-formed snapshot of another account sits under this account's key.
+    const cache = mapCache()
+    const { app, service, source } = await boot(cache)
+    const other: AccountReference = { accountId: 'acc-2' }
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
+    await service.refresh(ACCOUNT)
+    cache.entries.set(
+      'subscription:snapshot:a5:acc-1',
+      JSON.stringify(snapshotOf(other, false, '2026-01-01T00:00:10.000Z'))
+    )
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+    expect((await service.getSnapshot(ACCOUNT)).accountId).toBe('acc-1')
+    await app.close()
+  })
+
   it('keeps answering reads and refreshes when the host cache throws on every call', async () => {
     // Scenario: get, set and delete all reject.
     const { app, service, source } = await boot(THROWING_CACHE)

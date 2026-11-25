@@ -448,6 +448,20 @@ const listingDefects: Readonly<Record<string, () => SubscriptionStore>> = {
         skippingAKeyPerPage((l, c) => base.listStaleKeys(olderThan, l, c))(limit, cursor)
     })
   },
+  staleListingUsesAnOffsetCursor: () => {
+    const base = good()
+    return withDefect(base, {
+      listStaleKeys: async (olderThan, limit, cursor): Promise<KeyPage> => {
+        const all = (await base.listStaleKeys(olderThan, UNBOUNDED, null)).keys
+        const offset = Number(cursor)
+        const end = offset + limit
+        return {
+          keys: all.slice(offset, end),
+          nextCursor: end < all.length ? String(end) : null
+        }
+      }
+    })
+  },
   staleListingIgnoresTheThreshold: () => {
     const base = good()
     return withDefect(base, {

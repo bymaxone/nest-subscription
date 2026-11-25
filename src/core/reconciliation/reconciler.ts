@@ -25,8 +25,6 @@ import { hasTenant } from '../tenant'
 
 /** The most keys one listing asks for while accounts are being refreshed. */
 const PAGE_SIZE = 100
-/** How many keys one listing asks for while the accounts left over are being counted. */
-const COUNT_PAGE_SIZE = 1000
 /** The most accounts a run attempts when the caller does not say. */
 const DEFAULT_BATCH_SIZE = 100
 /** The most source reads a run starts in one second when the caller does not say. */
@@ -51,7 +49,7 @@ export interface ReconcileOptions {
   readonly cursor?: string | null
   /**
    * Waits for the given number of milliseconds when the rate is spent. Without it a run that
-   * spends its rate ends there and reports the rest as remaining; the library starts no timer.
+   * spends its rate ends there and returns the cursor to go on from; the library starts no timer.
    */
   readonly wait?: Wait
 }
@@ -62,11 +60,11 @@ export interface ReconcileResult {
   readonly refreshed: number
   /** Accounts whose refresh failed, or whose key the library could not use. */
   readonly failed: number
-  /** Stale accounts the run did not attempt, counted when it ended. */
-  readonly remaining: number
   /**
-   * Pass this as `cursor` to the next run to go on from where this one stopped. It is `null` when
-   * nothing remains, and also when a run stopped before the first account of the first page.
+   * Pass this as `cursor` to the next run to go on after the last account this run attempted. It
+   * is `null` only when the listing is exhausted: nothing further was left at this run's threshold.
+   * A run that ends at its batch bound or its rate always returns a cursor to go on from, and the
+   * host decides from the cursor alone whether to call again.
    */
   readonly cursor: string | null
 }
@@ -116,18 +114,16 @@ export class Reconciler {
     let budget = config.batchSize
     let cursor = config.cursor
     for (;;) {
-      const page = await this.store.listStaleKeys(olderThan, Math.min(PAGE_SIZE, budget), cursor)
-      const done = await this.#work(page.keys, limiter, input.wait, tally)
-      if (done < page.keys.length) {
-        const left = page.keys.length - done + (await this.#count(olderThan, page.nextCursor))
-        return { ...tally, remaining: left, cursor }
-      }
+      // Without a wait function a page never holds more keys than the slots free now, so the run
+      // ends between pages and the cursor it returns is exactly where it stopped.
+      const slots = input.wait === undefined ? limiter.available() : budget
+      const limit = Math.min(PAGE_SIZE, budget, slots)
+      if (limit === 0) return { ...tally, cursor }
+      const page = await this.store.listStaleKeys(olderThan, limit, cursor)
+      await this.#work(page.keys, limiter, input.wait, tally)
       budget -= page.keys.length
       cursor = page.nextCursor
-      if (cursor === null) return { ...tally, remaining: 0, cursor: null }
-      if (budget <= 0) {
-        return { ...tally, remaining: await this.#count(olderThan, cursor), cursor }
-      }
+      if (cursor === null) return { ...tally, cursor }
     }
   }
 
@@ -148,26 +144,25 @@ export class Reconciler {
   }
 
   /**
-   * Refreshes the accounts of one page in order. Returns how many keys it dealt with, which is
-   * fewer than the page holds only when the rate was spent and no wait was given.
+   * Refreshes the accounts of one page in order, taking a slot of the rate for each. A key the
+   * library cannot use is counted as failed and takes none.
    */
   async #work(
     keys: readonly string[],
     limiter: RateLimiter,
     wait: Wait | undefined,
     tally: Tally
-  ): Promise<number> {
-    for (const [index, key] of keys.entries()) {
+  ): Promise<void> {
+    for (const key of keys) {
       const account = this.#accountOf(key)
       if (account === null) {
         tally.failed += 1
-      } else if (await limiter.acquire(wait)) {
-        await this.#refreshOne(account, tally)
       } else {
-        return index
+        if (wait === undefined) limiter.tryAcquire()
+        else await limiter.acquire(wait)
+        await this.#refreshOne(account, tally)
       }
     }
-    return keys.length
   }
 
   /** Refreshes one account and counts the outcome; a failure is counted and goes no further. */
@@ -186,17 +181,5 @@ export class Reconciler {
     return account !== null && this.options.multiTenant && !hasTenant(account.tenantId)
       ? null
       : account
-  }
-
-  /** How many stale accounts the listing holds from `from` to its end; none when `from` is `null`. */
-  async #count(olderThan: string, from: string | null): Promise<number> {
-    let total = 0
-    let cursor = from
-    while (cursor !== null) {
-      const page = await this.store.listStaleKeys(olderThan, COUNT_PAGE_SIZE, cursor)
-      total += page.keys.length
-      cursor = page.nextCursor
-    }
-    return total
   }
 }

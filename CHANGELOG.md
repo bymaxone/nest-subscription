@@ -58,10 +58,14 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   rejects with `SUBSCRIPTION_SOURCE_UNAVAILABLE` and leaves the stored snapshot untouched, and a
   snapshot the source reports as older than the stored one is never written. A multi-tenant
   configuration refuses a call without a tenant.
+  An entitlement counts as held only while its active flag is true and its `until` is `null` or
+  later than now by the injected clock. A cached snapshot is served only when it names the account
+  and tenant asked for.
 
 - A read of a snapshot older than `maxSnapshotAgeMs` returns the stored snapshot and starts a
   refresh in the background. The refresh never delays or rejects the read: a failure is logged by
-  its error code alone and passed to the observer's `onBackgroundRefreshFailure` hook. The option
+  its error code alone and passed to the observer's `onBackgroundRefreshFailure` hook, which may
+  return a promise that is not waited for. The option
   type `SubscriptionObserverOption` gains that optional hook and `BackgroundRefreshFailure` is
   exported from the root.
 
@@ -76,9 +80,11 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - `SubscriptionService.reconcile(options)`, with `ReconcileOptions`, `ReconcileResult` and `Wait`
   exported from the root. A run refreshes the accounts whose snapshot is older than a threshold, up
   to a batch bound and under a rate measured on the injected clock, and returns `refreshed`,
-  `failed`, `remaining` and a `cursor` to go on from. One account's failure does not end the run.
-  The library starts no timer: a run waits only through the `wait` function it is given and
-  otherwise ends when its rate is spent.
+  `failed` and a `cursor` to go on after the last account it attempted; the cursor is `null` only
+  when the listing is exhausted. A run lists no more pages than its batch and rate need, so store
+  work does not grow with the backlog, and it reports no count of what is left. One account's
+  failure does not end the run. The library starts no timer: a run waits only through the `wait`
+  function it is given and otherwise ends when its rate is spent.
 - `decodeAccountKey`, exported from the root: reads a key written by `encodeAccountKey` back into
   its account reference, and returns `null` for any other text.
 
@@ -88,3 +94,6 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   `limit` keys per page, each key once, none skipped, and a listing that ends. A store that returns
   smaller pages than the limit now passes; a store that returns more, repeats or skips a key still
   fails.
+- The store port states that a `listStaleKeys` cursor stays valid when keys listed before it stop
+  qualifying, so a caller may refresh the keys of a page before it asks for the next. The
+  conformance suite gains a case for it, and a store that pages by offset now fails that case.

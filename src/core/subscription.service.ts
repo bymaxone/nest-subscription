@@ -21,6 +21,7 @@ import {
 import {
   SUBSCRIPTION_ERROR_CODES,
   createEmptySnapshot,
+  parseInstant,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
@@ -73,14 +74,21 @@ export class SubscriptionService {
   }
 
   /**
-   * Whether the account has the named entitlement active now, by the active flag the source's
-   * access flag gave it. An entitlement the account lacks is `false`. The source is not waited for.
+   * Whether the account has the named entitlement now: its active flag, which the source's access
+   * flag gave it, is true and its `until` is `null` (no end) or later than now by the injected
+   * clock. An entitlement the account lacks is `false`. The source is not waited for.
    *
    * @throws {SubscriptionError} as {@link SubscriptionService.getSnapshot} does.
    */
   async hasEntitlement(account: AccountReference, entitlement: string): Promise<boolean> {
     const snapshot = await this.getSnapshot(account)
-    return snapshot.entitlements.some((held) => held.name === entitlement && held.active)
+    const now = this.clock.now().getTime()
+    return snapshot.entitlements.some(
+      (held) =>
+        held.name === entitlement &&
+        held.active &&
+        (held.until === null || parseInstant(held.until) > now)
+    )
   }
 
   /**
@@ -101,7 +109,8 @@ export class SubscriptionService {
    * Refreshes the accounts whose snapshot was fetched before a threshold, up to a batch bound and
    * under a rate, for the host to call from its own scheduler. The library starts no timer: the
    * host decides when to call and, with `wait`, how a run waits for its rate. One account's
-   * failure does not end the run. The rate is kept per run, not across runs: run one at a time,
+   * failure does not end the run. The cursor of the result says where to go on; it is `null` only
+   * when the listing is exhausted. The rate is kept per run, not across runs: run one at a time,
    * because concurrent runs add their rates together.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for an option out of range.
@@ -154,7 +163,10 @@ export class SubscriptionService {
     const code = error instanceof SubscriptionError ? error.code : null
     try {
       this.#logger.warn(`Background refresh of a stale snapshot failed: ${code ?? 'unclassified'}.`)
-      this.options.observer?.onBackgroundRefreshFailure?.({ code })
+      // `Promise.resolve` adopts a returned promise or thenable, so its rejection is handled here.
+      void Promise.resolve(this.options.observer?.onBackgroundRefreshFailure?.({ code })).catch(
+        () => undefined
+      )
     } catch {
       // A broken logger or observer must not turn a handled failure into an unhandled one.
     }

@@ -82,6 +82,11 @@ export interface SubscriptionStore {
   /**
    * Lists the keys whose snapshot was fetched before `olderThan`, at most `limit` per page and
    * each key once across the pages of one listing. `cursor` is `null` for the first page.
+   *
+   * A cursor stays valid while the listing changes under it: when keys listed before it stop
+   * qualifying (their snapshot was fetched again) no key that still qualifies is skipped, and no
+   * key is listed twice. A caller may therefore refresh the keys of a page before it asks for the
+   * next one.
    */
   listStaleKeys(olderThan: string, limit: number, cursor: string | null): Promise<KeyPage>
 }

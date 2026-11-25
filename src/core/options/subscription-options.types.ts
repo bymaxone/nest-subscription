@@ -75,8 +75,11 @@ export interface BackgroundRefreshFailure {
 
 /** The optional observer the host provides to receive counters, timings and failures. */
 export interface SubscriptionObserverOption {
-  /** Called when a refresh started in the background by a read of a stale snapshot fails. */
-  readonly onBackgroundRefreshFailure?: (failure: BackgroundRefreshFailure) => void
+  /**
+   * Called when a refresh started in the background by a read of a stale snapshot fails. It may
+   * return a promise; the library does not wait for it and ignores its rejection.
+   */
+  readonly onBackgroundRefreshFailure?: (failure: BackgroundRefreshFailure) => void | Promise<void>
 }
 
 /**

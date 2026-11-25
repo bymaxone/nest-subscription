@@ -207,6 +207,54 @@ describe('SnapshotCache', () => {
     expect(result?.sourceCustomer?.id).toBe('loaded')
   })
 
+  it.each([
+    ['another account', { accountId: 'acc-2' }],
+    ['the same account of another tenant', { accountId: 'acc-1', tenantId: 'other' }]
+  ])(
+    'treats a valid snapshot of %s under this key as a miss and loads',
+    async (_name, identity) => {
+      // Scenario: the host cache holds a well-formed snapshot of a different identity under the key.
+      const host = mapCache()
+      host.entries.set(
+        `subscription:snapshot:${encodeAccountKey(ACCOUNT)}`,
+        JSON.stringify({ ...snapshotOf(ACCOUNT, 'foreign'), ...identity })
+      )
+      const load = jest.fn(() => Promise.resolve(snapshotOf(ACCOUNT, 'loaded')))
+      const result = await new SnapshotCache(host, TTL_MS).read(ACCOUNT, load)
+      expect(load).toHaveBeenCalledTimes(1)
+      expect(result?.sourceCustomer?.id).toBe('loaded')
+    }
+  )
+
+  it('treats a snapshot that names a tenant as a miss for an account that has none, and the reverse', async () => {
+    // Scenario: tenant present against absent, both ways.
+    const withTenant: AccountReference = { tenantId: 't1', accountId: 'acc-1' }
+    for (const [asked, held] of [
+      [ACCOUNT, { ...snapshotOf(ACCOUNT, 'foreign'), tenantId: 't1' }],
+      [withTenant, snapshotOf(ACCOUNT, 'foreign')]
+    ] as const) {
+      const host = mapCache()
+      host.entries.set(`subscription:snapshot:${encodeAccountKey(asked)}`, JSON.stringify(held))
+      const load = jest.fn(() => Promise.resolve(snapshotOf(asked, 'loaded')))
+      await new SnapshotCache(host, TTL_MS).read(asked, load)
+      expect(load).toHaveBeenCalledTimes(1)
+    }
+  })
+
+  it('serves a cached snapshot whose identity is the account asked for, tenant included', async () => {
+    // Scenario: the positive control; a matching entry is served and the load does not run.
+    const asked: AccountReference = { tenantId: 't1', accountId: 'acc-1' }
+    const host = mapCache()
+    host.entries.set(
+      `subscription:snapshot:${encodeAccountKey(asked)}`,
+      JSON.stringify({ ...snapshotOf(asked, 'cached'), tenantId: 't1' })
+    )
+    const load = jest.fn(() => Promise.resolve(null))
+    const result = await new SnapshotCache(host, TTL_MS).read(asked, load)
+    expect(result?.sourceCustomer?.id).toBe('cached')
+    expect(load).not.toHaveBeenCalled()
+  })
+
   it('lets a failing load reject the read, since nothing else can answer it', async () => {
     // Scenario: the store behind the load fails; the cache does not hide it, and leaves no entry.
     const host = mapCache()

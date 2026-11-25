@@ -31,31 +31,45 @@ export class RateLimiter {
     }
   }
 
+  /** How many slots are free now. */
+  available(): number {
+    this.#release()
+    return this.limit - this.#taken.length
+  }
+
+  /** Forgets the slots whose window has ended, and returns the current instant in milliseconds. */
+  #release(): number {
+    const now = this.clock.now().getTime()
+    this.#taken = this.#taken.filter((at) => at + this.windowMs > now)
+    return now
+  }
+
   /**
    * Takes a slot when one is free and returns `0`; otherwise takes none and returns how many
    * milliseconds until the oldest slot leaves the window. A slot taken at `t` is free again at
    * `t + windowMs`.
    */
   tryAcquire(): number {
-    const now = this.clock.now().getTime()
-    this.#taken = this.#taken.filter((at) => at + this.windowMs > now)
-    if (this.#taken.length < this.limit) {
-      this.#taken.push(now)
-      return 0
-    }
-    return Math.min(...this.#taken) + this.windowMs - now
+    // Fewer entries than the limit means fewer live slots than the limit, whatever has expired,
+    // so the common case costs no scan.
+    if (this.#taken.length < this.limit) return this.#take(this.clock.now().getTime())
+    const now = this.#release()
+    if (this.#taken.length < this.limit) return this.#take(now)
+    return this.#taken.reduce((oldest, at) => Math.min(oldest, at)) + this.windowMs - now
+  }
+
+  /** Records a slot taken at `now`. */
+  #take(now: number): number {
+    this.#taken.push(now)
+    return 0
   }
 
   /**
-   * Takes a slot, calling `wait` for as long as the limiter says to. Returns `false` without
-   * waiting when no slot is free and there is no `wait`. A `wait` that returns without letting
-   * time pass on the injected clock makes this call ask again until it does.
+   * Takes a slot, calling `wait` for as long as the limiter says to. A `wait` that returns without
+   * letting time pass on the injected clock makes this call ask again until it does.
    */
-  async acquire(wait?: Wait): Promise<boolean> {
-    for (;;) {
-      const missing = this.tryAcquire()
-      if (missing === 0) return true
-      if (wait === undefined) return false
+  async acquire(wait: Wait): Promise<void> {
+    for (let missing = this.tryAcquire(); missing > 0; missing = this.tryAcquire()) {
       await wait(missing)
     }
   }

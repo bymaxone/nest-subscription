@@ -58,7 +58,7 @@ describe('RateLimiter', () => {
       return Promise.resolve()
     }
     for (let call = 0; call < 40; call += 1) {
-      expect(await limiter.acquire(wait)).toBe(true)
+      await limiter.acquire(wait)
       starts.push(clock.now().getTime())
     }
     for (let index = 0; index + 4 < starts.length; index += 1) {
@@ -81,18 +81,11 @@ describe('RateLimiter', () => {
     expect(waits).toEqual([1000])
   })
 
-  it('answers false instead of waiting when it is given no wait function', async () => {
-    // Scenario: the slot is taken and no function can wait for it.
-    const limiter = new RateLimiter(new ManualClock(), 1, 1000)
-    expect(await limiter.acquire()).toBe(true)
-    expect(await limiter.acquire()).toBe(false)
-  })
-
   it('keeps asking after a wait that left a slot still taken', async () => {
     // Scenario: the first wait moves the clock only part of the way; the limiter waits again.
     const clock = new ManualClock()
     const limiter = new RateLimiter(clock, 1, 1000)
-    await limiter.acquire()
+    limiter.tryAcquire()
     const waits: number[] = []
     const wait = (ms: number): Promise<void> => {
       waits.push(ms)
@@ -101,6 +94,31 @@ describe('RateLimiter', () => {
     }
     await limiter.acquire(wait)
     expect(waits).toEqual([1000, 600])
+  })
+
+  it('names the wait of a limiter whose window holds hundreds of thousands of slots', () => {
+    // Scenario: every one of 200 000 slots is taken, then one more is asked for.
+    const clock = new ManualClock()
+    const limiter = new RateLimiter(clock, 200_000, 1000)
+    for (let slot = 0; slot < 200_000; slot += 1) limiter.tryAcquire()
+    clock.advance(250)
+    expect(limiter.tryAcquire()).toBe(750)
+  })
+
+  it('counts the slots free now, and gives each back when its window ends', () => {
+    // Scenario: four slots; two taken at 0, one at 400 ms.
+    const clock = new ManualClock()
+    const limiter = new RateLimiter(clock, 4, 1000)
+    expect(limiter.available()).toBe(4)
+    limiter.tryAcquire()
+    limiter.tryAcquire()
+    clock.advance(400)
+    limiter.tryAcquire()
+    expect(limiter.available()).toBe(1)
+    clock.advance(600)
+    expect(limiter.available()).toBe(3)
+    clock.advance(400)
+    expect(limiter.available()).toBe(4)
   })
 
   it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(

@@ -232,6 +232,28 @@ describe('read and refresh: the service in a running application', () => {
     await app.close()
   })
 
+  it('ends access at the until instant of the entitlement on the injected clock', async () => {
+    // Scenario: an active entitlement that ends a minute after the first read.
+    const { app, source, clock } = await boot()
+    const service = app.get(SubscriptionService)
+    source.setAccount(ACCOUNT, {
+      ...snapshotOf(ACCOUNT, T10),
+      entitlements: [
+        {
+          name: 'pro',
+          active: true,
+          until: '2026-01-01T00:01:00.000Z',
+          grantingSubscriptionReference: 's'
+        }
+      ]
+    })
+    await service.refresh(ACCOUNT)
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+    clock.advance(60_000)
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+    await app.close()
+  })
+
   it('answers an unknown account as an empty snapshot and false without a source call', async () => {
     // Scenario: nothing is stored for the account; the source is held and still no read waits.
     const { app, source } = await boot()
@@ -364,6 +386,17 @@ describe('read and refresh: a stale snapshot in a running application', () => {
     await service.getSnapshot(ACCOUNT)
     await settle()
     expect(onBackgroundRefreshFailure).toHaveBeenCalledWith({ code: null })
+    await app.close()
+  })
+
+  it('keeps answering when the observer hook returns a rejected promise', async () => {
+    // Scenario: an asynchronous hook rejects while the failure is reported.
+    const { app, source } = await stale({
+      observer: { onBackgroundRefreshFailure: () => Promise.reject(new Error('observer broke')) }
+    })
+    source.failNextRead(new Error('down'))
+    await expect(app.get(SubscriptionService).getSnapshot(ACCOUNT)).resolves.toBeDefined()
+    await settle()
     await app.close()
   })
 

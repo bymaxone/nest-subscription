@@ -88,7 +88,7 @@ describe('reconciliation', () => {
       fetchedAt
     )
     const result = await service.reconcile({ olderThanMs: DAY, wait })
-    expect(result).toEqual({ refreshed: 3, failed: 0, remaining: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 3, failed: 0, cursor: null })
     expect(source.readCount(fresh)).toBe(0)
     expect(source.totalReads).toBe(3)
     await app.close()
@@ -98,21 +98,21 @@ describe('reconciliation', () => {
     // Scenario: five stale accounts, two a run.
     const { app, service, source, wait } = await boot(5)
     const first = await service.reconcile({ olderThanMs: DAY, batchSize: 2, wait })
-    expect(first).toMatchObject({ refreshed: 2, remaining: 3 })
+    expect(first).toMatchObject({ refreshed: 2 })
     const second = await service.reconcile({
       olderThanMs: DAY,
       batchSize: 2,
       cursor: first.cursor,
       wait
     })
-    expect(second).toMatchObject({ refreshed: 2, remaining: 1 })
+    expect(second).toMatchObject({ refreshed: 2 })
     const third = await service.reconcile({
       olderThanMs: DAY,
       batchSize: 2,
       cursor: second.cursor,
       wait
     })
-    expect(third).toEqual({ refreshed: 1, failed: 0, remaining: 0, cursor: null })
+    expect(third).toEqual({ refreshed: 1, failed: 0, cursor: null })
     expect(source.totalReads).toBe(5)
     await app.close()
   })
@@ -126,7 +126,7 @@ describe('reconciliation', () => {
       maxCallsPerSecond: 1000,
       wait
     })
-    expect(result).toEqual({ refreshed: 150, failed: 0, remaining: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 150, failed: 0, cursor: null })
     expect(source.totalReads).toBe(150)
     await app.close()
   })
@@ -149,11 +149,11 @@ describe('reconciliation', () => {
     await app.close()
   })
 
-  it('ends at its rate with no wait function and reports the rest as remaining', async () => {
+  it('ends at its rate with no wait function and returns a cursor to go on from', async () => {
     // Scenario: six accounts at two a second and nothing to wait with.
     const { app, service, source } = await boot(6)
     const result = await service.reconcile({ olderThanMs: DAY, maxCallsPerSecond: 2 })
-    expect(result).toMatchObject({ refreshed: 2, failed: 0, remaining: 4 })
+    expect(result).toMatchObject({ refreshed: 2, failed: 0 })
     expect(source.totalReads).toBe(2)
     await app.close()
   })
@@ -163,7 +163,7 @@ describe('reconciliation', () => {
     const { app, service, source, wait } = await boot(3)
     source.failNextRead(new Error('down'))
     const result = await service.reconcile({ olderThanMs: DAY, wait })
-    expect(result).toEqual({ refreshed: 2, failed: 1, remaining: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 2, failed: 1, cursor: null })
     await app.close()
   })
 
@@ -220,7 +220,6 @@ describe('reconciliation', () => {
     await expect(service.reconcile()).resolves.toEqual({
       refreshed: 1,
       failed: 0,
-      remaining: 0,
       cursor: null
     })
     expect(source.totalReads).toBe(1)
