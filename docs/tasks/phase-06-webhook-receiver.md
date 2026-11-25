@@ -311,7 +311,7 @@ Completion Protocol (after the work is reported done):
 
 #### Description
 
-Offer the receiver as a controller the host mounts with one option, off by default, which answers a temporary failure when the unparsed request body is missing (FR17, D10).
+Offer the receiver as a controller the host mounts with one option, off by default, which answers a temporary failure when the unparsed request body was not kept (FR17, D10).
 
 #### Acceptance criteria
 
