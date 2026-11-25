@@ -500,6 +500,22 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
     }
   )
 
+  it('refuses a snapshot whose fields cannot be read as a source failure, with nothing stored', async () => {
+    // Scenario: the source returns an object whose entitlements getter throws.
+    const { source, store, refresher } = setup()
+    const unreadable = Object.defineProperty({ ...snapshotOf(ACCOUNT, T10) }, 'entitlements', {
+      enumerable: true,
+      get: () => {
+        throw new Error('getter broke')
+      }
+    })
+    source.setAccount(ACCOUNT, unreadable)
+    await expect(refresher.refresh(ACCOUNT)).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    })
+    expect(await stored(store, ACCOUNT)).toBeNull()
+  })
+
   it('stores nothing at all for the first refresh when the snapshot is refused', async () => {
     // Scenario: nothing stored yet; the source names another account.
     const { source, store, refresher } = setup()

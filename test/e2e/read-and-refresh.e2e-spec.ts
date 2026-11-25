@@ -308,6 +308,24 @@ describe('read and refresh: the service in a running application', () => {
     await app.close()
   })
 
+  it('refuses a source snapshot that throws when it is read as a source failure', async () => {
+    // Scenario: the source returns an object whose entitlements getter throws.
+    const { app, source } = await boot()
+    source.setAccount(
+      ACCOUNT,
+      Object.defineProperty({ ...snapshotOf(ACCOUNT, T10) }, 'entitlements', {
+        enumerable: true,
+        get: () => {
+          throw new Error('getter broke')
+        }
+      })
+    )
+    await expect(app.get(SubscriptionService).refresh(ACCOUNT)).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    })
+    await app.close()
+  })
+
   it('refuses a source snapshot with no source name as a source failure', async () => {
     // Scenario: the source returns a snapshot whose source field is not a string.
     const { app, source } = await boot()

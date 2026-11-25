@@ -285,6 +285,23 @@ describe('SnapshotCache', () => {
     }
   )
 
+  it('treats a cache answer that cannot be read as text as a miss', async () => {
+    // Scenario: the host cache returns an object whose conversion to text throws.
+    const hostile: string = Object.assign(Object('{}'), {
+      toString: () => {
+        throw new Error('toString broke')
+      }
+    })
+    const host: SubscriptionCache = {
+      get: () => Promise.resolve(hostile),
+      set: () => Promise.resolve(),
+      delete: () => Promise.resolve()
+    }
+    const load = jest.fn(() => Promise.resolve(snapshotOf(ACCOUNT, 'loaded')))
+    const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, load)
+    expect(result?.sourceCustomer?.id).toBe('loaded')
+  })
+
   it('treats a snapshot that names a tenant as a miss for an account that has none, and the reverse', async () => {
     // Scenario: tenant present against absent, both ways.
     const withTenant: AccountReference = { tenantId: 't1', accountId: 'acc-1' }

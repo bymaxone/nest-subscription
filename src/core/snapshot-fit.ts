@@ -100,15 +100,21 @@ const SNAPSHOT_FIELDS: Record<Exclude<keyof SubscriptionSnapshot, 'tenantId'>, C
  * booleans are booleans, closed sets hold members, nullable fields are the type or `null`, the
  * optional tenant is absent or the one asked for, lists hold valid items, and every instant is one
  * `parseInstant` reads. This is the one rule for a snapshot that comes from outside the library's
- * own write path: a source's, a cache's or a store's.
+ * own write path: a source's, a cache's or a store's. It answers `false` for a value it cannot
+ * read and never throws.
  */
 export function isSnapshotFor(
   value: unknown,
   account: AccountReference
 ): value is SubscriptionSnapshot {
-  return (
-    hasFields(value, SNAPSHOT_FIELDS) &&
-    Reflect.get(value as object, 'accountId') === account.accountId &&
-    Reflect.get(value as object, 'tenantId') === account.tenantId
-  )
+  try {
+    return (
+      hasFields(value, SNAPSHOT_FIELDS) &&
+      Reflect.get(value as object, 'accountId') === account.accountId &&
+      Reflect.get(value as object, 'tenantId') === account.tenantId
+    )
+  } catch {
+    // A value that cannot be read (a getter or a proxy trap that throws) is not a snapshot.
+    return false
+  }
 }

@@ -215,4 +215,46 @@ describe('isSnapshotFor', () => {
     // Scenario: a string field that holds an instant but not a readable one.
     expect(isSnapshotFor(withField(path, text), TENANTED)).toBe(false)
   })
+
+  describe('with a value it cannot read', () => {
+    /** A copy of the fixture with one property replaced by a getter that throws. */
+    function throwingAt(target: Record<string, unknown>, name: string): Record<string, unknown> {
+      return Object.defineProperty({ ...target }, name, {
+        enumerable: true,
+        get: () => {
+          throw new Error('getter broke')
+        }
+      })
+    }
+
+    const proxy = (trap: 'get' | 'has' | 'ownKeys' | 'getPrototypeOf'): unknown =>
+      new Proxy(
+        {},
+        {
+          [trap]: () => {
+            throw new Error(`${trap} trap broke`)
+          }
+        }
+      )
+
+    it('answers false for a snapshot whose entitlements getter throws', () => {
+      // Scenario: reading one top-level field throws.
+      expect(isSnapshotFor(throwingAt({ ...full() }, 'entitlements'), TENANTED)).toBe(false)
+    })
+
+    it('answers false for a snapshot whose nested active getter throws', () => {
+      // Scenario: reading a field of an entitlement throws.
+      const entitlement = throwingAt({ ...full().entitlements[0] }, 'active')
+      expect(isSnapshotFor({ ...full(), entitlements: [entitlement] }, TENANTED)).toBe(false)
+    })
+
+    it.each(['get', 'has', 'ownKeys', 'getPrototypeOf'] as const)(
+      'answers false for a proxy whose %s trap throws',
+      (trap) => {
+        // Scenario: the value is a proxy that throws when the validator touches it.
+        expect(isSnapshotFor(proxy(trap), TENANTED)).toBe(false)
+        expect(isSnapshotFor({ ...full(), entitlements: [proxy(trap)] }, TENANTED)).toBe(false)
+      }
+    )
+  })
 })
