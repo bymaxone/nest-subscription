@@ -1,0 +1,68 @@
+{
+  "customerId": "customer_PLACEHOLDER_expired",
+  "subscriptions": {
+    "object": "list",
+    "items": [
+      {
+        "object": "subscription",
+        "id": "sub_PLACEHOLDER_1",
+        "customer_id": "customer_PLACEHOLDER_expired",
+        "original_customer_id": "customer_PLACEHOLDER_expired",
+        "product_id": "product_PLACEHOLDER_monthly",
+        "starts_at": 1793000000000,
+        "current_period_starts_at": 1795000000000,
+        "current_period_ends_at": 1794000000000,
+        "ends_at": 1794000000000,
+        "gives_access": false,
+        "pending_payment": false,
+        "auto_renewal_status": "will_not_renew",
+        "status": "expired",
+        "total_revenue_in_usd": {
+          "currency": "USD",
+          "gross": 4.99,
+          "commission": 0.75,
+          "tax": 0.0,
+          "proceeds": 4.24
+        },
+        "presented_offering_id": null,
+        "entitlements": {
+          "object": "list",
+          "items": [
+            {
+              "object": "entitlement",
+              "id": "entl_PLACEHOLDER_premium",
+              "project_id": "proj_PLACEHOLDER",
+              "lookup_key": "premium",
+              "display_name": "Premium",
+              "state": "active",
+              "created_at": 1795000000000
+            }
+          ],
+          "next_page": null,
+          "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_1/entitlements"
+        },
+        "environment": "production",
+        "store": "app_store",
+        "store_subscription_identifier": "store_sub_PLACEHOLDER_1",
+        "ownership": "purchased",
+        "pending_changes": null,
+        "country": "US",
+        "management_url": "https://apps.apple.com/account/subscriptions"
+      }
+    ],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_expired/subscriptions"
+  },
+  "purchases": {
+    "object": "list",
+    "items": [],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_expired/purchases"
+  },
+  "activeEntitlements": {
+    "object": "list",
+    "items": [],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_expired/active_entitlements"
+  }
+}

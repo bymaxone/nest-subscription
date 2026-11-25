@@ -1,0 +1,21 @@
+{
+  "customerId": "customer_PLACEHOLDER_empty",
+  "subscriptions": {
+    "items": [],
+    "next_page": null,
+    "object": "list",
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_empty/subscriptions"
+  },
+  "purchases": {
+    "items": [],
+    "next_page": null,
+    "object": "list",
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_empty/purchases"
+  },
+  "activeEntitlements": {
+    "items": [],
+    "next_page": null,
+    "object": "list",
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_empty/active_entitlements"
+  }
+}

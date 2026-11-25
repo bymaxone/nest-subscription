@@ -1,0 +1,51 @@
+{
+  "customerId": "customer_PLACEHOLDER_consumable",
+  "subscriptions": {
+    "object": "list",
+    "items": [],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_consumable/subscriptions"
+  },
+  "purchases": {
+    "object": "list",
+    "items": [
+      {
+        "object": "purchase",
+        "id": "purchase_PLACEHOLDER_1",
+        "customer_id": "customer_PLACEHOLDER_consumable",
+        "original_customer_id": "customer_PLACEHOLDER_consumable",
+        "product_id": "product_PLACEHOLDER_credits",
+        "purchased_at": 1795000000000,
+        "revenue_in_usd": {
+          "currency": "USD",
+          "gross": 49.99,
+          "commission": 7.5,
+          "tax": 0.0,
+          "proceeds": 42.49
+        },
+        "quantity": 1,
+        "status": "owned",
+        "presented_offering_id": null,
+        "entitlements": {
+          "object": "list",
+          "items": [],
+          "next_page": null,
+          "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/purchases/purchase_PLACEHOLDER_1/entitlements"
+        },
+        "environment": "production",
+        "store": "app_store",
+        "store_purchase_identifier": "store_purchase_PLACEHOLDER_1",
+        "ownership": "purchased",
+        "country": "US"
+      }
+    ],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_consumable/purchases"
+  },
+  "activeEntitlements": {
+    "object": "list",
+    "items": [],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_consumable/active_entitlements"
+  }
+}

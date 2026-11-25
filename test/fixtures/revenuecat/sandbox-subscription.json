@@ -1,0 +1,74 @@
+{
+  "customerId": "customer_PLACEHOLDER_sandbox",
+  "subscriptions": {
+    "object": "list",
+    "items": [
+      {
+        "object": "subscription",
+        "id": "sub_PLACEHOLDER_1",
+        "customer_id": "customer_PLACEHOLDER_sandbox",
+        "original_customer_id": "customer_PLACEHOLDER_sandbox",
+        "product_id": "product_PLACEHOLDER_test_monthly",
+        "starts_at": 1793000000000,
+        "current_period_starts_at": 1795000000000,
+        "current_period_ends_at": 1797600000000,
+        "ends_at": null,
+        "gives_access": true,
+        "pending_payment": false,
+        "auto_renewal_status": "will_renew",
+        "status": "active",
+        "total_revenue_in_usd": {
+          "currency": "USD",
+          "gross": 4.99,
+          "commission": 0.75,
+          "tax": 0.0,
+          "proceeds": 4.24
+        },
+        "presented_offering_id": null,
+        "entitlements": {
+          "object": "list",
+          "items": [
+            {
+              "object": "entitlement",
+              "id": "entl_PLACEHOLDER_premium",
+              "project_id": "proj_PLACEHOLDER",
+              "lookup_key": "premium",
+              "display_name": "Premium",
+              "state": "active",
+              "created_at": 1795000000000
+            }
+          ],
+          "next_page": null,
+          "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_1/entitlements"
+        },
+        "environment": "sandbox",
+        "store": "test_store",
+        "store_subscription_identifier": "store_sub_PLACEHOLDER_1",
+        "ownership": "purchased",
+        "pending_changes": null,
+        "country": null,
+        "management_url": null
+      }
+    ],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_sandbox/subscriptions"
+  },
+  "purchases": {
+    "object": "list",
+    "items": [],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_sandbox/purchases"
+  },
+  "activeEntitlements": {
+    "object": "list",
+    "items": [
+      {
+        "object": "customer.active_entitlement",
+        "entitlement_id": "entl_PLACEHOLDER_premium",
+        "expires_at": 1797600000000
+      }
+    ],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_sandbox/active_entitlements"
+  }
+}

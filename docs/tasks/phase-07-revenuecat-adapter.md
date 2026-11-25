@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,7 +42,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 
 | ID  | Task                                                      | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 7.1 | Re-read the RevenueCat facts and record the fixtures      | 📋 ToDo | P0       | M    | —          |
+| 7.1 | Re-read the RevenueCat facts and record the fixtures      | ✅ Done | P0       | M    | —          |
 | 7.2 | Add the adapter options and the HTTP client               | 📋 ToDo | P0       | M    | 7.1        |
 | 7.3 | Implement the mapping tables                              | 📋 ToDo | P0       | M    | 7.1        |
 | 7.4 | Read a customer into a snapshot                           | 📋 ToDo | P0       | L    | 7.2, 7.3   |
@@ -57,7 +57,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 
 ### Task 7.1 — Re-read the RevenueCat facts and record the fixtures
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -68,11 +68,11 @@ Re-read every page of specification §12 that the adapter relies on, write down 
 
 #### Acceptance criteria
 
-- [ ] `docs/revenuecat-facts.md` lists, with the URL and the date read: the version 2 endpoints for a customer's subscriptions and active entitlements and their response fields; the authentication header; the rate limits; the webhook authentication methods and the exact signature construction; the event fields the adapter reads; every status, renewal status and store value.
-- [ ] Each row of Appendix A.1 to A.5 is marked confirmed, changed or not found. A changed row is corrected in `docs/spec.md` in the same pull request.
-- [ ] Each item of Appendix A.6 (version 1 deprecation, a refund marker in version 2, delivery order) is marked resolved with its source, or still unknown.
-- [ ] Fixtures exist under `test/fixtures/revenuecat/` for: a customer with an active subscription, one in grace, one in billing retry, one paused, one expired, one refunded, one sandbox, one with two subscriptions, an unknown customer; and webhook bodies for each event kind the adapter distinguishes.
-- [ ] A script or a test proves no fixture contains an App User ID, an email, a token or a secret from a real project.
+- [x] `docs/revenuecat-facts.md` lists, with the URL and the date read: the version 2 endpoints for a customer's subscriptions and active entitlements and their response fields; the authentication header; the rate limits; the webhook authentication methods and the exact signature construction; the event fields the adapter reads; every status, renewal status and store value.
+- [x] Each row of Appendix A.1 to A.5 is marked confirmed, changed or not found. A changed row is corrected in `docs/spec.md` in the same pull request.
+- [x] Each item of Appendix A.6 (version 1 deprecation, a refund marker in version 2, delivery order) is marked resolved with its source, or still unknown.
+- [x] Fixtures exist under `test/fixtures/revenuecat/` for: a customer with an active subscription, one in grace, one in billing retry, one paused, one expired, one refunded, one sandbox, one with two subscriptions, an unknown customer; and webhook bodies for each event kind the adapter distinguishes.
+- [x] A script or a test proves no fixture contains an App User ID, an email, a token or a secret from a real project.
 
 #### Files to create / modify
 
@@ -761,3 +761,5 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 <!-- entries are added as tasks complete -->
+
+- 7.1 ✅ 2026-11-25 — the provider facts re-read and recorded with their pages, the sandbox and documentation fixtures, and a sanitization check that fails on a planted identifier

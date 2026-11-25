@@ -462,7 +462,13 @@ The library keeps no other state. It stores no payment data, no price paid and n
 A new question is added here with a proposal and is never answered on the owner's behalf. The
 proposal below is what the code does until the owner answers.
 
-None.
+**Q1. Refund of a subscription.** Version 2 has no refund marker on a subscription (A.6). Proposal, which the adapter does until the owner answers: a subscription is read as refunded when its access flag is false, its status is `expired` and its `ends_at` is earlier than its `current_period_ends_at`; the refund instant is `ends_at`. The fixture of this case is written from the documentation, because the sandbox cannot refund.
+
+**Q2. End of a grace period.** A subscription in `in_grace_period` still gives access and the object has no field for the end of the grace period. Proposal: its access-until is `null`, so the entitlement stays active while the source says it gives access, and the snapshot age limit bounds how long that is trusted.
+
+**Q3. Access flag of a non-renewing purchase.** A purchase has no access flag and no expiry. Proposal: it gives access while its status is `owned` and the entitlement it grants is in the customer's active-entitlements list, and its access-until is that entitlement's `expires_at`.
+
+**Q4. Unidentified events.** An event that names only anonymous identifiers cannot be refreshed. Proposal: the adapter takes an optional `onUnidentifiedEvent` callback, called with the event kind and environment only, and writes one log line with no identifier.
 
 ---
 
@@ -541,9 +547,9 @@ Rules that are easy to get wrong:
 | `expired`               | `expired`                                      |
 | `incomplete`, `unknown` | `unknown`, with the access flag passed through |
 
-Renewal status maps to will renew: `will_renew` to `yes`, `will_not_renew` to `no`, `will_change_product` to `changes_product`, `will_pause` to `pauses`, the others to `unknown`.
+Renewal status maps to will renew: `will_renew` to `yes`, `will_not_renew` to `no`, `will_change_product` to `changes_product`, `will_pause` to `pauses`, the others to `unknown`. The others read on 2026-11-25 are `requires_price_increase_consent` and `has_already_renewed`.
 
-Store maps to origin: `app_store` and `mac_app_store` to `app_store`; `play_store` to `play_store`; `stripe`, `rc_billing`, `paddle` and `paypal` to `web`; `promotional` to `promotional`; every other value to `other`.
+Store maps to origin: `app_store` and `mac_app_store` to `app_store`; `play_store` to `play_store`; `stripe`, `rc_billing`, `paddle` and `paypal` to `web`; `promotional` to `promotional`; every other value to `other`. The other values read on 2026-11-25 are `amazon`, `external`, `roku`, `galaxy` and `test_store`.
 
 ### A.4 What a server can do
 
@@ -565,10 +571,12 @@ Only stop renewal is verified. Resume, change product, extend and refund are rec
 
 ### A.6 Not confirmed
 
-- Whether version 1 of the REST API is deprecated. No notice was found.
-- A refund marker in version 2 equivalent to version 1's refunded date.
-- How the customer endpoints report a non-renewing purchase that grants an entitlement, and how a refund of one appears (D31).
-- Any guidance about delivery order.
+Read on 2026-11-25; the sources are in [`docs/revenuecat-facts.md`](revenuecat-facts.md).
+
+- Version 1 of the REST API: resolved, no deprecation notice on its customers page.
+- A refund marker in version 2: found for a purchase (`status: refunded`), not found for a subscription. How the adapter recognises a refunded subscription is open question Q1 of section 10.2.
+- How the customer endpoints report a non-renewing purchase that grants an entitlement (D31): resolved. Through the purchases list, which has no access flag and no expiry, and the active-entitlements list, which has the expiry and no grantor. A refund is `status: refunded`.
+- Any guidance about delivery order: still unknown, not stated.
 
 ---
 
