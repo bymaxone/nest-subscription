@@ -60,13 +60,17 @@ describe('createFailingStore', () => {
   it.each(METHODS)(
     'fails only %s when it alone is named, and delegates every other',
     async (named) => {
-      // Scenario: one method of the port is named; it rejects, and each of the other seven still
-      // answers as the wrapped store does.
-      const store = createFailingStore(inner())
+      // Scenario: one method of the port is named; it rejects without reaching the wrapped store,
+      // and each of the other seven resolves after the wrapped store's own method is called once.
+      const wrapped = inner()
+      const spies = new Map(METHODS.map((method) => [method, jest.spyOn(wrapped, method)]))
+      const store = createFailingStore(wrapped)
       store.fail([named])
       await expect(CALLS[named](store)).rejects.toThrow('failing store')
+      expect(spies.get(named)).not.toHaveBeenCalled()
       for (const other of METHODS.filter((method) => method !== named)) {
         await expect(CALLS[other](store)).resolves.not.toThrow()
+        expect(spies.get(other)).toHaveBeenCalledTimes(1)
       }
     }
   )

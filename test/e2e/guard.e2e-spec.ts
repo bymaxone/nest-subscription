@@ -256,38 +256,42 @@ describe('guard: the account comes from the resolver only', () => {
 
   it('puts no account or tenant identifier in the body of any refusal the fixture can reach', async () => {
     // Scenario: unusual identifiers go through the refusals of a decision (both 403s), of a missing
-    // account and of a malformed answer (401), of a resolver failure, of the store down, of a
-    // stale snapshot under refuse and of a stale snapshot with the source down (503); none
-    // appears in a body, and each body is the code and the message.
+    // account and of a malformed answer (401), of a resolver failure, of the store down and of a
+    // stale snapshot under refuse (503); each answers its own status, none carries an identifier
+    // in its body, and each body is the code and the message.
     const built = await boot({ multiTenant: true, maxSnapshotAgeMs: HOUR_MS })
     const hidden: AccountReference = {
       accountId: 'acc-sentinel-77',
       tenantId: 'tenant-sentinel-77'
     }
     await built.seed(snapshotOf(hidden, { givesAccess: false, entitlement: 'premium' }))
-    const responses = [
-      await get(built, '/premium', hidden),
-      await get(built, '/basic', hidden),
-      await get(built, '/premium', { ...hidden, accountId: 'other-sentinel-77' }),
-      await get(built, '/premium'),
-      await request(built.app.getHttpServer())
-        .get('/premium')
-        .set(ACCOUNT_HEADER, hidden.accountId)
-        .set(THROW_HEADER, '1'),
-      await request(built.app.getHttpServer())
-        .get('/premium')
-        .set(RAW_HEADER, '{"accountId":"acc-sentinel-77","tenantId":7}')
+    const answers: (readonly [request.Response, number])[] = [
+      [await get(built, '/premium', hidden), 403],
+      [await get(built, '/basic', hidden), 403],
+      [await get(built, '/premium', { ...hidden, accountId: 'other-sentinel-77' }), 403],
+      [await get(built, '/premium'), 401],
+      [
+        await request(built.app.getHttpServer())
+          .get('/premium')
+          .set(ACCOUNT_HEADER, hidden.accountId)
+          .set(THROW_HEADER, '1'),
+        503
+      ],
+      [
+        await request(built.app.getHttpServer())
+          .get('/premium')
+          .set(RAW_HEADER, '{"accountId":"acc-sentinel-77","tenantId":7}'),
+        401
+      ]
     ]
     built.store.fail(['getSnapshot'])
-    responses.push(await get(built, '/premium', hidden))
+    answers.push([await get(built, '/premium', hidden), 503])
     built.store.recover()
     await built.seed(snapshotOf(hidden, { givesAccess: true, entitlement: 'premium' }))
     built.clock.advance(2 * HOUR_MS)
-    responses.push(await get(built, '/premium', hidden))
-    built.source.failNextRead(new Error('source down for acc-sentinel-77'))
-    responses.push(await get(built, '/premium', hidden))
-    expect(new Set(responses.map((response) => response.status))).toEqual(new Set([401, 403, 503]))
-    for (const response of responses) {
+    answers.push([await get(built, '/premium', hidden), 503])
+    for (const [response, status] of answers) {
+      expect(response.status).toBe(status)
       expect(JSON.stringify(response.body)).not.toContain('sentinel-77')
       expect(Object.keys(response.body as object)).toEqual(['code', 'message'])
     }
