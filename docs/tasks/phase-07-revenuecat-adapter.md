@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -44,7 +44,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 7.1 | Re-read the RevenueCat facts and record the fixtures      | ✅ Done | P0       | M    | —          |
 | 7.2 | Add the adapter options and the HTTP client               | ✅ Done | P0       | M    | 7.1        |
-| 7.3 | Implement the mapping tables                              | 📋 ToDo | P0       | M    | 7.1        |
+| 7.3 | Implement the mapping tables                              | ✅ Done | P0       | M    | 7.1        |
 | 7.4 | Read a customer into a snapshot                           | 📋 ToDo | P0       | L    | 7.2, 7.3   |
 | 7.5 | Verify RevenueCat webhooks                                | 📋 ToDo | P0       | M    | 7.2        |
 | 7.6 | Parse events and handle identity                          | 📋 ToDo | P0       | M    | 7.4, 7.5   |
@@ -223,7 +223,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.3 — Implement the mapping tables
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 7.1
@@ -234,12 +234,12 @@ Write the pure functions that map RevenueCat's status, renewal status and store 
 
 #### Acceptance criteria
 
-- [ ] Every status of Appendix A.3 maps as its table says, and an unlisted status maps to `unknown`.
-- [ ] Every renewal status maps to its will-renew value, and an unlisted one to `unknown`.
-- [ ] Every store maps to its origin, and an unlisted one to `other`.
-- [ ] The tables in the code are generated from, or checked against, one data file that mirrors Appendix A.3, so the specification and the code cannot drift silently.
-- [ ] `in_grace` against `on_hold` follows the source's access flag for a billing issue.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Every status of Appendix A.3 maps as its table says, and an unlisted status maps to `unknown`.
+- [x] Every renewal status maps to its will-renew value, and an unlisted one to `unknown`.
+- [x] Every store maps to its origin, and an unlisted one to `other`.
+- [x] The tables in the code are generated from, or checked against, one data file that mirrors Appendix A.3, so the specification and the code cannot drift silently.
+- [x] `in_grace` against `on_hold` follows the source's access flag for a billing issue.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -764,3 +764,4 @@ Completion Protocol (after the work is reported done):
 
 - 7.1 ✅ 2026-11-25 — the provider facts re-read and recorded with their pages, the sandbox and documentation fixtures, and a sanitization check that fails on a planted identifier
 - 7.2 ✅ 2026-11-25 — the adapter options with their validation and a fetch-based client that maps every failure to a fixed library error
+- 7.3 ✅ 2026-11-25 — the status, renewal and store tables as data checked against Appendix A.3, with a billing issue following the source's access flag

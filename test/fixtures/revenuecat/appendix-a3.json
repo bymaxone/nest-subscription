@@ -1,0 +1,33 @@
+{
+  "status": {
+    "trialing": "trialing",
+    "active": "active",
+    "in_grace_period": "in_grace",
+    "in_billing_retry": "on_hold",
+    "paused": "paused",
+    "expired": "expired",
+    "incomplete": "unknown",
+    "unknown": "unknown"
+  },
+  "renewal": {
+    "will_renew": "yes",
+    "will_not_renew": "no",
+    "will_change_product": "changes_product",
+    "will_pause": "pauses"
+  },
+  "store": {
+    "app_store": "app_store",
+    "mac_app_store": "app_store",
+    "play_store": "play_store",
+    "stripe": "web",
+    "rc_billing": "web",
+    "paddle": "web",
+    "paypal": "web",
+    "promotional": "promotional"
+  },
+  "unlisted": {
+    "status": "unknown",
+    "renewal": "unknown",
+    "store": "other"
+  }
+}
