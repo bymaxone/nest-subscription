@@ -68,14 +68,20 @@ export interface ChangeDeliveryEvent {
 }
 
 /** How the receiver handled one webhook request. */
-export type WebhookOutcome = 'processed' | 'duplicate' | 'ignored' | 'refused' | 'failed'
+export type WebhookOutcomeKind = 'processed' | 'duplicate' | 'ignored' | 'refused' | 'failed'
 
 /** One webhook request handled by the receiver. */
 export interface WebhookEvent {
   /** What became of the request. */
-  readonly outcome: WebhookOutcome
+  readonly outcome: WebhookOutcomeKind
   /** Milliseconds from receipt to the answer, by the injected clock. */
   readonly durationMs: number
+  /**
+   * Whether the identifier of a failed event stayed recorded because the store could not forget
+   * it, so the source's retries of that event are answered as already seen. Always `false` for an
+   * outcome other than `failed`.
+   */
+  readonly retained: boolean
 }
 
 /** What the observer is told when a background refresh of a stale snapshot fails. */

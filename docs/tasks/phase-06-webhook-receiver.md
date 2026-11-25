@@ -1,6 +1,6 @@
 # Phase 6 — Webhook receiver
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P6 — webhook-receiver
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,7 +42,7 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 
 | ID  | Task                                       | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 6.1 | Define the outcomes and their HTTP answers | 📋 ToDo | P0       | S    | —          |
+| 6.1 | Define the outcomes and their HTTP answers | ✅ Done | P0       | S    | —          |
 | 6.2 | Implement the processor                    | 📋 ToDo | P0       | L    | 6.1        |
 | 6.3 | Enforce the response deadline              | 📋 ToDo | P0       | M    | 6.2        |
 | 6.4 | Add the controller behind a switch         | 📋 ToDo | P0       | M    | 6.2        |
@@ -54,7 +54,7 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 
 ### Task 6.1 — Define the outcomes and their HTTP answers
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: —
@@ -65,11 +65,11 @@ Write the five outcomes of FR18 and the function that maps each to the HTTP answ
 
 #### Acceptance criteria
 
-- [ ] `WebhookOutcome` is a closed union: processed, already seen, ignored, refused, failed.
-- [ ] Processed, already seen and ignored map to a success status; refused maps to an authentication failure; failed maps to a temporary failure.
-- [ ] The refused answer has one fixed body, identical for every cause, and carries no hint of which check failed.
-- [ ] No outcome value and no answer body can hold payload content or an account identifier.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `WebhookOutcome` is a closed union: processed, already seen, ignored, refused, failed.
+- [x] Processed, already seen and ignored map to a success status; refused maps to an authentication failure; failed maps to a temporary failure.
+- [x] The refused answer has one fixed body, identical for every cause, and carries no hint of which check failed.
+- [x] No outcome value and no answer body can hold payload content or an account identifier.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -475,3 +475,5 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 <!-- entries are added as tasks complete -->
+
+- 6.1 ✅ 2026-11-25 — the five outcomes as a closed union and the one HTTP answer of each, with one frozen refusal for every cause
