@@ -52,10 +52,36 @@ export function createCapture(): Capture {
   }
 }
 
+/** Whether a value holds the sentinel in a string, a property name, a Map or Set member or a number. */
+function holds(value: unknown, sentinel: string, seen: Set<object>): boolean {
+  switch (typeof value) {
+    case 'string':
+    case 'number':
+    case 'bigint':
+    case 'boolean':
+      return String(value).includes(sentinel)
+    case 'object': {
+      if (value === null || seen.has(value)) return false
+      seen.add(value)
+      const parts =
+        value instanceof Map
+          ? [...value].flat()
+          : value instanceof Set
+            ? [...value]
+            : Object.entries(value).flat()
+      return parts.some((part) => holds(part, sentinel, seen))
+    }
+    default:
+      return false
+  }
+}
+
 /**
- * Fails when any captured log line or observer payload holds a sentinel. A payload is searched
- * as JSON, so a sentinel in a field name or a nested value is found too. The failure names the
- * sentinel by its position and where it was found, and does not repeat it.
+ * Fails when any captured log line or observer payload holds a sentinel. A line is compared as
+ * text. A payload is walked, so a sentinel in a nested value, a property name, a Map key or value
+ * or a Set member is found as it is written, whatever characters it holds, and so is one in the
+ * printed form of a number, a BigInt or a boolean. The failure names the sentinel by its position
+ * and where it was found, and does not repeat it.
  *
  * @param capture What a scenario captured.
  * @param sentinels The strings that must not appear; none may be empty, since an empty string is
@@ -66,17 +92,16 @@ export function assertNoSentinel(capture: Capture, sentinels: readonly string[])
   if (sentinels.length === 0 || sentinels.some((sentinel) => sentinel.length === 0)) {
     throw new Error('assertNoSentinel needs at least one sentinel and none may be empty.')
   }
-  const places = [
-    ...capture.lines.map((line, index) => ({ where: `log line ${String(index)}`, text: line })),
-    ...capture.payloads.map(({ method, payload }, index) => ({
-      where: `observer payload ${String(index)} (${method})`,
-      text: String(JSON.stringify(payload))
-    }))
-  ]
   sentinels.forEach((sentinel, position) => {
-    const found = places.find((place) => place.text.includes(sentinel))
-    if (found !== undefined) {
-      throw new Error(`Sentinel ${String(position)} was found in ${found.where}.`)
+    const line = capture.lines.findIndex((text) => text.includes(sentinel))
+    if (line !== -1) {
+      throw new Error(`Sentinel ${String(position)} was found in log line ${String(line)}.`)
+    }
+    for (const [index, captured] of capture.payloads.entries()) {
+      if (holds(captured.payload, sentinel, new Set())) {
+        const where = `observer payload ${String(index)} (${captured.method})`
+        throw new Error(`Sentinel ${String(position)} was found in ${where}.`)
+      }
     }
   })
 }

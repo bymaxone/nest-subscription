@@ -178,6 +178,43 @@ describe('no identifiers', () => {
     expect(() => assertNoSentinel(capture, [''])).toThrow(/at least one sentinel/)
   })
 
+  it.each([
+    ['a Map key', 'sentinel-planted', new Map([['sentinel-planted', 1]])],
+    ['a Map value', 'sentinel-planted', new Map([[1, 'sentinel-planted']])],
+    ['a Set member', 'sentinel-planted', new Set(['sentinel-planted'])],
+    ['a BigInt', '12345678901234567890', { count: 12345678901234567890n }],
+    ['a string with a quote and a newline', 'sentinel"planted\n', { source: 'sentinel"planted\n' }]
+  ])(
+    'finds a planted sentinel held as %s, which a JSON search would lose or escape',
+    (_where, sentinel, payload) => {
+      // Scenario: shapes whose JSON form drops or escapes the value; the sweep walks them instead.
+      const capture = createCapture()
+      capture.observer.onWebhook?.(payload as never)
+      expect(() => assertNoSentinel(capture, [sentinel])).toThrow(/found in observer payload 0/)
+    }
+  )
+
+  it('finds a planted sentinel beside a reference to the payload itself', () => {
+    // Scenario: the payload contains itself; the search ends and still reaches the string.
+    const loop: Record<string, unknown> = { deep: ['sentinel-planted'] }
+    loop['self'] = loop
+    const capture = createCapture()
+    capture.observer.onWebhook?.(loop as never)
+    expect(() => assertNoSentinel(capture, ['sentinel-planted'])).toThrow(/found in observer/)
+  })
+
+  it('passes payloads of functions, symbols, null and undefined that hold no sentinel', () => {
+    // Scenario: values with no text are walked without failing.
+    const capture = createCapture()
+    capture.observer.onWebhook?.({
+      run: () => 1,
+      tag: Symbol('x'),
+      none: null,
+      nothing: undefined
+    } as never)
+    expect(() => assertNoSentinel(capture, ['sentinel-planted'])).not.toThrow()
+  })
+
   it('detects an identifier when one is planted, so the sweep is not vacuous', () => {
     // Scenario: a sentinel put into a log line and into a payload fails the assertion.
     const inLine = createCapture()

@@ -99,3 +99,67 @@ describe('assertNoSentinel', () => {
     expect(() => assertNoSentinel(capture, ['secret-account'])).not.toThrow()
   })
 })
+
+describe('assertNoSentinel on what JSON would hide', () => {
+  /** A capture whose observer received the payload, whatever its shape. */
+  function receiving(payload: unknown): ReturnType<typeof createCapture> {
+    const capture = createCapture()
+    capture.observer.onWebhook?.(payload as never)
+    return capture
+  }
+
+  const ESCAPED = 'account"1\\2\n3\t4 5'
+
+  it.each([
+    [
+      'a string with a quote, a backslash, a newline, a tab and U+2028',
+      ESCAPED,
+      { source: ESCAPED }
+    ],
+    ['a property name', 'secret-account', { 'secret-account': 1 }],
+    ['a property name with escaped characters', ESCAPED, { [ESCAPED]: 1 }],
+    ['a Map key', 'secret-account', new Map([['secret-account', 1]])],
+    ['a Map value', 'secret-account', new Map([[1, 'secret-account']])],
+    ['a Set member', 'secret-account', new Set(['secret-account'])],
+    ['a BigInt', '12345678901234567890', { count: 12345678901234567890n }],
+    ['a number', '4242', { count: 4242 }],
+    ['a boolean', 'true', { ok: true }],
+    ['three levels of nesting', 'secret-account', { a: { b: { c: ['x-secret-account-y'] } } }],
+    ['a Map nested in an array', 'secret-account', [new Map([[{ k: 'secret-account' }, 1]])]]
+  ])('finds a sentinel held as %s', (_where, sentinel, payload) => {
+    // Scenario: the payload holds the sentinel where serialising to JSON loses or escapes it.
+    expect(() => assertNoSentinel(receiving(payload), [sentinel])).toThrow(
+      'Sentinel 0 was found in observer payload 0 (onWebhook).'
+    )
+  })
+
+  it('terminates on a payload that refers to itself, and passes when it holds no sentinel', () => {
+    // Scenario: a cycle through an object and through a Map.
+    const payload: Record<string, unknown> = { name: 'clean' }
+    payload['self'] = payload
+    payload['map'] = new Map([['k', payload]])
+    expect(() => assertNoSentinel(receiving(payload), ['secret-account'])).not.toThrow()
+  })
+
+  it('finds a sentinel in a payload that refers to itself', () => {
+    // Scenario: the cycle does not stop the search from reaching the string beside it.
+    const payload: Record<string, unknown> = { name: 'secret-account' }
+    payload['self'] = payload
+    expect(() => assertNoSentinel(receiving(payload), ['secret-account'])).toThrow(/found/)
+  })
+
+  it('finds a sentinel that is only in a log line, with clean payloads beside it', () => {
+    // Scenario: the payload is clean; the line is not.
+    const capture = receiving({ outcome: 'processed' })
+    capture.logger.warn('failed for secret-account')
+    expect(() => assertNoSentinel(capture, ['secret-account'])).toThrow(
+      'Sentinel 0 was found in log line 0.'
+    )
+  })
+
+  it('passes a payload of functions, symbols and undefined values that hold no sentinel', () => {
+    // Scenario: values JSON cannot hold are searched without failing.
+    const payload = { run: () => 1, tag: Symbol('x'), nothing: undefined, none: null }
+    expect(() => assertNoSentinel(receiving(payload), ['secret-account'])).not.toThrow()
+  })
+})
