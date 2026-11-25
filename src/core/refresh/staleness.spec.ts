@@ -5,7 +5,7 @@
  */
 import { SUBSCRIPTION_ERROR_CODES, createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
 
-import { ageOf } from './staleness'
+import { ageOf, isStale } from './staleness'
 
 const FETCHED = '2026-01-01T00:00:00.000Z'
 
@@ -42,5 +42,29 @@ describe('ageOf', () => {
     expect(() => ageOf(fetchedAt('yesterday'), new Date(FETCHED))).toThrow(
       expect.objectContaining({ code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT })
     )
+  })
+})
+
+describe('isStale', () => {
+  const MAX = 60_000
+
+  it('is false when the snapshot is younger than the maximum age', () => {
+    // Scenario: one millisecond under the limit.
+    expect(isStale(fetchedAt(FETCHED), new Date('2026-01-01T00:00:59.999Z'), MAX)).toBe(false)
+  })
+
+  it('is false when the snapshot is exactly as old as the maximum age', () => {
+    // Scenario: the boundary; only a snapshot older than the maximum is stale.
+    expect(isStale(fetchedAt(FETCHED), new Date('2026-01-01T00:01:00.000Z'), MAX)).toBe(false)
+  })
+
+  it('is true when the snapshot is one millisecond older than the maximum age', () => {
+    // Scenario: just past the boundary.
+    expect(isStale(fetchedAt(FETCHED), new Date('2026-01-01T00:01:00.001Z'), MAX)).toBe(true)
+  })
+
+  it('is false for a fetch instant ahead of now', () => {
+    // Scenario: a negative raw age counts as zero, so it is never stale, even with a zero limit.
+    expect(isStale(fetchedAt('2026-01-01T00:00:10.000Z'), new Date(FETCHED), 0)).toBe(false)
   })
 })

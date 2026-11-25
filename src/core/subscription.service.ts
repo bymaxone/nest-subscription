@@ -4,7 +4,7 @@
  * waits for the source.
  * @layer core
  */
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import {
   SUBSCRIPTION_CLOCK,
@@ -26,7 +26,7 @@ import {
 
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
-import { ageOf } from './refresh/staleness'
+import { ageOf, isStale } from './refresh/staleness'
 import { toSnapshotView, type AgedSnapshot } from './snapshot-view'
 
 /** Whether a tenant identifier names a tenant. */
@@ -40,6 +40,8 @@ function hasTenant(tenantId: string | undefined): boolean {
  */
 @Injectable()
 export class SubscriptionService {
+  readonly #logger = new Logger(SubscriptionService.name)
+
   constructor(
     @Inject(SUBSCRIPTION_SOURCE) private readonly source: SubscriptionSource,
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
@@ -50,15 +52,20 @@ export class SubscriptionService {
 
   /**
    * The stored snapshot of an account, frozen and carrying its age. An account with nothing stored
-   * reads as an account with no entitlements and no subscriptions. The source is not called.
+   * reads as an account with no entitlements and no subscriptions. The source is not waited for:
+   * a snapshot older than the maximum age is returned as stored and a refresh of it starts in the
+   * background, whose failure is logged and reported to the observer and never reaches the caller.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank account identifier,
    * or for a missing tenant when the host is multi-tenant.
    */
   async getSnapshot(account: AccountReference): Promise<AgedSnapshot> {
     const key = this.#keyOf(account)
-    const stored = (await this.store.getSnapshot(key))?.snapshot ?? this.#emptyFor(account)
-    return this.#view(stored)
+    const stored = (await this.store.getSnapshot(key))?.snapshot
+    const now = this.clock.now()
+    if (stored === undefined) return this.#view(this.#emptyFor(account), now)
+    if (isStale(stored, now, this.options.maxSnapshotAgeMs)) this.#refreshInBackground(account)
+    return this.#view(stored, now)
   }
 
   /**
@@ -83,7 +90,7 @@ export class SubscriptionService {
   async refresh(account: AccountReference): Promise<AgedSnapshot> {
     this.#keyOf(account)
     const { current } = await this.refresher.refresh(account)
-    return this.#view(current)
+    return this.#view(current, this.clock.now())
   }
 
   /** The key of an account, after the tenant rule of this configuration is applied. */
@@ -104,8 +111,27 @@ export class SubscriptionService {
     })
   }
 
-  /** The frozen copy of a snapshot with its age at this instant. */
-  #view(snapshot: SubscriptionSnapshot): AgedSnapshot {
-    return toSnapshotView(snapshot, ageOf(snapshot, this.clock.now()))
+  /** The frozen copy of a snapshot with its age at `now`. */
+  #view(snapshot: SubscriptionSnapshot, now: Date): AgedSnapshot {
+    return toSnapshotView(snapshot, ageOf(snapshot, now))
+  }
+
+  /** Starts a refresh without waiting for it; whatever it ends with is handled here. */
+  #refreshInBackground(account: AccountReference): void {
+    this.refresher.refresh(account).catch((error: unknown) => this.#reportFailure(error))
+  }
+
+  /**
+   * Logs a failed background refresh by its code alone and tells the observer. Neither the account
+   * nor the error's text is passed on, and nothing raised while reporting leaves this method.
+   */
+  #reportFailure(error: unknown): void {
+    const code = error instanceof SubscriptionError ? error.code : null
+    try {
+      this.#logger.warn(`Background refresh of a stale snapshot failed: ${code ?? 'unclassified'}.`)
+      this.options.observer?.onBackgroundRefreshFailure?.({ code })
+    } catch {
+      // A broken logger or observer must not turn a handled failure into an unhandled one.
+    }
   }
 }

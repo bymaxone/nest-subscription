@@ -5,6 +5,7 @@
  * proves when the source is and is not called.
  * @layer core
  */
+import { Logger } from '@nestjs/common'
 import {
   SubscriptionError,
   encodeAccountKey,
@@ -24,6 +25,7 @@ import {
 } from '@bymax-one/nest-subscription/testing'
 
 import { resolveOptions } from './options/resolve-options'
+import type { SubscriptionObserverOption } from './options/subscription-options.types'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
 
@@ -68,22 +70,31 @@ function snapshotOf(account: AccountReference, givesAccess: boolean): Subscripti
   }
 }
 
+/** What a test may change about the service it builds. */
+interface SetupOptions {
+  readonly multiTenant?: boolean
+  readonly maxSnapshotAgeMs?: number
+  readonly observer?: SubscriptionObserverOption
+}
+
 /** The service over a fresh source, store and clock. */
-function setup(multiTenant = false): {
+function setup(extra: SetupOptions = {}): {
   source: FakeSubscriptionSource
   store: InMemorySubscriptionStore
   clock: ManualClock
+  refresher: SnapshotRefresher
   service: SubscriptionService
 } {
   const source = new FakeSubscriptionSource()
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(T0)
-  const options = resolveOptions({ source, store, clock, multiTenant, accountResolver: () => null })
+  const options = resolveOptions({ source, store, clock, accountResolver: () => null, ...extra })
   const refresher = new SnapshotRefresher(source, store, clock)
   return {
     source,
     store,
     clock,
+    refresher,
     service: new SubscriptionService(source, store, clock, options, refresher)
   }
 }
@@ -135,7 +146,7 @@ describe('SubscriptionService reads', () => {
 
   it('carries the tenant on the empty snapshot of an account that has one', async () => {
     // Scenario: a multi-tenant host asks about an unknown account.
-    const { service } = setup(true)
+    const { service } = setup({ multiTenant: true })
     const snapshot = await service.getSnapshot({ tenantId: 't1', accountId: 'acc-1' })
     expect(snapshot.tenantId).toBe('t1')
   })
@@ -214,7 +225,7 @@ describe('SubscriptionService reads', () => {
 
   it('never returns the data of another tenant for the same account identifier', async () => {
     // Scenario: acc-1 exists under tenant one only; tenant two reads an empty snapshot.
-    const { source, service } = setup(true)
+    const { source, service } = setup({ multiTenant: true })
     const one: AccountReference = { tenantId: 'one', accountId: 'acc-1' }
     const two: AccountReference = { tenantId: 'two', accountId: 'acc-1' }
     source.setAccount(one, snapshotOf(one, true))
@@ -226,7 +237,7 @@ describe('SubscriptionService reads', () => {
 
   it('never returns the data of another account when identifiers hold the key delimiter', async () => {
     // Scenario: ("a:b", "c") is stored; ("a", "b:c") reads nothing.
-    const { source, service } = setup(true)
+    const { source, service } = setup({ multiTenant: true })
     const stored: AccountReference = { tenantId: 'a:b', accountId: 'c' }
     const other: AccountReference = { tenantId: 'a', accountId: 'b:c' }
     source.setAccount(stored, snapshotOf(stored, true))
@@ -239,7 +250,7 @@ describe('SubscriptionService reads', () => {
     'refuses %s without a tenant in a multi-tenant configuration, before touching the source',
     async (method) => {
       // Scenario: the host serves several tenants and the caller passes none.
-      const { source, service } = setup(true)
+      const { source, service } = setup({ multiTenant: true })
       const error = await service[method]({ accountId: 'acc-1' }).catch((e: unknown) => e)
       expect(error).toBeInstanceOf(SubscriptionError)
       expect((error as SubscriptionError).code).toBe(SUBSCRIPTION_ERROR_CODES.INVALID_INPUT)
@@ -249,7 +260,7 @@ describe('SubscriptionService reads', () => {
 
   it('refuses hasEntitlement without a tenant, and a blank tenant, in a multi-tenant configuration', async () => {
     // Scenario: no tenant and a blank tenant are both a missing tenant.
-    const { service } = setup(true)
+    const { service } = setup({ multiTenant: true })
     for (const tenantId of [undefined, '', '  ']) {
       const error = await service
         .hasEntitlement({ tenantId, accountId: 'acc-1' }, 'pro')
@@ -260,7 +271,7 @@ describe('SubscriptionService reads', () => {
 
   it('accepts a missing tenant when the host is not multi-tenant', async () => {
     // Scenario: the default configuration serves one tenant and needs none.
-    const { service } = setup(false)
+    const { service } = setup()
     await expect(service.getSnapshot({ accountId: 'acc-1' })).resolves.toMatchObject({
       accountId: 'acc-1'
     })
@@ -272,5 +283,186 @@ describe('SubscriptionService reads', () => {
     const error = await service.getSnapshot({ accountId: ' ' }).catch((e: unknown) => e)
     expect((error as SubscriptionError).code).toBe(SUBSCRIPTION_ERROR_CODES.INVALID_INPUT)
     expect(source.totalReads).toBe(0)
+  })
+})
+
+/** Lets every promise that can settle without outside help settle. */
+async function flush(): Promise<void> {
+  for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
+}
+
+/** Lets one full turn of the event loop pass, which is when Node reports an unhandled rejection. */
+function nextTurn(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve))
+}
+
+describe('SubscriptionService background refresh', () => {
+  const DAY = 24 * 3_600_000
+  let warn: jest.SpyInstance
+
+  // The test runner fails the running test on a rejection nobody handled, which Node reports one
+  // turn of the event loop after it happens; the cases below wait that turn.
+  beforeEach(() => {
+    warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+  })
+
+  /** A service whose account is stored, then aged by `ageMs` and given the stale limit of a day. */
+  async function aged(ageMs: number, extra: SetupOptions = {}): Promise<ReturnType<typeof setup>> {
+    const built = setup({ maxSnapshotAgeMs: DAY, ...extra })
+    built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
+    await built.service.refresh(ACCOUNT)
+    built.clock.advance(ageMs)
+    return built
+  }
+
+  it('returns the stored snapshot at once and starts one background refresh for a stale snapshot', async () => {
+    // Scenario: a snapshot a day and a millisecond old, with the source read held; the read
+    // returns the old data while the refresh is still running, and the refresh then lands.
+    const { source, service } = await aged(DAY + 1)
+    const reads = source.readCount(ACCOUNT)
+    const release = source.delayNextRead()
+    const snapshot = await service.getSnapshot(ACCOUNT)
+    expect(snapshot.ageMs).toBe(DAY + 1)
+    await flush()
+    expect(source.readCount(ACCOUNT)).toBe(reads + 1)
+    release()
+    await flush()
+    expect((await service.getSnapshot(ACCOUNT)).ageMs).toBe(0)
+  })
+
+  it('does not start a refresh for a snapshot exactly as old as the limit', async () => {
+    // Scenario: the boundary; a snapshot as old as the maximum age is still fresh, one
+    // millisecond older is stale.
+    const { source, clock, service } = await aged(DAY)
+    const reads = source.totalReads
+    await service.getSnapshot(ACCOUNT)
+    await flush()
+    expect(source.totalReads).toBe(reads)
+    clock.advance(1)
+    await service.getSnapshot(ACCOUNT)
+    await flush()
+    expect(source.totalReads).toBe(reads + 1)
+  })
+
+  it('starts no refresh for a fresh snapshot or for an account with nothing stored', async () => {
+    // Scenario: neither read leaves the store.
+    const { source, service } = await aged(1000)
+    const reads = source.totalReads
+    await service.getSnapshot(ACCOUNT)
+    await service.hasEntitlement(ACCOUNT, 'pro')
+    await service.getSnapshot({ accountId: 'unknown' })
+    await flush()
+    expect(source.totalReads).toBe(reads)
+  })
+
+  it('starts one source call for many reads of one stale account while the refresh is in flight', async () => {
+    // Scenario: fifty reads, mixed between the two read methods, while the first refresh is held.
+    const { source, service } = await aged(DAY + 1)
+    const reads = source.readCount(ACCOUNT)
+    const release = source.delayNextRead()
+    await Promise.all(
+      Array.from({ length: 50 }, (_, index) =>
+        index % 2 === 0 ? service.getSnapshot(ACCOUNT) : service.hasEntitlement(ACCOUNT, 'pro')
+      )
+    )
+    await flush()
+    release()
+    await flush()
+    expect(source.readCount(ACCOUNT)).toBe(reads + 1)
+  })
+
+  it('does not reject the read, leave a rejection unhandled or change the result when the refresh fails', async () => {
+    // Scenario: the background read fails; the read is already answered, nothing is unhandled and
+    // the stored snapshot is untouched.
+    const { source, service } = await aged(DAY + 1)
+    source.failNextRead(new Error('upstream down for acc-1'))
+    await expect(service.getSnapshot(ACCOUNT)).resolves.toMatchObject({ ageMs: DAY + 1 })
+    await flush()
+    await nextTurn()
+    expect((await service.getSnapshot(ACCOUNT)).ageMs).toBe(DAY + 1)
+  })
+
+  it('logs the failure by its error code only and never names the account', async () => {
+    // Scenario: the background failure is a source failure on account acc-1.
+    const { source, service } = await aged(DAY + 1)
+    source.failNextRead(new Error('upstream down for acc-1'))
+    await service.getSnapshot(ACCOUNT)
+    await flush()
+    expect(warn).toHaveBeenCalledTimes(1)
+    const message = String(warn.mock.calls[0]?.[0])
+    expect(message).toContain(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    expect(message).not.toContain('acc-1')
+  })
+
+  it('tells the observer the error code of a failed background refresh', async () => {
+    // Scenario: an observer with the hook is configured; it receives the code and nothing else.
+    const onBackgroundRefreshFailure = jest.fn()
+    const { source, service } = await aged(DAY + 1, { observer: { onBackgroundRefreshFailure } })
+    source.failNextRead(new Error('down'))
+    await service.getSnapshot(ACCOUNT)
+    await flush()
+    expect(onBackgroundRefreshFailure).toHaveBeenCalledTimes(1)
+    expect(onBackgroundRefreshFailure).toHaveBeenCalledWith({
+      code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    })
+  })
+
+  it('reports a failure that is not a library error with no code and without its text', async () => {
+    // Scenario: the refresher rejects with a plain error, as a failing store would.
+    const onBackgroundRefreshFailure = jest.fn()
+    const { refresher, service } = await aged(DAY + 1, { observer: { onBackgroundRefreshFailure } })
+    jest.spyOn(refresher, 'refresh').mockRejectedValue(new Error('store down'))
+    await service.getSnapshot(ACCOUNT)
+    await flush()
+    expect(onBackgroundRefreshFailure).toHaveBeenCalledWith({ code: null })
+    const message = String(warn.mock.calls[0]?.[0])
+    expect(message).toContain('unclassified')
+    expect(message).not.toContain('store down')
+  })
+
+  it('does not let an observer that throws reject the read or leave a rejection unhandled', async () => {
+    // Scenario: the hook throws while the failure is reported.
+    const throwing = await aged(DAY + 1, {
+      observer: {
+        onBackgroundRefreshFailure: () => {
+          throw new Error('observer broke')
+        }
+      }
+    })
+    throwing.source.failNextRead(new Error('down'))
+    await expect(throwing.service.getSnapshot(ACCOUNT)).resolves.toBeDefined()
+    await flush()
+    await nextTurn()
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports to the log alone when the observer has no hook', async () => {
+    // Scenario: an observer object that handles nothing.
+    const { source, service } = await aged(DAY + 1, { observer: {} })
+    source.failNextRead(new Error('down'))
+    await service.getSnapshot(ACCOUNT)
+    await flush()
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('attaches a rejection handler to the refresh it starts', async () => {
+    // Scenario: the refresher returns a rejected promise; the service has handled it by the time
+    // the read returns, so nothing is left for the runtime to report.
+    const { refresher, service } = await aged(DAY + 1)
+    const failed = Promise.reject(new Error('refresh failed'))
+    const attach = jest.spyOn(failed, 'catch')
+    jest.spyOn(refresher, 'refresh').mockReturnValue(failed)
+    await service.getSnapshot(ACCOUNT)
+    expect(attach).toHaveBeenCalledTimes(1)
+    await flush()
+    await nextTurn()
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not delay the read for the refresh, whatever the refresh does', async () => {
+    // Scenario: the refresher never settles; the read still resolves.
+    const { refresher, service } = await aged(DAY + 1)
+    jest.spyOn(refresher, 'refresh').mockReturnValue(new Promise(() => undefined))
+    await expect(service.getSnapshot(ACCOUNT)).resolves.toMatchObject({ ageMs: DAY + 1 })
   })
 })

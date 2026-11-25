@@ -10,7 +10,11 @@ import type {
   SubscriptionSource,
   SubscriptionStore
 } from '@bymax-one/nest-subscription/internal'
-import type { SubscriptionChange, SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
+import type {
+  SubscriptionChange,
+  SubscriptionErrorCode,
+  SubscriptionSnapshot
+} from '@bymax-one/nest-subscription/shared'
 
 /** What the fail policy does when a snapshot is missing or the store cannot be read. */
 export type SubscriptionFailPolicy = 'refuse' | 'last_known_state'
@@ -59,8 +63,21 @@ export interface SubscriptionCache {
   delete(key: string): Promise<void>
 }
 
-/** The optional observer the host provides to receive counters and timings. */
-export type SubscriptionObserverOption = object
+/** What the observer is told when a background refresh of a stale snapshot fails. */
+export interface BackgroundRefreshFailure {
+  /**
+   * The code of the library error that ended the refresh, or `null` when the refresh ended with
+   * an error that is not the library's, such as one a host's store raised. It never names the
+   * account, and the error's text is not passed on.
+   */
+  readonly code: SubscriptionErrorCode | null
+}
+
+/** The optional observer the host provides to receive counters, timings and failures. */
+export interface SubscriptionObserverOption {
+  /** Called when a refresh started in the background by a read of a stale snapshot fails. */
+  readonly onBackgroundRefreshFailure?: (failure: BackgroundRefreshFailure) => void
+}
 
 /**
  * The options a host passes, with the store as an instance. This is what an asynchronous factory

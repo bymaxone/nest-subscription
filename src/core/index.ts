@@ -49,6 +49,7 @@ export { resolveOptions } from './options/resolve-options'
 export { validateOptions } from './options/validate-options'
 export type {
   AccountResolverOption,
+  BackgroundRefreshFailure,
   ResolvedAccountOption,
   ResolvedSubscriptionOptions,
   SubscriptionCache,

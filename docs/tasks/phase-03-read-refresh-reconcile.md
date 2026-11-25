@@ -1,6 +1,6 @@
 # Phase 3 — Read, refresh and reconcile
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P3 — read-refresh-reconcile
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -40,7 +40,7 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 | --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 3.1 | Implement the refresher with single flight and ordered writes | ✅ Done | P0       | L    | —          |
 | 3.2 | Implement the service reads                                   | ✅ Done | P0       | M    | 3.1        |
-| 3.3 | Refresh a stale snapshot in the background                    | 📋 ToDo | P0       | M    | 3.2        |
+| 3.3 | Refresh a stale snapshot in the background                    | ✅ Done | P0       | M    | 3.2        |
 | 3.4 | Read through the optional cache                               | 📋 ToDo | P1       | M    | 3.2        |
 | 3.5 | Implement reconciliation                                      | 📋 ToDo | P0       | M    | 3.1, 3.2   |
 
@@ -216,7 +216,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 3.3 — Refresh a stale snapshot in the background
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 3.2
@@ -227,11 +227,11 @@ When a read finds a snapshot older than the maximum age, start a refresh without
 
 #### Acceptance criteria
 
-- [ ] A read of a snapshot older than the maximum age returns the stored snapshot and starts exactly one background refresh.
-- [ ] A read of a fresh snapshot starts none; the boundary (age equal to the maximum) is pinned by a test.
-- [ ] A background refresh that fails does not reject the read and does not produce an unhandled rejection; the failure is reported to the log and, when present, to the observer hook point.
-- [ ] Many reads of one stale account while the refresh is in flight start one source call.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A read of a snapshot older than the maximum age returns the stored snapshot and starts exactly one background refresh.
+- [x] A read of a fresh snapshot starts none; the boundary (age equal to the maximum) is pinned by a test.
+- [x] A background refresh that fails does not reject the read and does not produce an unhandled rejection; the failure is reported to the log and, when present, to the observer hook point.
+- [x] Many reads of one stale account while the refresh is in flight start one source call.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -474,5 +474,7 @@ Completion Protocol (after the work is reported done):
 - 3.1 ✅ 2026-11-25 — the refresher with single flight, ordered writes and a source-unavailable failure that leaves the stored snapshot untouched
 
 - 3.2 ✅ 2026-11-25 — the service reads from the store with the age, the on-demand refresh and the tenant in every key
+
+- 3.3 ✅ 2026-11-25 — a stale read returns the stored snapshot at once and refreshes it in the background, with failures logged by code and reported to the observer
 
 <!-- entries are added as tasks complete -->

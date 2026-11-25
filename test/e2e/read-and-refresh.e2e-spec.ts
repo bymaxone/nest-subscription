@@ -4,6 +4,7 @@
  * call counts show when it is read. Time moves only through a manual clock.
  * @layer e2e
  */
+import { Logger } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import type { TestingModule } from '@nestjs/testing'
 import {
@@ -13,7 +14,11 @@ import {
   SubscriptionService,
   encodeAccountKey
 } from '@bymax-one/nest-subscription'
-import type { AccountReference, SubscriptionStore } from '@bymax-one/nest-subscription'
+import type {
+  AccountReference,
+  SubscriptionModuleOptions,
+  SubscriptionStore
+} from '@bymax-one/nest-subscription'
 import { createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
 import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 import {
@@ -58,7 +63,7 @@ function delegating(
 }
 
 /** An application wired to a fake source, an in-memory store and a manual clock. */
-async function boot(): Promise<{
+async function boot(extra: Partial<SubscriptionModuleOptions> = {}): Promise<{
   app: TestingModule
   source: FakeSubscriptionSource
   store: InMemorySubscriptionStore
@@ -68,7 +73,9 @@ async function boot(): Promise<{
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock()
   const app = await Test.createTestingModule({
-    imports: [SubscriptionModule.forRoot({ source, store, clock, accountResolver: () => null })]
+    imports: [
+      SubscriptionModule.forRoot({ source, store, clock, accountResolver: () => null, ...extra })
+    ]
   }).compile()
   return { app, source, store, clock }
 }
@@ -259,6 +266,119 @@ describe('read and refresh: the service in a running application', () => {
       .get(SubscriptionService)
       .getSnapshot({ tenantId: 'acme', accountId: 'acc-1' })
     expect(withTenant.tenantId).toBe('acme')
+    await app.close()
+  })
+})
+
+/** Lets every promise that can settle without outside help settle, then one turn of the loop. */
+async function settle(): Promise<void> {
+  for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
+  await new Promise((resolve) => setImmediate(resolve))
+}
+
+describe('read and refresh: a stale snapshot in a running application', () => {
+  const MAX = 1000
+  let warn: jest.SpyInstance
+
+  beforeEach(() => {
+    warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+  })
+
+  /** A booted application whose account is stored and has aged past the maximum age. */
+  async function stale(extra: Partial<SubscriptionModuleOptions> = {}): ReturnType<typeof boot> {
+    const built = await boot({ maxSnapshotAgeMs: MAX, ...extra })
+    built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
+    await built.app.get(SubscriptionService).refresh(ACCOUNT)
+    built.clock.advance(MAX + 1)
+    return built
+  }
+
+  it('answers a stale read from the store at once and lets the background refresh land', async () => {
+    // Scenario: the refresh is held; the read returns the old snapshot, then the refresh lands.
+    const { app, source } = await stale()
+    const service = app.get(SubscriptionService)
+    const release = source.delayNextRead()
+    expect((await service.getSnapshot(ACCOUNT)).ageMs).toBe(MAX + 1)
+    await settle()
+    expect(source.readCount(ACCOUNT)).toBe(2)
+    release()
+    await settle()
+    expect((await service.getSnapshot(ACCOUNT)).ageMs).toBe(0)
+    await app.close()
+  })
+
+  it('logs a failed background refresh by code and tells the observer, leaving the read answered', async () => {
+    // Scenario: the source fails during the background refresh of a stale snapshot.
+    const onBackgroundRefreshFailure = jest.fn()
+    const { app, source } = await stale({ observer: { onBackgroundRefreshFailure } })
+    source.failNextRead(new Error('down'))
+    await expect(app.get(SubscriptionService).getSnapshot(ACCOUNT)).resolves.toBeDefined()
+    await settle()
+    expect(onBackgroundRefreshFailure).toHaveBeenCalledWith({
+      code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    })
+    expect(String(warn.mock.calls[0]?.[0])).toContain(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    await app.close()
+  })
+
+  it('logs a failed background refresh when the observer has no hook and when there is none', async () => {
+    // Scenario: one application with an observer that handles nothing, one with no observer.
+    for (const extra of [{ observer: {} }, {}]) {
+      const { app, source } = await stale(extra)
+      source.failNextRead(new Error('down'))
+      await app.get(SubscriptionService).getSnapshot(ACCOUNT)
+      await settle()
+      await app.close()
+    }
+    expect(warn).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports a store failure during the refresh with no code', async () => {
+    // Scenario: the store serves the stale read, then fails on the refresh's own read of it.
+    const failure = new Error('store down')
+    const onBackgroundRefreshFailure = jest.fn()
+    const memory = new InMemorySubscriptionStore({ logger: () => undefined })
+    let passes = Infinity
+    const store = delegating(memory, {
+      getSnapshot: (key) => (passes-- > 0 ? memory.getSnapshot(key) : Promise.reject(failure))
+    })
+    const source = new FakeSubscriptionSource()
+    const clock = new ManualClock()
+    const app = await Test.createTestingModule({
+      imports: [
+        SubscriptionModule.forRoot({
+          source,
+          store,
+          clock,
+          maxSnapshotAgeMs: MAX,
+          observer: { onBackgroundRefreshFailure },
+          accountResolver: () => null
+        })
+      ]
+    }).compile()
+    const service = app.get(SubscriptionService)
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
+    await service.refresh(ACCOUNT)
+    clock.advance(MAX + 1)
+    passes = 1
+    await service.getSnapshot(ACCOUNT)
+    await settle()
+    expect(onBackgroundRefreshFailure).toHaveBeenCalledWith({ code: null })
+    await app.close()
+  })
+
+  it('keeps answering when the observer throws', async () => {
+    // Scenario: the hook throws while the failure is reported; the read was already answered.
+    const { app, source } = await stale({
+      observer: {
+        onBackgroundRefreshFailure: () => {
+          throw new Error('observer broke')
+        }
+      }
+    })
+    source.failNextRead(new Error('down'))
+    await expect(app.get(SubscriptionService).getSnapshot(ACCOUNT)).resolves.toBeDefined()
+    await settle()
     await app.close()
   })
 })

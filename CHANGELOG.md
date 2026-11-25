@@ -59,6 +59,12 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   snapshot the source reports as older than the stored one is never written. A multi-tenant
   configuration refuses a call without a tenant.
 
+- A read of a snapshot older than `maxSnapshotAgeMs` returns the stored snapshot and starts a
+  refresh in the background. The refresh never delays or rejects the read: a failure is logged by
+  its error code alone and passed to the observer's `onBackgroundRefreshFailure` hook. The option
+  type `SubscriptionObserverOption` gains that optional hook and `BackgroundRefreshFailure` is
+  exported from the root.
+
 ### Changed
 
 - The store conformance case for stale-key paging asserts what the store port promises: at most
