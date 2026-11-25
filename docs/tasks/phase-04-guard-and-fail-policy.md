@@ -16,7 +16,7 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 
 ## Rules-of-phase
 
-1. The guard reads the entitlement's active flag, which comes from the source's "gives access" flag. It never reads a status name to decide.
+1. The guard reads the entitlement's active flag, which comes from the source's "gives access" flag, and its access-until instant: it allows only while the flag is true and the instant is null or later than now by the injected clock (D36). It never reads a status name to decide.
 2. The account and the tenant come from the host's resolver only: never from a request body, a query string or a header the guard reads itself.
 3. Refusal is the default in every unhandled case: an unexpected error inside the guard denies.
 4. A refusal carries a stable error code and no detail about any account.

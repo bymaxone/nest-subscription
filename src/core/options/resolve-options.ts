@@ -6,6 +6,7 @@
  */
 import {
   DEFAULT_ALLOW_SANDBOX,
+  DEFAULT_CACHE_TTL_MS,
   DEFAULT_FAIL_POLICY,
   DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS,
   DEFAULT_MAX_SNAPSHOT_AGE_MS,
@@ -46,6 +47,7 @@ function build(input: SubscriptionOptionsInput): ResolvedSubscriptionOptions {
     lastKnownStateToleranceMs:
       input.lastKnownStateToleranceMs ?? DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS,
     maxSnapshotAgeMs: input.maxSnapshotAgeMs ?? DEFAULT_MAX_SNAPSHOT_AGE_MS,
+    cacheTtlMs: input.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS,
     allowSandbox: input.allowSandbox ?? DEFAULT_ALLOW_SANDBOX,
     confirmSandboxInProduction: input.confirmSandboxInProduction ?? false,
     isProduction: input.isProduction ?? false,

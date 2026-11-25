@@ -6,7 +6,7 @@
  * @layer core
  */
 import { Module } from '@nestjs/common'
-import type { DynamicModule, FactoryProvider, InjectionToken } from '@nestjs/common'
+import type { DynamicModule, FactoryProvider, InjectionToken, Type } from '@nestjs/common'
 
 import {
   SUBSCRIPTION_CACHE,
@@ -19,12 +19,17 @@ import {
 } from '@bymax-one/nest-subscription/internal'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
+import { SnapshotCache } from './cache/snapshot-cache'
 import { resolveOptions } from './options/resolve-options'
 import type {
   ResolvedSubscriptionOptions,
   SubscriptionModuleAsyncOptions,
+  SubscriptionCache,
   SubscriptionModuleOptions
 } from './options/subscription-options.types'
+import { Reconciler } from './reconciliation/reconciler'
+import { SnapshotRefresher } from './refresh/snapshot-refresher'
+import { SubscriptionService } from './subscription.service'
 
 /** The path `forRootAsync` names when its factory rejects; the factory's own error is dropped. */
 const FACTORY_PATH = 'useFactory'
@@ -68,7 +73,32 @@ async function runFactory(
   }
 }
 
-/** Puts the pieces together as a dynamic module; every provider it lists is exported. */
+/**
+ * The classes the library provides for itself. They are built from the tokens above, so they
+ * follow whichever configuration the host chose.
+ */
+const OWN_CLASSES: readonly Type[] = [SnapshotRefresher, Reconciler, SubscriptionService]
+
+/**
+ * The snapshot cache: built over the host's cache when there is one, and `null` when there is not,
+ * so the read path carries no cache code for a host that configured none.
+ */
+const SNAPSHOT_CACHE_PROVIDER: FactoryProvider = {
+  provide: SnapshotCache,
+  useFactory: (
+    cache: SubscriptionCache | null | undefined,
+    options: ResolvedSubscriptionOptions
+  ): SnapshotCache | null => {
+    const host = cache ?? null
+    return host === null ? null : new SnapshotCache(host, options.cacheTtlMs, options.clock)
+  },
+  inject: [{ token: SUBSCRIPTION_CACHE, optional: true }, SUBSCRIPTION_OPTIONS]
+}
+
+/**
+ * Puts the pieces together as a dynamic module; every token provider it lists is exported, and
+ * so is the service. The refresher is provided for the library's own use and is not exported.
+ */
 function assemble(
   global: boolean | undefined,
   imports: DynamicModule['imports'],
@@ -78,8 +108,8 @@ function assemble(
     module: SubscriptionModule,
     global: global ?? false,
     imports: imports ?? [],
-    providers,
-    exports: providers.map((provider) => provider.provide)
+    providers: [...providers, SNAPSHOT_CACHE_PROVIDER, ...OWN_CLASSES],
+    exports: [...providers.map((provider) => provider.provide), SubscriptionService]
   }
 }
 

@@ -448,6 +448,20 @@ const listingDefects: Readonly<Record<string, () => SubscriptionStore>> = {
         skippingAKeyPerPage((l, c) => base.listStaleKeys(olderThan, l, c))(limit, cursor)
     })
   },
+  staleListingUsesAnOffsetCursor: () => {
+    const base = good()
+    return withDefect(base, {
+      listStaleKeys: async (olderThan, limit, cursor): Promise<KeyPage> => {
+        const all = (await base.listStaleKeys(olderThan, UNBOUNDED, null)).keys
+        const offset = Number(cursor)
+        const end = offset + limit
+        return {
+          keys: all.slice(offset, end),
+          nextCursor: end < all.length ? String(end) : null
+        }
+      }
+    })
+  },
   staleListingIgnoresTheThreshold: () => {
     const base = good()
     return withDefect(base, {
@@ -474,7 +488,8 @@ const listingDefects: Readonly<Record<string, () => SubscriptionStore>> = {
 
 /**
  * Stores that differ from the in-memory store in ways the port allows, so the conformance suite
- * must pass them: the keys of a page come back in any order.
+ * must pass them: the keys of a page come back in any order, and a page may hold fewer keys than
+ * the limit while more remain.
  */
 export const VALID_VARIANTS: Readonly<Record<string, () => SubscriptionStore>> = {
   reversesTheKeysOfEachPage: () => {
@@ -488,6 +503,16 @@ export const VALID_VARIANTS: Readonly<Record<string, () => SubscriptionStore>> =
         reversed(await base.listStaleKeys(olderThan, limit, cursor)),
       listKeysWithPendingChanges: async (limit, cursor) =>
         reversed(await base.listKeysWithPendingChanges(limit, cursor))
+    })
+  },
+  pagesOneKeyShort: () => {
+    const base = good()
+    const shorter = (limit: number): number => Math.max(1, limit - 1)
+    return withDefect(base, {
+      listStaleKeys: (olderThan, limit, cursor) =>
+        base.listStaleKeys(olderThan, shorter(limit), cursor),
+      listKeysWithPendingChanges: (limit, cursor) =>
+        base.listKeysWithPendingChanges(shorter(limit), cursor)
     })
   }
 }

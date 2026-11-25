@@ -20,7 +20,13 @@ import {
 } from '@bymax-one/nest-subscription/testing'
 
 import type { SubscriptionOptionsInput } from './options/subscription-options.types'
+import { createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
+import { resolveOptions } from './options/resolve-options'
+import { SnapshotCache } from './cache/snapshot-cache'
+import { Reconciler } from './reconciliation/reconciler'
+import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionModule } from './subscription.module'
+import { SubscriptionService } from './subscription.service'
 
 const SENTINEL = 'sentinel-secret-0b8e6d14'
 const STORE_TOKEN = Symbol('HOST_STORE')
@@ -33,8 +39,16 @@ function input(): SubscriptionOptionsInput {
   }
 }
 
+/** The token providers of a module; the library's own classes are listed apart. */
 function providersOf(module: { providers?: unknown }): FactoryProvider[] {
-  return Array.isArray(module.providers) ? (module.providers as FactoryProvider[]) : []
+  const all: unknown[] = Array.isArray(module.providers) ? module.providers : []
+  return all.filter(
+    (candidate): candidate is FactoryProvider =>
+      typeof candidate === 'object' &&
+      candidate !== null &&
+      'provide' in candidate &&
+      typeof candidate.provide === 'symbol'
+  )
 }
 
 function provider(module: { providers?: unknown }, token: symbol): FactoryProvider {
@@ -57,9 +71,62 @@ describe('SubscriptionModule.forRoot', () => {
       SUBSCRIPTION_OPTIONS,
       SUBSCRIPTION_SOURCE,
       SUBSCRIPTION_STORE,
-      SUBSCRIPTION_CLOCK
+      SUBSCRIPTION_CLOCK,
+      SubscriptionService
     ])
     expect(module.module).toBe(SubscriptionModule)
+  })
+
+  it('provides the refresher, the reconciler and the service as classes and exports the service only', () => {
+    // Scenario: both classes are providers of the module; a host injects the service, and the
+    // refresher stays inside the module.
+    const module = SubscriptionModule.forRoot(input())
+    expect(module.providers).toContain(SnapshotRefresher)
+    expect(module.providers).toContain(SubscriptionService)
+    expect(module.providers).toContain(Reconciler)
+    expect(module.exports).not.toContain(Reconciler)
+    expect(module.exports).toContain(SubscriptionService)
+    expect(module.exports).not.toContain(SnapshotRefresher)
+  })
+
+  it('builds the snapshot cache over the host cache, and as null when there is none', () => {
+    // Scenario: the provider's factory is run with a cache, with null and with nothing.
+    const module = SubscriptionModule.forRoot(input())
+    const found = (module.providers ?? []).find(
+      (candidate) =>
+        typeof candidate === 'object' &&
+        'provide' in candidate &&
+        candidate.provide === SnapshotCache
+    ) as FactoryProvider
+    expect(found.inject).toEqual([
+      { token: SUBSCRIPTION_CACHE, optional: true },
+      SUBSCRIPTION_OPTIONS
+    ])
+    const host = { get: jest.fn(), set: jest.fn(), delete: jest.fn() }
+    const resolved = resolveOptions({ ...input(), cacheTtlMs: 4321 })
+    expect(found.useFactory(host, resolved)).toBeInstanceOf(SnapshotCache)
+    expect(found.useFactory(null, resolved)).toBeNull()
+    expect(found.useFactory(undefined, resolved)).toBeNull()
+  })
+
+  it('gives the snapshot cache the lifetime the host set', async () => {
+    // Scenario: the entry the cache writes carries the configured lifetime to the host's cache.
+    const module = SubscriptionModule.forRoot(input())
+    const found = (module.providers ?? []).find(
+      (candidate) =>
+        typeof candidate === 'object' &&
+        'provide' in candidate &&
+        candidate.provide === SnapshotCache
+    ) as FactoryProvider
+    const set = jest.fn(() => Promise.resolve())
+    const host = { get: () => Promise.resolve(null), set, delete: jest.fn() }
+    const cache = found.useFactory(host, resolveOptions({ ...input(), cacheTtlMs: 4321 }))
+    await cache.read({ accountId: 'a' }, () =>
+      Promise.resolve(
+        createEmptySnapshot({ accountId: 'a', source: 's', fetchedAt: '2026-01-01T00:00:00.000Z' })
+      )
+    )
+    expect(set).toHaveBeenCalledWith(expect.any(String), expect.any(String), 4321)
   })
 
   it('provides the cache and the observer only when they are configured', () => {
@@ -204,7 +271,7 @@ describe('SubscriptionModule.forRootAsync', () => {
       SUBSCRIPTION_CACHE,
       SUBSCRIPTION_OBSERVER
     ])
-    expect(module.exports).toHaveLength(6)
+    expect(module.exports).toHaveLength(7)
   })
 
   it('hands the injected values to the factory and resolves what it returns', async () => {

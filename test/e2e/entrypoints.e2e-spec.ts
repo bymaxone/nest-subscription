@@ -46,12 +46,14 @@ describe('entry points', () => {
         'Secret',
         'SubscriptionError',
         'SubscriptionModule',
+        'SubscriptionService',
+        'decodeAccountKey',
         'encodeAccountKey',
         'resolveOptions',
         'validateOptions'
       ].sort()
     )
-    expect(Object.values(core)).toHaveLength(14)
+    expect(Object.values(core)).toHaveLength(16)
     expect(Object.keys(internal).sort()).toEqual(
       [
         'SUBSCRIPTION_CACHE',
@@ -63,10 +65,11 @@ describe('entry points', () => {
         'SECRET_PLACEHOLDER',
         'Secret',
         'SubscriptionError',
+        'decodeAccountKey',
         'encodeAccountKey'
       ].sort()
     )
-    expect(Object.values(internal)).toHaveLength(10)
+    expect(Object.values(internal)).toHaveLength(11)
     expect(core.SubscriptionError).toBe(shared.SubscriptionError)
     expect(internal.SubscriptionError).toBe(shared.SubscriptionError)
   })
@@ -79,13 +82,14 @@ describe('entry points', () => {
   })
 
   it('exposes exactly the names of the testing subpath', () => {
-    // Scenario: the store and the conformance cases are the only names it holds so far.
+    // Scenario: the store, the fake source, the manual clock and the conformance cases.
     expect(Object.keys(testing).sort()).toEqual([
       'FakeSubscriptionSource',
       'InMemorySubscriptionStore',
+      'ManualClock',
       'storeConformanceCases'
     ])
-    expect(Object.values(testing)).toHaveLength(3)
+    expect(Object.values(testing)).toHaveLength(4)
   })
 
   it('raises one error class whichever entry point it is reached from', () => {

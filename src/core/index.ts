@@ -12,6 +12,7 @@ export {
   SUBSCRIPTION_STORE,
   Secret,
   SubscriptionError,
+  decodeAccountKey,
   encodeAccountKey
 } from '@bymax-one/nest-subscription/internal'
 export type {
@@ -49,6 +50,7 @@ export { resolveOptions } from './options/resolve-options'
 export { validateOptions } from './options/validate-options'
 export type {
   AccountResolverOption,
+  BackgroundRefreshFailure,
   ResolvedAccountOption,
   ResolvedSubscriptionOptions,
   SubscriptionCache,
@@ -61,3 +63,7 @@ export type {
   SubscriptionOptionsInput
 } from './options/subscription-options.types'
 export { SubscriptionModule } from './subscription.module'
+export { SubscriptionService } from './subscription.service'
+export type { AgedSnapshot } from './snapshot-view'
+export type { ReconcileOptions, ReconcileResult } from './reconciliation/reconciler'
+export type { Wait } from './reconciliation/rate-limiter'

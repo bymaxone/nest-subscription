@@ -62,6 +62,10 @@ function isSource(value: unknown): boolean {
   )
 }
 
+function isPositiveSafeInteger(value: unknown): boolean {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+}
+
 function isPositiveDuration(value: unknown): boolean {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
@@ -99,6 +103,7 @@ const RULES: readonly Rule[] = [
   optional('failPolicy', (value) => FAIL_POLICIES.includes(value)),
   optional('lastKnownStateToleranceMs', isPositiveDuration),
   optional('maxSnapshotAgeMs', isPositiveDuration),
+  optional('cacheTtlMs', isPositiveSafeInteger),
   optional('eventRetentionMs', isPositiveDuration),
   optional('allowSandbox', isBoolean),
   optional('confirmSandboxInProduction', isBoolean),

@@ -47,3 +47,53 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   validated once at boot; the module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`,
   `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and, with `forRoot`, `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER`
   when configured. No optional peer is loaded at run time.
+- `ManualClock` in the `testing` subpath: a `Clock` a test moves by hand, so no test of staleness,
+  ordering or a rate limit waits on a timer.
+
+- `SubscriptionService` and `AgedSnapshot`, exported from the root and provided by the module.
+  `getSnapshot` and `hasEntitlement` answer from the store and never wait for the source; an account
+  with nothing stored reads as an empty snapshot and `false`. `refresh` reads the source now and
+  returns the stored snapshot, and concurrent refreshes of one account share one source call. A
+  snapshot comes back frozen and carries its age in milliseconds. A source failure on refresh
+  rejects with `SUBSCRIPTION_SOURCE_UNAVAILABLE` and leaves the stored snapshot untouched, and a
+  snapshot the source reports as older than the stored one is never written. A multi-tenant
+  configuration refuses a call without a tenant.
+  An entitlement counts as held only while its active flag is true and its `until` is `null` or
+  later than now by the injected clock. A cached or stored snapshot is used only when it names the account and tenant asked for and
+  every field has the type the model gives it; otherwise it counts as absent.
+
+- A read of a snapshot older than `maxSnapshotAgeMs` returns the stored snapshot and starts a
+  refresh in the background. The refresh never delays or rejects the read: a failure is logged by
+  its error code alone and passed to the observer's `onBackgroundRefreshFailure` hook, which may
+  return a promise that is not waited for. The option
+  type `SubscriptionObserverOption` gains that optional hook and `BackgroundRefreshFailure` is
+  exported from the root.
+
+- The optional cache option is used: when the host passes a `cache`, `getSnapshot` and
+  `hasEntitlement` read through it in front of the store for `cacheTtlMs` milliseconds (default
+  30 000; a positive safe integer, refused otherwise), and every write
+  of a snapshot invalidates the account's entry before the write is answered. Entries are keyed
+  with the fixed prefix `subscription:snapshot:` and the account key, hold only snapshots the store
+  returned, and a cache that throws or returns something that is not a snapshot is treated as a
+  miss, so it never fails a read or a write. A cache write is not waited for; one in flight at an invalidation removes its own entry, and reads go to the store meanwhile and after a failed delete until the entry expires.
+
+- `SubscriptionService.reconcile(options)`, with `ReconcileOptions`, `ReconcileResult` and `Wait`
+  exported from the root. A run refreshes the accounts whose snapshot is older than a threshold, up
+  to a batch bound and under a rate measured on the injected clock, and returns `refreshed`,
+  `failed` and a `cursor` to go on after the last account it attempted; the cursor is `null` only
+  when the listing is exhausted. A run lists no more pages than its batch and rate need, so store
+  work does not grow with the backlog, and it reports no count of what is left. One account's
+  failure does not end the run. The library starts no timer: a run waits only through the `wait`
+  function it is given and otherwise ends when its rate is spent.
+- `decodeAccountKey`, exported from the root: reads a key written by `encodeAccountKey` back into
+  its account reference, and returns `null` for any other text.
+
+### Changed
+
+- The store conformance case for stale-key paging asserts what the store port promises: at most
+  `limit` keys per page, each key once, none skipped, and a listing that ends. A store that returns
+  smaller pages than the limit now passes; a store that returns more, repeats or skips a key still
+  fails.
+- The store port states that a `listStaleKeys` cursor stays valid when keys listed before it stop
+  qualifying, so a caller may refresh the keys of a page before it asks for the next. The
+  conformance suite gains a case for it, and a store that pages by offset now fails that case.

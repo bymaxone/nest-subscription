@@ -15,6 +15,9 @@ export const DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS = 24 * HOUR_MS
 /** The age after which a snapshot is refreshed on its next read: 24 hours (D12, FR25). */
 export const DEFAULT_MAX_SNAPSHOT_AGE_MS = 24 * HOUR_MS
 
+/** How long an entry of the snapshot cache lives when none is set: 30 seconds (D34, FR23). */
+export const DEFAULT_CACHE_TTL_MS = 30_000
+
 /** Whether sandbox purchases grant access when none is set: they do not (SEC07, FR13). */
 export const DEFAULT_ALLOW_SANDBOX = false
 

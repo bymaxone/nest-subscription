@@ -412,10 +412,35 @@ const staleCases: readonly StoreConformanceCase[] = [
       const store = await createStore()
       for (const letter of LETTERS) await seed(store, letter, T1, [])
       const first = await store.listStaleKeys(T5, 3, null)
-      assert.equal(first.keys.length, 3)
       assert.notEqual(first.nextCursor, null)
       const keys = await collect((cursor) => store.listStaleKeys(T5, 3, cursor), 3)
       assert.deepEqual(keys, LETTER_KEYS)
+    }
+  },
+  {
+    name: 'keeps listing every remaining stale key when the keys already listed stop being stale',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      for (const letter of LETTERS) await seed(store, letter, T1, [])
+      const first = await store.listStaleKeys(T5, 3, null)
+      for (const key of first.keys) {
+        const letter = LETTERS.find((candidate) => keyOf(candidate) === key)
+        assert.ok(letter !== undefined)
+        await seed(store, letter, T9, [])
+      }
+      const rest: string[] = []
+      let cursor = first.nextCursor
+      for (const _page of PAGE_BUDGET) {
+        if (cursor === null) break
+        const page = await store.listStaleKeys(T5, 3, cursor)
+        rest.push(...page.keys)
+        cursor = page.nextCursor
+      }
+      assert.equal(cursor, null, NEVER_ENDS)
+      assert.deepEqual(
+        rest.sort(),
+        LETTER_KEYS.filter((key) => !first.keys.includes(key))
+      )
     }
   },
   {

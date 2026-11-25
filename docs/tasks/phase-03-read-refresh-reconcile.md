@@ -1,6 +1,6 @@
 # Phase 3 — Read, refresh and reconcile
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P3 — read-refresh-reconcile
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -38,11 +38,11 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 
 | ID  | Task                                                          | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 3.1 | Implement the refresher with single flight and ordered writes | 📋 ToDo | P0       | L    | —          |
-| 3.2 | Implement the service reads                                   | 📋 ToDo | P0       | M    | 3.1        |
-| 3.3 | Refresh a stale snapshot in the background                    | 📋 ToDo | P0       | M    | 3.2        |
-| 3.4 | Read through the optional cache                               | 📋 ToDo | P1       | M    | 3.2        |
-| 3.5 | Implement reconciliation                                      | 📋 ToDo | P0       | M    | 3.1, 3.2   |
+| 3.1 | Implement the refresher with single flight and ordered writes | ✅ Done | P0       | L    | —          |
+| 3.2 | Implement the service reads                                   | ✅ Done | P0       | M    | 3.1        |
+| 3.3 | Refresh a stale snapshot in the background                    | ✅ Done | P0       | M    | 3.2        |
+| 3.4 | Read through the optional cache                               | ✅ Done | P1       | M    | 3.2        |
+| 3.5 | Implement reconciliation                                      | ✅ Done | P0       | M    | 3.1, 3.2   |
 
 ---
 
@@ -50,7 +50,7 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 
 ### Task 3.1 — Implement the refresher with single flight and ordered writes
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: —
@@ -61,12 +61,12 @@ Write the one component that reads an account from the source and stores the res
 
 #### Acceptance criteria
 
-- [ ] One hundred concurrent refreshes of one account produce exactly one `readAccount` call on the fake source, and all hundred callers get the same snapshot.
-- [ ] Refreshes of different accounts, and of the same account identifier under different tenants, do not wait for each other.
-- [ ] A snapshot whose source-updated-at is older than the stored one is not written, under sequential calls and when two reads resolve in the opposite order to their start.
-- [ ] A failed read rejects every waiting caller with the "source unavailable" code, leaves the stored snapshot untouched, and the next refresh calls the source again.
-- [ ] The refresher returns the previous and the new snapshot and whether a write happened, for the notification phase to consume.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] One hundred concurrent refreshes of one account produce exactly one `readAccount` call on the fake source, and all hundred callers get the same snapshot.
+- [x] Refreshes of different accounts, and of the same account identifier under different tenants, do not wait for each other.
+- [x] A snapshot whose source-updated-at is older than the stored one is not written, under sequential calls and when two reads resolve in the opposite order to their start.
+- [x] A failed read rejects every waiting caller with the "source unavailable" code, leaves the stored snapshot untouched, and the next refresh calls the source again.
+- [x] The refresher returns the previous and the new snapshot and whether a write happened, for the notification phase to consume.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -134,7 +134,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 3.2 — Implement the service reads
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 3.1
@@ -145,12 +145,12 @@ Write `SubscriptionService` with its two reads and the on-demand refresh, answer
 
 #### Acceptance criteria
 
-- [ ] On a fresh snapshot `getSnapshot(account)` and `hasEntitlement(account, name)` make zero source calls, asserted with the fake source's read counter, and neither ever waits for a source call.
-- [ ] An account with no stored snapshot yields the empty snapshot and `false`, not an error.
-- [ ] `hasEntitlement` answers from the entitlement's active flag, which comes from the source's access flag, and is `false` for an entitlement the account lacks.
-- [ ] `refresh(account)` delegates to `SnapshotRefresher` and returns the stored snapshot.
-- [ ] Reading account A never returns data of account B, across tenants and when identifiers contain the key delimiter.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] On a fresh snapshot `getSnapshot(account)` and `hasEntitlement(account, name)` make zero source calls, asserted with the fake source's read counter, and neither ever waits for a source call.
+- [x] An account with no stored snapshot yields the empty snapshot and `false`, not an error.
+- [x] `hasEntitlement` answers from the entitlement's active flag, which comes from the source's access flag, and is `false` for an entitlement the account lacks.
+- [x] `refresh(account)` delegates to `SnapshotRefresher` and returns the stored snapshot.
+- [x] Reading account A never returns data of account B, across tenants and when identifiers contain the key delimiter.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -216,7 +216,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 3.3 — Refresh a stale snapshot in the background
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 3.2
@@ -227,11 +227,11 @@ When a read finds a snapshot older than the maximum age, start a refresh without
 
 #### Acceptance criteria
 
-- [ ] A read of a snapshot older than the maximum age returns the stored snapshot and starts exactly one background refresh.
-- [ ] A read of a fresh snapshot starts none; the boundary (age equal to the maximum) is pinned by a test.
-- [ ] A background refresh that fails does not reject the read and does not produce an unhandled rejection; the failure is reported to the log and, when present, to the observer hook point.
-- [ ] Many reads of one stale account while the refresh is in flight start one source call.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A read of a snapshot older than the maximum age returns the stored snapshot and starts exactly one background refresh.
+- [x] A read of a fresh snapshot starts none; the boundary (age equal to the maximum) is pinned by a test.
+- [x] A background refresh that fails does not reject the read and does not produce an unhandled rejection; the failure is reported to the log and, when present, to the observer hook point.
+- [x] Many reads of one stale account while the refresh is in flight start one source call.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -299,7 +299,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 3.4 — Read through the optional cache
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: M
 - **Depends on**: 3.2
@@ -310,12 +310,12 @@ When the host provides a cache, read through it in front of the store with a sho
 
 #### Acceptance criteria
 
-- [ ] With a cache configured, a second read of the same account does not reach the store.
-- [ ] After any write of that account's snapshot, the next read returns the new value.
-- [ ] A cache that throws on `get`, `set` or `delete` degrades to the store and never fails a read or a write.
-- [ ] With no cache configured, every test of the phase still passes and no cache code runs on the read path.
-- [ ] Cache keys go through `encodeAccountKey` with a fixed prefix, and two tenants never share an entry.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] With a cache configured, a second read of the same account does not reach the store.
+- [x] After any write of that account's snapshot, the next read returns the new value.
+- [x] A cache that throws on `get`, `set` or `delete` degrades to the store and never fails a read or a write.
+- [x] With no cache configured, every test of the phase still passes and no cache code runs on the read path.
+- [x] Cache keys go through `encodeAccountKey` with a fixed prefix, and two tenants never share an entry.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -383,7 +383,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 3.5 — Implement reconciliation
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 3.1, 3.2
@@ -394,12 +394,12 @@ Expose a method that refreshes the accounts whose snapshot is older than a thres
 
 #### Acceptance criteria
 
-- [ ] A run refreshes only accounts older than the threshold, and stops at the configured batch bound.
-- [ ] The number of source calls in any window never exceeds the configured rate, asserted with a controllable clock.
-- [ ] One account's failure does not stop the run; the result reports refreshed, failed and remaining counts and a cursor to continue.
-- [ ] A run makes no change for an account whose refresh returns an older or identical state.
-- [ ] The library starts no timer and no scheduler of its own.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A run refreshes only accounts older than the threshold, and stops at the configured batch bound.
+- [x] The number of source calls in any window never exceeds the configured rate, asserted with a controllable clock.
+- [x] One account's failure does not stop the run; the result reports refreshed and failed counts and a cursor that tells the host where to continue.
+- [x] A run makes no change for an account whose refresh returns an older or identical state.
+- [x] The library starts no timer and no scheduler of its own.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -436,7 +436,7 @@ DELIVERABLES
 
 1. `rate-limiter.ts`: a limiter driven by the injected `Clock` and an injectable wait function, so tests advance time by hand.
 
-2. `reconciler.ts`: pages through `listStaleKeys`, refreshes each account through `SnapshotRefresher`, respects the batch bound and the rate, and returns `{ refreshed, failed, remaining, cursor }`.
+2. `reconciler.ts`: pages through `listStaleKeys`, refreshes each account through `SnapshotRefresher`, respects the batch bound and the rate, and returns `{ refreshed, failed, cursor }`.
 
 3. The stale listing returns keys; the reconciler needs the account reference back. If the key cannot be decoded, extend the store port to return the account reference with each key, update the conformance suite and the in-memory store in this task, and record the change in `docs/tasks/README.md`.
 
@@ -470,5 +470,15 @@ Completion Protocol (after the work is reported done):
 ## Completion log
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
+
+- 3.1 ✅ 2026-11-25 — the refresher with single flight, ordered writes and a source-unavailable failure that leaves the stored snapshot untouched
+
+- 3.2 ✅ 2026-11-25 — the service reads from the store with the age, the on-demand refresh and the tenant in every key
+
+- 3.3 ✅ 2026-11-25 — a stale read returns the stored snapshot at once and refreshes it in the background, with failures logged by code and reported to the observer
+
+- 3.4 ✅ 2026-11-25 — the optional read-through cache with invalidation on every write and containment of every cache failure
+
+- 3.5 ✅ 2026-11-25 — reconciliation in bounded, rate-limited batches with a cursor, driven by the injected clock and the host's wait function
 
 <!-- entries are added as tasks complete -->

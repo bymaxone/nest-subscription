@@ -76,6 +76,7 @@ const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 const TESTING_EXPORTS = [
   'FakeSubscriptionSource',
   'InMemorySubscriptionStore',
+  'ManualClock',
   'storeConformanceCases'
 ]
 
@@ -92,6 +93,8 @@ const ROOT_EXPORTS = [
   'Secret',
   'SubscriptionError',
   'SubscriptionModule',
+  'SubscriptionService',
+  'decodeAccountKey',
   'encodeAccountKey',
   'resolveOptions',
   'validateOptions'

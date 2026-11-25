@@ -6,8 +6,16 @@
  */
 import { inspect } from 'node:util'
 
-import { Secret, SubscriptionError, resolveOptions } from '@bymax-one/nest-subscription'
+import { Test } from '@nestjs/testing'
+import {
+  Secret,
+  SubscriptionError,
+  SubscriptionModule,
+  SubscriptionService,
+  resolveOptions
+} from '@bymax-one/nest-subscription'
 import { InMemorySubscriptionStore } from '@bymax-one/nest-subscription/testing'
+import { SnapshotRefresher } from '../../src/core/refresh/snapshot-refresher'
 import { credentialedSource } from './fixtures/credentialed-source'
 import {
   expectNoSentinel,
@@ -32,6 +40,27 @@ describe('secret containment', () => {
     expectNoSentinel(outputsOf(resolved))
     expect(JSON.stringify(resolved)).toContain('[Secret]')
     expect(inspect(resolved, { depth: null })).toContain('[Secret]')
+  })
+
+  it('shows no secret on any path of the service and the refresher the module provides', async () => {
+    // Scenario: an application boots with the credentialed source; the service and the refresher
+    // hold it, and a sweep of each, after a refresh, finds no value.
+    const app = await Test.createTestingModule({
+      imports: [
+        SubscriptionModule.forRoot({
+          source: credentialedSource(),
+          store: new InMemorySubscriptionStore(),
+          accountResolver: () => null
+        })
+      ]
+    }).compile()
+    const service = app.get(SubscriptionService)
+    await service.refresh({ accountId: 'acc-1' })
+    expectNoSentinel(outputsOf(service))
+    expectNoSentinel(outputsOf(app.get(SnapshotRefresher)))
+    expectNoSentinel(outputsOf(await service.getSnapshot({ accountId: 'acc-1' })))
+    expect(inspect(service, { depth: null, showHidden: true })).toContain('[Secret]')
+    await app.close()
   })
 
   it('shows no secret on any path of the Secret holder itself', () => {

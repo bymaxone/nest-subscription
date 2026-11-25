@@ -32,7 +32,8 @@ export interface KeyPage {
 export interface SubscriptionStore {
   /**
    * Reads the snapshot stored under a key with its pending changes, or `null` when none is
-   * stored. What was written is what is read back.
+   * stored. What was written is what is read back. The library treats a snapshot read back that
+   * does not name the account of the key, or holds an instant that is not ISO 8601, as absent.
    */
   getSnapshot(key: string): Promise<StoredSnapshot | null>
 
@@ -82,6 +83,11 @@ export interface SubscriptionStore {
   /**
    * Lists the keys whose snapshot was fetched before `olderThan`, at most `limit` per page and
    * each key once across the pages of one listing. `cursor` is `null` for the first page.
+   *
+   * A cursor stays valid while the listing changes under it: when keys listed before it stop
+   * qualifying (their snapshot was fetched again) no key that still qualifies is skipped, and no
+   * key is listed twice. A caller may therefore refresh the keys of a page before it asks for the
+   * next one.
    */
   listStaleKeys(olderThan: string, limit: number, cursor: string | null): Promise<KeyPage>
 }

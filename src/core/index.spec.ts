@@ -8,6 +8,7 @@ import * as entry from './index'
 import { resolveOptions } from './options/resolve-options'
 import { validateOptions } from './options/validate-options'
 import { SubscriptionModule } from './subscription.module'
+import { SubscriptionService } from './subscription.service'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 describe('core entry point', () => {
@@ -26,6 +27,8 @@ describe('core entry point', () => {
       'Secret',
       'SubscriptionError',
       'SubscriptionModule',
+      'SubscriptionService',
+      'decodeAccountKey',
       'encodeAccountKey',
       'resolveOptions',
       'validateOptions'
@@ -39,6 +42,7 @@ describe('core entry point', () => {
     expect(entry.resolveOptions).toBe(resolveOptions)
     expect(entry.validateOptions).toBe(validateOptions)
     expect(entry.SubscriptionModule).toBe(SubscriptionModule)
+    expect(entry.SubscriptionService).toBe(SubscriptionService)
     for (const [name, value] of Object.entries(internal)) {
       expect(entry[name as keyof typeof entry]).toBe(value)
     }
