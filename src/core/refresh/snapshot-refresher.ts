@@ -129,7 +129,7 @@ export class SnapshotRefresher {
     return result
   }
 
-  /** Stores what was read, unless the store holds a newer snapshot, and starts the delivery. */
+  /** Stores what was read, unless the store holds a newer snapshot; `finish()` starts delivery. */
   async #store(
     key: string,
     account: AccountReference,
