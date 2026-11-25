@@ -1,6 +1,6 @@
 # Phase 11 — Bymax Finance adapter
 
-> **Status**: ⛔ Blocked &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 📋 ToDo (deferred, D30) &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P11 — finance-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -8,11 +8,11 @@
 
 ## Context
 
-**This phase is blocked** until the Bymax Finance public API exists (D03, R01). Its tasks are written against the planned contract in the specification's Appendix B so the work is visible, and the first task re-reads the released API and corrects everything below it before any code.
+**This phase is deferred (D30).** It is not part of the first release and blocks nothing: the first release is published without it. It starts only when the Bymax Finance public API exists (D03, R01) and the owner instructs it, and it ships as its own later version. Its tasks are written against the planned contract in the specification's Appendix B so the work is visible, and the first task re-reads the released API and corrects everything below it before any code.
 
 At the start `src/finance/` is an empty entry point and the library works with RevenueCat and with the fake source.
 
-At the end `financeSource(options)` returns a `SubscriptionSource` for a host that sells and tracks subscriptions through Bymax Finance with no RevenueCat: it reads a customer's subscription and entitlements with a tenant API key, verifies Finance's signed webhooks, maps Finance's states into the model, keeps the pair of host account identifier and Finance customer identifier, and maps plan identifiers to entitlement names from the host's options. The example repository's suite passes against it unchanged, which completes AC08.
+At the end `financeSource(options)` returns a `SubscriptionSource` for a host that sells and tracks subscriptions through Bymax Finance with no RevenueCat: it reads a customer's subscription and entitlements with a tenant API key, verifies Finance's signed webhooks, maps Finance's states into the model, keeps the pair of host account identifier and Finance customer identifier, and maps plan identifiers to entitlement names from the host's options. The AC08 suite of this repository passes against it unchanged, which completes AC08.
 
 ---
 
@@ -40,13 +40,13 @@ At the end `financeSource(options)` returns a `SubscriptionSource` for a host th
 
 ## Task index
 
-| ID   | Task                                                      | Status     | Priority | Size | Depends on |
-| ---- | --------------------------------------------------------- | ---------- | -------- | ---- | ---------- |
-| 11.1 | Re-read the released Finance API against Appendix B       | ⛔ Blocked | P0       | M    | —          |
-| 11.2 | Add the adapter options, the client and the identity pair | ⛔ Blocked | P0       | M    | 11.1       |
-| 11.3 | Map Finance states and plans into the model               | ⛔ Blocked | P0       | M    | 11.2       |
-| 11.4 | Verify and parse Finance webhooks                         | ⛔ Blocked | P0       | M    | 11.2, 11.3 |
-| 11.5 | Add the management operations and complete AC08           | ⛔ Blocked | P0       | L    | 11.3, 11.4 |
+| ID   | Task                                                      | Status  | Priority | Size | Depends on |
+| ---- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 11.1 | Re-read the released Finance API against Appendix B       | 📋 ToDo | P0       | M    | —          |
+| 11.2 | Add the adapter options, the client and the identity pair | 📋 ToDo | P0       | M    | 11.1       |
+| 11.3 | Map Finance states and plans into the model               | 📋 ToDo | P0       | M    | 11.2       |
+| 11.4 | Verify and parse Finance webhooks                         | 📋 ToDo | P0       | M    | 11.2, 11.3 |
+| 11.5 | Add the management operations and complete AC08           | 📋 ToDo | P0       | L    | 11.3, 11.4 |
 
 ---
 
@@ -54,7 +54,7 @@ At the end `financeSource(options)` returns a `SubscriptionSource` for a host th
 
 ### Task 11.1 — Re-read the released Finance API against Appendix B
 
-- **Status**: ⛔ Blocked
+- **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -136,7 +136,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 11.2 — Add the adapter options, the client and the identity pair
 
-- **Status**: ⛔ Blocked
+- **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 11.1
@@ -221,7 +221,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 11.3 — Map Finance states and plans into the model
 
-- **Status**: ⛔ Blocked
+- **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 11.2
@@ -307,7 +307,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 11.4 — Verify and parse Finance webhooks
 
-- **Status**: ⛔ Blocked
+- **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 11.2, 11.3
@@ -396,14 +396,14 @@ Completion Protocol (after the work is reported done):
 
 ### Task 11.5 — Add the management operations and complete AC08
 
-- **Status**: ⛔ Blocked
+- **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 11.3, 11.4
 
 #### Description
 
-Implement stop renewal at period end and the management reference for Finance, prove the adapter end to end, and run the example repository's suite against it (FR36, FR37, AC08).
+Implement stop renewal at period end and the management reference for Finance, prove the adapter end to end, and run the AC08 suite of this repository against it (FR36, FR37, AC08).
 
 #### Acceptance criteria
 
@@ -411,7 +411,7 @@ Implement stop renewal at period end and the management reference for Finance, p
 - [ ] The capability answer matches the Bymax Finance column of the FR36 table.
 - [ ] End to end against a local stand-in for the Finance API: a purchase yields access, a past-due state inside grace keeps it, an unpaid state after grace removes it, and forged webhooks change nothing.
 - [ ] With the Finance adapter configured, no RevenueCat code is loaded, and the reverse, proven on the packed tarball (NFR05).
-- [ ] The example repository's suite passes against the Finance adapter with no change in routes or hook code (AC08), and `docs/acceptance.md` records it.
+- [ ] The AC08 suite of this repository (`test/e2e/source-parity.e2e-spec.ts`, task 9.6) passes against the Finance adapter with no change in routes or hook code (AC08), and `docs/acceptance.md` records it.
 - [ ] The README documents the adapter, and the changelog has its entry under "Unreleased".
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
@@ -420,7 +420,7 @@ Implement stop renewal at period end and the management reference for Finance, p
 - ✚ `src/finance/management/capabilities.ts`, `stop-renewal.ts` and their specs
 - ✚ `test/e2e/fixtures/finance-stand-in.ts`, `test/e2e/finance.e2e-spec.ts`
 - ✎ `scripts/check-consumer-runtime.mjs`, `README.md`, `CHANGELOG.md`, `docs/acceptance.md`
-- ✚ in `nest-subscription-example`: `test/drivers/finance.driver.ts`, the CI matrix entry
+- ✎ `test/e2e/source-parity.e2e-spec.ts`: one more entry in its list of sources, the cases untouched
 
 #### Agent prompt (EN)
 
@@ -436,7 +436,7 @@ PRECONDITIONS
 - The Bymax Finance public API is released and documented. Until it is, this task does not start (D03).
 - P7 is ✅ Done: the webhook receiver exists and `revenueCatSource` in `src/revenuecat/` is the working example of an adapter.
 - Tasks 11.1 to 11.4 are ✅ Done.
-- P8 and P10 are ✅ Done: the management service and the example repository exist.
+- P8 and P9 are ✅ Done: the management service and the AC08 suite of task 9.6 exist.
 
 REQUIRED READING (only these — do not load more):
 - `AGENTS.md` (whole file: repository rules and code review rules)
@@ -447,7 +447,7 @@ REQUIRED READING (only these — do not load more):
 - `src/revenuecat/management/`, `test/e2e/revenuecat.e2e-spec.ts`
 
 TASK
-Finish the Finance adapter, prove it end to end, and complete AC08 in the example repository.
+Finish the Finance adapter, prove it end to end, and complete AC08 by running this repository's AC08 suite against it.
 
 DELIVERABLES
 
@@ -455,7 +455,7 @@ DELIVERABLES
 
 2. The stand-in and the end-to-end suite, with the secret-containment and no-identifier sweeps extended to the Finance adapter.
 
-3. The Finance driver in the example repository and its matrix entry, with the suite's test files untouched.
+3. The Finance entry in the list of sources of `test/e2e/source-parity.e2e-spec.ts`, with the suite's cases and `parity-app.ts` untouched.
 
 4. In the pull request body: the Definition of Done of P11, one line per item with its test.
 
@@ -473,7 +473,7 @@ Constraints:
 Verification:
 - `pnpm test:e2e -t "finance"` — expected: pass
 - `pnpm build && pnpm check:runtime` — expected: isolation holds in both directions
-- `SUBSCRIPTION_SOURCE=finance pnpm test:e2e` in the example repository — expected: pass with the same test count as the other sources
+- `pnpm test:e2e -t "source parity"` — expected: pass, with the same cases run for the Finance entry as for the other sources
 - `pnpm test:cov:all && pnpm mutation` — expected: 100 and 100
 
 Completion Protocol (after the work is reported done):

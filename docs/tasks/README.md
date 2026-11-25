@@ -12,22 +12,21 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 > Mirrors the phase dashboard of [`docs/plan.md`](../plan.md). Both are updated together.
 
-**Phases done**: 2 / 12 · **Tasks done**: 19 / 64
+**Phases done**: 3 / 11 · **Tasks done**: 19 / 66
 
-| ID  | Task file                                                                                        | Status     | Progress | Last updated |
-| --- | ------------------------------------------------------------------------------------------------ | ---------- | -------- | ------------ |
-| P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | ✅ Done    | 7/7      | 2026-11-24   |
-| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | ✅ Done    | 7/7      | 2026-11-24   |
-| P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | 👀 Review  | 5/5      | 2026-11-24   |
-| P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | 📋 ToDo    | 0/5      | —            |
-| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 📋 ToDo    | 0/4      | —            |
-| P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | 📋 ToDo    | 0/5      | —            |
-| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 📋 ToDo    | 0/5      | —            |
-| P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | 📋 ToDo    | 0/7      | —            |
-| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 📋 ToDo    | 0/4      | —            |
-| P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo    | 0/5      | —            |
-| P10 | [`phase-10-example-repository.md`](phase-10-example-repository.md)                               | 📋 ToDo    | 0/5      | —            |
-| P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | ⛔ Blocked | 0/5      | —            |
+| ID  | Task file                                                                                        | Status  | Progress | Last updated |
+| --- | ------------------------------------------------------------------------------------------------ | ------- | -------- | ------------ |
+| P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | ✅ Done | 7/7      | 2026-11-24   |
+| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | ✅ Done | 7/7      | 2026-11-24   |
+| P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | ✅ Done | 5/5      | 2026-11-25   |
+| P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | 📋 ToDo | 0/5      | —            |
+| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 📋 ToDo | 0/4      | —            |
+| P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | 📋 ToDo | 0/5      | —            |
+| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 📋 ToDo | 0/5      | —            |
+| P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | 📋 ToDo | 0/8      | —            |
+| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 📋 ToDo | 0/9      | —            |
+| P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo | 0/6      | —            |
+| P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | 📋 ToDo | 0/5      | —            |
 
 ---
 
@@ -111,24 +110,24 @@ These are the scripts of the scaffold P0 brings from `bymaxone/nest-telemetry`. 
 
 ### 6.3 Library (`src/core/`)
 
-| Name                                                                                         | Kind                                                          | File                                                             |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `SubscriptionModule` with `forRoot` and `forRootAsync`                                       | NestJS module                                                 | `subscription.module.ts`                                         |
-| `SubscriptionModuleOptions`, `SubscriptionModuleAsyncOptions`, `ResolvedSubscriptionOptions` | option types                                                  | `options/subscription-options.types.ts`                          |
-| `resolveOptions`, `validateOptions`                                                          | functions                                                     | `options/resolve-options.ts`, `options/validate-options.ts`      |
-| `SubscriptionService`                                                                        | read, refresh, reconcile, manage                              | `subscription.service.ts`                                        |
-| `SnapshotRefresher`                                                                          | single-flight refresh and ordered write                       | `refresh/snapshot-refresher.ts`                                  |
-| `RequiresEntitlement`                                                                        | route decorator                                               | `guard/requires-entitlement.decorator.ts`                        |
-| `EntitlementGuard`                                                                           | guard                                                         | `guard/entitlement.guard.ts`                                     |
-| `AccountResolver`, `ResolvedAccount`                                                         | the host's resolver contract                                  | `guard/account-resolver.types.ts`                                |
-| `diffSnapshots`, `changeKey`                                                                 | pure functions (FR32, FR33)                                   | `notifications/diff-snapshots.ts`, `notifications/change-key.ts` |
-| `ChangeDispatcher`                                                                           | calls the host hook after a write                             | `notifications/change-dispatcher.ts`                             |
-| `SubscriptionObserver`                                                                       | the optional observer contract (FR34)                         | `observer/observer.types.ts`                                     |
-| `SnapshotCache`                                                                              | read-through wrapper over the host's optional cache (FR23)    | `cache/snapshot-cache.ts`                                        |
-| `decideAccess`, `applyFailPolicy`                                                            | pure guard decision and fail policy (FR30, FR31)              | `guard/decide-access.ts`, `guard/fail-policy.ts`                 |
-| `findOwnSubscription`                                                                        | the one ownership check of every management operation (SEC10) | `management/find-own-subscription.ts`                            |
-| `WebhookProcessor`, `WebhookOutcome`                                                         | raw bytes and headers in, outcome out (FR17, FR18)            | `webhook/webhook.processor.ts`, `webhook/webhook-outcome.ts`     |
-| `SubscriptionWebhookController`                                                              | optional controller, off by default                           | `webhook/webhook.controller.ts`                                  |
+| Name                                                                                         | Kind                                                                                                                                                                 | File                                                             |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `SubscriptionModule` with `forRoot` and `forRootAsync`                                       | NestJS module                                                                                                                                                        | `subscription.module.ts`                                         |
+| `SubscriptionModuleOptions`, `SubscriptionModuleAsyncOptions`, `ResolvedSubscriptionOptions` | option types                                                                                                                                                         | `options/subscription-options.types.ts`                          |
+| `resolveOptions`, `validateOptions`                                                          | functions                                                                                                                                                            | `options/resolve-options.ts`, `options/validate-options.ts`      |
+| `SubscriptionService`                                                                        | read, refresh, reconcile, manage                                                                                                                                     | `subscription.service.ts`                                        |
+| `SnapshotRefresher`                                                                          | single-flight refresh and ordered write                                                                                                                              | `refresh/snapshot-refresher.ts`                                  |
+| `RequiresEntitlement`                                                                        | route decorator                                                                                                                                                      | `guard/requires-entitlement.decorator.ts`                        |
+| `EntitlementGuard`                                                                           | guard                                                                                                                                                                | `guard/entitlement.guard.ts`                                     |
+| `AccountResolver`, `ResolvedAccount`                                                         | the host's resolver contract                                                                                                                                         | `guard/account-resolver.types.ts`                                |
+| `diffSnapshots`, `changeKey`                                                                 | pure functions (FR32, FR33)                                                                                                                                          | `notifications/diff-snapshots.ts`, `notifications/change-key.ts` |
+| `ChangeDispatcher`                                                                           | calls the host hook after a write                                                                                                                                    | `notifications/change-dispatcher.ts`                             |
+| `SubscriptionObserver`                                                                       | the optional observer contract (FR34)                                                                                                                                | `observer/observer.types.ts`                                     |
+| `SnapshotCache`                                                                              | read-through wrapper over the host's optional cache (FR23)                                                                                                           | `cache/snapshot-cache.ts`                                        |
+| `decideAccess`, `applyFailPolicy`                                                            | pure guard decision and fail policy (FR30, FR31)                                                                                                                     | `guard/decide-access.ts`, `guard/fail-policy.ts`                 |
+| `findOwnRecord`                                                                              | the one ownership check of every management operation: finds a subscription or non-renewing purchase by reference inside the caller's own snapshot only (SEC10, D31) | `management/find-own-record.ts`                                  |
+| `WebhookProcessor`, `WebhookOutcome`                                                         | raw bytes and headers in, outcome out (FR17, FR18)                                                                                                                   | `webhook/webhook.processor.ts`, `webhook/webhook-outcome.ts`     |
+| `SubscriptionWebhookController`                                                              | optional controller, off by default                                                                                                                                  | `webhook/webhook.controller.ts`                                  |
 
 ### 6.4 Adapters and testing
 
@@ -145,12 +144,12 @@ These are the scripts of the scaffold P0 brings from `bymaxone/nest-telemetry`. 
 
 ## 7. Documents written by tasks
 
-| Document                                                 | Written by | Read by                                         |
-| -------------------------------------------------------- | ---------- | ----------------------------------------------- |
-| `docs/revenuecat-facts.md`                               | task 7.1   | the rest of P7, P8 and the provider watch of P9 |
-| `docs/raw-body.md`, `docs/reference-store.md`            | task 9.2   | hosts, and P10                                  |
-| `docs/acceptance.md`, `docs/mutation_testing_results.md` | task 9.4   | the owner, before a release                     |
-| `docs/finance-facts.md`                                  | task 11.1  | the rest of P11                                 |
+| Document                                                 | Written by                         | Read by                                         |
+| -------------------------------------------------------- | ---------------------------------- | ----------------------------------------------- |
+| `docs/revenuecat-facts.md`                               | tasks 7.1, 7.8, 8.3 and 8.6 to 8.9 | the rest of P7, P8 and the provider watch of P9 |
+| `docs/raw-body.md`, `docs/reference-store.md`            | task 9.2                           | hosts                                           |
+| `docs/acceptance.md`, `docs/mutation_testing_results.md` | task 9.4                           | the owner, before a release                     |
+| `docs/finance-facts.md`                                  | task 11.1                          | the rest of P11                                 |
 
 ## 8. Rules that recur in every phase
 

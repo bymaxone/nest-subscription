@@ -1,6 +1,6 @@
 # Phase 9 — Release readiness
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P9 — release-readiness
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -37,13 +37,14 @@ At the end the package is publishable: the README follows the family's canonical
 
 ## Task index
 
-| ID  | Task                                       | Status  | Priority | Size | Depends on |
-| --- | ------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 9.1 | Write the public README                    | 📋 ToDo | P0       | L    | —          |
-| 9.2 | Write the host guides                      | 📋 ToDo | P0       | M    | 9.1        |
-| 9.3 | Sweep the captured logs of the whole suite | 📋 ToDo | P0       | M    | 9.1        |
-| 9.4 | Measure the whole package                  | 📋 ToDo | P0       | M    | 9.2, 9.3   |
-| 9.5 | Prepare the release candidate              | 📋 ToDo | P0       | M    | 9.4        |
+| ID  | Task                                              | Status  | Priority | Size | Depends on    |
+| --- | ------------------------------------------------- | ------- | -------- | ---- | ------------- |
+| 9.1 | Write the public README                           | 📋 ToDo | P0       | L    | —             |
+| 9.2 | Write the host guides                             | 📋 ToDo | P0       | M    | 9.1           |
+| 9.3 | Sweep the captured logs of the whole suite        | 📋 ToDo | P0       | M    | 9.1           |
+| 9.6 | Prove AC08 with one suite run against two sources | 📋 ToDo | P0       | M    | —             |
+| 9.4 | Measure the whole package                         | 📋 ToDo | P0       | M    | 9.2, 9.3, 9.6 |
+| 9.5 | Prepare the release candidate                     | 📋 ToDo | P0       | M    | 9.4           |
 
 ---
 
@@ -83,7 +84,7 @@ You are a senior technical writer who knows the library engineer working on the 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P9 (release-readiness) — Task 9.1 of 5 (FIRST of this phase)
+CURRENT PHASE: P9 (release-readiness) — Task 9.1 of 6 (FIRST of this phase)
 
 PRECONDITIONS
 - P4, P5, P6, P7 and P8 are ✅ Done: the first release's behaviour is complete and every gate passes.
@@ -124,8 +125,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-09-release-readiness.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/6 tasks`)
+5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/6`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.1 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -147,7 +148,7 @@ Write the two guides the specification promises to a host: how to obtain the raw
 
 - [ ] `docs/raw-body.md` shows how to enable the raw body for the webhook route with the Express adapter, what breaks without it, and what a Fastify host does.
 - [ ] `docs/reference-store.md` gives the two records of specification §7 as a table definition, the uniqueness and ordering the library relies on, and each port method as a query, for PostgreSQL.
-- [ ] The reference store's code, kept as a test fixture, passes `storeConformanceCases`; if a database is not available in CI, the guide says how it was run and the fixture is exercised in the example repository (P10).
+- [ ] The reference store's code, kept as a test fixture, passes `storeConformanceCases`; if a database is not available in CI, the guide says how it was run and the fixture is exercised against a database by the host that adopts it.
 - [ ] Both guides are linked from the README and from `docs/README.md`.
 
 #### Files to create / modify
@@ -164,7 +165,7 @@ You are a senior technical writer who knows the library engineer working on the 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P9 (release-readiness) — Task 9.2 of 5 (MIDDLE of this phase)
+CURRENT PHASE: P9 (release-readiness) — Task 9.2 of 6 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P4, P5, P6, P7 and P8 are ✅ Done: the first release's behaviour is complete and every gate passes.
@@ -200,8 +201,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-09-release-readiness.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/6 tasks`)
+5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/6`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.2 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -240,7 +241,7 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P9 (release-readiness) — Task 9.3 of 5 (MIDDLE of this phase)
+CURRENT PHASE: P9 (release-readiness) — Task 9.3 of 6 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P4, P5, P6, P7 and P8 are ✅ Done: the first release's behaviour is complete and every gate passes.
@@ -280,8 +281,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-09-release-readiness.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/6 tasks`)
+5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/6`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.3 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -293,7 +294,7 @@ Completion Protocol (after the work is reported done):
 - **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: M
-- **Depends on**: 9.2, 9.3
+- **Depends on**: 9.2, 9.3, 9.6
 
 #### Description
 
@@ -304,7 +305,7 @@ Run the full, non-incremental mutation run, set the size budget and the API base
 - [ ] `pnpm mutation:full` scores 100, with no disable directive lacking a recorded reason (`pnpm check:mutants`).
 - [ ] The size budget is set per subpath from the measured build with a small stated margin, and `pnpm size` passes.
 - [ ] The API surface baseline matches the build, reviewed name by name for anything exported by accident.
-- [ ] `docs/acceptance.md` maps AC01 to AC07, AC09 and the Appendix A half of AC10 to named passing tests, and marks AC08 and the Appendix B half of AC10 as owned by P10 and P11.
+- [ ] `docs/acceptance.md` maps AC01 to AC07, AC09 and the Appendix A half of AC10 to named passing tests, maps AC08 to the suite of task 9.6 for the fake source and the RevenueCat stand-in, and marks the Finance run of AC08 and the Appendix B half of AC10 as owned by P11.
 - [ ] `docs/mutation_testing_results.md` records the full run's numbers.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
@@ -323,11 +324,11 @@ You are a senior release engineer working on the @bymax-one/nest-subscription pr
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P9 (release-readiness) — Task 9.4 of 5 (MIDDLE of this phase)
+CURRENT PHASE: P9 (release-readiness) — Task 9.4 of 6 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P4, P5, P6, P7 and P8 are ✅ Done: the first release's behaviour is complete and every gate passes.
-- Tasks 9.1 to 9.3 are ✅ Done.
+- Tasks 9.1 to 9.3 and 9.6 are ✅ Done.
 
 REQUIRED READING (only these — do not load more):
 - `AGENTS.md` (whole file: repository rules and code review rules)
@@ -366,8 +367,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-09-release-readiness.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/6 tasks`)
+5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/6`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.4 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -409,7 +410,7 @@ You are a senior release engineer working on the @bymax-one/nest-subscription pr
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P9 (release-readiness) — Task 9.5 of 5 (LAST of this phase)
+CURRENT PHASE: P9 (release-readiness) — Task 9.5 of 6 (LAST of this phase)
 
 PRECONDITIONS
 - P4, P5, P6, P7 and P8 are ✅ Done: the first release's behaviour is complete and every gate passes.
@@ -455,10 +456,95 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-09-release-readiness.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/5 tasks`)
-5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/6 tasks`)
+5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/6`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 9.5 ✅ YYYY-MM-DD — <one-line summary>`
+```
+
+---
+
+### Task 9.6 — Prove AC08 with one suite run against two sources
+
+- **Status**: 📋 ToDo
+- **Priority**: P0
+- **Size**: M
+- **Depends on**: —
+
+#### Description
+
+Add one end-to-end suite that runs the same routes and the same hook code, unchanged, against the library's fake source and against the RevenueCat adapter pointed at a local stand-in of the RevenueCat API, so that AC08 is proven in this repository (D29). The Finance run of AC08 is added by P11.
+
+#### Acceptance criteria
+
+- [ ] One suite file holds every case, and one application factory builds the host: the protected routes, the webhook controller with the raw body and the hook are written once and shared by both runs.
+- [ ] The only difference between the two runs is the module configuration: the fake source in one, `revenueCatSource` with its `baseUrl` option set to the local stand-in (task 7.2) in the other. A test fails if a route or the hook is defined per source.
+- [ ] Both runs pass the same cases: a granted entitlement admits the request, an account with no subscription is refused, a webhook event changes the snapshot and calls the hook once, the same event delivered again calls it once, and the source down follows the configured fail policy (AC08, AC03, AC07).
+- [ ] The RevenueCat run serves recorded fixtures from `test/fixtures/revenuecat/` through the local stand-in; it opens no connection to a host outside the loopback address and uses no real credential. The credential and the webhook secret are literals made for the test.
+- [ ] The suite is registered so that adding the Finance adapter later is one more entry in the list of sources, with the cases untouched.
+- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+
+#### Files to create / modify
+
+- ✚ `test/e2e/source-parity.e2e-spec.ts`
+- ✚ `test/e2e/fixtures/parity-app.ts`
+- ✎ `test/e2e/fixtures/revenuecat-stand-in.ts`, only if a case needs a response it cannot serve yet
+
+#### Agent prompt (EN)
+
+```
+You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
+
+PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
+TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
+
+CURRENT PHASE: P9 (release-readiness) — Task 9.6 of 6 (MIDDLE of this phase)
+
+PRECONDITIONS
+- P4, P5, P6, P7 and P8 are ✅ Done: the guard, the hook, the webhook receiver, the RevenueCat adapter and its stand-in exist and every gate passes.
+
+REQUIRED READING (only these — do not load more):
+- `AGENTS.md` (whole file: repository rules and code review rules)
+- `docs/tasks/README.md` (shared names, paths, commands and the Definition of Done every task meets)
+- `docs/spec.md` §5.1 (AC03, AC07, AC08), §10.1 (D29)
+- `docs/plan.md` § "P9 — release-readiness", Definition of Done
+- `test/e2e/fixtures/webhook-app.ts` and `test/e2e/fixtures/revenuecat-stand-in.ts`
+- `src/testing/index.ts` (the fake source and the signed request builders)
+
+TASK
+Write the suite that proves AC08 in this repository: one set of routes and one hook, run against two sources.
+
+DELIVERABLES
+
+1. `test/e2e/fixtures/parity-app.ts`: one function that builds the host application from a module configuration it receives, with the protected routes, the webhook controller with the raw body and the hook. It contains no reference to a source.
+
+2. `test/e2e/source-parity.e2e-spec.ts`: one list of sources, each entry holding only its module configuration, the way it scripts the account (the fake source's script, or the stand-in's fixtures) and its signed webhook request builder (the fake source's `buildRequest`, or `buildRevenueCatWebhookRequest`), and one set of cases that call the entry and never branch on its name.
+
+3. In the pull request body: the Definition of Done of P9 for AC08, with the test names, and a statement of what the two runs differ in (the module configuration only).
+
+Constraints:
+- The cases and the application factory are the same for both runs. Do not add a branch on the source's name to either; if a case needs one, the port is what is missing.
+- The RevenueCat run uses the adapter's real code over HTTP to the local stand-in, with recorded fixtures. No real network, no real credential, no secret from the environment.
+- Test first: write the failing test, watch it fail, then make it pass. A case that cannot fail when the two sources behave differently is not a case.
+- TypeScript strict, no `any`. No suppression of any kind (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `istanbul ignore`, Stryker disable without a recorded reason).
+- Every new file opens with a header stating its purpose and layer. Functions stay within 50 lines, files within 800.
+- English everywhere. Comments state constraints that still hold, never a phase, a task or a review round. No attribution to an AI tool in any file, commit or pull request.
+- Zero direct dependencies. Do not add a package to `dependencies`; a new dev or peer dependency needs a stated reason in the pull request.
+- Use the names and paths fixed in `docs/tasks/README.md`. If one has to change, change it there in the same pull request.
+- Do not commit, push, publish or tag unless the person running this prompt asks for it.
+
+Verification:
+- `pnpm test:e2e -t "source parity"` — expected: every case passes once per source
+- `pnpm test:cov:all` — expected: 100 for statements, branches, functions and lines
+
+Completion Protocol (after the work is reported done):
+1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-09-release-readiness.md`
+2. Tick its acceptance-criteria checkboxes
+3. Update its row in the task index table (status column)
+4. Increment the phase progress counter at the top of that file (`N/6 tasks`)
+5. Update the P9 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/6`, last updated), and the tasks-done counter there
+6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
+7. Append a completion log entry at the bottom of that file: `- 9.6 ✅ YYYY-MM-DD — <one-line summary>`
 ```
 
 ---
