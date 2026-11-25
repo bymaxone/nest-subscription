@@ -170,5 +170,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   smaller pages than the limit now passes; a store that returns more, repeats or skips a key still
   fails.
 - The store port states that a `listStaleKeys` cursor stays valid when keys listed before it stop
-  qualifying, so a caller may refresh the keys of a page before it asks for the next. The
-  conformance suite gains a case for it, and a store that pages by offset now fails that case.
+  qualifying, so a caller may refresh the keys of a page before it asks for the next, and that a
+  `listKeysWithPendingChanges` cursor stays valid when the changes of keys listed before it are
+  cleared. The conformance suite gains a case for each, and a store that pages by offset now fails
+  them.

@@ -339,6 +339,13 @@ const MANY = [
   ]
 ] as const
 
+/** The pairs, from the kind table and below, in which a snapshot holds more than one subscription. */
+const SEVERAL: ReadonlyArray<readonly [string, SubscriptionSnapshot | null, SubscriptionSnapshot]> =
+  [...PAIRS, ...MANY].filter(
+    ([, previous, current]) =>
+      (previous?.subscriptions.length ?? 0) > 1 || current.subscriptions.length > 1
+  )
+
 describe('diffSnapshots', () => {
   it('gives a change a key of 64 lowercase hexadecimal characters', () => {
     // Scenario: an account and a tenant with recognizable names still give a fixed-width hex key.
@@ -440,27 +447,25 @@ describe('diffSnapshots', () => {
     expect(new Set(keys).size).toBe(2)
   })
 
-  it.each([...PAIRS, ...MANY])(
-    'gives the same keys for %s whatever the order of the subscriptions in either snapshot',
+  it.each(SEVERAL)(
+    'gives the same keys for %s when the previous, the current or both snapshots list their subscriptions in another order',
     (_name, previous, current) => {
-      // Scenario: the source lists the same subscriptions in another order in both snapshots; the
-      // comparison must find the same changes under the same keys, and must find some.
-      const reversed = (snapshot: SubscriptionSnapshot | null): SubscriptionSnapshot | null =>
-        snapshot === null
-          ? null
-          : { ...snapshot, subscriptions: [...snapshot.subscriptions].reverse() }
+      // Scenario: the source lists the same subscriptions in another order in one snapshot or in
+      // both; the comparison must find the same changes under the same keys, and must find some.
+      const reversed = (snapshot: SubscriptionSnapshot): SubscriptionSnapshot => ({
+        ...snapshot,
+        subscriptions: [...snapshot.subscriptions].reverse()
+      })
       const keysOf = (before: SubscriptionSnapshot | null, after: SubscriptionSnapshot): string[] =>
         diffSnapshots(before, after)
           .map((change) => change.key)
           .sort()
       const forward = keysOf(previous, current)
+      const before = previous === null ? null : reversed(previous)
       expect(forward.length).toBeGreaterThan(0)
-      expect(
-        keysOf(reversed(previous), {
-          ...current,
-          subscriptions: [...current.subscriptions].reverse()
-        })
-      ).toStrictEqual(forward)
+      expect(keysOf(before, current)).toStrictEqual(forward)
+      expect(keysOf(previous, reversed(current))).toStrictEqual(forward)
+      expect(keysOf(before, reversed(current))).toStrictEqual(forward)
     }
   )
 

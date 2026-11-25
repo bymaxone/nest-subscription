@@ -441,6 +441,20 @@ const listingDefects: Readonly<Record<string, () => SubscriptionStore>> = {
       )
     })
   },
+  pendingListingUsesAnOffsetCursor: () => {
+    const base = good()
+    return withDefect(base, {
+      listKeysWithPendingChanges: async (limit, cursor): Promise<KeyPage> => {
+        const all = (await base.listKeysWithPendingChanges(UNBOUNDED, null)).keys
+        const offset = Number(cursor)
+        const end = offset + limit
+        return {
+          keys: all.slice(offset, end),
+          nextCursor: end < all.length ? String(end) : null
+        }
+      }
+    })
+  },
   staleListingSkipsAKey: () => {
     const base = good()
     return withDefect(base, {

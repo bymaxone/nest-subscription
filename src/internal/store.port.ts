@@ -65,6 +65,11 @@ export interface SubscriptionStore {
   /**
    * Lists the keys that still have pending changes, at most `limit` per page and each key once
    * across the pages of one listing. `cursor` is `null` for the first page.
+   *
+   * A cursor stays valid while the listing changes under it: when keys listed before it stop
+   * qualifying (their pending changes were cleared) no key that still qualifies is skipped, and no
+   * key is listed twice. A caller may therefore clear the changes of the keys of a page before it
+   * asks for the next one.
    */
   listKeysWithPendingChanges(limit: number, cursor: string | null): Promise<KeyPage>
 

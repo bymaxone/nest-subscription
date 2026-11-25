@@ -400,20 +400,25 @@ describe('Reconciler pending cursor', () => {
     expect(hook).toHaveBeenCalledTimes(2)
   })
 
-  it('keeps the pending cursor apart from the stale cursor', async () => {
-    // Scenario: a run with a pending cursor and none for the stale pass still starts the stale pass
-    // at the first stale account and returns its own cursor.
-    const { source, store, clock, reconciler } = withHook(jest.fn())
-    await seedPending(store, 2)
-    clock.advance(2 * DAY)
-    const result = await reconciler.run({
-      olderThanMs: DAY,
-      batchSize: 1,
-      pendingCursor: encodeAccountKey(account(1)),
-      maxCallsPerSecond: 100
+  it('keeps the pending cursor apart from the stale cursor, each resuming its own listing', async () => {
+    // Scenario: three accounts with pending changes whose hook fails, and three older stale ones
+    // that are not pending, a batch of one. After the first run both listings are unfinished and
+    // the two cursors differ; the second run, given both, goes on in each listing.
+    const hook = jest.fn((_notification: SubscriptionChangeNotification) => {
+      throw new Error('boom')
     })
-    expect(source.readCount(account(1))).toBe(1)
-    expect(result.cursor).not.toBeNull()
+    const { source, store, reconciler } = withHook(hook)
+    await seedPending(store, 3)
+    await seed(store, 3, '2025-12-01T00:00:00.000Z', 10)
+    const options = { olderThanMs: DAY, batchSize: 1, maxCallsPerSecond: 100 }
+    const first = await reconciler.run(options)
+    expect(first.pendingCursor).not.toBeNull()
+    expect(first.cursor).not.toBeNull()
+    expect(first.pendingCursor).not.toBe(first.cursor)
+    await reconciler.run({ ...options, cursor: first.cursor, pendingCursor: first.pendingCursor })
+    const delivered = hook.mock.calls.map(([notification]) => notification.changes[0]?.key)
+    expect(delivered).toStrictEqual(['renewed-1', 'renewed-2'])
+    expect([10, 11, 12].map((n) => source.readCount(account(n)))).toStrictEqual([1, 1, 0])
   })
 
   it('returns no pending cursor when the host set no hook', async () => {
