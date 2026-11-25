@@ -1,6 +1,6 @@
 # Phase 6 — Webhook receiver
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P6 — webhook-receiver
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -46,7 +46,7 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 | 6.2 | Implement the processor                    | ✅ Done | P0       | L    | 6.1        |
 | 6.3 | Enforce the response deadline              | ✅ Done | P0       | M    | 6.2        |
 | 6.4 | Add the controller behind a switch         | ✅ Done | P0       | M    | 6.2        |
-| 6.5 | Prove the receiver end to end              | 📋 ToDo | P0       | M    | 6.3, 6.4   |
+| 6.5 | Prove the receiver end to end              | ✅ Done | P0       | M    | 6.3, 6.4   |
 
 ---
 
@@ -388,7 +388,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 6.5 — Prove the receiver end to end
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 6.3, 6.4
@@ -399,12 +399,12 @@ Write the end-to-end suite that drives the receiver through HTTP with the fake s
 
 #### Acceptance criteria
 
-- [ ] A forged request, a request with a body altered after signing, and a request the fake source refuses for any reason all get the identical refused answer and change nothing (AC02 for the receiver).
-- [ ] The same event delivered five times causes one source read and one host notification (AC03).
-- [ ] Events delivered in reverse order leave the snapshot equal to the source's current state (AC04).
-- [ ] A slow source is answered as a temporary failure before the deadline, and the retry is processed.
-- [ ] The sentinel sweep finds no body content, header value or account identifier in logs or observer payloads.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A forged request, a request with a body altered after signing, and a request the fake source refuses for any reason all get the identical refused answer and change nothing (AC02 for the receiver).
+- [x] The same event delivered five times causes one source read and one host notification (AC03).
+- [x] Events delivered in reverse order leave the snapshot equal to the source's current state (AC04).
+- [x] A slow source is answered as a temporary failure before the deadline, and the retry is processed.
+- [x] The sentinel sweep finds no body content, header value or account identifier in logs or observer payloads.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -480,3 +480,4 @@ Completion Protocol (after the work is reported done):
 - 6.2 ✅ 2026-11-25 — the processor: verification over the raw bytes through the adapter, de-duplication by event identifier with D16, a read of every named account, the retention purge in reconciliation, and D41 recorded
 - 6.3 ✅ 2026-11-25 — the response deadline: the work raced against an injectable wait, the only timer cleared when the race is decided, a timed-out event freed for its retry, and a 60 000 ms ceiling at boot
 - 6.4 ✅ 2026-11-25 — the controller behind a switch that is off by default, the raw-body reading, a route chosen by the host with no default, and a first-request answer for an application without the raw body
+- 6.5 ✅ 2026-11-25 — the receiver end to end in both forms: one identical refusal for every failed check, one read per event, reverse order, a slow source and its retry, failure paths, the purge and the sentinel sweep
