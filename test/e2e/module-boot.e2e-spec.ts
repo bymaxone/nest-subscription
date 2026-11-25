@@ -140,14 +140,12 @@ describe('module boot', () => {
         inject: [HOST_SETTINGS],
         useFactory: (settings: { path: string }) => ({
           ...good(),
-          webhookController: true,
-          webhookPath: settings.path
+          cacheTtlMs: settings.path.length
         })
       })
     )
     const resolved = app.get<ResolvedSubscriptionOptions>(SUBSCRIPTION_OPTIONS)
-    expect(resolved.webhookPath).toBe('billing/webhook')
-    expect(resolved.webhookController).toBe(true)
+    expect(resolved.cacheTtlMs).toBe('billing/webhook'.length)
     expect(app.get(SUBSCRIPTION_CACHE)).toBeNull()
     expect(app.get(SUBSCRIPTION_OBSERVER)).toBeNull()
     await app.close()

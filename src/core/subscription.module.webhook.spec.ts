@@ -143,6 +143,82 @@ describe('SubscriptionModule.forRootAsync controller', () => {
     )
   })
 
+  /** What a combination of a static route and a factory result comes to. */
+  type Outcome = 'mounted' | 'no controller' | readonly string[]
+
+  const COMBINATIONS: ReadonlyArray<
+    readonly [string, string | undefined, Partial<SubscriptionOptionsInput>, Outcome]
+  > = [
+    ['no route, nothing set', undefined, {}, 'no controller'],
+    ['no route, the switch off', undefined, { webhookController: false }, 'no controller'],
+    ['no route, the switch on', undefined, { webhookController: true }, ['webhookPath']],
+    ['no route, a path only', undefined, { webhookPath: 'hooks' }, ['webhookPath']],
+    [
+      'no route, the switch on and a path',
+      undefined,
+      { webhookController: true, webhookPath: 'hooks' },
+      ['webhookPath']
+    ],
+    [
+      'no route, the switch off and a path',
+      undefined,
+      { webhookController: false, webhookPath: 'hooks' },
+      ['webhookPath']
+    ],
+    ['a route, nothing set', 'hooks', {}, 'mounted'],
+    ['a route, the switch on', 'hooks', { webhookController: true }, 'mounted'],
+    ['a route, the switch off', 'hooks', { webhookController: false }, ['webhookController']],
+    ['a route, the same path', 'hooks', { webhookPath: 'hooks' }, 'mounted'],
+    ['a route, another path', 'hooks', { webhookPath: 'other' }, ['webhookPath']],
+    [
+      'a route, the switch on and the same path',
+      'hooks',
+      { webhookController: true, webhookPath: 'hooks' },
+      'mounted'
+    ],
+    [
+      'a route, the switch on and another path',
+      'hooks',
+      { webhookController: true, webhookPath: 'other' },
+      ['webhookPath']
+    ],
+    [
+      'a route, the switch off and the same path',
+      'hooks',
+      { webhookController: false, webhookPath: 'hooks' },
+      ['webhookController']
+    ],
+    [
+      'a route, the switch off and another path',
+      'hooks',
+      { webhookController: false, webhookPath: 'other' },
+      ['webhookController', 'webhookPath']
+    ]
+  ]
+
+  it.each(COMBINATIONS)(
+    'ends as the table says with %s',
+    async (_name, route, factory, outcome) => {
+      // Scenario: every combination of a static route, the factory's switch and the factory's path
+      // ends in one of three ways: mounted at the static route, refused at boot naming the
+      // options that contradict it (D43), or no controller. The route is fixed when the module is
+      // built, so a route only a factory names can never be mounted and is refused, not ignored.
+      const module = SubscriptionModule.forRootAsync({
+        ...(route === undefined ? {} : { webhookPath: route }),
+        useFactory: () => input(factory)
+      })
+      const resolving = optionsProvider(module).useFactory()
+      if (typeof outcome !== 'string') {
+        await expect(resolving).rejects.toMatchObject({ optionPaths: outcome })
+        return
+      }
+      const resolved = await resolving
+      expect(resolved.webhookController).toBe(outcome === 'mounted')
+      expect(module.controllers).toHaveLength(outcome === 'mounted' ? 1 : 0)
+      expect(routeOf(module.controllers?.[0])).toBe(outcome === 'mounted' ? route : undefined)
+    }
+  )
+
   it('refuses a static route that is not valid when the module is built', () => {
     // Scenario: the mistake stops the application where the module is declared.
     const build = (): unknown =>

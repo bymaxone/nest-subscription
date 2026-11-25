@@ -345,12 +345,12 @@ describe('SubscriptionModule.forRootAsync', () => {
     // Scenario: the factory receives the injected values in order and its result is resolved.
     const useFactory = jest.fn((first: string, second: string) => ({
       ...input(),
-      webhookPath: `${first}/${second}`
+      cacheTtlMs: `${first}${second}`.length + 1
     }))
     const module = SubscriptionModule.forRootAsync({ inject: ['a', 'b'], useFactory })
     const resolved = await provider(module, SUBSCRIPTION_OPTIONS).useFactory('a', 'b')
     expect(useFactory).toHaveBeenCalledWith('a', 'b')
-    expect(resolved.webhookPath).toBe('a/b')
+    expect(resolved.cacheTtlMs).toBe(3)
     const options = provider(module, SUBSCRIPTION_OPTIONS)
     const resolvedOptions = await options.useFactory()
     expect(provider(module, SUBSCRIPTION_CACHE).useFactory(resolvedOptions)).toBeNull()

@@ -96,13 +96,20 @@ export class ObserverBridge {
   }
 
   /**
-   * Reports a webhook request the receiver handled. `retained` is `true` only when the identifier
-   * of a failed event could not be removed from the store.
+   * Reports a webhook request the receiver handled. The duration runs from `startedAt` to
+   * `answeredAt`, both readings of {@link ObserverBridge.mark}, so a report made after the answer
+   * still carries the time to the answer. `retained` is `true` only when the identifier of a
+   * failed event could not be removed from the store.
    */
-  webhook(outcome: WebhookOutcomeKind, startedAt: number, retained: boolean): void {
+  webhook(
+    outcome: WebhookOutcomeKind,
+    startedAt: number,
+    answeredAt: number,
+    retained: boolean
+  ): void {
     const hook = this.#hook(PICK.onWebhook)
     if (hook !== undefined) {
-      this.#run(hook, { outcome, durationMs: this.#since(startedAt), retained })
+      this.#run(hook, { outcome, durationMs: Math.max(0, answeredAt - startedAt), retained })
     }
   }
 

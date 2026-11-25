@@ -280,6 +280,26 @@ describe('webhook configuration at boot', () => {
 
   it.each([
     [
+      'a factory that enables the controller and names a route, with no static route',
+      { useFactory: () => options({ webhookController: true, webhookPath: 'hooks' }) },
+      'webhookPath'
+    ],
+    [
+      'a factory that names a route only, with no static route',
+      { useFactory: () => options({ webhookPath: 'hooks' }) },
+      'webhookPath'
+    ],
+    [
+      'a factory that enables the controller only, with no static route',
+      { useFactory: () => options({ webhookController: true }) },
+      'webhookPath'
+    ],
+    [
+      'a factory that names another route beside the static one',
+      { webhookPath: 'hooks', useFactory: () => options({ webhookPath: 'other' }) },
+      'webhookPath'
+    ],
+    [
       'a route that is not valid',
       { webhookPath: 'a b', useFactory: () => options({}) },
       'webhookPath'

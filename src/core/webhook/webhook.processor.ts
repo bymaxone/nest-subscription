@@ -40,10 +40,13 @@ export interface WebhookContext {
   readonly tenantId?: string | undefined
 }
 
-/** What became of the work after verification, and whether the event identifier stayed recorded. */
+/**
+ * What became of the work after verification. A failed event also carries the removal of its
+ * identifier, already started and settling to whether the store removed it; it never rejects.
+ */
 interface Settled {
   readonly outcome: WebhookOutcome
-  readonly retained: boolean
+  readonly removal?: Promise<boolean>
 }
 
 /** Whether a value is a non-empty string that is not blank. */
@@ -79,10 +82,13 @@ function acceptedTrigger(result: unknown): Trigger | null {
  * outcomes, and every outcome is reported to the observer.
  *
  * The identifier of an event is recorded when its processing starts and removed when it ends as
- * a failure, so the source's retry is processed. When the store cannot remove it, the outcome is
- * still a failure and the observer is told; the identifier then stays recorded and the source's
- * retries of that event are answered as already seen until the retention purges it. An event
- * that names no account is answered as ignored and records nothing.
+ * a failure, so the source's retry is processed. The removal is started before the failed answer
+ * is returned and is never awaited, so a store that is slow or down cannot hold the answer past
+ * the deadline. The observer hears of a failed event when its removal settles. When the store
+ * cannot remove the identifier, the outcome is still a failure and the observer and the log are
+ * told; the identifier then stays recorded and the source's retries of that event are answered as
+ * already seen until the retention purges it. An event that names no account is answered as
+ * ignored and records nothing.
  */
 @Injectable()
 export class WebhookProcessor {
@@ -115,11 +121,15 @@ export class WebhookProcessor {
     const started = this.observer.mark()
     const trigger = await this.#verify(request)
     const settled: Settled =
-      trigger === null
-        ? { outcome: { kind: 'refused' }, retained: false }
-        : await this.#handle(trigger, tenantId)
-    this.observer.webhook(settled.outcome.kind, started, settled.retained)
-    return settled.outcome
+      trigger === null ? { outcome: { kind: 'refused' } } : await this.#handle(trigger, tenantId)
+    const answered = this.observer.mark()
+    const { outcome, removal } = settled
+    if (removal === undefined) {
+      this.observer.webhook(outcome.kind, started, answered, false)
+    } else {
+      void removal.then((removed) => this.observer.webhook('failed', started, answered, !removed))
+    }
+    return outcome
   }
 
   /** The tenant to read under, or `undefined` when the host is not multi-tenant and gave none. */
@@ -146,18 +156,18 @@ export class WebhookProcessor {
   /** Records the event, reads the accounts it names and settles the outcome. */
   async #handle(trigger: Trigger, tenantId: string | undefined): Promise<Settled> {
     const accountIds = [...new Set(trigger.accountIds)]
-    if (accountIds.length === 0) return { outcome: { kind: 'ignored' }, retained: false }
+    if (accountIds.length === 0) return { outcome: { kind: 'ignored' } }
     const recorded = await this.#record(trigger.eventId)
-    if (recorded === 'unavailable') return { outcome: { kind: 'failed' }, retained: false }
-    if (recorded === 'seen') return { outcome: { kind: 'duplicate' }, retained: false }
+    if (recorded === 'unavailable') return { outcome: { kind: 'failed' } }
+    if (recorded === 'seen') return { outcome: { kind: 'duplicate' } }
     const references = accountIds.map((accountId): AccountReference => ({
       ...(tenantId === undefined ? {} : { tenantId }),
       accountId
     }))
     if (await this.#refreshAll(references)) {
-      return { outcome: { kind: 'processed', accounts: references.length }, retained: false }
+      return { outcome: { kind: 'processed', accounts: references.length } }
     }
-    return { outcome: { kind: 'failed' }, retained: !(await this.#forget(trigger.eventId)) }
+    return { outcome: { kind: 'failed' }, removal: this.#forget(trigger.eventId) }
   }
 
   /**
@@ -194,7 +204,10 @@ export class WebhookProcessor {
     }
   }
 
-  /** Removes the identifier of a failed event; `false` when the store could not. */
+  /**
+   * Starts the removal of the identifier of a failed event. The store is called before this
+   * returns; the promise settles to `false` when the store could not remove it, and never rejects.
+   */
   async #forget(eventId: string): Promise<boolean> {
     try {
       await this.store.forgetEvent(this.source.name, eventId)

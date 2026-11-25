@@ -8,11 +8,16 @@
  * @layer core
  */
 import {
+  SubscriptionError,
   encodeAccountKey,
   type AccountReference,
   type SourceNotification
 } from '@bymax-one/nest-subscription/internal'
-import { createEmptySnapshot, type SubscriptionRecord } from '@bymax-one/nest-subscription/shared'
+import {
+  SUBSCRIPTION_ERROR_CODES,
+  createEmptySnapshot,
+  type SubscriptionRecord
+} from '@bymax-one/nest-subscription/shared'
 import {
   FakeSubscriptionSource,
   InMemorySubscriptionStore,
@@ -201,6 +206,103 @@ describe('WebhookProcessor deadline', () => {
     const second = await processor.process(request)
     expect(first).toStrictEqual({ kind: 'failed' })
     expect(second).toStrictEqual({ kind: 'failed' })
+  })
+})
+
+/** What `settledWithin` yields when the promise had not settled by the time the loop turned. */
+const STILL_PENDING = Symbol('still pending')
+
+/** The promise's value if it settles before the event loop turns once, else `STILL_PENDING`. */
+function settledWithin<T>(promise: Promise<T>): Promise<T | typeof STILL_PENDING> {
+  return Promise.race([
+    promise,
+    new Promise<typeof STILL_PENDING>((resolve) => setImmediate(() => resolve(STILL_PENDING)))
+  ])
+}
+
+/** The payloads the observer heard about webhooks. */
+function webhookPayloads(capture: ReturnType<typeof createCapture>): unknown[] {
+  return capture.payloads.filter((entry) => entry.method === 'onWebhook').map((e) => e.payload)
+}
+
+describe('WebhookProcessor removal of a failed event', () => {
+  it('answers a failure at the deadline although the store never settles the removal', async () => {
+    // Scenario: the read is held past the deadline and `forgetEvent` never returns. The answer
+    // does not wait for the removal, which was started before the answer.
+    const { source, store, processor, expire } = build()
+    const forget = jest.spyOn(store, 'forgetEvent').mockReturnValue(new Promise(() => undefined))
+    const release = source.delayNextRead()
+    const answer = processor.process(source.buildRequest(NOTIFICATION))
+    await flush()
+    expire()
+    expect(await settledWithin(answer)).toStrictEqual({ kind: 'failed' })
+    expect(forget).toHaveBeenCalledTimes(1)
+    expect(forget).toHaveBeenCalledWith('fake', 'evt-1')
+    release()
+  })
+
+  it('answers a failed read without waiting for a removal that never settles', async () => {
+    // Scenario: the same on the path of a source that cannot be read, with no deadline involved.
+    const { source, store, processor } = build()
+    jest.spyOn(store, 'forgetEvent').mockReturnValue(new Promise(() => undefined))
+    source.failNextRead(new Error('source down'))
+    const answer = processor.process(source.buildRequest(NOTIFICATION))
+    expect(await settledWithin(answer)).toStrictEqual({ kind: 'failed' })
+  })
+
+  it('reports a failed event once, when its removal settles, with the duration of the answer', async () => {
+    // Scenario: nothing is reported while the removal is pending; when it settles the observer
+    // hears one event, whose duration is the time to the answer and not to the removal.
+    const { source, store, processor, expire, clock, capture } = build()
+    let settle = (): void => undefined
+    jest.spyOn(store, 'forgetEvent').mockReturnValue(
+      new Promise<void>((resolve) => {
+        settle = resolve
+      })
+    )
+    const release = source.delayNextRead()
+    const answer = processor.process(source.buildRequest(NOTIFICATION))
+    await flush()
+    expire()
+    await answer
+    await flush()
+    expect(webhookPayloads(capture)).toStrictEqual([])
+    clock.advance(777)
+    settle()
+    await flush()
+    expect(webhookPayloads(capture)).toStrictEqual([
+      { outcome: 'failed', durationMs: DEADLINE_MS, retained: false }
+    ])
+    release()
+  })
+
+  it('handles a removal that fails later, and reports it once without the identifier', async () => {
+    // Scenario: the removal rejects after the answer; nothing is left unhandled, the observer
+    // and the log each hear of it once, and neither holds the event identifier or the error text.
+    const { source, store, processor, capture } = build()
+    let fail = (_error: unknown): void => undefined
+    jest.spyOn(store, 'forgetEvent').mockReturnValue(
+      new Promise<void>((_resolve, reject) => {
+        fail = reject
+      })
+    )
+    const unhandled = jest.fn()
+    process.on('unhandledRejection', unhandled)
+    source.failNextRead(new Error('source down'))
+    const request = source.buildRequest({ ...NOTIFICATION, eventId: 'sentinel-event-id' })
+    expect(await processor.process(request)).toStrictEqual({ kind: 'failed' })
+    expect(webhookPayloads(capture)).toStrictEqual([])
+    fail(
+      new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE, { cause: 'sentinel-text' })
+    )
+    await new Promise((resolve) => setImmediate(resolve))
+    process.off('unhandledRejection', unhandled)
+    expect(unhandled).toHaveBeenCalledTimes(0)
+    expect(webhookPayloads(capture)).toStrictEqual([
+      { outcome: 'failed', durationMs: 0, retained: true }
+    ])
+    expect(capture.lines).toHaveLength(1)
+    expect(JSON.stringify([capture.lines, capture.payloads])).not.toContain('sentinel')
   })
 })
 

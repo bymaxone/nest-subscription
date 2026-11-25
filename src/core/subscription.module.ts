@@ -90,27 +90,44 @@ async function runFactory(
  * mistake stops the application where the module is built.
  */
 function staticRoute(path: string | undefined): string | undefined {
-  if (path !== undefined && !isWebhookRoute(path)) {
-    throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID, {
-      optionPaths: [ROUTE_PATH]
-    })
-  }
+  if (path !== undefined && !isWebhookRoute(path)) refuse([ROUTE_PATH])
   return path
 }
 
 /**
- * The factory's result with the controller switched on at the route `forRootAsync` was given.
- * Without a route the result is left as it is, and the options refuse a switch with no route. A
- * result that holds `webhookController: false` beside a route contradicts it and is refused.
+ * Refuses a configuration the route given to `forRootAsync` contradicts, naming the options.
+ *
+ * @throws {SubscriptionError} with `SUBSCRIPTION_CONFIG_INVALID` and the option paths.
+ */
+function refuse(paths: readonly string[]): never {
+  throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID, { optionPaths: paths })
+}
+
+/**
+ * The factory's result with the controller switched on at the route `forRootAsync` was given. A
+ * result that holds `webhookController: false`, or a `webhookPath` other than the route, beside
+ * that route contradicts it and is refused. Without a route the result is left as it is and
+ * {@link requireStaticRoute} checks it once it is resolved.
  */
 function withRoute(candidate: unknown, route: string | undefined): unknown {
   if (route === undefined || typeof candidate !== 'object' || candidate === null) return candidate
-  if (Reflect.get(candidate, 'webhookController') === false) {
-    throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID, {
-      optionPaths: ['webhookController']
-    })
-  }
+  const path: unknown = Reflect.get(candidate, 'webhookPath')
+  const contradictions = [
+    ...(Reflect.get(candidate, 'webhookController') === false ? ['webhookController'] : []),
+    ...(path !== undefined && path !== route ? [ROUTE_PATH] : [])
+  ]
+  if (contradictions.length > 0) refuse(contradictions)
   return { ...candidate, webhookController: true, webhookPath: route }
+}
+
+/**
+ * Refuses resolved options that enable the controller or name a route when `forRootAsync` was
+ * given none: a route is fixed when the module is built, so one only the factory names could
+ * never be mounted, and the application would boot without the controller (D43).
+ */
+function requireStaticRoute(options: ResolvedSubscriptionOptions): ResolvedSubscriptionOptions {
+  if (options.webhookController || options.webhookPath !== null) refuse([ROUTE_PATH])
+  return options
 }
 
 /**
@@ -260,8 +277,12 @@ export class SubscriptionModule {
     const route = staticRoute(options.webhookPath)
     const optionsProvider: FactoryProvider = {
       provide: SUBSCRIPTION_OPTIONS,
-      useFactory: async (...args: unknown[]): Promise<ResolvedSubscriptionOptions> =>
-        resolveOptions(withRoute(await runFactory(options.useFactory, args), route)),
+      useFactory: async (...args: unknown[]): Promise<ResolvedSubscriptionOptions> => {
+        const resolved = resolveOptions(
+          withRoute(await runFactory(options.useFactory, args), route)
+        )
+        return route === undefined ? requireStaticRoute(resolved) : resolved
+      },
       inject: [...(options.inject ?? [])]
     }
     const providers = [

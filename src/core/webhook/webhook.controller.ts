@@ -111,7 +111,8 @@ export class SubscriptionWebhookController {
 
   /** The answer when the application kept no raw body: a failure the source will retry. */
   #unconfigured(): WebhookAnswer {
-    this.observer.webhook('failed', this.observer.mark(), false)
+    const now = this.observer.mark()
+    this.observer.webhook('failed', now, now, false)
     if (!this.#warned) {
       this.#warned = true
       logEvent(this.options.logger, 'webhook_raw_body_missing', null, null)

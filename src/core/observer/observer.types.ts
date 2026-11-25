@@ -79,7 +79,9 @@ export interface WebhookEvent {
   /**
    * Whether the identifier of a failed event stayed recorded because the store could not forget
    * it, so the source's retries of that event are answered as already seen. Always `false` for an
-   * outcome other than `failed`.
+   * outcome other than `failed`. The removal is started before a failed answer is returned and is
+   * not waited for, so the event of a failed outcome is reported when the removal settles, after
+   * the answer; its `durationMs` is still the time to the answer.
    */
   readonly retained: boolean
 }
