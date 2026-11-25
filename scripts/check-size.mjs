@@ -40,21 +40,24 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 // The root bundle holds the module, the service, the guard, the refresher, reconciliation, change
 // notifications, the observer bridge and the webhook receiver (processor, controller, deadline and
 // outcomes), so its budget is the largest.
-// The `shared` bundle holds the one `SubscriptionError` and the instant parser; every other bundle
+// The `revenuecat` bundle holds the adapter: the options, the client, the read, the mapping tables, the
+// webhook verification and the event parser. The `testing` bundle also carries the signing function the
+// request builder shares with it.
+// The `shared` bundle holds the one `SubscriptionError`, the instant parser and the entitlement resolution; every other bundle
 // imports `shared` by package specifier and carries no copy of it.
 const BUDGETS = [
-  { name: 'root', path: 'dist/core/index.mjs', brotli: 16.95 * 1024 },
-  { name: 'shared', path: 'dist/shared/index.mjs', brotli: 1.96 * 1024 },
+  { name: 'root', path: 'dist/core/index.mjs', brotli: 17.2 * 1024 },
+  { name: 'shared', path: 'dist/shared/index.mjs', brotli: 2.2 * 1024 },
   { name: 'internal', path: 'dist/internal/index.mjs', brotli: 1.39 * 1024 },
-  { name: 'revenuecat', path: 'dist/revenuecat/index.mjs', brotli: 0.05 * 1024 },
+  { name: 'revenuecat', path: 'dist/revenuecat/index.mjs', brotli: 7.1 * 1024 },
   { name: 'finance', path: 'dist/finance/index.mjs', brotli: 0.05 * 1024 },
-  { name: 'testing', path: 'dist/testing/index.mjs', brotli: 5.9 * 1024 },
-  { name: 'root (CommonJS)', path: 'dist/core/index.cjs', brotli: 17.05 * 1024 },
-  { name: 'shared (CommonJS)', path: 'dist/shared/index.cjs', brotli: 2.0 * 1024 },
+  { name: 'testing', path: 'dist/testing/index.mjs', brotli: 6.5 * 1024 },
+  { name: 'root (CommonJS)', path: 'dist/core/index.cjs', brotli: 17.3 * 1024 },
+  { name: 'shared (CommonJS)', path: 'dist/shared/index.cjs', brotli: 2.25 * 1024 },
   { name: 'internal (CommonJS)', path: 'dist/internal/index.cjs', brotli: 1.5 * 1024 },
-  { name: 'revenuecat (CommonJS)', path: 'dist/revenuecat/index.cjs', brotli: 0.05 * 1024 },
+  { name: 'revenuecat (CommonJS)', path: 'dist/revenuecat/index.cjs', brotli: 7.15 * 1024 },
   { name: 'finance (CommonJS)', path: 'dist/finance/index.cjs', brotli: 0.05 * 1024 },
-  { name: 'testing (CommonJS)', path: 'dist/testing/index.cjs', brotli: 6.05 * 1024 }
+  { name: 'testing (CommonJS)', path: 'dist/testing/index.cjs', brotli: 6.65 * 1024 }
 ]
 
 const fmt = (n) => `${(n / 1024).toFixed(2)} kB`

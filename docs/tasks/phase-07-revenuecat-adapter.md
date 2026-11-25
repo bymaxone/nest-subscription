@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 7 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 8 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -49,7 +49,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | 7.5 | Verify RevenueCat webhooks                                | ✅ Done | P0       | M    | 7.2        |
 | 7.6 | Parse events and handle identity                          | ✅ Done | P0       | M    | 7.4, 7.5   |
 | 7.8 | Read non-renewing purchases and map them into the model   | ✅ Done | P0       | L    | 7.3, 7.4   |
-| 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6, 7.8   |
+| 7.7 | Add the request builders and prove the adapter end to end | ✅ Done | P0       | L    | 7.6, 7.8   |
 
 ---
 
@@ -568,7 +568,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.7 — Add the request builders and prove the adapter end to end
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 7.6, 7.8
@@ -579,14 +579,14 @@ Add the signed request builders to the testing subpath, and run the acceptance c
 
 #### Acceptance criteria
 
-- [ ] `buildRevenueCatWebhookRequest` builds a request the adapter accepts, for both verification methods, and can build each invalid variant on purpose.
-- [ ] A recorded purchase notification yields an active entitlement readable through the service (AC01).
-- [ ] A refund of the current period removes access on the next refresh and emits `refunded` (AC05).
-- [ ] A sandbox purchase grants nothing under the default configuration, with the stand-in reporting the entitlement as active the way RevenueCat does by default (AC06).
-- [ ] A wrong signature, a wrong authorization header, a stale timestamp and an altered body are refused through the controller and change nothing (AC02).
-- [ ] A recorded fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the real receiver and the service, and a consumable grants nothing (D31).
-- [ ] The suite's only HTTP is the local stand-in, reached through the adapter's `baseUrl` option; the sentinel sweep finds no secret and no identifier in logs or observer payloads.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `buildRevenueCatWebhookRequest` builds a request the adapter accepts, for both verification methods, and can build each invalid variant on purpose.
+- [x] A recorded purchase notification yields an active entitlement readable through the service (AC01).
+- [x] A refund of the current period removes access on the next refresh and emits `refunded` (AC05).
+- [x] A sandbox purchase grants nothing under the default configuration, with the stand-in reporting the entitlement as active the way RevenueCat does by default (AC06).
+- [x] A wrong signature, a wrong authorization header, a stale timestamp and an altered body are refused through the controller and change nothing (AC02).
+- [x] A recorded fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the real receiver and the service, and a consumable grants nothing (D31).
+- [x] The suite's only HTTP is the local stand-in, reached through the adapter's `baseUrl` option; the sentinel sweep finds no secret and no identifier in logs or observer payloads.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -769,3 +769,4 @@ Completion Protocol (after the work is reported done):
 - 7.5 ✅ 2026-11-25 — both webhook verification methods over the raw bytes with a timestamp tolerance, constant-time comparison, two valid secrets, one refusal value and a header-only report
 - 7.6 ✅ 2026-11-25 — event parsing into the port's notification with transfers, aliases and anonymous identifiers, and the revenueCatSource factory with secrets held in private fields
 - 7.8 ✅ 2026-11-25 — non-renewing purchases that grant an entitlement read, mapped and filtered, the model extended with an optional purchase list that the resolution, the change rules and the fit check count, and the local stand-in
+- 7.7 ✅ 2026-11-25 — the signed request builders in the testing subpath sharing one signing function with the adapter, and the adapter proved end to end behind the real controller against a local stand-in

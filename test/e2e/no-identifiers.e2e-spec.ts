@@ -6,11 +6,24 @@
  * sentinels. A positive control proves the capture saw the events it is meant to search.
  * @layer e2e
  */
+import { Test } from '@nestjs/testing'
 import request from 'supertest'
-import { hashAccountKey, encodeAccountKey } from '@bymax-one/nest-subscription'
+import {
+  SubscriptionError,
+  SubscriptionModule,
+  SubscriptionService,
+  hashAccountKey,
+  encodeAccountKey
+} from '@bymax-one/nest-subscription'
+import { revenueCatSource } from '@bymax-one/nest-subscription/revenuecat'
 import type { AccountReference, SubscriptionCache } from '@bymax-one/nest-subscription'
 import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
-import { ManualClock, assertNoSentinel, createCapture } from '@bymax-one/nest-subscription/testing'
+import {
+  InMemorySubscriptionStore,
+  ManualClock,
+  assertNoSentinel,
+  createCapture
+} from '@bymax-one/nest-subscription/testing'
 
 import { ObserverBridge } from '../../src/core/observer/observer-bridge'
 
@@ -210,6 +223,38 @@ describe('no identifiers', () => {
       nothing: undefined
     } as never)
     expect(() => assertNoSentinel(capture, ['sentinel-planted'])).not.toThrow()
+  })
+
+  it('keeps the account out of a log line and an observer payload when the RevenueCat source fails', async () => {
+    // Scenario: the adapter's request fails with an error that holds the identifier; the error the
+    // library raises has a fixed message, so neither the log nor the observer ever holds it.
+    const capture = createCapture()
+    const source = revenueCatSource({
+      projectId: 'proj_PLACEHOLDER',
+      apiKey: 'sentinel-api-key-0f1e',
+      baseUrl: 'http://127.0.0.1:9/v2',
+      fetch: () => Promise.reject(new TypeError(`unreachable ${SENTINEL_ACCOUNT}`))
+    })
+    const app = await Test.createTestingModule({
+      imports: [
+        SubscriptionModule.forRoot({
+          source,
+          store: new InMemorySubscriptionStore(),
+          accountResolver: () => null,
+          logger: capture.logger,
+          observer: capture.observer
+        })
+      ]
+    }).compile()
+    const error = await app
+      .get(SubscriptionService)
+      .refresh(ACCOUNT)
+      .catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(SubscriptionError)
+    expect(capture.payloads.length).toBeGreaterThan(0)
+    assertNoSentinel(capture, SENTINELS)
+    expect(JSON.stringify(error)).not.toContain(SENTINEL_ACCOUNT)
+    await app.close()
   })
 
   it('detects an identifier when one is planted, so the sweep is not vacuous', () => {

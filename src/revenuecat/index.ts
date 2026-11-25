@@ -4,6 +4,7 @@
  * @layer adapter
  */
 export { revenueCatSource } from './revenuecat.source'
+export { signRevenueCatWebhook } from './webhook/sign'
 export type {
   RevenueCatFetch,
   RevenueCatLogger,

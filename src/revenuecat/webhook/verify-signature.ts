@@ -8,10 +8,11 @@
  * refusal, never an exception.
  * @layer revenuecat
  */
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { timingSafeEqual } from 'node:crypto'
 
 import type { Secret } from '@bymax-one/nest-subscription/internal'
 
+import { webhookDigest } from './sign'
 import { headerValue } from './verify-authorization'
 
 /** The name of the header that carries the signature. */
@@ -60,10 +61,7 @@ function isFresh(seconds: string, nowMs: number, toleranceMs: number): boolean {
 function signedBy(secret: Secret, parsed: ParsedSignature, rawBody: Uint8Array): boolean {
   let matched = 0
   for (const candidate of secret.candidates()) {
-    const expected = createHmac('sha256', candidate)
-      .update(`${parsed.timestamp}.`)
-      .update(rawBody)
-      .digest()
+    const expected = webhookDigest(candidate, parsed.timestamp, rawBody)
     // Both buffers are 32 bytes: a SHA-256 digest, and 64 hexadecimal digits decoded.
     matched |= timingSafeEqual(expected, parsed.digest) ? 1 : 0
   }

@@ -112,7 +112,11 @@ export class RevenueCatHttp {
 
   async #parse(response: Response): Promise<unknown> {
     if (!response.ok) {
-      await response.body?.cancel().catch(() => undefined)
+      try {
+        await response.body?.cancel()
+      } catch {
+        // A body that cannot be released changes nothing: the status decides.
+      }
       throw response.status === NOT_FOUND
         ? new SubscriptionError(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
         : unavailable()

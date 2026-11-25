@@ -6,7 +6,7 @@
  * out of the list. Only the identifiers are read, never any state the event carries.
  * @layer revenuecat
  */
-import { isRecord, readString, type JsonRecord } from '../read/parse-customer'
+import { readString, type JsonRecord } from '../read/parse-customer'
 
 /** The prefix RevenueCat gives an identifier it generated for a customer with no App User ID. */
 export const ANONYMOUS_PREFIX = '$RCAnonymousID:'
@@ -45,8 +45,7 @@ function list(event: JsonRecord, field: string): readonly string[] {
  *
  * @param event The `event` object of the webhook body.
  */
-export function affectedAccounts(event: unknown): AffectedAccounts {
-  if (!isRecord(event)) return { accountIds: [], anonymousCount: 0 }
+export function affectedAccounts(event: JsonRecord): AffectedAccounts {
   const named = [
     ...SINGLE_FIELDS.flatMap((field) => single(event, field)),
     ...LIST_FIELDS.flatMap((field) => list(event, field))

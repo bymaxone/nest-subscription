@@ -15,6 +15,7 @@ import {
   SubscriptionService,
   resolveOptions
 } from '@bymax-one/nest-subscription'
+import { revenueCatSource } from '@bymax-one/nest-subscription/revenuecat'
 import { InMemorySubscriptionStore } from '@bymax-one/nest-subscription/testing'
 import { SnapshotRefresher } from '../../src/core/refresh/snapshot-refresher'
 import { credentialedSource } from './fixtures/credentialed-source'
@@ -62,6 +63,41 @@ describe('secret containment', () => {
     expectNoSentinel(outputsOf(app.get(EntitlementGuard)))
     expectNoSentinel(outputsOf(await service.getSnapshot({ accountId: 'acc-1' })))
     expect(inspect(service, { depth: null, showHidden: true })).toContain('[Secret]')
+    await app.close()
+  })
+
+  it('shows no secret on any path of the RevenueCat source, the options and the service that holds it', async () => {
+    // Scenario: D26: the adapter holds an API key, a webhook authorization and a signing secret,
+    // each a rotation pair; the module options hold none, and a sweep of the source, of the
+    // resolved options and of the service after a read finds no value.
+    const source = revenueCatSource({
+      projectId: 'proj_PLACEHOLDER',
+      apiKey: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      webhookAuthorization: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      webhookSigningSecret: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      baseUrl: 'http://127.0.0.1:9/v2',
+      fetch: () => Promise.reject(new TypeError('the source is down'))
+    })
+    const options = resolveOptions({
+      source,
+      store: new InMemorySubscriptionStore(),
+      accountResolver: () => null
+    })
+    expectNoSentinel(outputsOf(source))
+    expectNoSentinel(outputsOf(options))
+    const app = await Test.createTestingModule({
+      imports: [
+        SubscriptionModule.forRoot({
+          source,
+          store: new InMemorySubscriptionStore(),
+          accountResolver: () => null
+        })
+      ]
+    }).compile()
+    const service = app.get(SubscriptionService)
+    await service.refresh({ accountId: 'acc-1' }).catch(() => undefined)
+    expectNoSentinel(outputsOf(service))
+    expect(Object.keys(source)).toEqual(['name'])
     await app.close()
   })
 

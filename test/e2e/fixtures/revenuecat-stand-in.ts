@@ -7,7 +7,7 @@
  * @layer e2e
  */
 import { readFileSync } from 'node:fs'
-import { createServer, type Server } from 'node:http'
+import { createServer, type Server, type ServerResponse } from 'node:http'
 import { join } from 'node:path'
 
 const FIXTURES = join(__dirname, '..', '..', 'fixtures', 'revenuecat')
@@ -41,6 +41,19 @@ export interface StandInRequest {
   readonly authorization: string | undefined
 }
 
+/** A scripted answer: a status, a body, and the address of a redirect when it has one. */
+export interface StandInAnswer {
+  /** The status. */
+  readonly status: number
+  /** The body, sent as JSON unless it is a string, which is sent as it is. */
+  readonly body?: unknown
+  /** An address to redirect to, sent as `Location`. */
+  readonly location?: string
+}
+
+/** Decides the answer to one request, or leaves it to the customers the stand-in serves. */
+export type StandInHandler = (request: StandInRequest) => StandInAnswer | undefined
+
 /** A running stand-in. */
 export interface StandIn {
   /** The base address to give the adapter's `baseUrl` option. */
@@ -55,6 +68,11 @@ export interface StandIn {
   forget(customerId: string): void
   /** Answers every request with this status, or goes back to normal with `null`. */
   failWith(status: number | null): void
+  /**
+   * Answers each request with what the handler returns, ahead of the customers it serves, or goes
+   * back to normal with `null`. A handler that returns `undefined` leaves the request to them.
+   */
+  respondWith(handler: StandInHandler | null): void
   /** Stops the server and closes its connections. */
   close(): Promise<void>
 }
@@ -95,53 +113,73 @@ function listFor(held: StandInCustomer, list: string): unknown {
   }
 }
 
+/** What the stand-in is told while it runs, which its answers depend on. */
+interface Script {
+  readonly customers: Map<string, StandInCustomer>
+  failing: number | null
+  handler: StandInHandler | null
+}
+
+/** Writes an answer as JSON, or as it is when the body is text. */
+function reply(response: ServerResponse, answer: StandInAnswer): void {
+  response.writeHead(answer.status, {
+    'content-type': 'application/json',
+    ...(answer.location === undefined ? {} : { location: answer.location })
+  })
+  response.end(typeof answer.body === 'string' ? answer.body : JSON.stringify(answer.body ?? {}))
+}
+
+/** The answer to a request: a failure, a scripted answer, a refusal of the key, a list or a 404. */
+function answerOf(script: Script, expectedKey: string, received: StandInRequest): StandInAnswer {
+  if (script.failing !== null) return { status: script.failing, body: { type: 'server_error' } }
+  const scripted = script.handler?.(received)
+  if (scripted !== undefined) return scripted
+  if (received.authorization !== `Bearer ${expectedKey}`) {
+    return { status: 401, body: { type: 'authentication_error' } }
+  }
+  const target = parsePath(received.url)
+  const held = target === undefined ? undefined : script.customers.get(target.customer)
+  const body = held === undefined || target === undefined ? undefined : listFor(held, target.list)
+  return body === undefined ? { status: 404, body: RESOURCE_MISSING } : { status: 200, body }
+}
+
 /**
  * Starts the stand-in on a free loopback port.
  *
  * @param expectedKey The API key it accepts; any other credential is answered 401.
  */
 export async function startStandIn(expectedKey: string): Promise<StandIn> {
-  const customers = new Map<string, StandInCustomer>()
+  const script: Script = { customers: new Map(), failing: null, handler: null }
   const requests: StandInRequest[] = []
-  let failing: number | null = null
   const server: Server = createServer((request, response) => {
-    const url = request.url ?? ''
-    requests.push({
+    const received: StandInRequest = {
       method: request.method ?? '',
-      url,
+      url: request.url ?? '',
       authorization: request.headers.authorization
-    })
-    const send = (status: number, body: unknown): void => {
-      response.writeHead(status, { 'content-type': 'application/json' })
-      response.end(JSON.stringify(body))
     }
-    if (failing !== null) return send(failing, { type: 'server_error' })
-    if (request.headers.authorization !== `Bearer ${expectedKey}`) {
-      return send(401, { type: 'authentication_error' })
-    }
-    const target = parsePath(url)
-    const held = target === undefined ? undefined : customers.get(target.customer)
-    const body = held === undefined || target === undefined ? undefined : listFor(held, target.list)
-    return body === undefined ? send(404, RESOURCE_MISSING) : send(200, body)
+    requests.push(received)
+    reply(response, answerOf(script, expectedKey, received))
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()
   if (address === null || typeof address === 'string') throw new Error('the stand-in has no port')
+  const empty = { object: 'list', items: [], next_page: null, url: '' }
   return {
     baseUrl: `http://127.0.0.1:${String(address.port)}/v2`,
     requests,
-    serveFixture: (customerId, name) => void customers.set(customerId, fixtureLists(name)),
-    serve: (customerId, lists) => {
-      const empty = { object: 'list', items: [], next_page: null, url: '' }
-      customers.set(customerId, {
+    serveFixture: (customerId, name) => void script.customers.set(customerId, fixtureLists(name)),
+    serve: (customerId, lists) =>
+      void script.customers.set(customerId, {
         subscriptions: lists.subscriptions ?? empty,
         purchases: lists.purchases ?? empty,
         activeEntitlements: lists.activeEntitlements ?? empty
-      })
-    },
-    forget: (customerId) => void customers.delete(customerId),
+      }),
+    forget: (customerId) => void script.customers.delete(customerId),
     failWith: (status) => {
-      failing = status
+      script.failing = status
+    },
+    respondWith: (next) => {
+      script.handler = next
     },
     close: () =>
       new Promise<void>((resolve, reject) => {
