@@ -50,6 +50,15 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - `ManualClock` in the `testing` subpath: a `Clock` a test moves by hand, so no test of staleness,
   ordering or a rate limit waits on a timer.
 
+- `SubscriptionService` and `AgedSnapshot`, exported from the root and provided by the module.
+  `getSnapshot` and `hasEntitlement` answer from the store and never call the source; an account
+  with nothing stored reads as an empty snapshot and `false`. `refresh` reads the source now and
+  returns the stored snapshot, and concurrent refreshes of one account share one source call. A
+  snapshot comes back frozen and carries its age in milliseconds. A source failure on refresh
+  rejects with `SUBSCRIPTION_SOURCE_UNAVAILABLE` and leaves the stored snapshot untouched, and a
+  snapshot the source reports as older than the stored one is never written. A multi-tenant
+  configuration refuses a call without a tenant.
+
 ### Changed
 
 - The store conformance case for stale-key paging asserts what the store port promises: at most

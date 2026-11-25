@@ -46,12 +46,13 @@ describe('entry points', () => {
         'Secret',
         'SubscriptionError',
         'SubscriptionModule',
+        'SubscriptionService',
         'encodeAccountKey',
         'resolveOptions',
         'validateOptions'
       ].sort()
     )
-    expect(Object.values(core)).toHaveLength(14)
+    expect(Object.values(core)).toHaveLength(15)
     expect(Object.keys(internal).sort()).toEqual(
       [
         'SUBSCRIPTION_CACHE',

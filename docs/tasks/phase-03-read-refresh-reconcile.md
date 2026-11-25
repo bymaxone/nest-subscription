@@ -1,6 +1,6 @@
 # Phase 3 — Read, refresh and reconcile
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P3 — read-refresh-reconcile
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,7 +39,7 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 | ID  | Task                                                          | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 3.1 | Implement the refresher with single flight and ordered writes | ✅ Done | P0       | L    | —          |
-| 3.2 | Implement the service reads                                   | 📋 ToDo | P0       | M    | 3.1        |
+| 3.2 | Implement the service reads                                   | ✅ Done | P0       | M    | 3.1        |
 | 3.3 | Refresh a stale snapshot in the background                    | 📋 ToDo | P0       | M    | 3.2        |
 | 3.4 | Read through the optional cache                               | 📋 ToDo | P1       | M    | 3.2        |
 | 3.5 | Implement reconciliation                                      | 📋 ToDo | P0       | M    | 3.1, 3.2   |
@@ -134,7 +134,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 3.2 — Implement the service reads
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 3.1
@@ -145,12 +145,12 @@ Write `SubscriptionService` with its two reads and the on-demand refresh, answer
 
 #### Acceptance criteria
 
-- [ ] On a fresh snapshot `getSnapshot(account)` and `hasEntitlement(account, name)` make zero source calls, asserted with the fake source's read counter, and neither ever waits for a source call.
-- [ ] An account with no stored snapshot yields the empty snapshot and `false`, not an error.
-- [ ] `hasEntitlement` answers from the entitlement's active flag, which comes from the source's access flag, and is `false` for an entitlement the account lacks.
-- [ ] `refresh(account)` delegates to `SnapshotRefresher` and returns the stored snapshot.
-- [ ] Reading account A never returns data of account B, across tenants and when identifiers contain the key delimiter.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] On a fresh snapshot `getSnapshot(account)` and `hasEntitlement(account, name)` make zero source calls, asserted with the fake source's read counter, and neither ever waits for a source call.
+- [x] An account with no stored snapshot yields the empty snapshot and `false`, not an error.
+- [x] `hasEntitlement` answers from the entitlement's active flag, which comes from the source's access flag, and is `false` for an entitlement the account lacks.
+- [x] `refresh(account)` delegates to `SnapshotRefresher` and returns the stored snapshot.
+- [x] Reading account A never returns data of account B, across tenants and when identifiers contain the key delimiter.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -472,5 +472,7 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 - 3.1 ✅ 2026-11-25 — the refresher with single flight, ordered writes and a source-unavailable failure that leaves the stored snapshot untouched
+
+- 3.2 ✅ 2026-11-25 — the service reads from the store with the age, the on-demand refresh and the tenant in every key
 
 <!-- entries are added as tasks complete -->

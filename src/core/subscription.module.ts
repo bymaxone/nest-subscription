@@ -26,6 +26,7 @@ import type {
   SubscriptionModuleOptions
 } from './options/subscription-options.types'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
+import { SubscriptionService } from './subscription.service'
 
 /** The path `forRootAsync` names when its factory rejects; the factory's own error is dropped. */
 const FACTORY_PATH = 'useFactory'
@@ -73,11 +74,11 @@ async function runFactory(
  * The classes the library provides for itself. They are built from the tokens above, so they
  * follow whichever configuration the host chose.
  */
-const OWN_CLASSES: readonly Type[] = [SnapshotRefresher]
+const OWN_CLASSES: readonly Type[] = [SnapshotRefresher, SubscriptionService]
 
 /**
  * Puts the pieces together as a dynamic module; every token provider it lists is exported, and
- * the library's own classes are provided without being exported.
+ * so is the service. The refresher is provided for the library's own use and is not exported.
  */
 function assemble(
   global: boolean | undefined,
@@ -89,7 +90,7 @@ function assemble(
     global: global ?? false,
     imports: imports ?? [],
     providers: [...providers, ...OWN_CLASSES],
-    exports: providers.map((provider) => provider.provide)
+    exports: [...providers.map((provider) => provider.provide), SubscriptionService]
   }
 }
 

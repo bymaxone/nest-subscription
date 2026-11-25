@@ -61,3 +61,5 @@ export type {
   SubscriptionOptionsInput
 } from './options/subscription-options.types'
 export { SubscriptionModule } from './subscription.module'
+export { SubscriptionService } from './subscription.service'
+export type { AgedSnapshot } from './snapshot-view'

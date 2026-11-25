@@ -93,6 +93,7 @@ const ROOT_EXPORTS = [
   'Secret',
   'SubscriptionError',
   'SubscriptionModule',
+  'SubscriptionService',
   'encodeAccountKey',
   'resolveOptions',
   'validateOptions'

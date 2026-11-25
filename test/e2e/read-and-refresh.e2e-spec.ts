@@ -10,6 +10,7 @@ import {
   SUBSCRIPTION_ERROR_CODES,
   SubscriptionError,
   SubscriptionModule,
+  SubscriptionService,
   encodeAccountKey
 } from '@bymax-one/nest-subscription'
 import type { AccountReference, SubscriptionStore } from '@bymax-one/nest-subscription'
@@ -201,6 +202,63 @@ describe('read and refresh: the refresher in a running application', () => {
     const result = await new SnapshotRefresher(source, refusing, clock).refresh(ACCOUNT)
     expect(result.written).toBe(false)
     expect(result.current.sourceUpdatedAt).toBe(T10)
+    await app.close()
+  })
+})
+
+describe('read and refresh: the service in a running application', () => {
+  it('reads an entitlement from the store and calls the source only for the refresh', async () => {
+    // Scenario: a state is set on the source and refreshed on demand; every later read answers from
+    // the store, so the source's read count stays at the one refresh.
+    const { app, source } = await boot()
+    const service = app.get(SubscriptionService)
+    source.setAccount(ACCOUNT, {
+      ...snapshotOf(ACCOUNT, T10),
+      entitlements: [{ name: 'pro', active: true, until: null, grantingSubscriptionReference: 's' }]
+    })
+    expect((await service.refresh(ACCOUNT)).ageMs).toBe(0)
+    for (let read = 0; read < 5; read += 1) {
+      await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+      await service.getSnapshot(ACCOUNT)
+    }
+    expect(source.readCount(ACCOUNT)).toBe(1)
+    await app.close()
+  })
+
+  it('answers an unknown account as an empty snapshot and false without a source call', async () => {
+    // Scenario: nothing is stored for the account; the source is held and still no read waits.
+    const { app, source } = await boot()
+    const service = app.get(SubscriptionService)
+    source.delayNextRead()
+    expect(await service.hasEntitlement(ACCOUNT, 'pro')).toBe(false)
+    expect((await service.getSnapshot(ACCOUNT)).entitlements).toEqual([])
+    expect(source.totalReads).toBe(0)
+    await app.close()
+  })
+
+  it('refuses a missing tenant when the application is configured as multi-tenant', async () => {
+    // Scenario: forRoot with multiTenant; the caller passes no tenant.
+    const source = new FakeSubscriptionSource()
+    const store = new InMemorySubscriptionStore({ logger: () => undefined })
+    const app = await Test.createTestingModule({
+      imports: [
+        SubscriptionModule.forRoot({
+          source,
+          store,
+          multiTenant: true,
+          accountResolver: () => null
+        })
+      ]
+    }).compile()
+    const error = await app
+      .get(SubscriptionService)
+      .getSnapshot(ACCOUNT)
+      .catch((caught: unknown) => caught)
+    expect((error as SubscriptionError).code).toBe(SUBSCRIPTION_ERROR_CODES.INVALID_INPUT)
+    const withTenant = await app
+      .get(SubscriptionService)
+      .getSnapshot({ tenantId: 'acme', accountId: 'acc-1' })
+    expect(withTenant.tenantId).toBe('acme')
     await app.close()
   })
 })

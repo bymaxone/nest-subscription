@@ -22,6 +22,7 @@ import {
 import type { SubscriptionOptionsInput } from './options/subscription-options.types'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionModule } from './subscription.module'
+import { SubscriptionService } from './subscription.service'
 
 const SENTINEL = 'sentinel-secret-0b8e6d14'
 const STORE_TOKEN = Symbol('HOST_STORE')
@@ -60,15 +61,19 @@ describe('SubscriptionModule.forRoot', () => {
       SUBSCRIPTION_OPTIONS,
       SUBSCRIPTION_SOURCE,
       SUBSCRIPTION_STORE,
-      SUBSCRIPTION_CLOCK
+      SUBSCRIPTION_CLOCK,
+      SubscriptionService
     ])
     expect(module.module).toBe(SubscriptionModule)
   })
 
-  it('provides the refresher as a class and does not export it', () => {
-    // Scenario: the library's own classes are providers of the module, not part of what it exports.
+  it('provides the refresher and the service as classes and exports the service only', () => {
+    // Scenario: both classes are providers of the module; a host injects the service, and the
+    // refresher stays inside the module.
     const module = SubscriptionModule.forRoot(input())
     expect(module.providers).toContain(SnapshotRefresher)
+    expect(module.providers).toContain(SubscriptionService)
+    expect(module.exports).toContain(SubscriptionService)
     expect(module.exports).not.toContain(SnapshotRefresher)
   })
 
@@ -214,7 +219,7 @@ describe('SubscriptionModule.forRootAsync', () => {
       SUBSCRIPTION_CACHE,
       SUBSCRIPTION_OBSERVER
     ])
-    expect(module.exports).toHaveLength(6)
+    expect(module.exports).toHaveLength(7)
   })
 
   it('hands the injected values to the factory and resolves what it returns', async () => {
