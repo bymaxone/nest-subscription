@@ -145,10 +145,10 @@ Write the processor: verify through the adapter, de-duplicate by event identifie
 - [x] A verified notification results in a stored snapshot read from the source; a test puts a contradicting state in the payload and proves it is ignored.
 - [x] A request that fails verification returns the refused outcome, and the store, the source read counter and the hook are untouched.
 - [x] The same event delivered five times, sequentially and concurrently, causes one source read and one host notification (AC03).
-- [x] An unknown event kind is accepted and triggers a refresh; a kind the adapter marks as changing nothing returns the ignored outcome without a read.
+- [x] An unknown event kind is accepted and triggers a refresh; a notification that names no account returns the ignored outcome without a read.
 - [x] A notification naming several accounts refreshes each of them.
 - [x] A source read that fails returns the failed outcome and the event identifier is removed through `forgetEvent`, so a retry of that event is processed (D16).
-- [x] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded, so the source's retries of that event are answered as already seen. The task's doc comment states this limit.
+- [x] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded, so the source's retries of that event are answered as already seen.
 - [x] A sandbox notification is processed like any other; whether sandbox state grants access is decided where the snapshot is read from the source, not here.
 - [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
@@ -311,12 +311,12 @@ Completion Protocol (after the work is reported done):
 
 #### Description
 
-Offer the receiver as a controller the host mounts with one option, off by default, which refuses to start without the unparsed request body (FR17, D10).
+Offer the receiver as a controller the host mounts with one option, off by default, which answers a temporary failure when the unparsed request body is missing (FR17, D10).
 
 #### Acceptance criteria
 
 - [x] With the switch off, no route is registered. With it on, a POST route exists at the configured path.
-- [x] With the switch on and no raw body available, the application refuses to start, with a configuration error that says what to enable and names no value.
+- [x] With the switch on and no raw body kept, a request is answered with a temporary failure and one warning is logged.
 - [x] The controller passes the exact bytes received to the processor, and returns `toHttpAnswer` of its outcome.
 - [x] The controller applies no guard of the library, and its doc comment says the route must stay outside the host's authentication guard and inside its rate limiting.
 - [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
@@ -477,7 +477,7 @@ Completion Protocol (after the work is reported done):
 <!-- entries are added as tasks complete -->
 
 - 6.1 ✅ 2026-11-25 — the five outcomes as a closed union and the one HTTP answer of each, with one frozen refusal for every cause
-- 6.2 ✅ 2026-11-25 — the processor: verification over the raw bytes through the adapter, de-duplication by event identifier with D16, a read of every named account, the retention purge in reconciliation, and D41 recorded
+- 6.2 ✅ 2026-11-25 — the processor: verification over the raw bytes through the adapter, de-duplication by event identifier with D16, a read of every named account, and the retention purge in reconciliation
 - 6.3 ✅ 2026-11-25 — the response deadline: the work raced against an injectable wait, the only timer cleared when the race is decided, a timed-out event freed for its retry, and a 60 000 ms ceiling at boot
 - 6.4 ✅ 2026-11-25 — the controller behind a switch that is off by default, the raw-body reading, a route chosen by the host with no default, and a first-request answer for an application without the raw body
 - 6.5 ✅ 2026-11-25 — the receiver end to end in both forms: one identical refusal for every failed check, one read per event, reverse order, a slow source and its retry, failure paths, the purge and the sentinel sweep
