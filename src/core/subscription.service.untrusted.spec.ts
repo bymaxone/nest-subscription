@@ -73,13 +73,14 @@ const KEY = `subscription:snapshot:${encodeAccountKey(ACCOUNT)}`
 
 describe('SubscriptionService with a cache that holds an unreadable snapshot', () => {
   it.each([
-    ['fetch instant', { ...snapshotOf(true), fetchedAt: 'invalid' }],
-    ['source instant', { ...snapshotOf(true), sourceUpdatedAt: 'later' }],
-    ['entitlement until', withEntitlement({ active: true, until: 'not-a-date' })]
+    ['fetch instant', { ...snapshotOf(false), fetchedAt: 'invalid' }],
+    ['source instant', { ...snapshotOf(false), sourceUpdatedAt: 'later' }],
+    ['entitlement until', withEntitlement({ active: false, until: 'not-a-date' })]
   ])(
     'answers the store snapshot, and does not reject, for an unreadable %s',
     async (_name, cached) => {
-      // Scenario: the host cache returns the right account with one instant that cannot be read.
+      // Scenario: the host cache returns the right account, without access, with one instant
+      // that cannot be read; the store holds access, so only the store's answer is true.
       const entries = new Map<string, string>()
       const { service, source } = await build(mapCache(entries))
       source.setAccount(ACCOUNT, snapshotOf(true))
