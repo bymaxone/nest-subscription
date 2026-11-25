@@ -73,7 +73,7 @@ export type {
   SourceErrorEvent,
   SubscriptionObserver,
   WebhookEvent,
-  WebhookOutcome
+  WebhookOutcomeKind
 } from './observer/observer.types'
 export { EntitlementGuard } from './guard/entitlement.guard'
 export { RequiresEntitlement } from './guard/requires-entitlement.decorator'
@@ -81,6 +81,11 @@ export type { AccountResolver, ResolvedAccount } from './guard/account-resolver.
 export { diffSnapshots } from './notifications/diff-snapshots'
 export { SubscriptionModule } from './subscription.module'
 export { SubscriptionService } from './subscription.service'
+export { toHttpAnswer } from './webhook/webhook-outcome'
+export type { WebhookAnswer, WebhookOutcome } from './webhook/webhook-outcome'
+export { SubscriptionWebhookController } from './webhook/webhook.controller'
+export { WebhookProcessor } from './webhook/webhook.processor'
+export type { WebhookContext } from './webhook/webhook.processor'
 export type { AgedSnapshot } from './snapshot-view'
 export type { ReconcileOptions, ReconcileResult } from './reconciliation/reconciler'
 export type { Wait } from './reconciliation/rate-limiter'

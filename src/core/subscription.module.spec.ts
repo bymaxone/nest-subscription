@@ -31,6 +31,8 @@ import { EntitlementGuard } from './guard/entitlement.guard'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionModule } from './subscription.module'
 import { SubscriptionService } from './subscription.service'
+import { WEBHOOK_WAIT, timerWait } from './webhook/deadline'
+import { WebhookProcessor } from './webhook/webhook.processor'
 
 const SENTINEL = 'sentinel-secret-0b8e6d14'
 const STORE_TOKEN = Symbol('HOST_STORE')
@@ -69,7 +71,8 @@ describe('SubscriptionModule.forRoot', () => {
       SUBSCRIPTION_OPTIONS,
       SUBSCRIPTION_SOURCE,
       SUBSCRIPTION_STORE,
-      SUBSCRIPTION_CLOCK
+      SUBSCRIPTION_CLOCK,
+      WEBHOOK_WAIT
     ])
     expect(module.exports).toEqual([
       SUBSCRIPTION_OPTIONS,
@@ -78,6 +81,7 @@ describe('SubscriptionModule.forRoot', () => {
       SUBSCRIPTION_CLOCK,
       SubscriptionService,
       EntitlementGuard,
+      WebhookProcessor,
       ObserverBridge
     ])
     expect(module.module).toBe(SubscriptionModule)
@@ -93,6 +97,19 @@ describe('SubscriptionModule.forRoot', () => {
     expect(module.exports).not.toContain(Reconciler)
     expect(module.exports).toContain(SubscriptionService)
     expect(module.exports).not.toContain(SnapshotRefresher)
+  })
+
+  it('provides the timer wait for the receiver deadline under its token', () => {
+    // Scenario: the module's own wait is the timer wait; a test replaces it by that token.
+    const module = SubscriptionModule.forRoot(input())
+    expect(provider(module, WEBHOOK_WAIT).useFactory()).toBe(timerWait)
+  })
+
+  it('provides and exports the processor, so a host that owns its routing can call it', () => {
+    // Scenario: the processor is a provider of the module and one of its exports.
+    const module = SubscriptionModule.forRoot(input())
+    expect(module.providers).toContain(WebhookProcessor)
+    expect(module.exports).toContain(WebhookProcessor)
   })
 
   it('provides and exports the guard, so a host module that imports this one can use it', () => {
@@ -318,21 +335,22 @@ describe('SubscriptionModule.forRootAsync', () => {
       SUBSCRIPTION_STORE,
       SUBSCRIPTION_CLOCK,
       SUBSCRIPTION_CACHE,
-      SUBSCRIPTION_OBSERVER
+      SUBSCRIPTION_OBSERVER,
+      WEBHOOK_WAIT
     ])
-    expect(module.exports).toHaveLength(9)
+    expect(module.exports).toHaveLength(10)
   })
 
   it('hands the injected values to the factory and resolves what it returns', async () => {
     // Scenario: the factory receives the injected values in order and its result is resolved.
     const useFactory = jest.fn((first: string, second: string) => ({
       ...input(),
-      webhookPath: `${first}/${second}`
+      cacheTtlMs: `${first}${second}`.length + 1
     }))
     const module = SubscriptionModule.forRootAsync({ inject: ['a', 'b'], useFactory })
     const resolved = await provider(module, SUBSCRIPTION_OPTIONS).useFactory('a', 'b')
     expect(useFactory).toHaveBeenCalledWith('a', 'b')
-    expect(resolved.webhookPath).toBe('a/b')
+    expect(resolved.cacheTtlMs).toBe(3)
     const options = provider(module, SUBSCRIPTION_OPTIONS)
     const resolvedOptions = await options.useFactory()
     expect(provider(module, SUBSCRIPTION_CACHE).useFactory(resolvedOptions)).toBeNull()

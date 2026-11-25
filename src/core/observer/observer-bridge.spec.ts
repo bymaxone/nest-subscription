@@ -45,8 +45,8 @@ const EVENTS: ReadonlyArray<{
   },
   {
     name: 'onWebhook',
-    report: (bridge, at) => bridge.webhook('duplicate', at),
-    payload: { outcome: 'duplicate', durationMs: 40 }
+    report: (bridge, at) => bridge.webhook('failed', at, at + 40, true),
+    payload: { outcome: 'failed', durationMs: 40, retained: true }
   },
   {
     name: 'onBackgroundRefreshFailure',
@@ -128,8 +128,9 @@ describe('ObserverBridge with an observer', () => {
     const received = jest.fn()
     const clock = new ManualClock(T0)
     const bridge = new ObserverBridge({ onWebhook: received }, clock)
-    bridge.webhook('processed', bridge.mark())
-    expect(received).toHaveBeenCalledWith({ outcome: 'processed', durationMs: 0 })
+    const at = bridge.mark()
+    bridge.webhook('processed', at, at, false)
+    expect(received).toHaveBeenCalledWith({ outcome: 'processed', durationMs: 0, retained: false })
   })
 
   it('never reports a negative duration when the clock goes back', () => {
@@ -139,8 +140,8 @@ describe('ObserverBridge with an observer', () => {
     const bridge = new ObserverBridge({ onWebhook: received }, clock)
     const startedAt = bridge.mark()
     clock.advance(-1000)
-    bridge.webhook('processed', startedAt)
-    expect(received).toHaveBeenCalledWith({ outcome: 'processed', durationMs: 0 })
+    bridge.webhook('processed', startedAt, bridge.mark(), false)
+    expect(received).toHaveBeenCalledWith({ outcome: 'processed', durationMs: 0, retained: false })
   })
 })
 
@@ -187,5 +188,21 @@ describe('ObserverBridge containment', () => {
       }
     })
     expect(() => new ObserverBridge(observer, new ManualClock(T0)).cacheLookup('hit')).not.toThrow()
+  })
+})
+
+describe('ObserverBridge webhook report after the answer', () => {
+  it('measures the duration to the answer, not to the report', () => {
+    // Scenario: the answer is read when it is given and the report is made later; the clock moving
+    // between the two does not change the duration.
+    const received = jest.fn()
+    const clock = new ManualClock(T0)
+    const bridge = new ObserverBridge({ onWebhook: received }, clock)
+    const startedAt = bridge.mark()
+    clock.advance(30)
+    const answeredAt = bridge.mark()
+    clock.advance(5000)
+    bridge.webhook('failed', startedAt, answeredAt, true)
+    expect(received).toHaveBeenCalledWith({ outcome: 'failed', durationMs: 30, retained: true })
   })
 })

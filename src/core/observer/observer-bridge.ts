@@ -14,7 +14,7 @@ import type {
   GuardOutcome,
   RefreshOutcome,
   SubscriptionObserver,
-  WebhookOutcome
+  WebhookOutcomeKind
 } from './observer.types'
 
 /** Reads one method of an observer. Declared once, so reporting an event allocates no closure. */
@@ -95,10 +95,22 @@ export class ObserverBridge {
     }
   }
 
-  /** Reports a webhook request the receiver handled. */
-  webhook(outcome: WebhookOutcome, startedAt: number): void {
+  /**
+   * Reports a webhook request the receiver handled. The duration runs from `startedAt` to
+   * `answeredAt`, both readings of {@link ObserverBridge.mark}, so a report made after the answer
+   * still carries the time to the answer. `retained` is `true` only when the identifier of a
+   * failed event could not be removed from the store.
+   */
+  webhook(
+    outcome: WebhookOutcomeKind,
+    startedAt: number,
+    answeredAt: number,
+    retained: boolean
+  ): void {
     const hook = this.#hook(PICK.onWebhook)
-    if (hook !== undefined) this.#run(hook, { outcome, durationMs: this.#since(startedAt) })
+    if (hook !== undefined) {
+      this.#run(hook, { outcome, durationMs: Math.max(0, answeredAt - startedAt), retained })
+    }
   }
 
   /** Reports a background refresh of a stale snapshot that failed. */

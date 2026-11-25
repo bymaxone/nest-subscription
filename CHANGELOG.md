@@ -156,8 +156,42 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - `createCapture` and `assertNoSentinel` in the `testing` subpath: a logger and an observer that
   record everything, and the assertion that no recorded line or payload holds a given sentinel.
 
+- The webhook receiver. `WebhookProcessor`, provided and exported by the module, takes the raw bytes
+  and headers of a request and returns a `WebhookOutcome` (`processed`, `duplicate`, `ignored`,
+  `refused` or `failed`); `toHttpAnswer` maps an outcome to its HTTP answer: 200 for the first
+  three, 401 for a refusal and 503 for a failure. The adapter verifies the request over the bytes
+  as received; a request that fails any check, or an adapter that throws, gets the one refusal.
+  A verified notification only triggers a read of every account it names; the state in the payload
+  is never applied. An event identifier is recorded when processing starts and removed when the
+  event fails, so the source's retry is processed; the removal is started before the failed answer
+  and never waited for, so a slow store cannot hold the answer past the deadline, and the observer
+  hears of a failed event when the removal settles. An event is never processed while the removal
+  of its identifier is unsettled: the processor remembers in memory the failed
+  events whose removal is in flight or failed; a delivery of one whose removal is in flight is
+  answered as a failure at once, with no store call and no read, and one whose last removal failed
+  starts the removal again and is answered as a failure, so the source retries until a removal
+  succeeded and the next delivery is recorded and processed. The identifier is never recorded
+  again. That memory belongs to one process and is bounded: a retry that lands on another instance
+  of the host while the removal is in flight or failed, or after the oldest entry was dropped, may find
+  the identifier recorded and be answered as already seen until the retention purges it. A read
+  that does not finish inside
+  `webhookDeadlineMs` (default 30 000, at most 60 000) ends the call as a failure and is left to
+  finish and be stored; the host's change hook is not part of the deadline. In a multi-tenant host
+  the tenant is passed to `process` from the host's own authenticated route.
+- `SubscriptionWebhookController`, mounted by `webhookController: true` with `webhookPath`, which has
+  no default; the controller is off by default, refuses a multi-tenant host at boot, and needs the
+  application to be created with `rawBody: true`. `forRootAsync` takes the route as a static
+  `webhookPath`; a factory that enables the controller or names a route without one, or that
+  contradicts the static one, is refused at boot naming the option. The retention `eventRetentionMs` defaults to 7 days and is applied by each
+  reconciliation run, which purges older identifiers; the library starts no timer for it.
+
 ### Changed
 
+- The observer's webhook outcome type is renamed `WebhookOutcomeKind`, and `WebhookEvent` gains
+  `retained`, which is `true` when the store could not remove the identifier of a failed event and
+  is reported when that removal settles, after the answer.
+  Apply to a derived backend: replace
+  the type name in any import and ignore the new field if it is not needed.
 - `AccountResolverOption` and `ResolvedAccountOption` are renamed `AccountResolver` and
   `ResolvedAccount`. Apply to a derived backend: replace the two names in any import; the shapes
   are unchanged.

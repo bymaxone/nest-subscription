@@ -12,6 +12,9 @@ import { EntitlementGuard } from './guard/entitlement.guard'
 import { RequiresEntitlement } from './guard/requires-entitlement.decorator'
 import { SubscriptionService } from './subscription.service'
 import { diffSnapshots } from './notifications/diff-snapshots'
+import { toHttpAnswer } from './webhook/webhook-outcome'
+import { SubscriptionWebhookController } from './webhook/webhook.controller'
+import { WebhookProcessor } from './webhook/webhook.processor'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 describe('core entry point', () => {
@@ -33,11 +36,14 @@ describe('core entry point', () => {
       'SubscriptionError',
       'SubscriptionModule',
       'SubscriptionService',
+      'SubscriptionWebhookController',
+      'WebhookProcessor',
       'decodeAccountKey',
       'diffSnapshots',
       'encodeAccountKey',
       'hashAccountKey',
       'resolveOptions',
+      'toHttpAnswer',
       'validateOptions'
     ])
   })
@@ -53,6 +59,9 @@ describe('core entry point', () => {
     expect(entry.RequiresEntitlement).toBe(RequiresEntitlement)
     expect(entry.EntitlementGuard).toBe(EntitlementGuard)
     expect(entry.diffSnapshots).toBe(diffSnapshots)
+    expect(entry.WebhookProcessor).toBe(WebhookProcessor)
+    expect(entry.SubscriptionWebhookController).toBe(SubscriptionWebhookController)
+    expect(entry.toHttpAnswer).toBe(toHttpAnswer)
     for (const [name, value] of Object.entries(internal)) {
       expect(entry[name as keyof typeof entry]).toBe(value)
     }

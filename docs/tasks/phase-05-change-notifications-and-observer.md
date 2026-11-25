@@ -1,6 +1,6 @@
 # Phase 5 — Change notifications and observer
 
-> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: ✅ Done &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P5 — change-notifications-and-observer
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -487,3 +487,4 @@ Completion Protocol (after the work is reported done):
 - 5.3 ✅ 2026-11-25 — changes stored with the snapshot as pending, the host hook called after the write, redelivery from reconciliation without the previous snapshot
 - 5.4 ✅ 2026-11-25 — the optional observer with closed payload types and a bridge that costs nothing without one, wired into refreshes, source errors, the cache, the guard and delivery
 - 5.5 ✅ 2026-11-25 — the salted account hash, the capturing logger and observer with the sentinel sweep, and the end-to-end proof that no identifier reaches a log or an observer
+- P5 ✅ 2026-11-25 — merged as #11 (60d7136)

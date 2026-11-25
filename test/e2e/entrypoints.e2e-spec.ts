@@ -10,6 +10,33 @@ import * as revenuecat from '@bymax-one/nest-subscription/revenuecat'
 import * as shared from '@bymax-one/nest-subscription/shared'
 import * as testing from '@bymax-one/nest-subscription/testing'
 
+/** Every name the root exports: the library's own and those it takes from the internal bundle. */
+const ROOT_NAMES = [
+  'SUBSCRIPTION_CACHE',
+  'SUBSCRIPTION_CLOCK',
+  'SUBSCRIPTION_OBSERVER',
+  'SUBSCRIPTION_OPTIONS',
+  'SUBSCRIPTION_SOURCE',
+  'SUBSCRIPTION_STORE',
+  'SUBSCRIPTION_ERROR_CODES',
+  'SECRET_PLACEHOLDER',
+  'EntitlementGuard',
+  'RequiresEntitlement',
+  'Secret',
+  'SubscriptionError',
+  'SubscriptionModule',
+  'SubscriptionService',
+  'SubscriptionWebhookController',
+  'WebhookProcessor',
+  'decodeAccountKey',
+  'diffSnapshots',
+  'encodeAccountKey',
+  'hashAccountKey',
+  'resolveOptions',
+  'toHttpAnswer',
+  'validateOptions'
+]
+
 describe('entry points', () => {
   it('exposes exactly the names of the shared subpath', () => {
     // Scenario: a consumer imports the shared subpath; a name exported without its owning code
@@ -33,31 +60,8 @@ describe('entry points', () => {
   it('exposes exactly the names of the root and the internal bundle', () => {
     // Scenario: the root and the internal bundle re-export the error class that the shared subpath
     // defines, so all three name one class.
-    expect(Object.keys(core).sort()).toEqual(
-      [
-        'SUBSCRIPTION_CACHE',
-        'SUBSCRIPTION_CLOCK',
-        'SUBSCRIPTION_OBSERVER',
-        'SUBSCRIPTION_OPTIONS',
-        'SUBSCRIPTION_SOURCE',
-        'SUBSCRIPTION_STORE',
-        'SUBSCRIPTION_ERROR_CODES',
-        'SECRET_PLACEHOLDER',
-        'EntitlementGuard',
-        'RequiresEntitlement',
-        'Secret',
-        'SubscriptionError',
-        'SubscriptionModule',
-        'SubscriptionService',
-        'decodeAccountKey',
-        'diffSnapshots',
-        'encodeAccountKey',
-        'hashAccountKey',
-        'resolveOptions',
-        'validateOptions'
-      ].sort()
-    )
-    expect(Object.values(core)).toHaveLength(20)
+    expect(Object.keys(core).sort()).toEqual([...ROOT_NAMES].sort())
+    expect(Object.values(core)).toHaveLength(23)
     expect(Object.keys(internal).sort()).toEqual(
       [
         'SUBSCRIPTION_CACHE',

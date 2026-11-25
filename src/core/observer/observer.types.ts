@@ -68,14 +68,26 @@ export interface ChangeDeliveryEvent {
 }
 
 /** How the receiver handled one webhook request. */
-export type WebhookOutcome = 'processed' | 'duplicate' | 'ignored' | 'refused' | 'failed'
+export type WebhookOutcomeKind = 'processed' | 'duplicate' | 'ignored' | 'refused' | 'failed'
 
 /** One webhook request handled by the receiver. */
 export interface WebhookEvent {
   /** What became of the request. */
-  readonly outcome: WebhookOutcome
+  readonly outcome: WebhookOutcomeKind
   /** Milliseconds from receipt to the answer, by the injected clock. */
   readonly durationMs: number
+  /**
+   * Whether the identifier of a failed event stayed recorded because the store could not forget
+   * it. It describes the removal this delivery started: a failed answer given while an earlier
+   * removal is still in flight starts none and reports `false`. A retry that reaches the same
+   * process is answered as a failure and starts the removal again; one that reaches another
+   * instance of the host is answered as already seen until the retention purges the identifier.
+   * Always `false` for an outcome other than `failed`. The removal is started before a failed
+   * answer is returned and is not waited for, so the event of a failed outcome that started a
+   * removal is reported when the removal settles, after the answer; its `durationMs` is still the
+   * time to the answer.
+   */
+  readonly retained: boolean
 }
 
 /** What the observer is told when a background refresh of a stale snapshot fails. */

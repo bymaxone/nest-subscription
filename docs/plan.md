@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 5 / 10 phases of the first release done (50%) — P0 to P9
-**Active phase**: P5 — change-notifications-and-observer
+**Overall progress**: 🔄 6 / 10 phases of the first release done (60%) — P0 to P9
+**Active phase**: P6 — webhook-receiver
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -41,8 +41,8 @@ This document says in which order the specification is built and when each part 
 | P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
 | P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done   | 5/5      | L    | 2026-11-25   |
 | P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done   | 4/4      | M    | 2026-11-25   |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 👀 Review | 5/5      | M    | 2026-11-25   |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo   | 0/5      | L    | —            |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 👀 Review | 5/5      | L    | 2026-11-25   |
 | P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo   | 0/8      | L    | —            |
 | P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo   | 0/9      | L    | —            |
 | P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo   | 0/6      | M    | —            |
@@ -298,14 +298,14 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Accept a source's notification safely: verify it, de-duplicate it, refresh from the source and answer within the source's contract.
 - **Scope**:
-  - In: the processor that takes raw bytes and headers and returns an outcome, and the controller behind a switch that is off by default (FR17, D10); the refusal to start the controller without access to the unparsed body; the rule that a verified notification only triggers a read of the source (FR16, SEC01); verification delegated to the adapter over raw bytes before parsing (SEC02); one indistinguishable answer for every failed check (SEC03); the five outcomes and their HTTP answers (FR18); de-duplication by event identifier with a retention the host sets (FR19); acceptance of unknown event kinds and fields (FR20); the deadline, answered as a temporary failure when the source read is slow (FR21, NFR02); nothing of the raw payload stored or logged (SEC06).
+  - In: the processor that takes raw bytes and headers and returns an outcome, and the controller behind a switch that is off by default (FR17, D10); a temporary-failure answer, without verification, to a request that arrives parsed without the unparsed body (D44); the rule that a verified notification only triggers a read of the source (FR16, SEC01); verification delegated to the adapter over raw bytes before parsing (SEC02); one indistinguishable answer for every failed check (SEC03); the five outcomes and their HTTP answers (FR18); de-duplication by event identifier with a retention the host sets (FR19); acceptance of unknown event kinds and fields (FR20); the deadline, answered as a temporary failure when the source read is slow (FR21, NFR02); nothing of the raw payload stored or logged (SEC06).
   - Out: any provider's signature scheme or event names, which belong to the adapters.
 - **Definition of Done**:
-  - [ ] Driven by the fake source, a verified notification results in a stored snapshot read from the source, and the payload's own state is provably ignored.
-  - [ ] A notification that fails verification is refused with one answer that is identical for every kind of failure, and changes nothing (AC02 for the receiver).
-  - [ ] The same event delivered five times causes one source read and one host notification (AC03).
-  - [ ] Events delivered in reverse order leave the snapshot equal to the source's current state (AC04).
-  - [ ] A source read slower than the deadline is answered as a temporary failure before the deadline, and a later retry of that event is processed.
+  - [x] Driven by the fake source, a verified notification results in a stored snapshot read from the source, and the payload's own state is provably ignored.
+  - [x] A notification that fails verification is refused with one answer that is identical for every kind of failure, and changes nothing (AC02 for the receiver).
+  - [x] The same event delivered five times causes one source read and one host notification (AC03).
+  - [x] Events delivered in reverse order leave the snapshot equal to the source's current state (AC04).
+  - [x] A source read slower than the deadline is answered as a temporary failure before the deadline, and a later retry of that event is processed.
 - **Context / preconditions**: P3 and P5 are done. De-duplication of a failed event follows D16.
 - **Rules-of-phase**:
   1. No code path writes a snapshot from payload content.
@@ -448,6 +448,7 @@ When a phase moves status:
 - P2 ✅ 2026-11-25 — the module, its options and their validation, secret containment and the sandbox boot refusal merged in #7
 - P3 ✅ 2026-11-25 — reads, refresh with single flight, staleness, the cache and reconciliation merged in #9
 - P4 ✅ 2026-11-25 — the decorator, the guard, the stable refusal codes and the two fail policies merged in #10 (cba5824)
+- P5 ✅ 2026-11-25 — the change list, its stable keys, the host hook with at-least-once delivery and the observer merged in #11 (60d7136)
 
 ---
 

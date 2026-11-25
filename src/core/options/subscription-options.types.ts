@@ -122,11 +122,29 @@ export interface SubscriptionOptionsInput {
    * sentence and an error code, and never an account, a tenant or a payload.
    */
   readonly logger?: SubscriptionLogger
-  /** How long processed event identifiers are kept, in milliseconds. */
+  /**
+   * How long processed event identifiers are kept for de-duplication, in milliseconds, a positive
+   * safe integer. Defaults to 7 days. Identifiers older than this are purged by each
+   * reconciliation run; the library starts no timer for it. Keep it longer than the longest span
+   * in which the source can deliver the same event again.
+   */
   readonly eventRetentionMs?: number
-  /** Whether the library mounts its webhook controller. Defaults to `false`. */
+  /**
+   * How long the receiver works on one notification before it answers with a temporary failure,
+   * in milliseconds, a positive finite number not above 60 000 (the time after which RevenueCat
+   * drops the connection). Defaults to 30 000.
+   */
+  readonly webhookDeadlineMs?: number
+  /**
+   * Whether the library mounts its webhook controller. Defaults to `false`. It needs
+   * `webhookPath` and cannot be combined with `multiTenant`.
+   */
   readonly webhookController?: boolean
-  /** The route of the webhook controller. */
+  /**
+   * The route of the webhook controller, chosen entirely by the host; there is no default. It is
+   * required when `webhookController` is `true`. `forRootAsync` takes it as a static option of
+   * its own, because routes are registered before a factory runs.
+   */
   readonly webhookPath?: string
   /** Whether the host serves several tenants. Defaults to `false`. */
   readonly multiTenant?: boolean
@@ -154,6 +172,12 @@ export interface SubscriptionModuleAsyncOptions extends Pick<ModuleMetadata, 'im
   ) => SubscriptionOptionsInput | Promise<SubscriptionOptionsInput>
   /** Whether the module is global. Defaults to `false`. */
   readonly global?: boolean
+  /**
+   * The route of the webhook controller. NestJS registers routes before a factory runs, so the
+   * route is given here and not in the factory's result. Its presence mounts the controller; a
+   * factory that sets `webhookController: false` beside it is refused at boot.
+   */
+  readonly webhookPath?: string
 }
 
 /** The form the library reads: every default applied, frozen, and nothing else carried. */
@@ -186,8 +210,10 @@ export interface ResolvedSubscriptionOptions {
   readonly observer: SubscriptionObserver | null
   /** Where the library writes its warnings. */
   readonly logger: SubscriptionLogger
-  /** How long processed event identifiers are kept, or `null` when the host set none. */
-  readonly eventRetentionMs: number | null
+  /** How long processed event identifiers are kept, in milliseconds. */
+  readonly eventRetentionMs: number
+  /** How long the receiver works on one notification before answering, in milliseconds. */
+  readonly webhookDeadlineMs: number
   /** Whether the webhook controller is mounted. */
   readonly webhookController: boolean
   /** The route of the webhook controller, or `null` when the host set none. */

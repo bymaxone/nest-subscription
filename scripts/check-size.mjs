@@ -30,23 +30,26 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 //      enough to absorb normal inter-release growth, tight enough to catch
 //      accidental bloat (e.g. a peer dep leaking into the bundle). It is a
 //      bloat tripwire, NOT a hard design ceiling — when real growth is
-//      legitimate, raise it (and say why here); when the artifact shrinks,
+//      legitimate, raise it (and say why in the commit that raises it); when the artifact shrinks,
 //      tighten it. Avoid >2x headroom: it silently lets bloat through.
 //
 // Every published subpath and the internal bundle, in both module formats. A budget is the
 // measured size of the built artifact plus a small margin. A change that adds behaviour to an entry
 // point re-derives its row from the built artifact, with modest headroom, and says why in the same
 // change; a budget is never nudged and never met by shortening the text of a message.
+// The root bundle holds the module, the service, the guard, the refresher, reconciliation, change
+// notifications, the observer bridge and the webhook receiver (processor, controller, deadline and
+// outcomes), so its budget is the largest.
 // The `shared` bundle holds the one `SubscriptionError` and the instant parser; every other bundle
 // imports `shared` by package specifier and carries no copy of it.
 const BUDGETS = [
-  { name: 'root', path: 'dist/core/index.mjs', brotli: 13.5 * 1024 },
+  { name: 'root', path: 'dist/core/index.mjs', brotli: 16.95 * 1024 },
   { name: 'shared', path: 'dist/shared/index.mjs', brotli: 1.96 * 1024 },
   { name: 'internal', path: 'dist/internal/index.mjs', brotli: 1.39 * 1024 },
   { name: 'revenuecat', path: 'dist/revenuecat/index.mjs', brotli: 0.05 * 1024 },
   { name: 'finance', path: 'dist/finance/index.mjs', brotli: 0.05 * 1024 },
   { name: 'testing', path: 'dist/testing/index.mjs', brotli: 5.9 * 1024 },
-  { name: 'root (CommonJS)', path: 'dist/core/index.cjs', brotli: 13.65 * 1024 },
+  { name: 'root (CommonJS)', path: 'dist/core/index.cjs', brotli: 17.05 * 1024 },
   { name: 'shared (CommonJS)', path: 'dist/shared/index.cjs', brotli: 2.0 * 1024 },
   { name: 'internal (CommonJS)', path: 'dist/internal/index.cjs', brotli: 1.5 * 1024 },
   { name: 'revenuecat (CommonJS)', path: 'dist/revenuecat/index.cjs', brotli: 0.05 * 1024 },

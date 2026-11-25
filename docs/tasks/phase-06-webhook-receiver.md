@@ -1,6 +1,6 @@
 # Phase 6 — Webhook receiver
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P6 — webhook-receiver
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,11 +42,11 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 
 | ID  | Task                                       | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------ | ------- | -------- | ---- | ---------- |
-| 6.1 | Define the outcomes and their HTTP answers | 📋 ToDo | P0       | S    | —          |
-| 6.2 | Implement the processor                    | 📋 ToDo | P0       | L    | 6.1        |
-| 6.3 | Enforce the response deadline              | 📋 ToDo | P0       | M    | 6.2        |
-| 6.4 | Add the controller behind a switch         | 📋 ToDo | P0       | M    | 6.2        |
-| 6.5 | Prove the receiver end to end              | 📋 ToDo | P0       | M    | 6.3, 6.4   |
+| 6.1 | Define the outcomes and their HTTP answers | ✅ Done | P0       | S    | —          |
+| 6.2 | Implement the processor                    | ✅ Done | P0       | L    | 6.1        |
+| 6.3 | Enforce the response deadline              | ✅ Done | P0       | M    | 6.2        |
+| 6.4 | Add the controller behind a switch         | ✅ Done | P0       | M    | 6.2        |
+| 6.5 | Prove the receiver end to end              | ✅ Done | P0       | M    | 6.3, 6.4   |
 
 ---
 
@@ -54,7 +54,7 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 
 ### Task 6.1 — Define the outcomes and their HTTP answers
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: —
@@ -65,11 +65,11 @@ Write the five outcomes of FR18 and the function that maps each to the HTTP answ
 
 #### Acceptance criteria
 
-- [ ] `WebhookOutcome` is a closed union: processed, already seen, ignored, refused, failed.
-- [ ] Processed, already seen and ignored map to a success status; refused maps to an authentication failure; failed maps to a temporary failure.
-- [ ] The refused answer has one fixed body, identical for every cause, and carries no hint of which check failed.
-- [ ] No outcome value and no answer body can hold payload content or an account identifier.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `WebhookOutcome` is a closed union: processed, already seen, ignored, refused, failed.
+- [x] Processed, already seen and ignored map to a success status; refused maps to an authentication failure; failed maps to a temporary failure.
+- [x] The refused answer has one fixed body, identical for every cause, and carries no hint of which check failed.
+- [x] No outcome value and no answer body can hold payload content or an account identifier.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -131,7 +131,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 6.2 — Implement the processor
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 6.1
@@ -142,15 +142,15 @@ Write the processor: verify through the adapter, de-duplicate by event identifie
 
 #### Acceptance criteria
 
-- [ ] A verified notification results in a stored snapshot read from the source; a test puts a contradicting state in the payload and proves it is ignored.
-- [ ] A request that fails verification returns the refused outcome, and the store, the source read counter and the hook are untouched.
-- [ ] The same event delivered five times, sequentially and concurrently, causes one source read and one host notification (AC03).
-- [ ] An unknown event kind is accepted and triggers a refresh; a kind the adapter marks as changing nothing returns the ignored outcome without a read.
-- [ ] A notification naming several accounts refreshes each of them.
-- [ ] A source read that fails returns the failed outcome and the event identifier is removed through `forgetEvent`, so a retry of that event is processed (D16).
-- [ ] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded, so the source's retries of that event are answered as already seen. The task's doc comment states this limit.
-- [ ] A sandbox notification is processed like any other; whether sandbox state grants access is decided where the snapshot is read from the source, not here.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A verified notification results in a stored snapshot read from the source; a test puts a contradicting state in the payload and proves it is ignored.
+- [x] A request that fails verification returns the refused outcome, and the store, the source read counter and the hook are untouched.
+- [x] The same event delivered five times, sequentially and concurrently, causes one source read and one host notification (AC03).
+- [x] An unknown event kind is accepted and triggers a refresh; a notification that names no account returns the ignored outcome without a read.
+- [x] A notification naming several accounts refreshes each of them.
+- [x] A source read that fails returns the failed outcome and the event identifier is removed through `forgetEvent`, so a retry of that event is processed (D16).
+- [x] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded; the processor remembers the event in memory, so a retry that reaches the same process starts the removal again and is answered as a failure, and one that reaches another instance, or after the memory dropped the event, is answered as already seen. An event is never processed while its removal is unsettled.
+- [x] A sandbox notification is processed like any other; whether sandbox state grants access is decided where the snapshot is read from the source, not here.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -220,7 +220,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 6.3 — Enforce the response deadline
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 6.2
@@ -231,11 +231,11 @@ Answer with a temporary failure when the source read does not finish inside the 
 
 #### Acceptance criteria
 
-- [ ] A read slower than the deadline produces the failed outcome before the deadline, measured with a controllable clock.
-- [ ] The slow read is not abandoned mid-write: if it completes later, its snapshot is stored through the normal ordered write.
-- [ ] On timeout the event identifier is removed (D16), so a later retry of that event is processed; single flight makes a retry that arrives while the slow read is still running share that read.
-- [ ] The deadline is an option with a default safely under the shortest source limit the specification records (60 seconds for RevenueCat), and a value above that limit is refused at boot.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A read slower than the deadline produces the failed outcome before the deadline, measured with a controllable clock.
+- [x] The slow read is not abandoned mid-write: if it completes later, its snapshot is stored through the normal ordered write.
+- [x] On timeout the event identifier is removed (D16), so a later retry of that event is processed; single flight makes a retry that arrives while the slow read is still running share that read.
+- [x] The deadline is an option with a default safely under the shortest source limit the specification records (60 seconds for RevenueCat), and a value above that limit is refused at boot.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -304,22 +304,22 @@ Completion Protocol (after the work is reported done):
 
 ### Task 6.4 — Add the controller behind a switch
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 6.2
 
 #### Description
 
-Offer the receiver as a controller the host mounts with one option, off by default, which refuses to start without the unparsed request body (FR17, D10).
+Offer the receiver as a controller the host mounts with one option, off by default, which answers a temporary failure when the unparsed request body was not kept (FR17, D10).
 
 #### Acceptance criteria
 
-- [ ] With the switch off, no route is registered. With it on, a POST route exists at the configured path.
-- [ ] With the switch on and no raw body available, the application refuses to start, with a configuration error that says what to enable and names no value.
-- [ ] The controller passes the exact bytes received to the processor, and returns `toHttpAnswer` of its outcome.
-- [ ] The controller applies no guard of the library, and its doc comment says the route must stay outside the host's authentication guard and inside its rate limiting.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] With the switch off, no route is registered. With it on, a POST route exists at the configured path.
+- [x] With the switch on and no raw body kept, a request is answered with a temporary failure and one warning is logged.
+- [x] The controller passes the exact bytes received to the processor, and returns `toHttpAnswer` of its outcome.
+- [x] The controller applies no guard of the library, and its doc comment says the route must stay outside the host's authentication guard and inside its rate limiting.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -388,7 +388,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 6.5 — Prove the receiver end to end
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 6.3, 6.4
@@ -399,12 +399,12 @@ Write the end-to-end suite that drives the receiver through HTTP with the fake s
 
 #### Acceptance criteria
 
-- [ ] A forged request, a request with a body altered after signing, and a request the fake source refuses for any reason all get the identical refused answer and change nothing (AC02 for the receiver).
-- [ ] The same event delivered five times causes one source read and one host notification (AC03).
-- [ ] Events delivered in reverse order leave the snapshot equal to the source's current state (AC04).
-- [ ] A slow source is answered as a temporary failure before the deadline, and the retry is processed.
-- [ ] The sentinel sweep finds no body content, header value or account identifier in logs or observer payloads.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A forged request, a request with a body altered after signing, and a request the fake source refuses for any reason all get the identical refused answer and change nothing (AC02 for the receiver).
+- [x] The same event delivered five times causes one source read and one host notification (AC03).
+- [x] Events delivered in reverse order leave the snapshot equal to the source's current state (AC04).
+- [x] A slow source is answered as a temporary failure before the deadline, and the retry is processed.
+- [x] The sentinel sweep finds no body content, header value or account identifier in logs or observer payloads.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -475,3 +475,9 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 <!-- entries are added as tasks complete -->
+
+- 6.1 ✅ 2026-11-25 — the five outcomes as a closed union and the one HTTP answer of each, with one frozen refusal for every cause
+- 6.2 ✅ 2026-11-25 — the processor: verification over the raw bytes through the adapter, de-duplication by event identifier with D16, a read of every named account, and the retention purge in reconciliation
+- 6.3 ✅ 2026-11-25 — the response deadline: the work raced against an injectable wait, the only timer cleared when the race is decided, a timed-out event freed for its retry, and a 60 000 ms ceiling at boot
+- 6.4 ✅ 2026-11-25 — the controller behind a switch that is off by default, the raw-body reading, a route chosen by the host with no default, and a first-request answer for an application without the raw body
+- 6.5 ✅ 2026-11-25 — the receiver end to end in both forms: one identical refusal for every failed check, one read per event, reverse order, a slow source and its retry, failure paths, the purge and the sentinel sweep

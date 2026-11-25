@@ -7,13 +7,21 @@
 import { hashAccountKey } from '@bymax-one/nest-subscription/internal'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
-import { logEvent, type LogEvent } from './subscription-logger'
+import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
+
+import { errorCodeOf, logEvent, type LogEvent } from './subscription-logger'
 
 const EVENTS: readonly LogEvent[] = [
   'background_refresh_failed',
   'change_hook_failed',
   'change_clear_failed',
   'change_read_failed'
+]
+/** The events that concern no account. */
+const ACCOUNTLESS: readonly LogEvent[] = [
+  'webhook_forget_failed',
+  'event_purge_failed',
+  'webhook_raw_body_missing'
 ]
 const KEY = 'a24:sentinel-account-key'
 
@@ -49,6 +57,25 @@ describe('logEvent', () => {
     expect(new Set(lines).size).toBe(EVENTS.length)
   })
 
+  it.each(ACCOUNTLESS)('writes one line for %s with the code and no account', (event) => {
+    // Scenario: an event that concerns no account is written without the account part.
+    const warn = jest.fn()
+    logEvent({ warn }, event, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE, null)
+    expect(warn).toHaveBeenCalledTimes(1)
+    const line = String(warn.mock.calls[0]?.[0])
+    expect(line).not.toContain('(account')
+    expect(line).toMatch(/: SUBSCRIPTION_SOURCE_UNAVAILABLE\.$/)
+  })
+
+  it('gives the accountless events sentences of their own', () => {
+    // Scenario: the two accountless events read differently from each other and from the rest.
+    const lines: string[] = []
+    for (const event of [...EVENTS, ...ACCOUNTLESS]) {
+      logEvent({ warn: (line) => void lines.push(line) }, event, null, null)
+    }
+    expect(new Set(lines).size).toBe(EVENTS.length + ACCOUNTLESS.length)
+  })
+
   it("writes unclassified for an error that is not the library's", () => {
     // Scenario: no code is known.
     const warn = jest.fn()
@@ -72,5 +99,23 @@ describe('logEvent', () => {
         KEY
       )
     ).not.toThrow()
+  })
+})
+
+describe('errorCodeOf', () => {
+  it("gives the code of the library's own error", () => {
+    // Scenario: a SubscriptionError carries its catalogue code.
+    expect(errorCodeOf(new SubscriptionError(SUBSCRIPTION_ERROR_CODES.NO_ACCESS))).toBe(
+      SUBSCRIPTION_ERROR_CODES.NO_ACCESS
+    )
+  })
+
+  it.each([
+    ['an Error', new Error('x')],
+    ['a string', 'x'],
+    ['null', null]
+  ])('gives null for %s', (_name, error) => {
+    // Scenario: anything that is not the library's error has no code.
+    expect(errorCodeOf(error)).toBeNull()
   })
 })
