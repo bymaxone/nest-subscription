@@ -59,8 +59,8 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   snapshot the source reports as older than the stored one is never written. A multi-tenant
   configuration refuses a call without a tenant.
   An entitlement counts as held only while its active flag is true and its `until` is `null` or
-  later than now by the injected clock. A cached snapshot is served only when it names the account
-  and tenant asked for.
+  later than now by the injected clock. A cached or stored snapshot is used only when it names the account and tenant asked for and
+  every instant in it can be read; otherwise it counts as absent.
 
 - A read of a snapshot older than `maxSnapshotAgeMs` returns the stored snapshot and starts a
   refresh in the background. The refresh never delays or rejects the read: a failure is logged by

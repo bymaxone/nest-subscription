@@ -532,3 +532,19 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
     expect(entries.size).toBe(1)
   })
 })
+
+describe('SnapshotRefresher with a stored snapshot that cannot be read', () => {
+  it('refreshes over it, reporting no previous snapshot', async () => {
+    // Scenario: the store returns a snapshot with an unreadable instant; a refresh must still work.
+    const { source, store, clock } = setup()
+    const corrupt = { ...snapshotOf(ACCOUNT, T10, 'corrupt'), fetchedAt: 'invalid' }
+    const reading = delegating(store, {
+      getSnapshot: () => Promise.resolve({ snapshot: corrupt, pendingChanges: [] })
+    })
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20, 'good'))
+    const result = await new SnapshotRefresher(source, reading, clock, null).refresh(ACCOUNT)
+    expect(result.previous).toBeNull()
+    expect(result.written).toBe(true)
+    expect(result.current.sourceCustomer?.id).toBe('good')
+  })
+})

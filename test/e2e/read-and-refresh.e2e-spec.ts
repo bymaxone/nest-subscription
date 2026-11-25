@@ -304,6 +304,36 @@ describe('read and refresh: the service in a running application', () => {
     await app.close()
   })
 
+  it('refuses a source snapshot with no source name as a source failure', async () => {
+    // Scenario: the source returns a snapshot whose source field is not a string.
+    const { app, source } = await boot()
+    source.setAccount(ACCOUNT, Object.assign({}, snapshotOf(ACCOUNT, T10), { source: 3 }))
+    await expect(app.get(SubscriptionService).refresh(ACCOUNT)).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    })
+    await app.close()
+  })
+
+  it('answers an empty snapshot, not an error, when the store returns a snapshot with an unreadable instant', async () => {
+    // Scenario: a host store whose snapshot holds a fetch instant that is not an instant.
+    const source = new FakeSubscriptionSource()
+    const memory = new InMemorySubscriptionStore({ logger: () => undefined })
+    const store = delegating(memory, {
+      getSnapshot: () =>
+        Promise.resolve({
+          snapshot: { ...snapshotOf(ACCOUNT, T10), fetchedAt: 'invalid' },
+          pendingChanges: []
+        })
+    })
+    const app = await Test.createTestingModule({
+      imports: [SubscriptionModule.forRoot({ source, store, accountResolver: () => null })]
+    }).compile()
+    const service = app.get(SubscriptionService)
+    await expect(service.getSnapshot(ACCOUNT)).resolves.toMatchObject({ entitlements: [] })
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+    await app.close()
+  })
+
   it('answers false for an entitlement whose until cannot be read, without rejecting', async () => {
     // Scenario: a host store holds an active entitlement with an unreadable until.
     const { app, store } = await boot()

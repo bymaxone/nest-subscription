@@ -627,6 +627,69 @@ function hostCache(): SubscriptionCache & { gets: number; sets: number; deletes:
   return cache
 }
 
+describe('SubscriptionService with a cache that holds an unreadable snapshot', () => {
+  it.each([
+    ['fetch instant', { fetchedAt: 'invalid' }],
+    ['source instant', { sourceUpdatedAt: 'later' }],
+    [
+      'entitlement until',
+      {
+        entitlements: [
+          { name: 'pro', active: true, until: 'not-a-date', grantingSubscriptionReference: null }
+        ]
+      }
+    ]
+  ])(
+    'answers the store snapshot, and does not reject, for an unreadable %s',
+    async (_name, patch) => {
+      // Scenario: the host cache returns the right account with one instant that cannot be read.
+      const entries = new Map<string, string>()
+      const cache: SubscriptionCache = {
+        get: (key) => Promise.resolve(entries.get(key) ?? null),
+        set: () => Promise.resolve(),
+        delete: () => Promise.resolve()
+      }
+      const built = setup({ cache })
+      built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
+      await built.service.refresh(ACCOUNT)
+      entries.set(
+        `subscription:snapshot:${encodeAccountKey(ACCOUNT)}`,
+        JSON.stringify({ ...snapshotOf(ACCOUNT, false), ...patch })
+      )
+      await expect(built.service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+      await expect(built.service.getSnapshot(ACCOUNT)).resolves.toMatchObject({
+        accountId: 'acc-1'
+      })
+    }
+  )
+})
+
+describe('SubscriptionService with a stored snapshot that cannot be read', () => {
+  it('answers an empty snapshot and false, and does not reject, when the store holds an unreadable instant', async () => {
+    // Scenario: a host store returns a snapshot whose fetch instant is garbled.
+    const built = setup()
+    jest.spyOn(built.store, 'getSnapshot').mockResolvedValue({
+      snapshot: { ...snapshotOf(ACCOUNT, true), fetchedAt: 'invalid' },
+      pendingChanges: []
+    })
+    await expect(built.service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+    await expect(built.service.getSnapshot(ACCOUNT)).resolves.toMatchObject({
+      entitlements: [],
+      subscriptions: []
+    })
+  })
+
+  it('answers an empty snapshot when the store holds the snapshot of another account under the key', async () => {
+    // Scenario: a host store returns another account's snapshot for this key.
+    const built = setup()
+    jest.spyOn(built.store, 'getSnapshot').mockResolvedValue({
+      snapshot: { ...snapshotOf(ACCOUNT, true), accountId: 'other' },
+      pendingChanges: []
+    })
+    await expect(built.service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+  })
+})
+
 describe('SubscriptionService with a cache', () => {
   /** Counts the reads that reach the store. */
   function countingStore(built: ReturnType<typeof setup>): jest.SpyInstance {

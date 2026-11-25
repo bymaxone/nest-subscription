@@ -1,7 +1,8 @@
 /**
- * @fileoverview The check every snapshot a source returns passes before the library keeps it: it
- * names the account that was asked for, and every instant in it can be read. A snapshot that fails
- * is never stored, so what is stored under a key always names that key's account.
+ * @fileoverview The check every snapshot that enters from outside the library passes before it is
+ * kept or trusted: it names the account that was asked for, and every instant in it can be read.
+ * A snapshot that fails is never stored and never served, so what the library answers under a key
+ * always names that key's account.
  * @layer core
  */
 import type { AccountReference } from '@bymax-one/nest-subscription/internal'
@@ -26,15 +27,22 @@ function instantsOf(snapshot: SubscriptionSnapshot): readonly string[] {
 }
 
 /**
- * Whether the snapshot names exactly the account asked for, tenant included (a missing tenant on
- * one side only is a difference), and every instant it holds is one `parseInstant` reads. A value
- * of the wrong shape counts as not fitting.
+ * Whether a value is a snapshot of exactly the account asked for, tenant included (a missing
+ * tenant on one side only is a difference), with a source name and every instant it holds one
+ * `parseInstant` reads. A value of the wrong shape does not fit. This is the one rule for a
+ * snapshot that comes from outside the library's own write path: a source's, a cache's or a
+ * store's.
  */
-export function isSnapshotFor(snapshot: SubscriptionSnapshot, account: AccountReference): boolean {
+export function isSnapshotFor(
+  value: unknown,
+  account: AccountReference
+): value is SubscriptionSnapshot {
   try {
+    const snapshot = value as SubscriptionSnapshot
     if (snapshot.accountId !== account.accountId || snapshot.tenantId !== account.tenantId) {
       return false
     }
+    if (typeof snapshot.source !== 'string') return false
     return instantsOf(snapshot).every((instant) => Number.isFinite(parseInstant(instant)))
   } catch {
     return false

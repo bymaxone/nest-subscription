@@ -12,6 +12,7 @@ import {
 import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 
 import type { SubscriptionCache } from '../options/subscription-options.types'
+import { isSnapshotFor } from '../snapshot-fit'
 
 /** The fixed prefix of every key this library writes to the host's cache. */
 const KEY_PREFIX = 'subscription:snapshot:'
@@ -27,31 +28,12 @@ interface Ticket {
   readonly peers: Set<Ticket>
 }
 
-/** Whether a parsed value has the fields the library reads from a snapshot. */
-function isSnapshot(value: unknown): value is SubscriptionSnapshot {
-  // `Object` wraps a primitive and turns `null` into an empty object, so a value that is not an
-  // object has none of the fields below and is refused with them.
-  const candidate: Record<string, unknown> = Object(value)
-  return (
-    typeof candidate['source'] === 'string' &&
-    typeof candidate['fetchedAt'] === 'string' &&
-    Array.isArray(candidate['entitlements']) &&
-    Array.isArray(candidate['subscriptions'])
-  )
-}
-
-/** Whether a snapshot belongs to the account: the same identifier and the same tenant, or none. */
-function namesAccount(snapshot: SubscriptionSnapshot, account: AccountReference): boolean {
-  return snapshot.accountId === account.accountId && snapshot.tenantId === account.tenantId
-}
-
-/** The snapshot a cached string holds, or `null` when it holds anything else. */
-function parse(text: string): SubscriptionSnapshot | null {
+/** The text a cache holds parsed, or `undefined` when it is not JSON. */
+function parse(text: string): unknown {
   try {
-    const parsed: unknown = JSON.parse(text)
-    return isSnapshot(parsed) ? parsed : null
+    return JSON.parse(text)
   } catch {
-    return null
+    return undefined
   }
 }
 
@@ -176,8 +158,8 @@ export class SnapshotCache {
   async #get(key: string, account: AccountReference): Promise<SubscriptionSnapshot | null> {
     try {
       const text = await this.cache.get(key)
-      const snapshot = text === null ? null : parse(text)
-      return snapshot !== null && namesAccount(snapshot, account) ? snapshot : null
+      const parsed = text === null ? undefined : parse(text)
+      return isSnapshotFor(parsed, account) ? parsed : null
     } catch {
       return null
     }

@@ -32,7 +32,8 @@ export interface KeyPage {
 export interface SubscriptionStore {
   /**
    * Reads the snapshot stored under a key with its pending changes, or `null` when none is
-   * stored. What was written is what is read back.
+   * stored. What was written is what is read back. The library treats a snapshot read back that
+   * does not name the account of the key, or holds an instant that is not ISO 8601, as absent.
    */
   getSnapshot(key: string): Promise<StoredSnapshot | null>
 

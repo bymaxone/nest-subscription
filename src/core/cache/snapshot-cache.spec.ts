@@ -216,6 +216,57 @@ describe('SnapshotCache', () => {
   })
 
   it.each([
+    ['fetch instant', { fetchedAt: 'invalid' }],
+    ['source instant', { sourceUpdatedAt: 'later' }],
+    [
+      'entitlement until',
+      {
+        entitlements: [
+          { name: 'pro', active: true, until: 'not-a-date', grantingSubscriptionReference: null }
+        ]
+      }
+    ],
+    [
+      'subscription instant',
+      {
+        subscriptions: [
+          {
+            subscriptionReference: 's',
+            status: 'active',
+            givesAccess: true,
+            willRenew: 'yes',
+            origin: 'web',
+            environment: 'production',
+            productReference: 'p',
+            billingInterval: 'month',
+            currentPeriodStart: '2026-01-01T00:00:00.000Z',
+            currentPeriodEnd: '2026-02-01T00:00:00.000Z',
+            accessUntil: null,
+            billingIssueSince: null,
+            cancelledAt: 'yesterday',
+            refundedAt: null,
+            managementReference: null
+          }
+        ]
+      }
+    ]
+  ])(
+    'treats a snapshot of the right account with whose %s cannot be read as a miss and loads',
+    async (_name, patch) => {
+      // Scenario: the cache holds the right identity with one instant that cannot be read.
+      const host = mapCache()
+      host.entries.set(
+        `subscription:snapshot:${encodeAccountKey(ACCOUNT)}`,
+        JSON.stringify({ ...snapshotOf(ACCOUNT, 'cached'), ...patch })
+      )
+      const load = jest.fn(() => Promise.resolve(snapshotOf(ACCOUNT, 'loaded')))
+      const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, load)
+      expect(load).toHaveBeenCalledTimes(1)
+      expect(result?.sourceCustomer?.id).toBe('loaded')
+    }
+  )
+
+  it.each([
     ['another account', { accountId: 'acc-2' }],
     ['the same account of another tenant', { accountId: 'acc-1', tenantId: 'other' }]
   ])(

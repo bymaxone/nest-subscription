@@ -24,8 +24,8 @@ import {
 } from '@bymax-one/nest-subscription/shared'
 
 import { SingleFlight } from './single-flight'
-import { isSnapshotFor } from './source-snapshot'
 import { SnapshotCache } from '../cache/snapshot-cache'
+import { isSnapshotFor } from '../snapshot-fit'
 
 /** What one refresh did. */
 export interface RefreshResult {
@@ -80,7 +80,7 @@ export class SnapshotRefresher {
     const read = await this.#read(account)
     const snapshot: SubscriptionSnapshot = { ...read, fetchedAt: this.clock.now().toISOString() }
     const orderedAt = orderInstant(snapshot)
-    const previous = (await this.store.getSnapshot(key))?.snapshot ?? null
+    const previous = await this.#stored(key, account)
     if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {
       return { previous, current: previous, written: false }
     }
@@ -88,8 +88,14 @@ export class SnapshotRefresher {
       await this.cache?.invalidate(account)
       return { previous, current: snapshot, written: true }
     }
-    const kept = (await this.store.getSnapshot(key))?.snapshot ?? snapshot
+    const kept = (await this.#stored(key, account)) ?? snapshot
     return { previous, current: kept, written: false }
+  }
+
+  /** The snapshot the store holds for the account, or `null` when none or one that does not fit. */
+  async #stored(key: string, account: AccountReference): Promise<SubscriptionSnapshot | null> {
+    const snapshot = (await this.store.getSnapshot(key))?.snapshot
+    return isSnapshotFor(snapshot, account) ? snapshot : null
   }
 
   /**

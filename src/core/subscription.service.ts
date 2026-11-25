@@ -34,17 +34,9 @@ import {
 } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { ageOf, isStale } from './refresh/staleness'
+import { isSnapshotFor } from './snapshot-fit'
 import { toSnapshotView, type AgedSnapshot } from './snapshot-view'
 import { hasTenant } from './tenant'
-
-/** Whether an instant can be read and is later than `now`; an instant that cannot be read is not. */
-function isLater(instant: string, now: number): boolean {
-  try {
-    return parseInstant(instant) > now
-  } catch {
-    return false
-  }
-}
 
 /**
  * The reads and the on-demand refresh of the library. Every method takes the account as the
@@ -85,7 +77,8 @@ export class SubscriptionService {
   /**
    * Whether the account has the named entitlement now: its active flag, which the source's access
    * flag gave it, is true and its `until` is `null` (no end) or later than now by the injected
-   * clock. An entitlement the account lacks, or whose `until` cannot be read, is `false`. The source is not waited for.
+   * clock. An entitlement the account lacks is `false`; so is any entitlement of a snapshot that is
+   * unreadable, which is read as no snapshot. The source is not waited for.
    *
    * @throws {SubscriptionError} as {@link SubscriptionService.getSnapshot} does.
    */
@@ -96,7 +89,7 @@ export class SubscriptionService {
       (held) =>
         held.name === entitlement &&
         held.active &&
-        (held.until === null || isLater(held.until, now))
+        (held.until === null || parseInstant(held.until) > now)
     )
   }
 
@@ -131,9 +124,17 @@ export class SubscriptionService {
   /** The stored snapshot, through the cache when the host configured one; `undefined` when none. */
   async #stored(account: AccountReference, key: string): Promise<SubscriptionSnapshot | undefined> {
     const load = async (): Promise<SubscriptionSnapshot | null> =>
-      (await this.store.getSnapshot(key))?.snapshot ?? null
+      this.#fitting((await this.store.getSnapshot(key))?.snapshot, account)
     const snapshot = this.cache === null ? await load() : await this.cache.read(account, load)
     return snapshot ?? undefined
+  }
+
+  /** The snapshot when it fits the account asked for, and `null` for none or one that does not. */
+  #fitting(
+    snapshot: SubscriptionSnapshot | undefined,
+    account: AccountReference
+  ): SubscriptionSnapshot | null {
+    return isSnapshotFor(snapshot, account) ? snapshot : null
   }
 
   /** The key of an account, after the tenant rule of this configuration is applied. */
