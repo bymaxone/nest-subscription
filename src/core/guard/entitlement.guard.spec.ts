@@ -59,7 +59,13 @@ function snapshotWith(...entitlements: EntitlementState[]): SubscriptionSnapshot
 
 /** The held `premium` entitlement, unless another end is given. */
 function premium(active = true, until: string | null = null): EntitlementState {
-  return { name: 'premium', active, until, grantingSubscriptionReference: active ? 'sub-1' : null }
+  return {
+    name: 'premium',
+    active,
+    until,
+    grantingSubscriptionReference: active ? 'sub-1' : null,
+    grantingSubscriptionReferences: active ? ['sub-1'] : []
+  }
 }
 
 /** What a test arranges: the resolver, the service and the options, built into one guard. */

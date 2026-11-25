@@ -526,7 +526,13 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
       ACCOUNT,
       {
         entitlements: [
-          { name: 'pro', active: true, until: 'not-a-date', grantingSubscriptionReference: null }
+          {
+            name: 'pro',
+            active: true,
+            until: 'not-a-date',
+            grantingSubscriptionReference: null,
+            grantingSubscriptionReferences: []
+          }
         ]
       }
     ],
@@ -543,7 +549,13 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
       ACCOUNT,
       {
         entitlements: [
-          { name: 'pro', active: 'false', until: null, grantingSubscriptionReference: null }
+          {
+            name: 'pro',
+            active: 'false',
+            until: null,
+            grantingSubscriptionReference: null,
+            grantingSubscriptionReferences: []
+          }
         ]
       }
     ]

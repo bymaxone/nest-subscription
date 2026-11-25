@@ -33,7 +33,8 @@ const entitlement: EntitlementState = {
   name: 'pro',
   active: true,
   until: null,
-  grantingSubscriptionReference: 'sub_1'
+  grantingSubscriptionReference: 'sub_1',
+  grantingSubscriptionReferences: ['sub_1']
 }
 
 const customer: SourceCustomerReference = { id: 'cus_1' }

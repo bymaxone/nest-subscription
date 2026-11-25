@@ -270,7 +270,13 @@ describe('SnapshotCache', () => {
       'entitlement until',
       {
         entitlements: [
-          { name: 'pro', active: true, until: 'not-a-date', grantingSubscriptionReference: null }
+          {
+            name: 'pro',
+            active: true,
+            until: 'not-a-date',
+            grantingSubscriptionReference: null,
+            grantingSubscriptionReferences: []
+          }
         ]
       }
     ],

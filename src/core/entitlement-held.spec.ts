@@ -12,7 +12,13 @@ const NOW = Date.parse('2026-01-01T00:00:00.000Z')
 
 /** An entitlement state with the two fields the rule reads. */
 function state(active: boolean, until: string | null): EntitlementState {
-  return { name: 'pro', active, until, grantingSubscriptionReference: null }
+  return {
+    name: 'pro',
+    active,
+    until,
+    grantingSubscriptionReference: null,
+    grantingSubscriptionReferences: []
+  }
 }
 
 describe('entitlementHeld', () => {

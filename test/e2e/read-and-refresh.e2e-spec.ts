@@ -243,7 +243,15 @@ describe('read and refresh: the service in a running application', () => {
     const service = app.get(SubscriptionService)
     source.setAccount(ACCOUNT, {
       ...snapshotOf(ACCOUNT, T10),
-      entitlements: [{ name: 'pro', active: true, until: null, grantingSubscriptionReference: 's' }]
+      entitlements: [
+        {
+          name: 'pro',
+          active: true,
+          until: null,
+          grantingSubscriptionReference: 's',
+          grantingSubscriptionReferences: ['s']
+        }
+      ]
     })
     expect((await service.refresh(ACCOUNT)).ageMs).toBe(0)
     for (let read = 0; read < 5; read += 1) {
@@ -265,7 +273,8 @@ describe('read and refresh: the service in a running application', () => {
           name: 'pro',
           active: true,
           until: '2026-01-01T00:01:00.000Z',
-          grantingSubscriptionReference: 's'
+          grantingSubscriptionReference: 's',
+          grantingSubscriptionReferences: ['s']
         }
       ]
     })
@@ -386,7 +395,13 @@ describe('read and refresh: the service in a running application', () => {
       {
         ...snapshotOf(ACCOUNT, T10),
         entitlements: [
-          { name: 'pro', active: true, until: 'not-a-date', grantingSubscriptionReference: null }
+          {
+            name: 'pro',
+            active: true,
+            until: 'not-a-date',
+            grantingSubscriptionReference: null,
+            grantingSubscriptionReferences: []
+          }
         ]
       },
       [],

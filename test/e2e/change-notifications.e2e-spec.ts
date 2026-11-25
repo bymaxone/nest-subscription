@@ -21,7 +21,7 @@ import {
   type SubscriptionStore
 } from '@bymax-one/nest-subscription'
 import type { SubscriptionRecord, SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
-import { createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
+import { createEmptySnapshot, resolveEntitlements } from '@bymax-one/nest-subscription/shared'
 import {
   FakeSubscriptionSource,
   InMemorySubscriptionStore,
@@ -510,5 +510,34 @@ describe('change notifications from reconciliation, bounds and defences', () => 
     answering = false
     expect(notifications).toHaveLength(1)
     expect(await pendingKeys(store)).toHaveLength(1)
+  })
+})
+
+describe('change notifications for an entitlement with several grantors', () => {
+  it('stores, reads back and reports an entitlement that two subscriptions grant', async () => {
+    // Scenario: the source reports two subscriptions that both grant pro; the snapshot with both
+    // grantors passes the store's validation, is read back whole, and the hook hears of the overlap.
+    const { service, source, notifications } = await boot()
+    const one = sourceState('2026-02-01T00:00:00.000Z', T0)
+    const subscriptions = [
+      RECORD,
+      { ...RECORD, subscriptionReference: 'sub-2', productReference: 'web_yearly' }
+    ]
+    const { entitlements } = resolveEntitlements(
+      subscriptions,
+      new Map([
+        ['sub-1', ['pro']],
+        ['sub-2', ['pro']]
+      ])
+    )
+    source.setAccount(ACCOUNT, { ...one, subscriptions, entitlements })
+    await service.refresh(ACCOUNT)
+    const read = await service.getSnapshot(ACCOUNT)
+    expect(read.entitlements[0]?.grantingSubscriptionReferences).toStrictEqual(['sub-1', 'sub-2'])
+    expect(notifications[0]?.changes.map((change) => change.kind)).toStrictEqual([
+      'started',
+      'started',
+      'overlap_detected'
+    ])
   })
 })

@@ -60,7 +60,13 @@ describe('model through the shared subpath', () => {
       ])
     )
     expect(result.entitlements).toEqual([
-      { name: 'pro', active: true, until: LATER, grantingSubscriptionReference: 's2' }
+      {
+        name: 'pro',
+        active: true,
+        until: LATER,
+        grantingSubscriptionReference: 's2',
+        grantingSubscriptionReferences: ['s1', 's2']
+      }
     ])
     expect(result.overlapping).toEqual(['pro'])
   })
@@ -100,7 +106,13 @@ describe('model through the shared subpath', () => {
       new Map([['s1', ['pro']]])
     )
     expect(dated.entitlements).toEqual([
-      { name: 'pro', active: false, until: END, grantingSubscriptionReference: null }
+      {
+        name: 'pro',
+        active: false,
+        until: END,
+        grantingSubscriptionReference: null,
+        grantingSubscriptionReferences: []
+      }
     ])
     expect(undated.entitlements[0]?.until).toBeNull()
   })

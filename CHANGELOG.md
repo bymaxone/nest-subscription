@@ -119,11 +119,13 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   outage handling. Until then it delegates unchanged.
 - `diffSnapshots(previous, current)`, exported from the root: the pure comparison of two snapshots
   into the typed list of changes of `CHANGE_KINDS`, each with a stable key. It reads the two
-  snapshots and nothing else, never a webhook payload, and reads the access flag, never a status
-  name, to decide overlap. The list is ordered by kind as `CHANGE_KINDS` is, then by the order of
-  the subscriptions; a change of `fetchedAt` alone gives an empty list. The snapshot does not say
-  which entitlement a subscription grants, so `overlap_detected` means two or more subscriptions
-  give access where at most one did.
+  snapshots and nothing else, never a webhook payload. The list is ordered by kind as `CHANGE_KINDS` is, then by the order of
+  the subscriptions; a change of `fetchedAt` alone gives an empty list. `overlap_detected` is reported per entitlement, when it
+  has two or more grantors where it had at most one.
+- `EntitlementState.grantingSubscriptionReferences`: every subscription that grants the entitlement
+  and gives access, sorted with no duplicate and empty when none does, beside the decisive
+  `grantingSubscriptionReference`, which is one of them. A snapshot without it is refused as
+  unreadable. Apply to a derived backend: add the field to any `EntitlementState` you build.
 - The change key is 64 hexadecimal characters derived from the account, the subscription, the kind
   and the fact that tells the change from the next (for a renewal, the period end), each field
   hashed on its own before they are joined. It holds no identifier and does not depend on the fetch

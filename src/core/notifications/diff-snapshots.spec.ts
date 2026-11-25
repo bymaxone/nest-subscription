@@ -8,6 +8,7 @@
 import {
   CHANGE_KINDS,
   createEmptySnapshot,
+  resolveEntitlements,
   type ChangeKind,
   type SubscriptionRecord,
   type SubscriptionSnapshot
@@ -128,7 +129,10 @@ const ROWS: readonly Row[] = [
   {
     kind: 'overlap_detected',
     previous: snapshotOf([record()]),
-    current: snapshotOf([record(), record({ subscriptionReference: 'sub-2' })])
+    current: grantingSnapshot([{}, { subscriptionReference: 'sub-2' }], {
+      'sub-1': ['pro'],
+      'sub-2': ['pro']
+    })
   }
 ]
 
@@ -285,7 +289,13 @@ const VARIANTS: Record<ChangeKind, readonly [SubscriptionSnapshot | null, Subscr
   ],
   refunded: [one(), one({ refundedAt: '2026-01-13T00:00:00.000Z' })],
   transferred: [one(), one({}, 'cust-3')],
-  overlap_detected: [one(), snapshotOf([record(), record({ subscriptionReference: 'sub-3' })])]
+  overlap_detected: [
+    one(),
+    grantingSnapshot([{}, { subscriptionReference: 'sub-3' }], {
+      'sub-1': ['pro'],
+      'sub-3': ['pro']
+    })
+  ]
 }
 
 describe('diffSnapshots', () => {
@@ -378,6 +388,17 @@ describe('diffSnapshots', () => {
     expect(keyOf('a:b', 'c')).not.toBe(keyOf('a', 'b:c'))
   })
 
+  it('gives two entitlements with the same grantors different overlap keys', () => {
+    // Scenario: sub-1 and sub-2 grant both pro and addon; each entitlement overlaps on its own.
+    const grants = { 'sub-1': ['pro', 'addon'], 'sub-2': ['pro', 'addon'] }
+    const current = grantingSnapshot([{}, { subscriptionReference: 'sub-2' }], grants)
+    const keys = diffSnapshots(null, current)
+      .filter((change) => change.kind === 'overlap_detected')
+      .map((change) => change.key)
+    expect(keys).toHaveLength(2)
+    expect(new Set(keys).size).toBe(2)
+  })
+
   it('gives the same keys whatever the order of the subscriptions', () => {
     // Scenario: the source lists the same subscriptions in another order.
     const a = record({ subscriptionReference: 'a', productReference: 'p1' })
@@ -401,6 +422,65 @@ describe('diffSnapshots', () => {
     const blank = { ...snapshotOf([record()]), accountId: ' ' }
     expect(() => diffSnapshots(null, blank)).toThrow(
       expect.objectContaining({ code: 'SUBSCRIPTION_INVALID_INPUT' })
+    )
+  })
+})
+
+/** A snapshot whose entitlements are resolved from the subscriptions and the grants given. */
+function grantingSnapshot(
+  subscriptions: readonly Partial<SubscriptionRecord>[],
+  grants: Readonly<Record<string, readonly string[]>>
+): SubscriptionSnapshot {
+  const records = subscriptions.map((overrides) => record(overrides))
+  const { entitlements } = resolveEntitlements(records, new Map(Object.entries(grants)))
+  return { ...snapshotOf(records), entitlements }
+}
+
+const APP = { subscriptionReference: 'app' }
+const WEB = { subscriptionReference: 'web' }
+const THIRD = { subscriptionReference: 'third' }
+
+describe('diffSnapshots overlap per entitlement', () => {
+  it.each([
+    [
+      'an App Store subscription for pro beside a web one for addon, with one before',
+      [APP],
+      { app: ['pro'] },
+      [APP, WEB],
+      { app: ['pro'], web: ['addon'] },
+      []
+    ],
+    [
+      'two subscriptions that both grant pro, with one before',
+      [APP],
+      { app: ['pro'] },
+      [APP, WEB],
+      { app: ['pro'], web: ['pro'] },
+      ['overlap_detected']
+    ],
+    [
+      'two grantors of pro before and after',
+      [APP, WEB],
+      { app: ['pro'], web: ['pro'] },
+      [APP, WEB],
+      { app: ['pro'], web: ['pro'] },
+      []
+    ],
+    [
+      'a third grantor added to pro that already had two',
+      [APP, WEB],
+      { app: ['pro'], web: ['pro'] },
+      [APP, WEB, THIRD],
+      { app: ['pro'], web: ['pro'], third: ['pro'] },
+      []
+    ]
+  ] as const)('reports %s', (_name, before, beforeGrants, after, afterGrants, expected) => {
+    // Scenario: overlap is decided per entitlement from who grants it, not from how many
+    // subscriptions give access.
+    const previous = grantingSnapshot(before, beforeGrants)
+    const current = grantingSnapshot(after, afterGrants)
+    expect(kindsOf(previous, current).filter((kind) => kind === 'overlap_detected')).toStrictEqual(
+      expected
     )
   })
 })

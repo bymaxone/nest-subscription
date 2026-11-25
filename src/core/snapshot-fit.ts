@@ -58,11 +58,31 @@ const listOf =
 
 const SOURCE_CUSTOMER_FIELDS: Record<keyof SourceCustomerReference, Check> = { id: isString }
 
+/** Whether a value is a list of strings in strictly ascending order: sorted, with no duplicate. */
+const isSortedUniqueStrings: Check = (value) =>
+  Array.isArray(value) &&
+  value.every(isString) &&
+  value.every((item, index) => index === 0 || value[index - 1] < item)
+
 const ENTITLEMENT_FIELDS: Record<keyof EntitlementState, Check> = {
   name: isString,
   active: isBoolean,
   until: orNull(isInstant),
-  grantingSubscriptionReference: orNull(isString)
+  grantingSubscriptionReference: orNull(isString),
+  grantingSubscriptionReferences: isSortedUniqueStrings
+}
+
+/**
+ * Whether a value is an entitlement: every field has its type, and the decisive subscription, when
+ * there is one, is among the grantors. Only the listed fields are read, so an entitlement that
+ * lacks the list of grantors fails the field check before the membership is looked at.
+ */
+const isEntitlement: Check = (value) => {
+  if (!hasFields(value, ENTITLEMENT_FIELDS)) return false
+  const decisive: unknown = Reflect.get(value as object, 'grantingSubscriptionReference')
+  // The field check above has made it a list of strings.
+  const grantors = Reflect.get(value as object, 'grantingSubscriptionReferences') as string[]
+  return decisive === null || grantors.includes(decisive as string)
 }
 
 const SUBSCRIPTION_FIELDS: Record<keyof SubscriptionRecord, Check> = {
@@ -86,7 +106,7 @@ const SUBSCRIPTION_FIELDS: Record<keyof SubscriptionRecord, Check> = {
 /** The fields of a snapshot other than the optional `tenantId`, which the identity check covers. */
 const SNAPSHOT_FIELDS: Record<Exclude<keyof SubscriptionSnapshot, 'tenantId'>, Check> = {
   accountId: isString,
-  entitlements: listOf(ENTITLEMENT_FIELDS),
+  entitlements: (value) => Array.isArray(value) && value.every(isEntitlement),
   subscriptions: listOf(SUBSCRIPTION_FIELDS),
   source: isString,
   sourceCustomer: orNull((value) => hasFields(value, SOURCE_CUSTOMER_FIELDS)),

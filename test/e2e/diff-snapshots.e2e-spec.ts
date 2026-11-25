@@ -8,6 +8,7 @@
 import { diffSnapshots } from '@bymax-one/nest-subscription'
 import {
   createEmptySnapshot,
+  resolveEntitlements,
   type ChangeKind,
   type SubscriptionRecord,
   type SubscriptionSnapshot
@@ -49,6 +50,16 @@ function snapshotOf(
   }
 }
 
+/** Two subscriptions that both give access and both grant `pro`. */
+function both(): SubscriptionSnapshot {
+  const base = snapshotOf([{}, { subscriptionReference: 'sub-2' }])
+  const grants = new Map([
+    ['sub-1', ['pro']],
+    ['sub-2', ['pro']]
+  ])
+  return { ...base, entitlements: resolveEntitlements(base.subscriptions, grants).entitlements }
+}
+
 /** One subscription with the given fields changed. */
 function one(overrides: Partial<SubscriptionRecord> = {}): SubscriptionSnapshot {
   return snapshotOf([overrides])
@@ -68,7 +79,7 @@ const CASES: ReadonlyArray<
   [
     'a first contact with two subscriptions giving access',
     null,
-    snapshotOf([{}, { subscriptionReference: 'sub-2' }]),
+    both(),
     ['started', 'started', 'overlap_detected']
   ],
   ['a known account that buys', snapshotOf([]), one(), ['started']],
@@ -141,18 +152,8 @@ const CASES: ReadonlyArray<
   ['a customer that disappears', one(), snapshotOf([{}], null), ['transferred']],
   ['a customer first linked', snapshotOf([{}], null), one(), []],
   ['a subscription that moves away', one(), snapshotOf([]), ['transferred']],
-  [
-    'a second subscription giving access',
-    one(),
-    snapshotOf([{}, { subscriptionReference: 'sub-2' }]),
-    ['overlap_detected']
-  ],
-  [
-    'two subscriptions that already overlapped',
-    snapshotOf([{}, { subscriptionReference: 'sub-2' }]),
-    snapshotOf([{}, { subscriptionReference: 'sub-2' }]),
-    []
-  ],
+  ['a second subscription granting the same entitlement', one(), both(), ['overlap_detected']],
+  ['two subscriptions that already overlapped', both(), both(), []],
   [
     'a renewal with a product change',
     one(),

@@ -28,7 +28,15 @@ const T0 = '2026-01-01T00:00:00.000Z'
 function snapshotOf(active: boolean): SubscriptionSnapshot {
   return {
     ...createEmptySnapshot({ accountId: 'acc-1', source: 'fake', fetchedAt: T0 }),
-    entitlements: [{ name: 'pro', active, until: null, grantingSubscriptionReference: null }]
+    entitlements: [
+      {
+        name: 'pro',
+        active,
+        until: null,
+        grantingSubscriptionReference: null,
+        grantingSubscriptionReferences: []
+      }
+    ]
   }
 }
 

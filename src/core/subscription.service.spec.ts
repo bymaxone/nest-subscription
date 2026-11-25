@@ -227,7 +227,13 @@ describe('SubscriptionService reads', () => {
     async (_name, until, expected) => {
       // Scenario: the active flag is true; only the until instant against the injected now differs.
       const { store, service } = setup()
-      const entitlement = { name: 'pro', active: true, until, grantingSubscriptionReference: null }
+      const entitlement = {
+        name: 'pro',
+        active: true,
+        until,
+        grantingSubscriptionReference: null,
+        grantingSubscriptionReferences: []
+      }
       await store.putSnapshot(
         encodeAccountKey(ACCOUNT),
         { ...snapshotOf(ACCOUNT, true), entitlements: [entitlement] },
@@ -245,7 +251,8 @@ describe('SubscriptionService reads', () => {
       name: 'pro',
       active: true,
       until: '2026-01-01T00:00:10.000Z',
-      grantingSubscriptionReference: null
+      grantingSubscriptionReference: null,
+      grantingSubscriptionReferences: []
     }
     await store.putSnapshot(
       encodeAccountKey(ACCOUNT),
@@ -266,7 +273,8 @@ describe('SubscriptionService reads', () => {
       name: 'pro',
       active: true,
       until: 'not-a-date',
-      grantingSubscriptionReference: null
+      grantingSubscriptionReference: null,
+      grantingSubscriptionReferences: []
     }
     await store.putSnapshot(
       encodeAccountKey(ACCOUNT),

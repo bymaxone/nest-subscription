@@ -1,91 +1,95 @@
 /**
- * @fileoverview Pins the overlap rule: two subscriptions giving access at once is reported when it was not so before, from the access flag alone.
+ * @fileoverview Pins the overlap rule: an entitlement that two or more subscriptions grant and give
+ * access to is reported when it had at most one such grantor before, per entitlement, from the
+ * grantors the snapshots record and from nothing else.
  * @layer core
  */
 import {
   createEmptySnapshot,
-  type SubscriptionRecord,
+  type EntitlementState,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
 import { overlapChanges } from './overlap'
 
-const BASE: SubscriptionRecord = {
-  subscriptionReference: 'sub-1',
-  status: 'active',
-  givesAccess: true,
-  willRenew: 'yes',
-  origin: 'app_store',
-  environment: 'production',
-  productReference: 'pro_monthly',
-  billingInterval: 'P1M',
-  currentPeriodStart: '2026-01-01T00:00:00.000Z',
-  currentPeriodEnd: '2026-02-01T00:00:00.000Z',
-  accessUntil: '2026-02-01T00:00:00.000Z',
-  billingIssueSince: null,
-  cancelledAt: null,
-  refundedAt: null,
-  managementReference: null
+/** An entitlement granted by the given subscriptions, which are sorted already. */
+function entitlement(name: string, grantors: readonly string[]): EntitlementState {
+  return {
+    name,
+    active: grantors.length > 0,
+    until: null,
+    grantingSubscriptionReference: grantors[0] ?? null,
+    grantingSubscriptionReferences: grantors
+  }
 }
 
-/** A record with the given fields changed. */
-function record(overrides: Partial<SubscriptionRecord> = {}): SubscriptionRecord {
-  return { ...BASE, ...overrides }
-}
-
-/** A snapshot holding the given subscriptions, with the given source customer. */
-function snapshotOf(
-  subscriptions: readonly SubscriptionRecord[],
-  customer: string | null = 'cust-1'
-): SubscriptionSnapshot {
+/** A snapshot holding the given entitlements and no subscription: the rule reads none. */
+function snapshotOf(...entitlements: EntitlementState[]): SubscriptionSnapshot {
   return {
     ...createEmptySnapshot({ accountId: 'a', source: 's', fetchedAt: '2026-01-01T00:00:00.000Z' }),
-    subscriptions,
-    sourceCustomer: customer === null ? null : { id: customer }
+    entitlements
   }
 }
 
 describe('overlapChanges', () => {
-  const TWO = snapshotOf([
-    record({ subscriptionReference: 'b' }),
-    record({ subscriptionReference: 'a' })
-  ])
-
-  it('reports overlap_detected with the overlapping references sorted', () => {
-    // Scenario: a second subscription starts giving access beside the first.
-    const previous = snapshotOf([record({ subscriptionReference: 'a' })])
-    expect(overlapChanges(previous, TWO)).toStrictEqual([
-      { kind: 'overlap_detected', subscriptionReference: null, facts: ['a', 'b'] }
+  it('reports overlap_detected told apart by the entitlement and its grantors', () => {
+    // Scenario: a second subscription starts granting pro beside the first.
+    const previous = snapshotOf(entitlement('pro', ['a']))
+    const current = snapshotOf(entitlement('pro', ['a', 'b']))
+    expect(overlapChanges(previous, current)).toStrictEqual([
+      { kind: 'overlap_detected', subscriptionReference: null, facts: ['pro', 'a', 'b'] }
     ])
   })
 
   it('reports overlap on first contact', () => {
-    // Scenario: the account is seen for the first time with two subscriptions giving access.
-    expect(overlapChanges(null, TWO).map((change) => change.kind)).toStrictEqual([
-      'overlap_detected'
+    // Scenario: the account is seen for the first time with two grantors of one entitlement.
+    expect(overlapChanges(null, snapshotOf(entitlement('pro', ['a', 'b'])))).toHaveLength(1)
+  })
+
+  it('reports overlap for an entitlement the previous snapshot did not hold', () => {
+    // Scenario: the entitlement is new, so it had no grantor before.
+    const previous = snapshotOf(entitlement('other', ['x', 'y']))
+    expect(overlapChanges(previous, snapshotOf(entitlement('pro', ['a', 'b'])))).toHaveLength(1)
+  })
+
+  it('reports each overlapping entitlement on its own, in the order of the snapshot', () => {
+    // Scenario: two entitlements start overlapping in one comparison, and a third does not.
+    const current = snapshotOf(
+      entitlement('zeta', ['a', 'b']),
+      entitlement('solo', ['a']),
+      entitlement('alpha', ['b', 'c'])
+    )
+    expect(overlapChanges(null, current).map((change) => change.facts[0])).toStrictEqual([
+      'zeta',
+      'alpha'
     ])
   })
 
-  it('reports nothing when it already overlapped', () => {
-    // Scenario: two subscriptions gave access before and still do.
-    expect(overlapChanges(TWO, TWO)).toStrictEqual([])
+  it.each([
+    ['two grantors before and after', ['a', 'b'], ['a', 'b']],
+    ['a third grantor added to two', ['a', 'b'], ['a', 'b', 'c']],
+    ['two grantors replaced by another two', ['a', 'b'], ['c', 'd']]
+  ])('reports nothing for %s', (_name, before, after) => {
+    // Scenario: the entitlement already overlapped, so a change in who grants it is not new.
+    const previous = snapshotOf(entitlement('pro', before))
+    expect(overlapChanges(previous, snapshotOf(entitlement('pro', after)))).toStrictEqual([])
   })
 
-  it('reports nothing for one subscription giving access', () => {
-    // Scenario: the other subscription does not give access, whatever its status name says.
-    const current = snapshotOf([
-      record({ subscriptionReference: 'a' }),
-      record({ subscriptionReference: 'b', status: 'active', givesAccess: false })
-    ])
-    expect(overlapChanges(null, current)).toStrictEqual([])
+  it('looks up the previous grantors of the entitlement by its name', () => {
+    // Scenario: pro already overlapped, listed after another entitlement that had one grantor.
+    const previous = snapshotOf(entitlement('other', ['x']), entitlement('pro', ['a', 'b']))
+    const current = snapshotOf(entitlement('other', ['x']), entitlement('pro', ['a', 'b', 'c']))
+    expect(overlapChanges(previous, current)).toStrictEqual([])
   })
 
-  it('counts a subscription that gives access whatever its status', () => {
-    // Scenario: the access flag decides, so an expired status that still gives access overlaps.
-    const current = snapshotOf([
-      record({ subscriptionReference: 'a' }),
-      record({ subscriptionReference: 'b', status: 'expired', givesAccess: true })
-    ])
-    expect(overlapChanges(null, current)).toHaveLength(1)
+  it('reports nothing for one grantor of each of two entitlements', () => {
+    // Scenario: an App Store subscription grants pro and a web one grants addon.
+    const current = snapshotOf(entitlement('pro', ['app']), entitlement('addon', ['web']))
+    expect(overlapChanges(snapshotOf(entitlement('pro', ['app'])), current)).toStrictEqual([])
+  })
+
+  it('reports nothing for an entitlement nobody grants', () => {
+    // Scenario: an entitlement with an empty list of grantors.
+    expect(overlapChanges(null, snapshotOf(entitlement('pro', [])))).toStrictEqual([])
   })
 })

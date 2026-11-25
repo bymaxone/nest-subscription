@@ -24,7 +24,13 @@ function snapshotWith(...entitlements: EntitlementState[]): SubscriptionSnapshot
 
 /** An entitlement state of the name `premium` unless another is given. */
 function entitlement(active: boolean, until: string | null, name = 'premium'): EntitlementState {
-  return { name, active, until, grantingSubscriptionReference: active ? 'sub-1' : null }
+  return {
+    name,
+    active,
+    until,
+    grantingSubscriptionReference: active ? 'sub-1' : null,
+    grantingSubscriptionReferences: active ? ['sub-1'] : []
+  }
 }
 
 describe('decideAccess', () => {
