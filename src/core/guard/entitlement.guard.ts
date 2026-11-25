@@ -15,6 +15,7 @@ import {
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
+import { ObserverBridge } from '../observer/observer-bridge'
 import type { ResolvedSubscriptionOptions } from '../options/subscription-options.types'
 import { isStale } from '../refresh/staleness'
 import { SubscriptionService } from '../subscription.service'
@@ -70,7 +71,8 @@ export class EntitlementGuard implements CanActivate {
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(SubscriptionService) private readonly snapshots: GuardSnapshots,
-    @Inject(SUBSCRIPTION_OPTIONS) private readonly options: GuardOptions
+    @Inject(SUBSCRIPTION_OPTIONS) private readonly options: GuardOptions,
+    @Inject(ObserverBridge) private readonly observer: ObserverBridge
   ) {}
 
   /**
@@ -86,10 +88,26 @@ export class EntitlementGuard implements CanActivate {
     try {
       return await this.#decide(context)
     } catch (error) {
-      if (error instanceof GuardRefusal) throw error
-      if (error instanceof ResolverRefusal) throw error.exception
-      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+      throw this.#refused(error)
     }
+  }
+
+  /**
+   * What to throw for an error of a decision, after the observer is told it was a refusal: the
+   * guard's own refusal, the resolver's own HTTP exception, or, for anything else, a refusal as
+   * unavailable.
+   */
+  #refused(error: unknown): unknown {
+    if (error instanceof ResolverRefusal) {
+      this.observer.guardDecision('refused', null)
+      return error.exception
+    }
+    const refusal =
+      error instanceof GuardRefusal
+        ? error
+        : new GuardRefusal(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    this.observer.guardDecision('refused', refusal.code)
+    return refusal
   }
 
   /** The decision for a request; every refusal is thrown as a `GuardRefusal`. */
@@ -158,7 +176,10 @@ export class EntitlementGuard implements CanActivate {
   /** `true` for an allowed decision; a refusal with the matching code otherwise. */
   #verdict(snapshot: SubscriptionSnapshot, required: string, now: Date): true {
     const decision = decideAccess(snapshot, required, now)
-    if (decision === 'allow') return true
+    if (decision === 'allow') {
+      this.observer.guardDecision('allowed', null)
+      return true
+    }
     throw new GuardRefusal(
       decision === 'no_subscription'
         ? SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED

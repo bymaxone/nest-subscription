@@ -31,6 +31,7 @@ import type { SubscriptionCache } from './options/subscription-options.types'
 import { Reconciler } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
+import { ObserverBridge } from './observer/observer-bridge'
 
 const ACCOUNT: AccountReference = { accountId: 'acc-1' }
 const T0 = '2026-01-01T00:00:00.000Z'
@@ -94,8 +95,17 @@ function setup(extra: SetupOptions = {}): {
   const clock = new ManualClock(T0)
   const options = resolveOptions({ source, store, clock, accountResolver: () => null, ...extra })
   const snapshotCache =
-    extra.cache === undefined ? null : new SnapshotCache(extra.cache, 30_000, clock)
-  const refresher = new SnapshotRefresher(source, store, clock, snapshotCache, null)
+    extra.cache === undefined
+      ? null
+      : new SnapshotCache(extra.cache, 30_000, clock, new ObserverBridge(null, clock))
+  const refresher = new SnapshotRefresher(
+    source,
+    store,
+    clock,
+    snapshotCache,
+    null,
+    new ObserverBridge(null, clock)
+  )
   return {
     source,
     store,
@@ -108,7 +118,8 @@ function setup(extra: SetupOptions = {}): {
       options,
       refresher,
       snapshotCache,
-      new Reconciler(store, clock, refresher, options, null)
+      new Reconciler(store, clock, refresher, options, null),
+      new ObserverBridge(options.observer, clock)
     )
   }
 }

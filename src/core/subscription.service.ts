@@ -27,6 +27,7 @@ import {
 import { SnapshotCache } from './cache/snapshot-cache'
 import { entitlementHeld } from './entitlement-held'
 import { logEvent } from './logging/subscription-logger'
+import { ObserverBridge } from './observer/observer-bridge'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
 import {
   Reconciler,
@@ -52,7 +53,8 @@ export class SubscriptionService {
     @Inject(SUBSCRIPTION_OPTIONS) private readonly options: ResolvedSubscriptionOptions,
     @Inject(SnapshotRefresher) private readonly refresher: SnapshotRefresher,
     @Inject(SnapshotCache) private readonly cache: SnapshotCache | null,
-    @Inject(Reconciler) private readonly reconciler: Reconciler
+    @Inject(Reconciler) private readonly reconciler: Reconciler,
+    @Inject(ObserverBridge) private readonly observer: ObserverBridge
   ) {}
 
   /**
@@ -166,18 +168,11 @@ export class SubscriptionService {
 
   /**
    * Logs a failed background refresh by its code alone and tells the observer. Neither the account
-   * nor the error's text is passed on, and nothing raised while reporting leaves this method.
+   * nor the error's text is passed on, and neither a broken logger nor a broken observer can raise.
    */
   #reportFailure(error: unknown): void {
     const code = error instanceof SubscriptionError ? error.code : null
-    try {
-      logEvent(this.options.logger, 'background_refresh_failed', code)
-      // `Promise.resolve` adopts a returned promise or thenable, so its rejection is handled here.
-      void Promise.resolve(this.options.observer?.onBackgroundRefreshFailure?.({ code })).catch(
-        () => undefined
-      )
-    } catch {
-      // A broken logger or observer must not turn a handled failure into an unhandled one.
-    }
+    logEvent(this.options.logger, 'background_refresh_failed', code)
+    this.observer.backgroundRefreshFailure(code)
   }
 }

@@ -95,12 +95,13 @@ const SNAPSHOT_CACHE_PROVIDER: FactoryProvider = {
   provide: SnapshotCache,
   useFactory: (
     cache: SubscriptionCache | null | undefined,
-    options: ResolvedSubscriptionOptions
+    options: ResolvedSubscriptionOptions,
+    bridge: ObserverBridge
   ): SnapshotCache | null => {
     const host = cache ?? null
-    return host === null ? null : new SnapshotCache(host, options.cacheTtlMs, options.clock)
+    return host === null ? null : new SnapshotCache(host, options.cacheTtlMs, options.clock, bridge)
   },
-  inject: [{ token: SUBSCRIPTION_CACHE, optional: true }, SUBSCRIPTION_OPTIONS]
+  inject: [{ token: SUBSCRIPTION_CACHE, optional: true }, SUBSCRIPTION_OPTIONS, ObserverBridge]
 }
 
 /** The bridge to the host's observer; a no-op when the host set none. */

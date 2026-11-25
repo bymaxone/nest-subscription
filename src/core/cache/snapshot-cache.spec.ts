@@ -15,6 +15,7 @@ import type { SubscriptionCache } from '../options/subscription-options.types'
 import { ManualClock } from '@bymax-one/nest-subscription/testing'
 
 import { SnapshotCache } from './snapshot-cache'
+import { ObserverBridge } from '../observer/observer-bridge'
 
 const TTL_MS = 30_000
 
@@ -77,7 +78,12 @@ describe('SnapshotCache', () => {
   it('loads on a miss, fills the cache and answers the second read without loading', async () => {
     // Scenario: two reads of one account; the load runs once.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const load = jest.fn(() => Promise.resolve(snapshotOf(ACCOUNT)))
     expect(await cache.read(ACCOUNT, load)).toEqual(snapshotOf(ACCOUNT))
     expect(await cache.read(ACCOUNT, load)).toEqual(snapshotOf(ACCOUNT))
@@ -88,9 +94,12 @@ describe('SnapshotCache', () => {
   it('stores the snapshot as JSON under a fixed prefix and the account key, for the lifetime it was given', async () => {
     // Scenario: the key is the prefix and the encoded account key, nothing built by hand.
     const host = mapCache()
-    await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, () =>
-      Promise.resolve(snapshotOf(ACCOUNT))
-    )
+    await new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    ).read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT)))
     expect(host.sets[0]).toEqual({
       key: `subscription:snapshot:${encodeAccountKey(ACCOUNT)}`,
       value: JSON.stringify(snapshotOf(ACCOUNT)),
@@ -101,16 +110,24 @@ describe('SnapshotCache', () => {
   it('stores for the lifetime it was given', async () => {
     // Scenario: a cache built with its own lifetime.
     const host = mapCache()
-    await new SnapshotCache(host, 1234, new ManualClock()).read(ACCOUNT, () =>
-      Promise.resolve(snapshotOf(ACCOUNT))
-    )
+    await new SnapshotCache(
+      host,
+      1234,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    ).read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT)))
     expect(host.sets[0]?.ttlMs).toBe(1234)
   })
 
   it('does not cache an account with nothing to load', async () => {
     // Scenario: the load finds no snapshot; nothing is stored and the next read loads again.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const load = jest.fn(() => Promise.resolve(null))
     expect(await cache.read(ACCOUNT, load)).toBeNull()
     await cache.read(ACCOUNT, load)
@@ -121,7 +138,12 @@ describe('SnapshotCache', () => {
   it('loads again after the account is invalidated and deletes the key it filled', async () => {
     // Scenario: a hit, an invalidation, then a read that loads the new value.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     await cache.read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT, 'old')))
     await cache.invalidate(ACCOUNT)
     expect(host.deletes).toEqual([`subscription:snapshot:${encodeAccountKey(ACCOUNT)}`])
@@ -132,7 +154,12 @@ describe('SnapshotCache', () => {
   it('keeps two tenants of one account identifier apart', async () => {
     // Scenario: the same account identifier under two tenants fills two entries.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const one: AccountReference = { tenantId: 'one', accountId: 'acc-1' }
     const two: AccountReference = { tenantId: 'two', accountId: 'acc-1' }
     await cache.read(one, () => Promise.resolve(snapshotOf(one, 'one')))
@@ -144,7 +171,12 @@ describe('SnapshotCache', () => {
   it('keeps apart two accounts whose identifiers join into one string with a delimiter', async () => {
     // Scenario: ("a:b", "c") and ("a", "b:c") do not share an entry.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const first: AccountReference = { tenantId: 'a:b', accountId: 'c' }
     const second: AccountReference = { tenantId: 'a', accountId: 'b:c' }
     await cache.read(first, () => Promise.resolve(snapshotOf(first, 'first')))
@@ -156,18 +188,24 @@ describe('SnapshotCache', () => {
   it('degrades to the load when get throws, and still answers', async () => {
     // Scenario: the host cache cannot be read.
     const host = { ...mapCache(), get: () => Promise.reject(new Error('cache down')) }
-    const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, () =>
-      Promise.resolve(snapshotOf(ACCOUNT))
-    )
+    const result = await new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    ).read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT)))
     expect(result).toEqual(snapshotOf(ACCOUNT))
   })
 
   it('answers when set throws', async () => {
     // Scenario: the host cache cannot be written.
     const host = { ...mapCache(), set: () => Promise.reject(new Error('cache full')) }
-    const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, () =>
-      Promise.resolve(snapshotOf(ACCOUNT))
-    )
+    const result = await new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    ).read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT)))
     expect(result).toEqual(snapshotOf(ACCOUNT))
   })
 
@@ -175,7 +213,12 @@ describe('SnapshotCache', () => {
     // Scenario: the host cache cannot delete.
     const host = { ...mapCache(), delete: () => Promise.reject(new Error('cache down')) }
     await expect(
-      new SnapshotCache(host, TTL_MS, new ManualClock()).invalidate(ACCOUNT)
+      new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      ).invalidate(ACCOUNT)
     ).resolves.toBeUndefined()
   })
 
@@ -210,7 +253,12 @@ describe('SnapshotCache', () => {
     const host = mapCache()
     host.entries.set(`subscription:snapshot:${encodeAccountKey(ACCOUNT)}`, poisoned)
     const load = jest.fn(() => Promise.resolve(snapshotOf(ACCOUNT, 'loaded')))
-    const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, load)
+    const result = await new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    ).read(ACCOUNT, load)
     expect(load).toHaveBeenCalledTimes(1)
     expect(result?.sourceCustomer?.id).toBe('loaded')
   })
@@ -260,7 +308,12 @@ describe('SnapshotCache', () => {
         JSON.stringify({ ...snapshotOf(ACCOUNT, 'cached'), ...patch })
       )
       const load = jest.fn(() => Promise.resolve(snapshotOf(ACCOUNT, 'loaded')))
-      const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, load)
+      const result = await new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      ).read(ACCOUNT, load)
       expect(load).toHaveBeenCalledTimes(1)
       expect(result?.sourceCustomer?.id).toBe('loaded')
     }
@@ -279,7 +332,12 @@ describe('SnapshotCache', () => {
         JSON.stringify({ ...snapshotOf(ACCOUNT, 'foreign'), ...identity })
       )
       const load = jest.fn(() => Promise.resolve(snapshotOf(ACCOUNT, 'loaded')))
-      const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, load)
+      const result = await new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      ).read(ACCOUNT, load)
       expect(load).toHaveBeenCalledTimes(1)
       expect(result?.sourceCustomer?.id).toBe('loaded')
     }
@@ -298,7 +356,12 @@ describe('SnapshotCache', () => {
       delete: () => Promise.resolve()
     }
     const load = jest.fn(() => Promise.resolve(snapshotOf(ACCOUNT, 'loaded')))
-    const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(ACCOUNT, load)
+    const result = await new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    ).read(ACCOUNT, load)
     expect(result?.sourceCustomer?.id).toBe('loaded')
   })
 
@@ -312,7 +375,12 @@ describe('SnapshotCache', () => {
       const host = mapCache()
       host.entries.set(`subscription:snapshot:${encodeAccountKey(asked)}`, JSON.stringify(held))
       const load = jest.fn(() => Promise.resolve(snapshotOf(asked, 'loaded')))
-      await new SnapshotCache(host, TTL_MS, new ManualClock()).read(asked, load)
+      await new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      ).read(asked, load)
       expect(load).toHaveBeenCalledTimes(1)
     }
   })
@@ -326,7 +394,12 @@ describe('SnapshotCache', () => {
       JSON.stringify({ ...snapshotOf(asked, 'cached'), tenantId: 't1' })
     )
     const load = jest.fn(() => Promise.resolve(null))
-    const result = await new SnapshotCache(host, TTL_MS, new ManualClock()).read(asked, load)
+    const result = await new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    ).read(asked, load)
     expect(result?.sourceCustomer?.id).toBe('cached')
     expect(load).not.toHaveBeenCalled()
   })
@@ -334,7 +407,12 @@ describe('SnapshotCache', () => {
   it('lets a failing load reject the read, since nothing else can answer it', async () => {
     // Scenario: the store behind the load fails; the cache does not hide it, and leaves no entry.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     await expect(
       cache.read(ACCOUNT, () => Promise.reject(new Error('store down')))
     ).rejects.toThrow('store down')
@@ -346,7 +424,12 @@ describe('SnapshotCache', () => {
     // Scenario: the load is held; the account is invalidated; the old value arrives and is
     // returned to its caller but not stored, so the next read loads the new one.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const held = deferred<SubscriptionSnapshot | null>()
     const reading = cache.read(ACCOUNT, () => held.promise)
     await flush()
@@ -367,7 +450,12 @@ describe('SnapshotCache', () => {
       sets.push(key)
       return Promise.resolve()
     }
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const reading = cache.read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT)))
     await flush()
     await cache.invalidate(ACCOUNT)
@@ -379,7 +467,12 @@ describe('SnapshotCache', () => {
   it('still caches a value loaded while another account was invalidated', async () => {
     // Scenario: the invalidation names a different account.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const held = deferred<SubscriptionSnapshot | null>()
     const reading = cache.read(ACCOUNT, () => held.promise)
     await flush()
@@ -392,7 +485,12 @@ describe('SnapshotCache', () => {
   it('marks every read in flight for the account when it is invalidated', async () => {
     // Scenario: two reads of one account are held; one invalidation keeps both out of the cache.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const first = deferred<SubscriptionSnapshot | null>()
     const second = deferred<SubscriptionSnapshot | null>()
     const reads = [
@@ -414,7 +512,12 @@ describe('SnapshotCache', () => {
   it('keeps tracking an account while a second read of it is still in flight', async () => {
     // Scenario: the first of two reads finishes; an invalidation then still reaches the second.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     const first = deferred<SubscriptionSnapshot | null>()
     const second = deferred<SubscriptionSnapshot | null>()
     const firstRead = cache.read(ACCOUNT, () => first.promise)
@@ -434,7 +537,12 @@ describe('SnapshotCache', () => {
   it('keeps no record of a read once it has finished, however it finished', async () => {
     // Scenario: a hit, a fill and a failing load leave nothing behind.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     await cache.read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT)))
     await cache.read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT)))
     await cache.read(ACCOUNT, () => Promise.reject(new Error('x'))).catch(() => undefined)
@@ -445,7 +553,12 @@ describe('SnapshotCache', () => {
   it('refuses a blank account identifier as invalid input', async () => {
     // Scenario: the key cannot be built, so neither method touches the host cache.
     const host = mapCache()
-    const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+    const cache = new SnapshotCache(
+      host,
+      TTL_MS,
+      new ManualClock(),
+      new ObserverBridge(null, new ManualClock())
+    )
     await expect(cache.read({ accountId: ' ' }, () => Promise.resolve(null))).rejects.toMatchObject(
       {
         code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
@@ -456,5 +569,59 @@ describe('SnapshotCache', () => {
     })
     expect(host.sets).toEqual([])
     expect(host.deletes).toEqual([])
+  })
+})
+
+describe('SnapshotCache observer', () => {
+  /** A cache over a map-backed host cache, with the observer's lookups recorded. */
+  function observed(): { cache: SnapshotCache; outcomes: string[] } {
+    const outcomes: string[] = []
+    const clock = new ManualClock()
+    const bridge = new ObserverBridge(
+      { onCacheLookup: (event) => void outcomes.push(event.outcome) },
+      clock
+    )
+    return { cache: new SnapshotCache(mapCache(), TTL_MS, clock, bridge), outcomes }
+  }
+
+  it('reports a miss for a read that loads and a hit for the read after it', async () => {
+    // Scenario: two reads of one account; the first loads from the store, the second does not.
+    const { cache, outcomes } = observed()
+    const load = (): Promise<SubscriptionSnapshot> => Promise.resolve(snapshotOf(ACCOUNT))
+    await cache.read(ACCOUNT, load)
+    await cache.read(ACCOUNT, load)
+    expect(outcomes).toStrictEqual(['miss', 'hit'])
+  })
+
+  it('reports a miss when the host cache answers with something that is not a snapshot', async () => {
+    // Scenario: a cache entry that is not JSON counts as a miss, so the store answers.
+    const outcomes: string[] = []
+    const clock = new ManualClock()
+    const host = mapCache()
+    host.entries.set(`subscription:snapshot:${encodeAccountKey(ACCOUNT)}`, 'not json')
+    const bridge = new ObserverBridge(
+      { onCacheLookup: (event) => void outcomes.push(event.outcome) },
+      clock
+    )
+    await new SnapshotCache(host, TTL_MS, clock, bridge).read(ACCOUNT, () =>
+      Promise.resolve(snapshotOf(ACCOUNT))
+    )
+    expect(outcomes).toStrictEqual(['miss'])
+  })
+
+  it('reports nothing when the read bypasses the cache', async () => {
+    // Scenario: a failed delete keeps the account off the cache, so the read goes to the store
+    // without a lookup in the host's cache.
+    const outcomes: string[] = []
+    const clock = new ManualClock()
+    const host = { ...mapCache(), delete: (): Promise<void> => Promise.reject(new Error('down')) }
+    const bridge = new ObserverBridge(
+      { onCacheLookup: (event) => void outcomes.push(event.outcome) },
+      clock
+    )
+    const cache = new SnapshotCache(host, TTL_MS, clock, bridge)
+    await cache.invalidate(ACCOUNT)
+    await cache.read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT)))
+    expect(outcomes).toStrictEqual([])
   })
 })

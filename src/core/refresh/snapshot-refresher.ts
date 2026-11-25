@@ -28,6 +28,7 @@ import { SingleFlight } from './single-flight'
 import { SnapshotCache } from '../cache/snapshot-cache'
 import { ChangeDispatcher } from '../notifications/change-dispatcher'
 import { diffSnapshots } from '../notifications/diff-snapshots'
+import { ObserverBridge } from '../observer/observer-bridge'
 import { isSnapshotFor } from '../snapshot-fit'
 
 /** The changes of a refresh that stored nothing, and of one with no hook to tell. */
@@ -72,7 +73,8 @@ export class SnapshotRefresher {
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
     @Inject(SUBSCRIPTION_CLOCK) private readonly clock: Clock,
     @Inject(SnapshotCache) private readonly cache: SnapshotCache | null,
-    @Inject(ChangeDispatcher) private readonly dispatcher: ChangeDispatcher | null
+    @Inject(ChangeDispatcher) private readonly dispatcher: ChangeDispatcher | null,
+    @Inject(ObserverBridge) private readonly observer: ObserverBridge
   ) {}
 
   /** The number of accounts being refreshed now. */
@@ -93,9 +95,32 @@ export class SnapshotRefresher {
     return this.#flights.run(key, () => this.#refreshOnce(key, account))
   }
 
-  /** One read of the source and the ordered write of its result. */
+  /** One read of the source and the ordered write of its result, reported to the observer. */
   async #refreshOnce(key: string, account: AccountReference): Promise<RefreshResult> {
-    const read = await this.#read(account)
+    const started = this.observer.mark()
+    let read: SubscriptionSnapshot
+    try {
+      read = await this.#read(account)
+    } catch (error) {
+      this.observer.sourceError(this.source.name, started)
+      throw error
+    }
+    const result = await this.#store(key, account, read)
+    this.observer.refresh(
+      result.written ? 'written' : 'superseded',
+      this.source.name,
+      started,
+      result.changes.length
+    )
+    return result
+  }
+
+  /** Stores what was read, unless the store holds a newer snapshot, and starts the delivery. */
+  async #store(
+    key: string,
+    account: AccountReference,
+    read: SubscriptionSnapshot
+  ): Promise<RefreshResult> {
     const snapshot: SubscriptionSnapshot = { ...read, fetchedAt: this.clock.now().toISOString() }
     const orderedAt = orderInstant(snapshot)
     const previous = await this.#stored(key, account)

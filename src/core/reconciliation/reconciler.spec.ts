@@ -85,7 +85,14 @@ function setup(extra: { multiTenant?: boolean; maxSnapshotAgeMs?: number } = {})
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(T0)
   const options = resolveOptions({ source, store, clock, accountResolver: () => null, ...extra })
-  const refresher = new SnapshotRefresher(source, store, clock, null, null)
+  const refresher = new SnapshotRefresher(
+    source,
+    store,
+    clock,
+    null,
+    null,
+    new ObserverBridge(null, clock)
+  )
   const reads: number[] = []
   const original = source.readAccount.bind(source)
   jest.spyOn(source, 'readAccount').mockImplementation((reference) => {
@@ -208,7 +215,14 @@ describe('Reconciler', () => {
         return store.listStaleKeys(olderThan, limit, cursor)
       }
     })
-    const refresher = new SnapshotRefresher(source, store, clock, null, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: spying, clock, accountResolver: () => null })
     const result = await new Reconciler(spying, clock, refresher, options, null).run({
       olderThanMs: DAY,
@@ -230,7 +244,14 @@ describe('Reconciler', () => {
       listStaleKeys: (olderThan, limit, cursor) =>
         store.listStaleKeys(olderThan, Math.max(1, limit - 7), cursor)
     })
-    const refresher = new SnapshotRefresher(source, store, clock, null, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: short, clock, accountResolver: () => null })
     const result = await new Reconciler(short, clock, refresher, options, null).run({
       olderThanMs: DAY,
@@ -254,7 +275,14 @@ describe('Reconciler', () => {
         return store.listStaleKeys(olderThan, limit, cursor)
       }
     })
-    const refresher = new SnapshotRefresher(source, store, clock, null, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: spying, clock, accountResolver: () => null })
     const result = await new Reconciler(spying, clock, refresher, options, null).run({
       olderThanMs: DAY,
@@ -316,7 +344,14 @@ describe('Reconciler', () => {
         return store.listStaleKeys(olderThan, limit, cursor)
       }
     })
-    const refresher = new SnapshotRefresher(source, store, clock, null, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: spying, clock, accountResolver: () => null })
     const result = await new Reconciler(spying, clock, refresher, options, null).run({
       olderThanMs: DAY,
@@ -490,7 +525,14 @@ describe('Reconciler', () => {
     const { source, store, clock } = setup()
     const failure = new Error('store down')
     const broken = delegating(store, { listStaleKeys: () => Promise.reject(failure) })
-    const refresher = new SnapshotRefresher(source, store, clock, null, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: broken, clock, accountResolver: () => null })
     await expect(new Reconciler(broken, clock, refresher, options, null).run({})).rejects.toBe(
       failure
@@ -583,7 +625,14 @@ function withHook(
     { warn: (message) => void lines.push(message) },
     new ObserverBridge(null, clock)
   )
-  const refresher = new SnapshotRefresher(source, view, clock, null, dispatcher)
+  const refresher = new SnapshotRefresher(
+    source,
+    view,
+    clock,
+    null,
+    dispatcher,
+    new ObserverBridge(null, clock)
+  )
   return {
     source,
     store,

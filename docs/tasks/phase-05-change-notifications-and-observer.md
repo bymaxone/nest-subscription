@@ -1,6 +1,6 @@
 # Phase 5 — Change notifications and observer
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P5 — change-notifications-and-observer
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -41,7 +41,7 @@ At the end every stored change is compared with the previous snapshot into a typ
 | 5.1 | Compare two snapshots into the typed change list          | ✅ Done | P0       | L    | —          |
 | 5.2 | Give each change a stable key                             | ✅ Done | P0       | S    | 5.1        |
 | 5.3 | Call the host hook after the write                        | ✅ Done | P0       | M    | 5.2        |
-| 5.4 | Add the observer                                          | 📋 ToDo | P1       | M    | 5.3        |
+| 5.4 | Add the observer                                          | ✅ Done | P1       | M    | 5.3        |
 | 5.5 | Prove that logs and observer payloads carry no identifier | 📋 ToDo | P0       | S    | 5.4        |
 
 ---
@@ -309,7 +309,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 5.4 — Add the observer
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: M
 - **Depends on**: 5.3
@@ -320,12 +320,12 @@ Define the optional observer and emit counters and timings from the points that 
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionObserver` is an interface of optional methods, one per event family, each receiving a small typed payload.
-- [ ] With no observer configured, no observer code runs and no payload object is allocated on the read path.
-- [ ] An observer method that throws never affects the operation it observes.
-- [ ] Refresh outcomes, source errors, cache hits and misses, and hook failures are emitted with a duration where one applies.
-- [ ] Webhook outcomes have their payload type defined here, to be emitted by P6.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionObserver` is an interface of optional methods, one per event family, each receiving a small typed payload.
+- [x] With no observer configured, no observer code runs and no payload object is allocated on the read path.
+- [x] An observer method that throws never affects the operation it observes.
+- [x] Refresh outcomes, source errors, cache hits and misses, and hook failures are emitted with a duration where one applies.
+- [x] Webhook outcomes have their payload type defined here, to be emitted by P6.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -485,3 +485,4 @@ Completion Protocol (after the work is reported done):
 - 5.1 ✅ 2026-11-25 — the pure comparison of two snapshots into the typed change candidates, one rule group per concern
 - 5.2 ✅ 2026-11-25 — the stable change key, hashed field by field from snapshot data, attached to every change by diffSnapshots
 - 5.3 ✅ 2026-11-25 — changes stored with the snapshot as pending, the host hook called after the write, redelivery from reconciliation without the previous snapshot
+- 5.4 ✅ 2026-11-25 — the optional observer with closed payload types and a bridge that costs nothing without one, wired into refreshes, source errors, the cache, the guard and delivery

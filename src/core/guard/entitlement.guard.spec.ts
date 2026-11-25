@@ -25,6 +25,8 @@ import { ManualClock } from '@bymax-one/nest-subscription/testing'
 import type { AccountResolver } from './account-resolver.types'
 import { EntitlementGuard, type GuardOptions, type GuardSnapshots } from './entitlement.guard'
 import { REQUIRED_ENTITLEMENT_KEY, RequiresEntitlement } from './requires-entitlement.decorator'
+import { ObserverBridge } from '../observer/observer-bridge'
+import type { SubscriptionObserver } from '../observer/observer.types'
 
 const T0 = '2026-01-01T00:00:00.000Z'
 
@@ -72,7 +74,8 @@ interface Rig {
 function rig(
   resolved: unknown,
   snapshot: SubscriptionSnapshot | Error = snapshotWith(),
-  options: Partial<GuardOptions> = {}
+  options: Partial<GuardOptions> = {},
+  observer: SubscriptionObserver | null = null
 ): Rig {
   const clock = new ManualClock(T0)
   const resolver = jest.fn((_context: ExecutionContext): unknown => resolved)
@@ -90,7 +93,12 @@ function rig(
     ...options
   }
   return {
-    guard: new EntitlementGuard(new Reflector(), snapshots, full),
+    guard: new EntitlementGuard(
+      new Reflector(),
+      snapshots,
+      full,
+      new ObserverBridge(observer, clock)
+    ),
     clock,
     resolver,
     getSnapshot
@@ -595,5 +603,94 @@ describe('EntitlementGuard', () => {
       expectRefusal(result, 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
       expect(resolver).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('EntitlementGuard observer', () => {
+  /** What the observer was told by one request, as `[outcome, code]` pairs. */
+  async function decisions(
+    resolved: unknown,
+    snapshot: SubscriptionSnapshot | Error,
+    options: Partial<GuardOptions> = {},
+    handler: () => void = Controller.prototype.protectedHandler
+  ): Promise<unknown[][]> {
+    const onGuardDecision = jest.fn()
+    const { guard } = rig(resolved, snapshot, options, { onGuardDecision })
+    await outcome(guard, contextOf(handler))
+    return onGuardDecision.mock.calls.map(([event]) => [event.outcome, event.code])
+  }
+
+  it('reports an allowed request with no code', async () => {
+    // Scenario: the account holds the entitlement.
+    expect(await decisions({ accountId: 'acc-1' }, snapshotWith(premium()))).toStrictEqual([
+      ['allowed', null]
+    ])
+  })
+
+  it.each([
+    ['no subscription', snapshotWith(), SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED],
+    [
+      'a subscription that gives no access',
+      snapshotWith(premium(false)),
+      SUBSCRIPTION_ERROR_CODES.NO_ACCESS
+    ]
+  ])('reports a refusal with the catalogue code for %s', async (_title, snapshot, code) => {
+    // Scenario: the two refusals of the decision.
+    expect(await decisions({ accountId: 'acc-1' }, snapshot)).toStrictEqual([['refused', code]])
+  })
+
+  it('reports a refusal as unauthenticated when no account resolves', async () => {
+    // Scenario: the resolver yields nothing.
+    expect(await decisions(null, snapshotWith(premium()))).toStrictEqual([
+      ['refused', SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED]
+    ])
+  })
+
+  it('reports a refusal as unavailable when the store cannot be read under the default policy', async () => {
+    // Scenario: the snapshot read fails and the fail policy refuses.
+    expect(await decisions({ accountId: 'acc-1' }, new Error('store down'))).toStrictEqual([
+      ['refused', SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE]
+    ])
+  })
+
+  it('reports a refusal with no code when the host resolver refuses by its own exception', async () => {
+    // Scenario: the resolver throws an HTTP exception; its refusal is the host's own, so there is
+    // no catalogue code to report.
+    const resolver = (): never => {
+      throw new HttpException('mine', 451)
+    }
+    const onGuardDecision = jest.fn()
+    const { guard } = rig(
+      null,
+      snapshotWith(premium()),
+      { accountResolver: resolver },
+      { onGuardDecision }
+    )
+    await outcome(guard)
+    expect(onGuardDecision).toHaveBeenCalledWith({ outcome: 'refused', code: null })
+  })
+
+  it('reports nothing for a route without the decorator', async () => {
+    // Scenario: the guard does not decide on an unprotected route.
+    expect(
+      await decisions({ accountId: 'acc-1' }, snapshotWith(), {}, Controller.prototype.openHandler)
+    ).toStrictEqual([])
+  })
+
+  it('does not let an observer that throws change the decision', async () => {
+    // Scenario: the observer throws on an allowed request; the guard still allows it.
+    const { guard } = rig(
+      { accountId: 'acc-1' },
+      snapshotWith(premium()),
+      {},
+      {
+        onGuardDecision: () => {
+          throw new Error('observer broke')
+        }
+      }
+    )
+    await expect(guard.canActivate(contextOf(Controller.prototype.protectedHandler))).resolves.toBe(
+      true
+    )
   })
 })

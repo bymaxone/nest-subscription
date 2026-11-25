@@ -112,13 +112,15 @@ describe('SubscriptionModule.forRoot', () => {
     ) as FactoryProvider
     expect(found.inject).toEqual([
       { token: SUBSCRIPTION_CACHE, optional: true },
-      SUBSCRIPTION_OPTIONS
+      SUBSCRIPTION_OPTIONS,
+      ObserverBridge
     ])
     const host = { get: jest.fn(), set: jest.fn(), delete: jest.fn() }
     const resolved = resolveOptions({ ...input(), cacheTtlMs: 4321 })
-    expect(found.useFactory(host, resolved)).toBeInstanceOf(SnapshotCache)
-    expect(found.useFactory(null, resolved)).toBeNull()
-    expect(found.useFactory(undefined, resolved)).toBeNull()
+    const bridge = new ObserverBridge(null, resolved.clock)
+    expect(found.useFactory(host, resolved, bridge)).toBeInstanceOf(SnapshotCache)
+    expect(found.useFactory(null, resolved, bridge)).toBeNull()
+    expect(found.useFactory(undefined, resolved, bridge)).toBeNull()
   })
 
   it('builds a change dispatcher only when the host set a hook', () => {
@@ -165,7 +167,8 @@ describe('SubscriptionModule.forRoot', () => {
     ) as FactoryProvider
     const set = jest.fn(() => Promise.resolve())
     const host = { get: () => Promise.resolve(null), set, delete: jest.fn() }
-    const cache = found.useFactory(host, resolveOptions({ ...input(), cacheTtlMs: 4321 }))
+    const resolved = resolveOptions({ ...input(), cacheTtlMs: 4321 })
+    const cache = found.useFactory(host, resolved, new ObserverBridge(null, resolved.clock))
     await cache.read({ accountId: 'a' }, () =>
       Promise.resolve(
         createEmptySnapshot({ accountId: 'a', source: 's', fetchedAt: '2026-01-01T00:00:00.000Z' })
