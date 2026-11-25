@@ -40,15 +40,15 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 // The `shared` bundle holds the one `SubscriptionError` and the instant parser; every other bundle
 // imports `shared` by package specifier and carries no copy of it.
 const BUDGETS = [
-  { name: 'root', path: 'dist/core/index.mjs', brotli: 0.18 * 1024 },
-  { name: 'shared', path: 'dist/shared/index.mjs', brotli: 1.84 * 1024 },
-  { name: 'internal', path: 'dist/internal/index.mjs', brotli: 0.41 * 1024 },
+  { name: 'root', path: 'dist/core/index.mjs', brotli: 2.21 * 1024 },
+  { name: 'shared', path: 'dist/shared/index.mjs', brotli: 1.91 * 1024 },
+  { name: 'internal', path: 'dist/internal/index.mjs', brotli: 1.19 * 1024 },
   { name: 'revenuecat', path: 'dist/revenuecat/index.mjs', brotli: 0.05 * 1024 },
   { name: 'finance', path: 'dist/finance/index.mjs', brotli: 0.05 * 1024 },
   { name: 'testing', path: 'dist/testing/index.mjs', brotli: 4.59 * 1024 },
-  { name: 'root (CommonJS)', path: 'dist/core/index.cjs', brotli: 0.29 * 1024 },
-  { name: 'shared (CommonJS)', path: 'dist/shared/index.cjs', brotli: 1.86 * 1024 },
-  { name: 'internal (CommonJS)', path: 'dist/internal/index.cjs', brotli: 0.48 * 1024 },
+  { name: 'root (CommonJS)', path: 'dist/core/index.cjs', brotli: 2.32 * 1024 },
+  { name: 'shared (CommonJS)', path: 'dist/shared/index.cjs', brotli: 1.95 * 1024 },
+  { name: 'internal (CommonJS)', path: 'dist/internal/index.cjs', brotli: 1.25 * 1024 },
   { name: 'revenuecat (CommonJS)', path: 'dist/revenuecat/index.cjs', brotli: 0.05 * 1024 },
   { name: 'finance (CommonJS)', path: 'dist/finance/index.cjs', brotli: 0.05 * 1024 },
   { name: 'testing (CommonJS)', path: 'dist/testing/index.cjs', brotli: 4.67 * 1024 }

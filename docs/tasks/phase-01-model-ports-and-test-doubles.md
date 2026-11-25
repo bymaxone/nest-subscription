@@ -1,6 +1,6 @@
 # Phase 1 — Model, ports and test doubles
 
-> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 7 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: ✅ Done &nbsp;·&nbsp; **Progress**: 7 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P1 — model-ports-and-test-doubles
 > **Source spec**: [`docs/spec.md`](../spec.md)
 

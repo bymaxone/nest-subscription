@@ -40,15 +40,15 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 7.1 | Re-read the RevenueCat facts and record the fixtures | 📋 ToDo | P0 | M | — |
-| 7.2 | Add the adapter options and the HTTP client | 📋 ToDo | P0 | M | 7.1 |
-| 7.3 | Implement the mapping tables | 📋 ToDo | P0 | M | 7.1 |
-| 7.4 | Read a customer into a snapshot | 📋 ToDo | P0 | L | 7.2, 7.3 |
-| 7.5 | Verify RevenueCat webhooks | 📋 ToDo | P0 | M | 7.2 |
-| 7.6 | Parse events and handle identity | 📋 ToDo | P0 | M | 7.4, 7.5 |
-| 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0 | L | 7.6 |
+| ID  | Task                                                      | Status  | Priority | Size | Depends on |
+| --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 7.1 | Re-read the RevenueCat facts and record the fixtures      | 📋 ToDo | P0       | M    | —          |
+| 7.2 | Add the adapter options and the HTTP client               | 📋 ToDo | P0       | M    | 7.1        |
+| 7.3 | Implement the mapping tables                              | 📋 ToDo | P0       | M    | 7.1        |
+| 7.4 | Read a customer into a snapshot                           | 📋 ToDo | P0       | L    | 7.2, 7.3   |
+| 7.5 | Verify RevenueCat webhooks                                | 📋 ToDo | P0       | M    | 7.2        |
+| 7.6 | Parse events and handle identity                          | 📋 ToDo | P0       | M    | 7.4, 7.5   |
+| 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6        |
 
 ---
 
@@ -83,7 +83,7 @@ Re-read every page of specification §12 that the adapter relies on, write down 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior integration engineer engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -133,7 +133,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -164,7 +164,7 @@ Write the options of the RevenueCat adapter and a small client over the runtime'
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -216,7 +216,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -248,7 +248,7 @@ Write the pure functions that map RevenueCat's status, renewal status and store 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -300,7 +300,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -332,7 +332,7 @@ Implement the read: fetch a customer's subscriptions and active entitlements fro
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -388,7 +388,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -419,7 +419,7 @@ Implement both verification methods RevenueCat offers: the static authorization 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -472,7 +472,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -505,7 +505,7 @@ Turn a verified RevenueCat event into the port's notification: event identifier,
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -561,7 +561,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.6 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -595,7 +595,7 @@ Add the signed request builders to the testing subpath, and run the acceptance c
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -652,7 +652,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.7 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

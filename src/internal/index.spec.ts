@@ -13,12 +13,14 @@ describe('internal entry point', () => {
     // Scenario: the entry point is loaded by its relative path; a name exported without its own
     // test would appear here and fail the case, and a re-export must be the module's own value.
     expect(Object.keys(entry).sort()).toEqual([
+      'SECRET_PLACEHOLDER',
       'SUBSCRIPTION_CACHE',
       'SUBSCRIPTION_CLOCK',
       'SUBSCRIPTION_OBSERVER',
       'SUBSCRIPTION_OPTIONS',
       'SUBSCRIPTION_SOURCE',
       'SUBSCRIPTION_STORE',
+      'Secret',
       'SubscriptionError',
       'encodeAccountKey'
     ])

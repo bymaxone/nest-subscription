@@ -37,12 +37,12 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 8.1 | Model capabilities and the service API | 📋 ToDo | P0 | M | — |
-| 8.2 | Implement stop renewal with an honest result | 📋 ToDo | P0 | M | 8.1 |
-| 8.3 | Implement the RevenueCat operations | 📋 ToDo | P0 | M | 8.2 |
-| 8.4 | Close the phase | 📋 ToDo | P0 | S | 8.3 |
+| ID  | Task                                         | Status  | Priority | Size | Depends on |
+| --- | -------------------------------------------- | ------- | -------- | ---- | ---------- |
+| 8.1 | Model capabilities and the service API       | 📋 ToDo | P0       | M    | —          |
+| 8.2 | Implement stop renewal with an honest result | 📋 ToDo | P0       | M    | 8.1        |
+| 8.3 | Implement the RevenueCat operations          | 📋 ToDo | P0       | M    | 8.2        |
+| 8.4 | Close the phase                              | 📋 ToDo | P0       | S    | 8.3        |
 
 ---
 
@@ -78,7 +78,7 @@ Define what a host can ask about and do to a subscription, and add the capabilit
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -129,7 +129,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P8 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 8.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -162,7 +162,7 @@ Add stop renewal to the service: check ownership, ask the source, refresh, and r
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -212,7 +212,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P8 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 8.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -244,7 +244,7 @@ Fill the RevenueCat adapter's capabilities and stop renewal: Google Play through
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -299,7 +299,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P8 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 8.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -328,7 +328,7 @@ Check the phase against its Definition of Done, extend the cross-cutting sweeps 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -377,7 +377,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P8 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/4`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 8.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

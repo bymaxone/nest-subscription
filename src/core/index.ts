@@ -8,7 +8,9 @@ export {
   SUBSCRIPTION_OBSERVER,
   SUBSCRIPTION_OPTIONS,
   SUBSCRIPTION_SOURCE,
+  SECRET_PLACEHOLDER,
   SUBSCRIPTION_STORE,
+  Secret,
   SubscriptionError,
   encodeAccountKey
 } from '@bymax-one/nest-subscription/internal'
@@ -17,6 +19,7 @@ export type {
   Clock,
   KeyPage,
   ManagementOperation,
+  SecretInput,
   SourceCapabilities,
   SourceNotification,
   StopRenewalResult,
@@ -42,3 +45,19 @@ export type {
   SubscriptionStatus,
   WillRenew
 } from '@bymax-one/nest-subscription/shared'
+export { resolveOptions } from './options/resolve-options'
+export { validateOptions } from './options/validate-options'
+export type {
+  AccountResolverOption,
+  ResolvedAccountOption,
+  ResolvedSubscriptionOptions,
+  SubscriptionCache,
+  SubscriptionChangeHook,
+  SubscriptionChangeNotification,
+  SubscriptionFailPolicy,
+  SubscriptionModuleAsyncOptions,
+  SubscriptionModuleOptions,
+  SubscriptionObserverOption,
+  SubscriptionOptionsInput
+} from './options/subscription-options.types'
+export { SubscriptionModule } from './subscription.module'

@@ -33,3 +33,17 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   against its own store.
 - `FakeSubscriptionSource` in the `testing` subpath: a scriptable billing source that sets an
   account's state, queues signed notifications, delays or fails the next read and counts reads.
+- The option types `SubscriptionModuleOptions`, `SubscriptionModuleAsyncOptions`,
+  `SubscriptionOptionsInput` and `ResolvedSubscriptionOptions`, and `resolveOptions`, which applies
+  the defaults (fail policy `refuse`, 24-hour tolerance and maximum age, sandbox access off,
+  webhook controller off) and returns a frozen object, exported from the root.
+- `validateOptions`, which refuses an invalid configuration with one `SubscriptionError` that names
+  every offending option and carries none of the supplied values. `SubscriptionError` gains an
+  optional `optionPaths` list, appended to its message, for configuration errors.
+- `Secret` and `SecretInput`, exported from the root: the holder of every credential and webhook
+  secret, which keeps its values out of serialization, spread, enumeration and `util.inspect`, holds
+  two valid values during a rotation and compares in constant time. The module options hold none.
+- `SubscriptionModule.forRoot` and `forRootAsync`, exported from the root. The options are
+  validated once at boot; the module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`,
+  `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and, with `forRoot`, `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER`
+  when configured. No optional peer is loaded at run time.

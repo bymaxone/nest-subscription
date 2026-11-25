@@ -40,13 +40,13 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 
 ## Task index
 
-| ID | Task | Status | Priority | Size | Depends on |
-|---|---|---|---|---|---|
-| 6.1 | Define the outcomes and their HTTP answers | 📋 ToDo | P0 | S | — |
-| 6.2 | Implement the processor | 📋 ToDo | P0 | L | 6.1 |
-| 6.3 | Enforce the response deadline | 📋 ToDo | P0 | M | 6.2 |
-| 6.4 | Add the controller behind a switch | 📋 ToDo | P0 | M | 6.2 |
-| 6.5 | Prove the receiver end to end | 📋 ToDo | P0 | M | 6.3, 6.4 |
+| ID  | Task                                       | Status  | Priority | Size | Depends on |
+| --- | ------------------------------------------ | ------- | -------- | ---- | ---------- |
+| 6.1 | Define the outcomes and their HTTP answers | 📋 ToDo | P0       | S    | —          |
+| 6.2 | Implement the processor                    | 📋 ToDo | P0       | L    | 6.1        |
+| 6.3 | Enforce the response deadline              | 📋 ToDo | P0       | M    | 6.2        |
+| 6.4 | Add the controller behind a switch         | 📋 ToDo | P0       | M    | 6.2        |
+| 6.5 | Prove the receiver end to end              | 📋 ToDo | P0       | M    | 6.3, 6.4   |
 
 ---
 
@@ -78,7 +78,7 @@ Write the five outcomes of FR18 and the function that maps each to the HTTP answ
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -125,7 +125,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.1 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -160,7 +160,7 @@ Write the processor: verify through the adapter, de-duplicate by event identifie
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -214,7 +214,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.2 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -245,7 +245,7 @@ Answer with a temporary failure when the source read does not finish inside the 
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -298,7 +298,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.3 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -329,7 +329,7 @@ Offer the receiver as a controller the host mounts with one option, off by defau
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -382,7 +382,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.4 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 
@@ -414,7 +414,7 @@ Write the end-to-end suite that drives the receiver through HTTP with the fake s
 
 #### Agent prompt (EN)
 
-````
+```
 You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
 
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
@@ -466,7 +466,7 @@ Completion Protocol (after the work is reported done):
 5. Update the P6 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/5`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 6.5 ✅ YYYY-MM-DD — <one-line summary>`
-````
+```
 
 ---
 

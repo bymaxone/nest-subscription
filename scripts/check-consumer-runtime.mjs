@@ -23,7 +23,12 @@
  * 5. A positive control: a probe that asks for a denied specifier must FAIL, which proves the
  *    resolve hook can see a load and that the denials above are not vacuous.
  *
- * 6. One error class: `SubscriptionError` is the same value from the root, from `./internal` and
+ * 6. Isolation of the adapters (NFR05): a probe that loads the root, or the root and one adapter,
+ *    reads back every file the resolver handed out and fails when a file of an adapter that was not
+ *    loaded is among them, in both module formats. The same probe fails when the record holds no
+ *    file of what it did load, so an empty record cannot pass for an absence.
+ *
+ * 7. One error class: `SubscriptionError` is the same value from the root, from `./internal` and
  *    from `./shared`, and an error thrown by the model (`./shared`) or by the in-memory store
  *    (`./testing`) is an instance of the root's class, in each module format. Entry points are
  *    separate bundles, so a module reached from two of them by a relative path is copied into
@@ -76,6 +81,7 @@ const TESTING_EXPORTS = [
 
 /** Every runtime name of the root entry point. */
 const ROOT_EXPORTS = [
+  'SECRET_PLACEHOLDER',
   'SUBSCRIPTION_CACHE',
   'SUBSCRIPTION_CLOCK',
   'SUBSCRIPTION_ERROR_CODES',
@@ -83,8 +89,12 @@ const ROOT_EXPORTS = [
   'SUBSCRIPTION_OPTIONS',
   'SUBSCRIPTION_SOURCE',
   'SUBSCRIPTION_STORE',
+  'Secret',
   'SubscriptionError',
-  'encodeAccountKey'
+  'SubscriptionModule',
+  'encodeAccountKey',
+  'resolveOptions',
+  'validateOptions'
 ]
 
 /** Every runtime name of the `shared` subpath: the closed value sets, the error codes
@@ -101,6 +111,12 @@ const SHARED_EXPORTS = [
   'parseInstant',
   'resolveEntitlements'
 ]
+
+/** The directories of the build, as they appear in a resolved file URL. */
+const CORE_DIR = '/dist/core/'
+const INTERNAL_DIR = '/dist/internal/'
+const REVENUECAT_DIR = '/dist/revenuecat/'
+const FINANCE_DIR = '/dist/finance/'
 
 /**
  * The probes: which subpaths load together, which namespaces are denied and what is exported.
@@ -151,6 +167,29 @@ const PROBES = [
       ['testing markEventProcessed', '.']
     ]
   },
+  // NFR05: an adapter the host did not configure loads none of its code. Each probe loads the root
+  // and at most one adapter, and reads back which files the resolver handed out.
+  {
+    label: 'root alone loads neither adapter',
+    deny: OPTIONAL_PEERS,
+    entries: { '.': ROOT_EXPORTS },
+    loaded: [CORE_DIR, INTERNAL_DIR],
+    notLoaded: [REVENUECAT_DIR, FINANCE_DIR]
+  },
+  {
+    label: 'root and the RevenueCat adapter load no file of the Finance adapter',
+    deny: OPTIONAL_PEERS,
+    entries: { '.': ROOT_EXPORTS, './revenuecat': [] },
+    loaded: [CORE_DIR, REVENUECAT_DIR],
+    notLoaded: [FINANCE_DIR]
+  },
+  {
+    label: 'root and the Finance adapter load no file of the RevenueCat adapter',
+    deny: OPTIONAL_PEERS,
+    entries: { '.': ROOT_EXPORTS, './finance': [] },
+    loaded: [CORE_DIR, FINANCE_DIR],
+    notLoaded: [REVENUECAT_DIR]
+  },
   {
     label: 'positive control: a load of a denied specifier is seen',
     deny: [`${packageName}/shared`],
@@ -169,7 +208,9 @@ registerHooks({
       error.code = 'ERR_DENIED_BY_RUNTIME_GATE'
       throw error
     }
-    return nextResolve(specifier, context)
+    const resolved = nextResolve(specifier, context)
+    ;(globalThis.__resolvedUrls ??= []).push(resolved.url)
+    return resolved
   }
 })
 `
@@ -209,6 +250,19 @@ async function run() {
     if (first === undefined || first !== second) {
       failures.push(subpathA + ' ' + nameA + ' is not the same value as ' + subpathB + ' ' + nameB)
     }
+  }
+  // The files that were loaded, as the resolve hook saw them. A fragment that must be absent proves
+  // an adapter the host did not configure loaded none of its code; a fragment that must be present
+  // proves the record sees a load, so an empty record cannot pass for an absence.
+  const loadedFiles = globalThis.__resolvedUrls ?? []
+  for (const fragment of JSON.parse(process.env.PROBE_LOADED ?? '[]')) {
+    if (!loadedFiles.some((url) => url.includes(fragment))) {
+      failures.push('no file under ' + fragment + ' was loaded, so the record of loaded files proves nothing')
+    }
+  }
+  for (const fragment of JSON.parse(process.env.PROBE_NOT_LOADED ?? '[]')) {
+    const leaked = loadedFiles.filter((url) => url.includes(fragment))
+    if (leaked.length > 0) failures.push('files under ' + fragment + ' were loaded: ' + leaked.join(', '))
   }
   for (const [thrower, subpath] of JSON.parse(process.env.PROBE_THROWN ?? '[]')) {
     const expected = (await load(specifierOf(subpath))).SubscriptionError
@@ -434,7 +488,9 @@ try {
             DENY_PREFIXES: JSON.stringify(probe.deny),
             PROBE_ENTRIES: JSON.stringify(probe.entries),
             PROBE_SAME: JSON.stringify(probe.same ?? []),
-            PROBE_THROWN: JSON.stringify(probe.thrown ?? [])
+            PROBE_THROWN: JSON.stringify(probe.thrown ?? []),
+            PROBE_LOADED: JSON.stringify(probe.loaded ?? []),
+            PROBE_NOT_LOADED: JSON.stringify(probe.notLoaded ?? [])
           }
         })
         if (probe.expectDenied) {

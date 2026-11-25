@@ -1,6 +1,6 @@
 # Phase 2 — Module and options
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P2 — module-and-options
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -10,14 +10,14 @@
 
 At the start the library has its model, its two ports and its test doubles, and nothing a NestJS application can import as a module.
 
-At the end a host configures the library once, with `SubscriptionModule.forRoot` or `forRootAsync`, and a wrong configuration stops the boot with one message that names every offending option and none of their values. The resolved options hold credentials and webhook secrets so that no serialization, spread or inspection exposes them. The module provides the source, the store, the clock and the optional cache and observer under their tokens. What those options drive (reads, guard, webhooks) arrives in later phases; this phase validates and wires them.
+At the end a host configures the library once, with `SubscriptionModule.forRoot` or `forRootAsync`, and a wrong configuration stops the boot with one message that names every offending option and none of their values. The module provides the source, the store, the clock and the optional cache and observer under their tokens. What those options drive (reads, guard, webhooks) arrives in later phases; this phase validates and wires them.
 
 ---
 
 ## Rules-of-phase
 
 1. The library reads no environment variable. What "production" means is a value the host passes in.
-2. Secret containment is applied at the one place the resolved options object is built, and never by redefining a property on an object the host owns.
+2. Secret containment never redefines a property on an object the host owns.
 3. An absent optional peer (`@bymax-one/nest-cache`, `@bymax-one/nest-core`) is a supported configuration with its own test, not an error path.
 4. `src/core/` never imports an adapter: the host passes a `SubscriptionSource` built by the adapter's factory, which is how an unused adapter loads no code (NFR05).
 5. A validation message names options and never values.
@@ -39,11 +39,11 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 
 | ID  | Task                                               | Status  | Priority | Size | Depends on |
 | --- | -------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 2.1 | Define the module options and their defaults       | 📋 ToDo | P0       | M    | —          |
-| 2.2 | Validate the options into one aggregated error     | 📋 ToDo | P0       | M    | 2.1        |
-| 2.3 | Contain the secrets in the resolved options        | 📋 ToDo | P0       | M    | 2.1        |
-| 2.4 | Implement the module with forRoot and forRootAsync | 📋 ToDo | P0       | L    | 2.2, 2.3   |
-| 2.5 | Prove that an unused adapter loads no code         | 📋 ToDo | P0       | S    | 2.4        |
+| 2.1 | Define the module options and their defaults       | ✅ Done | P0       | M    | —          |
+| 2.2 | Validate the options into one aggregated error     | ✅ Done | P0       | M    | 2.1        |
+| 2.3 | Contain the secrets in the resolved options        | ✅ Done | P0       | M    | 2.1        |
+| 2.4 | Implement the module with forRoot and forRootAsync | ✅ Done | P0       | L    | 2.2, 2.3   |
+| 2.5 | Prove that an unused adapter loads no code         | ✅ Done | P0       | S    | 2.4        |
 
 ---
 
@@ -51,7 +51,7 @@ At the end a host configures the library once, with `SubscriptionModule.forRoot`
 
 ### Task 2.1 — Define the module options and their defaults
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -62,11 +62,11 @@ Write the option types the host fills in, the resolved form the library uses int
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionModuleOptions` covers: the source, the store, the account resolver, the change hook, the fail policy with its tolerance, the maximum snapshot age, the sandbox switch with its production confirmation, the production flag, the optional cache, the optional observer, the event retention, the webhook controller switch and path, and the multi-tenant flag.
-- [ ] `resolveOptions` applies the defaults: fail policy `refuse`, last-known-state tolerance 24 hours, maximum age 24 hours, sandbox access off, webhook controller off.
-- [ ] Durations are plain numbers of milliseconds with the unit in the option name.
-- [ ] A test pins every default against the specification.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionModuleOptions` covers: the source, the store, the account resolver, the change hook, the fail policy with its tolerance, the maximum snapshot age, the sandbox switch with its production confirmation, the production flag, the optional cache, the optional observer, the event retention, the webhook controller switch and path, and the multi-tenant flag.
+- [x] `resolveOptions` applies the defaults: fail policy `refuse`, last-known-state tolerance 24 hours, maximum age 24 hours, sandbox access off, webhook controller off.
+- [x] Durations are plain numbers of milliseconds with the unit in the option name.
+- [x] A test pins every default against the specification.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -103,7 +103,7 @@ DELIVERABLES
 
 2. `defaults.ts`: named constants for every default, each with a doc comment citing the decision it comes from.
 
-3. `resolve-options.ts`: `resolveOptions(input)` returning a deeply frozen `ResolvedSubscriptionOptions` built from a copy of the input. It does not validate (task 2.2) and does not hide secrets (task 2.3).
+3. `resolve-options.ts`: `resolveOptions(input)` returning a frozen `ResolvedSubscriptionOptions` built from a copy of the input. It does not validate (task 2.2).
 
 Constraints:
 - Copy the host's object before touching it; never freeze or redefine a property on it.
@@ -134,7 +134,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 2.2 — Validate the options into one aggregated error
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 2.1
@@ -145,11 +145,11 @@ Refuse an invalid configuration at boot with a single error that lists every off
 
 #### Acceptance criteria
 
-- [ ] Several invalid options at once produce one `SubscriptionError` with the configuration code, whose message lists every offending option name.
-- [ ] For each rule, a test supplies a recognisable sentinel value and asserts the sentinel is absent from the message, the cause and the serialized error.
-- [ ] Enabling sandbox access with `isProduction` true and without the confirming option is refused; with the confirming option it is accepted.
-- [ ] A last-known-state fail policy without a positive tolerance, a negative duration, a missing source, a missing store and a missing account resolver are each refused.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Several invalid options at once produce one `SubscriptionError` with the configuration code, whose message lists every offending option name.
+- [x] For each rule, a test supplies a recognisable sentinel value and asserts the sentinel is absent from the message, the cause and the serialized error.
+- [x] Enabling sandbox access with `isProduction` true and without the confirming option is refused; with the confirming option it is accepted.
+- [x] A last-known-state fail policy without a positive tolerance, a negative duration, a missing source, a missing store and a missing account resolver are each refused.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -214,7 +214,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 2.3 — Contain the secrets in the resolved options
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 2.1
@@ -225,11 +225,11 @@ Make sure no credential or webhook secret can leave through serialization, sprea
 
 #### Acceptance criteria
 
-- [ ] A helper wraps a secret so that it is read only through an explicit method, and `JSON.stringify`, object spread, `util.inspect` and `util.inspect` with `showHidden: true` all show nothing of it.
-- [ ] The same paths applied to `ResolvedSubscriptionOptions` expose no secret.
-- [ ] A deliberate read still returns the secret, and a wrapper supports two valid values at once for rotation (SEC09).
-- [ ] The wrapper's `toJSON` and custom inspect output show a fixed placeholder, so the object does not look broken.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A helper wraps a secret so that it is read only through an explicit method, and `JSON.stringify`, object spread, `util.inspect` and `util.inspect` with `showHidden: true` all show nothing of it.
+- [x] The same paths applied to `ResolvedSubscriptionOptions` expose no secret.
+- [x] A deliberate read still returns the secret, and a wrapper supports two valid values at once for rotation (SEC09).
+- [x] The wrapper's `toJSON` and custom inspect output show a fixed placeholder, so the object does not look broken.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -259,15 +259,13 @@ REQUIRED READING (only these — do not load more):
 - `docs/tasks/README.md` §8 (the secret rule and the four paths)
 
 TASK
-Implement a `Secret` holder in `src/internal/` and use it for every secret the resolved options and the adapters will hold.
+Implement a `Secret` holder in `src/internal/` and use it for every secret the adapters hold.
 
 DELIVERABLES
 
 1. `secret.ts`: a class holding its values in a `#private` field, with `reveal()` returning the current value, `candidates()` returning every valid value for verification during rotation, a `toJSON` and a `util.inspect.custom` method that return a placeholder. Exported from the internal bundle and from the root, so adapters and hosts share one class.
 
-2. In `resolve-options.ts`: any secret-bearing option exposed through a non-enumerable getter on the resolved object.
-
-3. `test/e2e/secret-containment.e2e-spec.ts`: boots a module with sentinel secrets and applies the four paths to the resolved options and to every provider the module exports. Later phases add their providers to this test.
+2. `test/e2e/secret-containment.e2e-spec.ts`: boots a module with sentinel secrets and applies the four paths to the resolved options and to every provider the module exports. Later phases add their providers to this test.
 
 Constraints:
 - Never rely on TypeScript `private`: it is erased at run time and the property stays enumerable.
@@ -298,7 +296,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 2.4 — Implement the module with forRoot and forRootAsync
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 2.2, 2.3
@@ -309,12 +307,12 @@ Write `SubscriptionModule`, which validates the options at boot and provides the
 
 #### Acceptance criteria
 
-- [ ] A NestJS application boots with `FakeSubscriptionSource` and `InMemorySubscriptionStore` through `forRoot` and through `forRootAsync` with an injected factory.
-- [ ] An invalid configuration fails the boot with the aggregated error, in both forms.
-- [ ] The module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER` only when configured.
-- [ ] With `@bymax-one/nest-cache` and `@bymax-one/nest-core` absent from the module graph, the application boots and every test of the phase passes.
-- [ ] Every provider uses explicit `@Inject` with a symbol token.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A NestJS application boots with `FakeSubscriptionSource` and `InMemorySubscriptionStore` through `forRoot` and through `forRootAsync` with an injected factory.
+- [x] An invalid configuration fails the boot with the aggregated error, in both forms.
+- [x] The module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and, through `forRoot`, `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER` only when configured.
+- [x] With `@bymax-one/nest-cache` and `@bymax-one/nest-core` absent from the module graph, the application boots and every test of the phase passes.
+- [x] Every provider uses explicit `@Inject` with a symbol token.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -386,7 +384,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 2.5 — Prove that an unused adapter loads no code
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 2.4
@@ -397,11 +395,11 @@ Add the packaging proof for NFR05 and close the phase: with one adapter configur
 
 #### Acceptance criteria
 
-- [ ] A script loads the root and one adapter subpath from the packed tarball and asserts that no file of the other adapter's bundle was loaded, in ESM and in CommonJS.
-- [ ] Loading the root alone loads neither adapter.
-- [ ] A lint rule or a test fails when a file under `src/core/` imports from `src/revenuecat/` or `src/finance/`.
-- [ ] Every Definition of Done item of P2 in `docs/plan.md` has a named test.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A script loads the root and one adapter subpath from the packed tarball and asserts that no file of the other adapter's bundle was loaded, in ESM and in CommonJS.
+- [x] Loading the root alone loads neither adapter.
+- [x] A lint rule or a test fails when a file under `src/core/` imports from `src/revenuecat/` or `src/finance/`.
+- [x] Every Definition of Done item of P2 in `docs/plan.md` has a named test.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -472,4 +470,8 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
-<!-- entries are added as tasks complete -->
+- 2.1 ✅ 2026-11-24 — option types, defaults pinned to the specification, frozen resolved form and the system clock
+- 2.2 ✅ 2026-11-24 — table-driven validator that aggregates every offending option into one error without any supplied value
+- 2.3 ✅ 2026-11-24 — Secret holder and the sentinel sweep over the four paths
+- 2.4 ✅ 2026-11-24 — SubscriptionModule with forRoot and forRootAsync, boot e2e in both forms and the secret sweep over every provider
+- 2.5 ✅ 2026-11-24 — adapter isolation proven on the packed tarball in both formats and the import boundaries enforced per directory by lint

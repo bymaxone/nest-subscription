@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 1 / 12 phases done (8%)
-**Active phase**: P1 — model-ports-and-test-doubles
+**Overall progress**: 🔄 2 / 12 phases done (17%)
+**Active phase**: P2 — module-and-options
 **Blocked**: P11, until the Bymax Finance API exists (D03)
 
 ---
@@ -36,8 +36,8 @@ This document says in which order the specification is built and when each part 
 | ID  | Phase                                                                                                   | Status     | Progress | Size | Last updated |
 | --- | ------------------------------------------------------------------------------------------------------- | ---------- | -------- | ---- | ------------ |
 | P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done    | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | 👀 Review  | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 📋 ToDo    | 0/5      | M    | —            |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | ✅ Done    | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 👀 Review  | 5/5      | M    | 2026-11-24   |
 | P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo    | 0/5      | L    | —            |
 | P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo    | 0/4      | M    | —            |
 | P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo    | 0/5      | M    | —            |
@@ -128,7 +128,7 @@ The specification leaves the file layout to this roadmap. These are the director
 | TypeScript         | Strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. No `any`                                                                                                                                                   |
 | Suppressions       | None, in any form: no `eslint-disable`, no `@ts-ignore`, no `istanbul ignore`, no Stryker disable without a recorded reason                                                                                                          |
 | Injection          | Tokens are symbols. Every provider injects explicitly. The library reads no environment variable                                                                                                                                     |
-| Secrets            | A secret never sits in an enumerable property. A class that owns one holds it in a `#private` field; a resolved options object exposes it through a non-enumerable getter (SEC05)                                                    |
+| Secrets            | A secret never sits in an enumerable property. A class that owns one holds it in a `#private` field; the module options hold no secret and each adapter factory holds its credentials in a `Secret` (D26) (SEC05)                    |
 | Keys               | A key built from more than one field encodes each field so that no content can move the boundary between them (`AGENTS.md` §3)                                                                                                       |
 | Size               | A function is at most 50 lines, a file at most 800. Each source file opens with a header naming its purpose and layer; each export has a doc comment                                                                                 |
 | Comments           | English. A comment states a constraint that still holds, never a phase, a task or a review round                                                                                                                                     |
@@ -178,11 +178,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the snapshot and subscription record types and their closed value sets (FR01, FR02, FR03); the empty snapshot for an unknown account (FR04); the pure rule that resolves entitlements across several subscriptions (FR05); the `shared` subpath with no runtime dependency, carrying the model, the notification kinds and the error-code catalogue (FR06, §6.4); the source port with its four abilities and the rule against inferring state from a payload (FR07, FR09); registration of a host's own adapter through the same public entry the shipped ones use (FR08); the store port for snapshots, their undelivered changes and processed event identifiers (D17), the in-memory store marked as not for production, and the conformance suite a host runs against its own store (FR22, D11); the scriptable fake source (FR39); tenant and account key construction (SEC08).
   - Out: the NestJS module; any network call; the relational reference store, which is documentation and belongs to P9.
 - **Definition of Done**:
-  - [ ] A file that imports only the `shared` subpath loads with NestJS absent from the module graph, proven by a packaging test on the tarball.
-  - [ ] The in-memory store passes the conformance suite, and a deliberately broken store (no uniqueness on event identifiers, no ordering on writes) fails it, each on a named case.
-  - [ ] A table-driven test covers every status of FR03 with its access meaning, and the FR05 overlap rule over one, two and conflicting subscriptions.
-  - [ ] A test proves that two different tenant and account pairs can never produce the same key, including pairs whose text contains the delimiter.
-  - [ ] The fake source can set a state, emit a notification and fail its next read, and implements the port with no private entry.
+  - [x] A file that imports only the `shared` subpath loads with NestJS absent from the module graph, proven by a packaging test on the tarball.
+  - [x] The in-memory store passes the conformance suite, and a deliberately broken store (no uniqueness on event identifiers, no ordering on writes) fails it, each on a named case.
+  - [x] A table-driven test covers every status of FR03 with its access meaning, and the FR05 overlap rule over one, two and conflicting subscriptions.
+  - [x] A test proves that two different tenant and account pairs can never produce the same key, including pairs whose text contains the delimiter.
+  - [x] The fake source can set a state, emit a notification and fail its next read, and implements the port with no private entry.
 - **Context / preconditions**: P0 is done. The subpaths exist as empty entry points.
 - **Rules-of-phase**:
   1. The guard-relevant truth is the "gives access" flag from the source. No helper derives access from a status name (FR02, R02).
@@ -201,7 +201,7 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Let a host configure the library once, and refuse a wrong configuration at boot with a message that names options and never values.
 - **Scope**:
-  - In: `forRoot` and `forRootAsync`; the options for the adapter and its credentials, the store, the account resolver, the hook, the fail policy, the staleness limits with their 24-hour defaults (D12), the sandbox switch, the optional cache and the controller switches; one aggregated validation error (§6.3); symbol injection tokens; secret containment for credentials and webhook secrets (SEC05); the sandbox option and the refusal to enable it in production without the second confirming option (SEC07); the option shape for two valid webhook secrets (SEC09); loading only the configured adapter (NFR05); the optional peers `@bymax-one/nest-cache` and `@bymax-one/nest-core`.
+  - In: `forRoot` and `forRootAsync`; the options for the store, the account resolver, the hook, the fail policy, the staleness limits with their 24-hour defaults (D12), the sandbox switch, the optional cache and the controller switches; one aggregated validation error (§6.3); symbol injection tokens; the `Secret` holder for credentials and webhook secrets (SEC05, SEC09); the sandbox option and the refusal to enable it in production without the second confirming option (SEC07); loading only the configured adapter (NFR05); the optional peers `@bymax-one/nest-cache` and `@bymax-one/nest-core`.
   - Out: what the options drive (P3 to P8); adapter-specific option validation beyond the common shape, which arrives with each adapter.
 - **Definition of Done**:
   - [ ] A NestJS application boots with the fake source and the in-memory store through both `forRoot` and `forRootAsync`.
@@ -212,7 +212,7 @@ The specification leaves the file layout to this roadmap. These are the director
 - **Context / preconditions**: P1 is done. The fake source and the in-memory store exist, so the module is testable without an adapter.
 - **Rules-of-phase**:
   1. The library reads no environment variable. What "production" means is a value the host passes in.
-  2. Secret containment is applied at the one place the resolved options object is built, and never by redefining a property on an object the host owns.
+  2. Secret containment never redefines a property on an object the host owns.
   3. An absent optional peer is a supported configuration with its own test, not an error path.
 - **References**:
   - Spec §6.2, §6.3, §8, §8.2 (SEC05, SEC07, SEC09), §10.1 (D07, D12)
@@ -462,6 +462,7 @@ When a phase moves status:
 > Append-only. One line per phase completion.
 
 - P0 ✅ 2026-11-24 — scaffold, gates, CI and repository documents merged in #4; CI passed is a required check
+- P1 ✅ 2026-11-24 — the model, the two ports, the in-memory store, the conformance suite and the fake source merged in #6
 
 ---
 
