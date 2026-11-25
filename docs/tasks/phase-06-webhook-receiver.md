@@ -1,6 +1,6 @@
 # Phase 6 — Webhook receiver
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P6 — webhook-receiver
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -44,7 +44,7 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 | --- | ------------------------------------------ | ------- | -------- | ---- | ---------- |
 | 6.1 | Define the outcomes and their HTTP answers | ✅ Done | P0       | S    | —          |
 | 6.2 | Implement the processor                    | ✅ Done | P0       | L    | 6.1        |
-| 6.3 | Enforce the response deadline              | 📋 ToDo | P0       | M    | 6.2        |
+| 6.3 | Enforce the response deadline              | ✅ Done | P0       | M    | 6.2        |
 | 6.4 | Add the controller behind a switch         | 📋 ToDo | P0       | M    | 6.2        |
 | 6.5 | Prove the receiver end to end              | 📋 ToDo | P0       | M    | 6.3, 6.4   |
 
@@ -220,7 +220,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 6.3 — Enforce the response deadline
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 6.2
@@ -231,11 +231,11 @@ Answer with a temporary failure when the source read does not finish inside the 
 
 #### Acceptance criteria
 
-- [ ] A read slower than the deadline produces the failed outcome before the deadline, measured with a controllable clock.
-- [ ] The slow read is not abandoned mid-write: if it completes later, its snapshot is stored through the normal ordered write.
-- [ ] On timeout the event identifier is removed (D16), so a later retry of that event is processed; single flight makes a retry that arrives while the slow read is still running share that read.
-- [ ] The deadline is an option with a default safely under the shortest source limit the specification records (60 seconds for RevenueCat), and a value above that limit is refused at boot.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A read slower than the deadline produces the failed outcome before the deadline, measured with a controllable clock.
+- [x] The slow read is not abandoned mid-write: if it completes later, its snapshot is stored through the normal ordered write.
+- [x] On timeout the event identifier is removed (D16), so a later retry of that event is processed; single flight makes a retry that arrives while the slow read is still running share that read.
+- [x] The deadline is an option with a default safely under the shortest source limit the specification records (60 seconds for RevenueCat), and a value above that limit is refused at boot.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -478,3 +478,4 @@ Completion Protocol (after the work is reported done):
 
 - 6.1 ✅ 2026-11-25 — the five outcomes as a closed union and the one HTTP answer of each, with one frozen refusal for every cause
 - 6.2 ✅ 2026-11-25 — the processor: verification over the raw bytes through the adapter, de-duplication by event identifier with D16, a read of every named account, the retention purge in reconciliation, and D41 recorded
+- 6.3 ✅ 2026-11-25 — the response deadline: the work raced against an injectable wait, the only timer cleared when the race is decided, a timed-out event freed for its retry, and a 60 000 ms ceiling at boot
