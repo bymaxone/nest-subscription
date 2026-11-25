@@ -169,7 +169,11 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   the failed events whose removal is pending or failed, and processes a retry of one of them as
   new instead of answering it as already seen. That memory belongs to one process: a retry that
   lands on another instance of the host while the removal is pending or failed finds the identifier
-  recorded and is answered as already seen until the retention purges it. A read that does not finish inside
+  recorded and is answered as already seen until the retention purges it. When every
+  removal started for a remembered event has settled and the event was processed meanwhile, its
+  identifier is recorded again if a removal erased it; if that fails the failure is logged by code
+  and reported to the new `onEventRecordFailure` observer hook, and a later delivery of the event
+  is processed again. No answer waits for a removal or for that recording. A read that does not finish inside
   `webhookDeadlineMs` (default 30 000, at most 60 000) ends the call as a failure and is left to
   finish and be stored; the host's change hook is not part of the deadline. In a multi-tenant host
   the tenant is passed to `process` from the host's own authenticated route.

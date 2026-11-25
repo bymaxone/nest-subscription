@@ -163,11 +163,12 @@ describe('no identifiers', () => {
     ])
   })
 
-  it('reports a webhook to an observer that does not want it without building anything', () => {
+  it('reports a webhook and a record failure to an observer that wants neither, reading no clock', () => {
     // Scenario: an observer with no `onWebhook`; the report is a no-op and reads no clock.
     const clock = new ManualClock('2026-01-01T00:00:00.000Z')
     const now = jest.spyOn(clock, 'now')
     new ObserverBridge({}, clock).webhook('processed', 0, 0, false)
+    new ObserverBridge({}, clock).eventRecordFailure(null)
     expect(now).not.toHaveBeenCalled()
   })
 

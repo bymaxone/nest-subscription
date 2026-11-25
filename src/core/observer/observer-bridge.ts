@@ -25,6 +25,7 @@ const PICK = {
   onGuardDecision: (observer: SubscriptionObserver) => observer.onGuardDecision,
   onChangeDelivery: (observer: SubscriptionObserver) => observer.onChangeDelivery,
   onWebhook: (observer: SubscriptionObserver) => observer.onWebhook,
+  onEventRecordFailure: (observer: SubscriptionObserver) => observer.onEventRecordFailure,
   onBackgroundRefreshFailure: (observer: SubscriptionObserver) =>
     observer.onBackgroundRefreshFailure
 } as const
@@ -111,6 +112,12 @@ export class ObserverBridge {
     if (hook !== undefined) {
       this.#run(hook, { outcome, durationMs: Math.max(0, answeredAt - startedAt), retained })
     }
+  }
+
+  /** Reports that the identifier of a processed webhook event could not be recorded again. */
+  eventRecordFailure(code: SubscriptionErrorCode | null): void {
+    const hook = this.#hook(PICK.onEventRecordFailure)
+    if (hook !== undefined) this.#run(hook, { code })
   }
 
   /** Reports a background refresh of a stale snapshot that failed. */

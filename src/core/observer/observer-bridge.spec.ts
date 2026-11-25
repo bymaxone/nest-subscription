@@ -49,6 +49,11 @@ const EVENTS: ReadonlyArray<{
     payload: { outcome: 'failed', durationMs: 40, retained: true }
   },
   {
+    name: 'onEventRecordFailure',
+    report: (bridge) => bridge.eventRecordFailure('SUBSCRIPTION_SOURCE_UNAVAILABLE'),
+    payload: { code: 'SUBSCRIPTION_SOURCE_UNAVAILABLE' }
+  },
+  {
     name: 'onBackgroundRefreshFailure',
     report: (bridge) => bridge.backgroundRefreshFailure('SUBSCRIPTION_SOURCE_UNAVAILABLE'),
     payload: { code: 'SUBSCRIPTION_SOURCE_UNAVAILABLE' }

@@ -66,6 +66,7 @@ export type {
   CacheOutcome,
   ChangeDeliveryEvent,
   ChangeDeliveryOutcome,
+  EventRecordFailure,
   GuardDecisionEvent,
   GuardOutcome,
   RefreshEvent,

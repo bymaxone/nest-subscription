@@ -87,6 +87,15 @@ export interface WebhookEvent {
   readonly retained: boolean
 }
 
+/** What the observer is told when the identifier of a processed event could not be recorded again. */
+export interface EventRecordFailure {
+  /**
+   * The code of the library error the store raised, or `null` for one that is not the library's.
+   * It never names the event, and the error's text is not passed on.
+   */
+  readonly code: SubscriptionErrorCode | null
+}
+
 /** What the observer is told when a background refresh of a stale snapshot fails. */
 export interface BackgroundRefreshFailure {
   /**
@@ -116,6 +125,11 @@ export interface SubscriptionObserver {
   readonly onChangeDelivery?: (event: ChangeDeliveryEvent) => void | Promise<void>
   /** The receiver handled a webhook request. */
   readonly onWebhook?: (event: WebhookEvent) => void | Promise<void>
+  /**
+   * The identifier of a processed webhook event could not be recorded again after a removal
+   * erased it, so a later delivery of the event is processed again.
+   */
+  readonly onEventRecordFailure?: (failure: EventRecordFailure) => void | Promise<void>
   /** A refresh started in the background by a read of a stale snapshot failed. */
   readonly onBackgroundRefreshFailure?: (failure: BackgroundRefreshFailure) => void | Promise<void>
 }

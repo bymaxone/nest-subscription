@@ -19,7 +19,8 @@ import { ObserverBridge } from '../observer/observer-bridge'
 import { resolveOptions } from '../options/resolve-options'
 import { SnapshotRefresher } from '../refresh/snapshot-refresher'
 import { timerWait } from './deadline'
-import { UNRELEASED_EVENTS_BOUND, WebhookProcessor } from './webhook.processor'
+import { UNRELEASED_EVENTS_BOUND } from './unreleased-events'
+import { WebhookProcessor } from './webhook.processor'
 
 const T0 = '2026-01-01T00:00:00.000Z'
 
