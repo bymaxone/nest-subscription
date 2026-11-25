@@ -63,6 +63,7 @@ export type {
 export { EntitlementGuard } from './guard/entitlement.guard'
 export { RequiresEntitlement } from './guard/requires-entitlement.decorator'
 export type { AccountResolver, ResolvedAccount } from './guard/account-resolver.types'
+export { diffSnapshots } from './notifications/diff-snapshots'
 export { SubscriptionModule } from './subscription.module'
 export { SubscriptionService } from './subscription.service'
 export type { AgedSnapshot } from './snapshot-view'

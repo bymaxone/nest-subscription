@@ -11,6 +11,7 @@ import { SubscriptionModule } from './subscription.module'
 import { EntitlementGuard } from './guard/entitlement.guard'
 import { RequiresEntitlement } from './guard/requires-entitlement.decorator'
 import { SubscriptionService } from './subscription.service'
+import { diffSnapshots } from './notifications/diff-snapshots'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 describe('core entry point', () => {
@@ -33,6 +34,7 @@ describe('core entry point', () => {
       'SubscriptionModule',
       'SubscriptionService',
       'decodeAccountKey',
+      'diffSnapshots',
       'encodeAccountKey',
       'resolveOptions',
       'validateOptions'
@@ -49,6 +51,7 @@ describe('core entry point', () => {
     expect(entry.SubscriptionService).toBe(SubscriptionService)
     expect(entry.RequiresEntitlement).toBe(RequiresEntitlement)
     expect(entry.EntitlementGuard).toBe(EntitlementGuard)
+    expect(entry.diffSnapshots).toBe(diffSnapshots)
     for (const [name, value] of Object.entries(internal)) {
       expect(entry[name as keyof typeof entry]).toBe(value)
     }

@@ -3,8 +3,14 @@
  * two snapshots and nothing else, so no webhook payload ever decides what changed.
  * @layer core
  */
-import { CHANGE_KINDS, type SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
+import { encodeAccountKey } from '@bymax-one/nest-subscription/internal'
+import {
+  CHANGE_KINDS,
+  type SubscriptionChange,
+  type SubscriptionSnapshot
+} from '@bymax-one/nest-subscription/shared'
 
+import { changeKey } from './change-key'
 import { billingTroubleChanges } from './diff-rules/billing-trouble'
 import { lifecycleChanges, startedChanges } from './diff-rules/lifecycle'
 import { overlapChanges } from './diff-rules/overlap'
@@ -61,4 +67,30 @@ export function diffCandidates(
     ...overlapChanges(previous, current)
   ]
   return found.sort((a, b) => CHANGE_KINDS.indexOf(a.kind) - CHANGE_KINDS.indexOf(b.kind))
+}
+
+/**
+ * Compares two snapshots of one account into the typed list of what changed, each change with its
+ * stable key. It is a pure function of the two snapshots: it never reads a webhook payload, a
+ * clock or any other state, so the same two snapshots always give the same list, and the same
+ * change gives the same key whenever and wherever it is computed. The order is that of
+ * {@link diffCandidates}.
+ *
+ * @param previous The snapshot stored before, or `null` on first contact.
+ * @param current The snapshot just read; it names the account and the tenant of the keys.
+ * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` when `current` has a blank account
+ * identifier.
+ */
+export function diffSnapshots(
+  previous: SubscriptionSnapshot | null,
+  current: SubscriptionSnapshot
+): SubscriptionChange[] {
+  const { accountId, tenantId } = current
+  const accountKey = encodeAccountKey(
+    tenantId === undefined ? { accountId } : { accountId, tenantId }
+  )
+  return diffCandidates(previous, current).map((change) => ({
+    kind: change.kind,
+    key: changeKey(accountKey, change)
+  }))
 }

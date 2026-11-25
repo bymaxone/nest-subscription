@@ -1,6 +1,6 @@
 # Phase 5 — Change notifications and observer
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P5 — change-notifications-and-observer
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,7 +39,7 @@ At the end every stored change is compared with the previous snapshot into a typ
 | ID  | Task                                                      | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 5.1 | Compare two snapshots into the typed change list          | ✅ Done | P0       | L    | —          |
-| 5.2 | Give each change a stable key                             | 📋 ToDo | P0       | S    | 5.1        |
+| 5.2 | Give each change a stable key                             | ✅ Done | P0       | S    | 5.1        |
 | 5.3 | Call the host hook after the write                        | 📋 ToDo | P0       | M    | 5.2        |
 | 5.4 | Add the observer                                          | 📋 ToDo | P1       | M    | 5.3        |
 | 5.5 | Prove that logs and observer payloads carry no identifier | 📋 ToDo | P0       | S    | 5.4        |
@@ -134,7 +134,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 5.2 — Give each change a stable key
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 5.1
@@ -145,11 +145,11 @@ Derive, for each change, a key that is the same whenever the same change is comp
 
 #### Acceptance criteria
 
-- [ ] The same change computed twice, from snapshots fetched at different instants, carries the same key.
-- [ ] Two consecutive renewals of one subscription carry different keys (the period is part of the key).
-- [ ] The same kind of change on two subscriptions, on two accounts and on two tenants carries different keys.
-- [ ] The key contains no raw account identifier.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The same change computed twice, from snapshots fetched at different instants, carries the same key.
+- [x] Two consecutive renewals of one subscription carry different keys (the period is part of the key).
+- [x] The same kind of change on two subscriptions, on two accounts and on two tenants carries different keys.
+- [x] The key contains no raw account identifier.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -483,3 +483,4 @@ Completion Protocol (after the work is reported done):
 <!-- entries are added as tasks complete -->
 
 - 5.1 ✅ 2026-11-25 — the pure comparison of two snapshots into the typed change candidates, one rule group per concern
+- 5.2 ✅ 2026-11-25 — the stable change key, hashed field by field from snapshot data, attached to every change by diffSnapshots

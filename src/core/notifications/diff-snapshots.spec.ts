@@ -1,7 +1,8 @@
 /**
  * @fileoverview Pins the comparison of two snapshots: one table row per change kind of the
  * model, an empty list for equal snapshots and for a change of the fetch instant alone, the fixed
- * order of kinds when one comparison yields several, and that the arguments are left as they were.
+ * order of kinds when one comparison yields several, that the arguments are left as they were, and
+ * the key of each change: stable for the same change and different for any other.
  * @layer core
  */
 import {
@@ -12,7 +13,7 @@ import {
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
-import { diffCandidates } from './diff-snapshots'
+import { diffCandidates, diffSnapshots } from './diff-snapshots'
 
 const BASE: SubscriptionRecord = {
   subscriptionReference: 'sub-1',
@@ -218,5 +219,168 @@ describe('diffCandidates', () => {
     const before = [structuredClone(previous), structuredClone(current)]
     diffCandidates(previous, current)
     expect([previous, current]).toStrictEqual(before)
+  })
+})
+
+/** One snapshot with a single subscription changed from the base record. */
+function one(
+  overrides: Partial<SubscriptionRecord> = {},
+  customer = 'cust-1'
+): SubscriptionSnapshot {
+  return snapshotOf([record(overrides)], '2026-01-01T00:00:00.000Z', customer)
+}
+
+/**
+ * For each kind, a second pair that yields the same kind with another discriminating fact, which
+ * must therefore get another key. The key of a change depends on exactly these facts:
+ * the period start of a start, a conversion, a resumption and a product change (a period is one
+ * occurrence); the period end of a renewal and a pause; the cancellation instant of a cancellation
+ * and of its undoing; the billing-issue instant of grace, hold and recovery; the access end of an
+ * expiry; the refund instant; the new customer of a transfer; the overlapping references.
+ */
+const VARIANTS: Record<ChangeKind, readonly [SubscriptionSnapshot | null, SubscriptionSnapshot]> = {
+  started: [null, one({ currentPeriodStart: '2026-01-09T00:00:00.000Z' })],
+  renewed: [one(), one({ currentPeriodEnd: '2026-04-01T00:00:00.000Z' })],
+  trial_converted: [
+    one({ status: 'trialing' }),
+    one({ currentPeriodStart: '2026-01-09T00:00:00.000Z' })
+  ],
+  will_not_renew: [one(), one({ willRenew: 'no', cancelledAt: '2026-01-10T00:00:00.000Z' })],
+  will_renew_again: [one({ willRenew: 'no', cancelledAt: '2026-01-10T00:00:00.000Z' }), one()],
+  entered_grace: [
+    one(),
+    one({ status: 'in_grace', billingIssueSince: '2026-01-20T00:00:00.000Z' })
+  ],
+  put_on_hold: [
+    one({ status: 'in_grace' }),
+    one({ status: 'on_hold', billingIssueSince: '2026-01-20T00:00:00.000Z' })
+  ],
+  recovered: [one({ status: 'on_hold', billingIssueSince: '2026-01-20T00:00:00.000Z' }), one()],
+  paused: [one(), one({ status: 'paused', currentPeriodEnd: '2026-04-01T00:00:00.000Z' })],
+  resumed: [one({ status: 'paused' }), one({ currentPeriodStart: '2026-01-09T00:00:00.000Z' })],
+  product_changed: [one(), one({ productReference: 'pro_lifetime' })],
+  expired: [
+    one(),
+    one({ status: 'expired', givesAccess: false, accessUntil: '2026-01-15T00:00:00.000Z' })
+  ],
+  refunded: [one(), one({ refundedAt: '2026-01-13T00:00:00.000Z' })],
+  transferred: [one(), one({}, 'cust-3')],
+  overlap_detected: [one(), snapshotOf([record(), record({ subscriptionReference: 'sub-3' })])]
+}
+
+describe('diffSnapshots', () => {
+  it('gives each change a key of 64 lowercase hexadecimal characters', () => {
+    // Scenario: an account and a tenant with recognizable names still give a fixed-width hex key.
+    const current = {
+      ...snapshotOf([record()]),
+      accountId: 'sentinel-account',
+      tenantId: 'sentinel-tenant'
+    }
+    const keys = diffSnapshots(null, current).map((change) => change.key)
+    expect(keys).toHaveLength(1)
+    expect(keys[0]).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('returns the kind of each change beside its key', () => {
+    // Scenario: the typed list carries both fields of a change.
+    const changes = diffSnapshots(null, snapshotOf([record()]))
+    expect(changes).toStrictEqual([
+      { kind: 'started', key: expect.stringMatching(/^[0-9a-f]{64}$/) }
+    ])
+  })
+
+  it.each(ROWS)('gives the same $kind change the same key when read at another instant', (row) => {
+    // Scenario: the same change computed from snapshots fetched at different instants.
+    const later = { ...row.current, fetchedAt: '2026-06-01T00:00:00.000Z' }
+    const earlierPrevious =
+      row.previous === null ? null : { ...row.previous, fetchedAt: '2025-12-01T00:00:00.000Z' }
+    expect(diffSnapshots(earlierPrevious, later)).toStrictEqual(
+      diffSnapshots(row.previous, row.current)
+    )
+  })
+
+  it.each(ROWS)('gives a $kind change with another discriminating fact another key', (row) => {
+    // Scenario: the variant pair yields the same kind, so only the discriminating fact differs.
+    const [previous, current] = VARIANTS[row.kind]
+    const base = diffSnapshots(row.previous, row.current)
+    const variant = diffSnapshots(previous, current)
+    expect(variant.map((change) => change.kind)).toStrictEqual([row.kind])
+    expect(variant[0]?.key).not.toBe(base[0]?.key)
+  })
+
+  it('gives two consecutive renewals of one subscription different keys', () => {
+    // Scenario: the period moves forward twice; each renewal is its own change.
+    const first = diffSnapshots(one(), one({ currentPeriodEnd: '2026-03-01T00:00:00.000Z' }))
+    const second = diffSnapshots(
+      one({ currentPeriodEnd: '2026-03-01T00:00:00.000Z' }),
+      one({ currentPeriodEnd: '2026-04-01T00:00:00.000Z' })
+    )
+    expect(first[0]?.key).not.toBe(second[0]?.key)
+  })
+
+  it('gives the same kind of change on two subscriptions different keys', () => {
+    // Scenario: two subscriptions of one account renew in the same comparison.
+    const renewed = (reference: string): SubscriptionRecord =>
+      record({ subscriptionReference: reference, currentPeriodEnd: '2026-03-01T00:00:00.000Z' })
+    const previous = snapshotOf([
+      record({ subscriptionReference: 'a' }),
+      record({ subscriptionReference: 'b' })
+    ])
+    const keys = diffSnapshots(previous, snapshotOf([renewed('a'), renewed('b')])).map(
+      (change) => change.key
+    )
+    expect(keys).toHaveLength(2)
+    expect(new Set(keys).size).toBe(2)
+  })
+
+  it('gives the same change on two accounts, and on two tenants, different keys', () => {
+    // Scenario: the same state change in four places: two accounts, and one account in two tenants.
+    const place = (accountId: string, tenantId?: string): string[] => {
+      const base = (snapshot: SubscriptionSnapshot): SubscriptionSnapshot => ({
+        ...snapshot,
+        accountId,
+        ...(tenantId === undefined ? {} : { tenantId })
+      })
+      return diffSnapshots(base(one()), base(one({ productReference: 'pro_yearly' }))).map(
+        (change) => change.key
+      )
+    }
+    const keys = [place('a1'), place('a2'), place('a1', 't1'), place('a1', 't2')].flat()
+    expect(new Set(keys).size).toBe(4)
+  })
+
+  it('does not let the account and the tenant trade content to make one key', () => {
+    // Scenario: ('a:b', 'c') and ('a', 'b:c') are different accounts and must not collide.
+    const keyOf = (accountId: string, tenantId: string): string | undefined => {
+      const snapshot = { ...snapshotOf([record()]), accountId, tenantId }
+      return diffSnapshots(null, snapshot)[0]?.key
+    }
+    expect(keyOf('a:b', 'c')).not.toBe(keyOf('a', 'b:c'))
+  })
+
+  it('gives the same keys whatever the order of the subscriptions', () => {
+    // Scenario: the source lists the same subscriptions in another order.
+    const a = record({ subscriptionReference: 'a', productReference: 'p1' })
+    const b = record({ subscriptionReference: 'b', productReference: 'p2' })
+    const forward = diffSnapshots(null, snapshotOf([a, b]))
+    const reversed = diffSnapshots(null, snapshotOf([b, a]))
+    expect(reversed.map((change) => change.key).sort()).toStrictEqual(
+      forward.map((change) => change.key).sort()
+    )
+  })
+
+  it('gives a tenant-less account and an account of an empty tenant different keys', () => {
+    // Scenario: encodeAccountKey tells them apart, and the change key keeps that difference.
+    const without = diffSnapshots(null, snapshotOf([record()]))
+    const empty = diffSnapshots(null, { ...snapshotOf([record()]), tenantId: '' })
+    expect(without[0]?.key).not.toBe(empty[0]?.key)
+  })
+
+  it('refuses a snapshot with a blank account identifier', () => {
+    // Scenario: the key cannot be built for an account with no identifier.
+    const blank = { ...snapshotOf([record()]), accountId: ' ' }
+    expect(() => diffSnapshots(null, blank)).toThrow(
+      expect.objectContaining({ code: 'SUBSCRIPTION_INVALID_INPUT' })
+    )
   })
 })
