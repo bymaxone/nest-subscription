@@ -11,19 +11,18 @@
 - **Specification**: [`docs/spec.md`](spec.md)
 - **Roadmap file**: [`docs/plan.md`](plan.md)
 - **Tasks index**: [`docs/tasks/README.md`](tasks/README.md)
-- **Phases**: 12 phases (P0 to P11) / 64 tasks (phase files `docs/tasks/phase-NN-*.md`)
+- **Phases**: 11 phases (P0 to P9 and P11) / 60 tasks (phase files `docs/tasks/phase-NN-*.md`)
 - **One phase is one pull request**, branch `feat/pN-<phase-slug>` (`chore/p0-scaffold-and-governance` for P0, `docs/...` is never used by the chain).
 
 ## Chain boundary
 
-The chain runs **P0 to P9**. It stops there.
+The chain runs **P0 to P9**. It stops there, and the run is complete when P9 is ✅ Done.
 
-| Phase                  | Why the chain does not run it                                                                                                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P10 example-repository | It is built in another repository, `bymaxone/nest-subscription-example`, which the owner creates. It is run as its own chain from that repository. |
-| P11 finance-adapter    | ⛔ Blocked until the Bymax Finance public API exists (D03).                                                                                        |
+| Phase               | Why the chain does not run it                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| P11 finance-adapter | Deferred by D30: outside the first release until the Bymax Finance public API exists (D03). The chain never attempts it. |
 
-Neither is a failure of the run: when P9 is ✅ Done the chain reports completion of its boundary.
+Its absence is not a failure of the run: when P9 is ✅ Done the chain reports completion of its boundary.
 
 ## External preconditions
 
@@ -39,8 +38,7 @@ Autopilot never polls an external event. A failed check is reported exactly and 
 | phase 0, task 0.7 | the operator's standing confirmation, recorded in the launch message, that the chain may add `CI passed` to the repository ruleset `nest-subscription-pr-and-ci-gates` | The chain finishes P0 without the ruleset change, lists it as owed in the pull request, and marks P0 🟡 Partial. It never changes a ruleset on its own authority |
 | phase 7           | `test -n "$REVENUECAT_SANDBOX_API_KEY" && test -n "$REVENUECAT_SANDBOX_PROJECT_ID"`                                                                                    | Mark P7 ⛔ blocked on the RevenueCat sandbox credentials (D18) and park it. P8 and P9 depend on P7, so the chain then stops                                      |
 | phase 9           | none beyond launch                                                                                                                                                     | —                                                                                                                                                                |
-| phase 10          | `gh repo view bymaxone/nest-subscription-example --json name`                                                                                                          | Outside the chain boundary; reported, not attempted                                                                                                              |
-| phase 11          | the Bymax Finance public API is released                                                                                                                               | Outside the chain boundary; stays ⛔                                                                                                                             |
+| phase 11          | the Bymax Finance public API is released                                                                                                                               | Outside the chain boundary; deferred (D30), not attempted                                                                                                        |
 
 The RevenueCat variables live in the orchestrator's environment only. They are never written to a file, a fixture, a commit, a pull request or a log.
 

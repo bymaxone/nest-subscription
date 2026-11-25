@@ -1,6 +1,6 @@
 # Phase 2 — Module and options
 
-> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: ✅ Done &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P2 — module-and-options
 > **Source spec**: [`docs/spec.md`](../spec.md)
 

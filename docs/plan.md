@@ -1,7 +1,7 @@
 # Roadmap — @bymax-one/nest-subscription
 
 > **Source spec**: [`docs/spec.md`](./spec.md)
-> **Last updated**: 2026-11-24
+> **Last updated**: 2026-11-25
 > **Derived documents**: `docs/tasks/phase-NN-<slug>.md`, one file per phase, written from this roadmap by `/bymax-workflow:phase-tasks`
 
 This document says in which order the specification is built and when each part counts as done. It holds no task-level instructions and no code. Identifiers such as `FR16`, `SEC04`, `AC03` and `D11` are the specification's.
@@ -25,28 +25,28 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 2 / 12 phases done (17%)
-**Active phase**: P2 — module-and-options
-**Blocked**: P11, until the Bymax Finance API exists (D03)
+**Overall progress**: 🔄 3 / 10 phases of the first release done (30%) — P0 to P9
+**Active phase**: P3 — read-refresh-reconcile
+**Blocked**: none
+**Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
 ---
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                   | Status     | Progress | Size | Last updated |
-| --- | ------------------------------------------------------------------------------------------------------- | ---------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done    | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | ✅ Done    | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | 👀 Review  | 5/5      | M    | 2026-11-24   |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo    | 0/5      | L    | —            |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo    | 0/4      | M    | —            |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo    | 0/5      | M    | —            |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline             | 📋 ToDo    | 0/5      | L    | —            |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables                | 📋 ToDo    | 0/7      | L    | —            |
-| P8  | management-operations — capabilities, stop renewal and the management reference                         | 📋 ToDo    | 0/4      | M    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                   | 📋 ToDo    | 0/5      | M    | —            |
-| P10 | example-repository — `nest-subscription-example`, one suite run against each source                     | 📋 ToDo    | 0/5      | M    | —            |
-| P11 | finance-adapter — the Bymax Finance adapter, built when its API exists                                  | ⛔ Blocked | 0/5      | L    | —            |
+| ID  | Phase                                                                                                   | Status  | Progress | Size | Last updated |
+| --- | ------------------------------------------------------------------------------------------------------- | ------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | ✅ Done | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | ✅ Done | 5/5      | M    | 2026-11-25   |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo | 0/5      | L    | —            |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo | 0/4      | M    | —            |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo | 0/5      | M    | —            |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline             | 📋 ToDo | 0/5      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables                | 📋 ToDo | 0/7      | L    | —            |
+| P8  | management-operations — capabilities, stop renewal and the management reference                         | 📋 ToDo | 0/4      | M    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                   | 📋 ToDo | 0/5      | M    | —            |
+| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)          | 📋 ToDo | 0/5      | L    | —            |
 
 ---
 
@@ -58,11 +58,11 @@ P3 → P4
 P3 → P5 → P6
 P2 → P7 (unit work)        P6 → P7 (closing)
 P3, P7 → P8
-P4, P5, P6, P7, P8 → P9 → P10
-P7 → P11 (start, once unblocked)        P8, P10 → P11 (closing)
+P4, P5, P6, P7, P8 → P9
+P7 → P11 (start, once unblocked)        P8, P9 → P11 (closing)
 ```
 
-**Critical path**: P0 → P1 → P2 → P3 → P5 → P6 → P7 → P8 → P9 → P10.
+**Critical path**: P0 → P1 → P2 → P3 → P5 → P6 → P7 → P8 → P9.
 
 ### Parallelization notes
 
@@ -70,8 +70,7 @@ P7 → P11 (start, once unblocked)        P8, P10 → P11 (closing)
 - **P7** has two halves. The read, the verification and the mapping tables need only the source port from P1 and the `Secret` holder from P2, so they can be built while P3 to P6 are in progress. Its end-to-end acceptance (AC01, AC05, AC06) drives the webhook receiver, so the phase closes only after P6.
 - **P8** needs the service from P3 and the RevenueCat operations from P7.
 - **P9** needs every phase from P4 to P8 closed: it documents and measures the whole first release.
-- **P10** lives in another repository and needs an installable package: the packed tarball from P9, or the published version once the owner has released it.
-- **P11** is blocked by something outside this repository (D03, R01). Nothing in the first release waits for it. When it is unblocked it closes after P8 (the management service) and P10 (the example suite it must pass).
+- **P11** is deferred (D03, D30) and waits on something outside this repository (R01). The first release is published without it and nothing waits for it. When the Finance API exists it starts after P7 and closes after P8 (the management service) and P9 (the suite whose Finance run it adds).
 
 ---
 
@@ -79,20 +78,19 @@ P7 → P11 (start, once unblocked)        P8, P10 → P11 (closing)
 
 Every requirement of the specification has a phase that owns it; where one is split, the parentheses name the part each phase owns. A phase is not done while one of its rows lacks a test.
 
-| Phase | Functional                                                                               | Non-functional and security                                           | Acceptance                                                     |
-| ----- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
-| P0    | —                                                                                        | Specification §5.2, §8 and §11                                        | —                                                              |
-| P1    | FR01, FR02, FR03, FR04, FR05, FR06, FR07, FR08, FR09, FR22, FR39 (store and fake source) | SEC08 (key construction)                                              | —                                                              |
-| P2    | —                                                                                        | NFR05, SEC05, SEC07 (options and boot refusal), SEC09 (options shape) | AC09 (library objects)                                         |
-| P3    | FR23, FR24, FR25, FR26, FR27, FR28                                                       | NFR03, NFR04, SEC08 (enforced on every read and write)                | —                                                              |
-| P4    | FR29, FR30, FR31                                                                         | NFR01, SEC04                                                          | AC07                                                           |
-| P5    | FR32, FR33, FR34                                                                         | SEC06 (observer payloads)                                             | —                                                              |
-| P6    | FR16, FR17, FR18, FR19, FR20, FR21                                                       | NFR02, SEC01, SEC02, SEC03, SEC06 (no raw payload stored or logged)   | AC02 (receiver), AC03, AC04                                    |
-| P7    | FR10, FR11, FR12, FR13, FR14, FR39 (RevenueCat request builders)                         | SEC07 (sandbox filter), SEC09 (rotation for RevenueCat)               | AC01, AC02 (RevenueCat methods), AC05, AC06, AC10 (Appendix A) |
-| P8    | FR35, FR36, FR37, FR38                                                                   | SEC10                                                                 | —                                                              |
-| P9    | —                                                                                        | Specification §5.2 measured on the whole package                      | AC09 (captured logs, whole package)                            |
-| P10   | —                                                                                        | —                                                                     | AC08 (fake source and RevenueCat)                              |
-| P11   | FR15, FR39 (Finance request builders)                                                    | SEC09 (rotation for Finance)                                          | AC08 (Finance), AC10 (Appendix B)                              |
+| Phase | Functional                                                                               | Non-functional and security                                           | Acceptance                                                             |
+| ----- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| P0    | —                                                                                        | Specification §5.2, §8 and §11                                        | —                                                                      |
+| P1    | FR01, FR02, FR03, FR04, FR05, FR06, FR07, FR08, FR09, FR22, FR39 (store and fake source) | SEC08 (key construction)                                              | —                                                                      |
+| P2    | —                                                                                        | NFR05, SEC05, SEC07 (options and boot refusal), SEC09 (options shape) | AC09 (library objects)                                                 |
+| P3    | FR23, FR24, FR25, FR26, FR27, FR28                                                       | NFR03, NFR04, SEC08 (enforced on every read and write)                | —                                                                      |
+| P4    | FR29, FR30, FR31                                                                         | NFR01, SEC04                                                          | AC07                                                                   |
+| P5    | FR32, FR33, FR34                                                                         | SEC06 (observer payloads)                                             | —                                                                      |
+| P6    | FR16, FR17, FR18, FR19, FR20, FR21                                                       | NFR02, SEC01, SEC02, SEC03, SEC06 (no raw payload stored or logged)   | AC02 (receiver), AC03, AC04                                            |
+| P7    | FR10, FR11, FR12, FR13, FR14, FR39 (RevenueCat request builders)                         | SEC07 (sandbox filter), SEC09 (rotation for RevenueCat)               | AC01, AC02 (RevenueCat methods), AC05, AC06, AC10 (Appendix A)         |
+| P8    | FR35, FR36, FR37, FR38                                                                   | SEC10                                                                 | —                                                                      |
+| P9    | —                                                                                        | Specification §5.2 measured on the whole package                      | AC08 (fake source and RevenueCat), AC09 (captured logs, whole package) |
+| P11   | FR15, FR39 (Finance request builders)                                                    | SEC09 (rotation for Finance)                                          | AC08 (Finance), AC10 (Appendix B)                                      |
 
 ---
 
@@ -204,11 +202,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: `forRoot` and `forRootAsync`; the options for the store, the account resolver, the hook, the fail policy, the staleness limits with their 24-hour defaults (D12), the sandbox switch, the optional cache and the controller switches; one aggregated validation error (§6.3); symbol injection tokens; the `Secret` holder for credentials and webhook secrets (SEC05, SEC09); the sandbox option and the refusal to enable it in production without the second confirming option (SEC07); loading only the configured adapter (NFR05); the optional peers `@bymax-one/nest-cache` and `@bymax-one/nest-core`.
   - Out: what the options drive (P3 to P8); adapter-specific option validation beyond the common shape, which arrives with each adapter.
 - **Definition of Done**:
-  - [ ] A NestJS application boots with the fake source and the in-memory store through both `forRoot` and `forRootAsync`.
-  - [ ] Several invalid options at once produce one error that lists every offending option name and contains none of the supplied values.
-  - [ ] Serializing, spreading and inspecting the resolved options and every library provider, including inspection with hidden properties shown, exposes no credential and no webhook secret (AC09 for library objects).
-  - [ ] Enabling sandbox access in a production environment without the confirming option stops the boot.
-  - [ ] With one adapter configured, the other adapter's module is absent from the loaded module graph, proven on the packed tarball.
+  - [x] A NestJS application boots with the fake source and the in-memory store through both `forRoot` and `forRootAsync`.
+  - [x] Several invalid options at once produce one error that lists every offending option name and contains none of the supplied values.
+  - [x] Serializing, spreading and inspecting the resolved options and every library provider, including inspection with hidden properties shown, exposes no credential and no webhook secret (AC09 for library objects).
+  - [x] Enabling sandbox access in a production environment without the confirming option stops the boot.
+  - [x] With one adapter configured, the other adapter's module is absent from the loaded module graph, proven on the packed tarball.
 - **Context / preconditions**: P1 is done. The fake source and the in-memory store exist, so the module is testable without an adapter.
 - **Rules-of-phase**:
   1. The library reads no environment variable. What "production" means is a value the host passes in.
@@ -376,13 +374,14 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Make the package publishable: documented to the family's standard, measured as a whole and ready for the owner's release instruction.
 - **Scope**:
-  - In: the public `README.md` in the family's canonical sequence, including the raw-body setup for NestJS (FR17), the reference store over a relational table (FR22, D11), the error code catalogue and the security table; the changelog entry of the first release; a sweep of captured logs across the whole end-to-end suite for secrets and account identifiers (AC09); a full, non-incremental mutation run; the bundle size budget and the API surface baseline set from the real build; the checks that README links resolve and its snippets compile; the scheduled job that watches the provider's changelog (R03); a publish dry run.
-  - Out: `npm publish` and the version tag, which are the owner's (specification §8); the Finance adapter's documentation beyond stating that it is planned.
+  - In: the public `README.md` in the family's canonical sequence, including the raw-body setup for NestJS (FR17), the reference store over a relational table (FR22, D11), the error code catalogue and the security table; the changelog entry of the first release; a sweep of captured logs across the whole end-to-end suite for secrets and account identifiers (AC09); a full, non-incremental mutation run; the bundle size budget and the API surface baseline set from the real build; the checks that README links resolve and its snippets compile; the scheduled job that watches the provider's changelog (R03); a publish dry run; one end-to-end suite in this repository that runs the same routes and the same hook code, unchanged, against the fake source and against a local stand-in of the RevenueCat API (AC08, D29).
+  - Out: `npm publish` and the version tag, which are the owner's (specification §8); the Finance adapter's documentation beyond stating that it is planned; the Finance run of AC08, which belongs to P11; any example repository (D29).
 - **Definition of Done**:
   - [ ] Every acceptance criterion from AC01 to AC07, AC09 and the Appendix A half of AC10 points at a named, passing test in a table in the pull request.
   - [ ] The full mutation run scores 100 with no disable directive lacking a recorded reason.
   - [ ] Every README snippet compiles against the built package, and every statement in its security section names a control the repository actually runs.
   - [ ] No log line captured across the end-to-end suite contains a configured secret or a raw account identifier.
+  - [ ] One end-to-end suite runs unchanged against the fake source and against a local RevenueCat stand-in, with no difference in routes or hook code between the two runs (AC08).
   - [ ] `npm publish --dry-run` succeeds from a clean checkout, and the tarball passes the export, runtime and published-surface checks.
 - **Context / preconditions**: P4, P5, P6, P7 and P8 are done.
 - **Rules-of-phase**:
@@ -390,33 +389,14 @@ The specification leaves the file layout to this roadmap. These are the director
   2. Badges and counts reflect the repository's measured numbers, not a gate's floor.
   3. The phase ends at a release candidate. Publishing, tagging and the first manual publish wait for the owner's explicit instruction.
 - **References**:
-  - Spec §5, §8, §9 (R03, R05)
+  - Spec §5, §5.1 (AC08), §8, §9 (R03, R05), §10.1 (D29)
   - `bymaxone/nest-telemetry` for the README and release workflow
 - **Estimated size**: M
 - **Tasks**: [`docs/tasks/phase-09-release-readiness.md`](tasks/phase-09-release-readiness.md)
 
 ---
 
-### P10 — example-repository
-
-- **Goal**: Prove on a real host that changing the source changes only the module configuration.
-- **Scope**:
-  - In: the repository `nest-subscription-example` (D14): a NestJS application with a store over a relational table that passes the conformance suite, protected routes, a hook that reacts idempotently, the webhook controller mounted with the raw body, and a scheduled reconciliation; one test suite that runs unchanged against the fake source and against the RevenueCat adapter (AC08); the link from this repository's README.
-  - Out: a purchase screen or any client; the Finance run of AC08, which belongs to P11.
-- **Definition of Done**:
-  - [ ] The example installs the library from the packed tarball or the published version, not from a path into this repository.
-  - [ ] Its suite passes against the fake source and against the RevenueCat adapter with no difference in routes or hook code between the two runs.
-  - [ ] Its store passes the library's conformance suite against a real database.
-  - [ ] Its own CI is green, and this repository's README links to it.
-- **Context / preconditions**: P9 is done. The repository `bymaxone/nest-subscription-example` has to be created, which is an owner action on GitHub.
-- **Rules-of-phase**:
-  1. The example follows the family's example repositories for structure and gates.
-  2. No secret is committed: RevenueCat is replaced by a local stand-in in CI, and a real sandbox run is a documented manual step.
-  3. Friction found while writing the example is reported as an issue on the library, not patched around in the example.
-- **References**:
-  - Spec §5.1 (AC08), §10.1 (D14), §9 (R05)
-- **Estimated size**: M
-- **Tasks**: [`docs/tasks/phase-10-example-repository.md`](tasks/phase-10-example-repository.md)
+> P10 (an example repository) was removed by D29; the phase IDs are kept, so the list runs from P9 to P11.
 
 ---
 
@@ -424,20 +404,20 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Make Bymax Finance a working source for a host that uses no RevenueCat, with the same host code.
 - **Scope**:
-  - In: the read of a customer's subscription and entitlements with a tenant API key, the verification of Finance's signed webhooks, and the state mapping of Appendix B (FR15); the pair of host account identifier and Finance customer identifier stored at first contact, and the lookup by external reference once Finance offers it (D15); the host's map from plan identifiers to entitlement names (D07); the test-data marker (SEC07) and secret rotation (SEC09); stop renewal at period end and the management reference; the Finance request builders in the testing subpath (FR39); the Finance run of the example's suite (AC08).
+  - In: the read of a customer's subscription and entitlements with a tenant API key, the verification of Finance's signed webhooks, and the state mapping of Appendix B (FR15); the pair of host account identifier and Finance customer identifier stored at first contact, and the lookup by external reference once Finance offers it (D15); the host's map from plan identifiers to entitlement names (D07); the test-data marker (SEC07) and secret rotation (SEC09); stop renewal at period end and the management reference; the Finance request builders in the testing subpath (FR39); the Finance run of the AC08 suite of this repository.
   - Out: subscriptions bought through the app stores, which Finance does not report as specified today (R01).
 - **Definition of Done**:
   - [ ] Every item of Appendix B is checked against the released Finance API, and each difference is recorded in the specification before code is written.
   - [ ] A table-driven test generated from Appendix B maps every Finance state, with "pending first payment" yielding no subscription record (AC10 for Appendix B).
-  - [ ] The example's suite passes against the Finance adapter with no change in routes or hook code (AC08).
+  - [ ] The AC08 suite of this repository passes against the Finance adapter with no change in routes or hook code (AC08).
   - [ ] With the Finance adapter configured, no RevenueCat code is loaded, and the reverse (NFR05).
-- **Context / preconditions**: ⛔ Blocked until the Bymax Finance public API exists (D03). Appendix B is a planned contract and can change. The needs it lists are sent to the Finance project now, so the API can meet them.
+- **Context / preconditions**: Deferred (D30): not part of the first release, and it blocks nothing. It stays pending until the Bymax Finance public API exists (D03). It closes after P8 and P9, whose suite it extends. Appendix B is a planned contract and can change. The needs it lists are sent to the Finance project now, so the API can meet them.
 - **Rules-of-phase**:
   1. Nothing is built against the planned contract. The phase starts by re-reading the released API.
   2. The adapter uses no private entry of the library; if it needs one, the port is what changes, for every adapter.
-  3. Unblocking this phase does not reopen the first release: it ships as a later version on the owner's instruction.
+  3. Starting this phase does not reopen the first release: it ships as a later version on the owner's instruction (D30).
 - **References**:
-  - Spec §3.7, §9 (R01), §10.1 (D03, D07, D15), Appendix B
+  - Spec §3.7, §9 (R01), §10.1 (D03, D07, D15, D29, D30), Appendix B
 - **Estimated size**: L
 - **Tasks**: [`docs/tasks/phase-11-finance-adapter.md`](tasks/phase-11-finance-adapter.md)
 
@@ -463,6 +443,7 @@ When a phase moves status:
 
 - P0 ✅ 2026-11-24 — scaffold, gates, CI and repository documents merged in #4; CI passed is a required check
 - P1 ✅ 2026-11-24 — the model, the two ports, the in-memory store, the conformance suite and the fake source merged in #6
+- P2 ✅ 2026-11-25 — the module, its options and their validation, secret containment and the sandbox boot refusal merged in #7
 
 ---
 

@@ -12,22 +12,21 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 > Mirrors the phase dashboard of [`docs/plan.md`](../plan.md). Both are updated together.
 
-**Phases done**: 2 / 12 · **Tasks done**: 19 / 64
+**Phases done**: 3 / 11 · **Tasks done**: 19 / 60
 
-| ID  | Task file                                                                                        | Status     | Progress | Last updated |
-| --- | ------------------------------------------------------------------------------------------------ | ---------- | -------- | ------------ |
-| P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | ✅ Done    | 7/7      | 2026-11-24   |
-| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | ✅ Done    | 7/7      | 2026-11-24   |
-| P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | 👀 Review  | 5/5      | 2026-11-24   |
-| P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | 📋 ToDo    | 0/5      | —            |
-| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 📋 ToDo    | 0/4      | —            |
-| P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | 📋 ToDo    | 0/5      | —            |
-| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 📋 ToDo    | 0/5      | —            |
-| P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | 📋 ToDo    | 0/7      | —            |
-| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 📋 ToDo    | 0/4      | —            |
-| P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo    | 0/5      | —            |
-| P10 | [`phase-10-example-repository.md`](phase-10-example-repository.md)                               | 📋 ToDo    | 0/5      | —            |
-| P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | ⛔ Blocked | 0/5      | —            |
+| ID  | Task file                                                                                        | Status  | Progress | Last updated |
+| --- | ------------------------------------------------------------------------------------------------ | ------- | -------- | ------------ |
+| P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | ✅ Done | 7/7      | 2026-11-24   |
+| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | ✅ Done | 7/7      | 2026-11-24   |
+| P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | ✅ Done | 5/5      | 2026-11-25   |
+| P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | 📋 ToDo | 0/5      | —            |
+| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 📋 ToDo | 0/4      | —            |
+| P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | 📋 ToDo | 0/5      | —            |
+| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 📋 ToDo | 0/5      | —            |
+| P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | 📋 ToDo | 0/7      | —            |
+| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 📋 ToDo | 0/4      | —            |
+| P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo | 0/6      | —            |
+| P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | 📋 ToDo | 0/5      | —            |
 
 ---
 
@@ -148,7 +147,7 @@ These are the scripts of the scaffold P0 brings from `bymaxone/nest-telemetry`. 
 | Document                                                 | Written by | Read by                                         |
 | -------------------------------------------------------- | ---------- | ----------------------------------------------- |
 | `docs/revenuecat-facts.md`                               | task 7.1   | the rest of P7, P8 and the provider watch of P9 |
-| `docs/raw-body.md`, `docs/reference-store.md`            | task 9.2   | hosts, and P10                                  |
+| `docs/raw-body.md`, `docs/reference-store.md`            | task 9.2   | hosts                                           |
 | `docs/acceptance.md`, `docs/mutation_testing_results.md` | task 9.4   | the owner, before a release                     |
 | `docs/finance-facts.md`                                  | task 11.1  | the rest of P11                                 |
 
