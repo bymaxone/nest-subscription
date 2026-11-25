@@ -315,6 +315,7 @@ describe('cache', () => {
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, false, '2026-01-01T00:00:20.000Z'))
     await service.refresh(ACCOUNT)
     land()
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
     for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
     await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
     await app.close()

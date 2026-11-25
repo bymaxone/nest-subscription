@@ -15,6 +15,8 @@ const KEY_PREFIX = 'subscription:snapshot:'
 /** A read in flight, which an invalidation of its account marks as out of date. */
 interface Ticket {
   invalidated: boolean
+  /** Whether this read has started writing its value to the cache. */
+  filling: boolean
   /** The key of the account the read is for. */
   readonly accountKey: string
   /** Every read in flight for that account, this one included. */
@@ -51,7 +53,9 @@ function parse(text: string): SubscriptionSnapshot | null {
 
 /**
  * A read-through cache of snapshots. A cache that is down, full or answering with something that
- * is not a snapshot is a miss, so the store answers instead.
+ * is not a snapshot is a miss, so the store answers instead. While this process holds a fill that
+ * an invalidation overtook, reads of that account go to the store until the fill has removed its
+ * entry; another process can see that entry for as long as the removal takes.
  */
 export class SnapshotCache {
   readonly #pending = new Map<string, Set<Ticket>>()
@@ -93,19 +97,19 @@ export class SnapshotCache {
   ): Promise<SubscriptionSnapshot | null> {
     const accountKey = encodeAccountKey(account)
     const key = `${KEY_PREFIX}${accountKey}`
+    if (this.#overtaken(accountKey)) return load()
     const ticket = this.#open(accountKey)
-    let filling = false
     try {
       const cached = await this.#get(key, account)
       if (cached !== null) return cached
       const loaded = await load()
       if (loaded !== null && !ticket.invalidated) {
-        filling = true
+        ticket.filling = true
         void this.#fill(key, loaded, ticket)
       }
       return loaded
     } finally {
-      if (!filling) this.#close(ticket)
+      if (!ticket.filling) this.#close(ticket)
     }
   }
 
@@ -113,8 +117,8 @@ export class SnapshotCache {
    * Removes the account's entry and marks every read of it in flight, so none fills the cache
    * with what it read before the change. A fill whose write was already started is not waited
    * for: it removes its own entry when its write settles, so an invalidation is never undone by a
-   * write that lands after it, although that entry can be seen from when it lands until that
-   * removal. A cache that cannot delete leaves its entry to expire.
+   * write that lands after it, and reads in this process bypass the cache until it has. A cache
+   * that cannot delete leaves its entry to expire.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank account identifier.
    */
@@ -124,10 +128,20 @@ export class SnapshotCache {
     await this.#delete(`${KEY_PREFIX}${accountKey}`)
   }
 
+  /**
+   * Whether this process holds a fill of the account that an invalidation overtook and whose
+   * cleanup has not settled. Until then the entry may hold a value from before the invalidation.
+   */
+  #overtaken(accountKey: string): boolean {
+    return [...(this.#pending.get(accountKey) ?? [])].some(
+      (ticket) => ticket.filling && ticket.invalidated
+    )
+  }
+
   /** Registers a read in flight for an account. */
   #open(accountKey: string): Ticket {
     const peers = this.#pending.get(accountKey) ?? new Set<Ticket>()
-    const ticket: Ticket = { invalidated: false, accountKey, peers }
+    const ticket: Ticket = { invalidated: false, filling: false, accountKey, peers }
     peers.add(ticket)
     this.#reading += 1
     this.#pending.set(accountKey, peers)

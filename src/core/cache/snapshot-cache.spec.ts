@@ -73,6 +73,9 @@ async function flush(): Promise<void> {
 
 /** A held call of the controlled host cache. */
 interface Hold {
+  /** Applies the held write to the entries without settling the call. */
+  apply: () => void
+  /** Settles the held call successfully, applying the write first when it was not applied. */
   land: () => void
   fail: () => void
   answer: (value: string | null) => void
@@ -83,6 +86,8 @@ class ControlledCache implements SubscriptionCache {
   readonly entries = new Map<string, string>()
   readonly #setHolds: Hold[] = []
   readonly #getHolds: Hold[] = []
+  readonly #deleteHolds: Hold[] = []
+  #gets = 0
   #deleting = true
   #deleted = 0
 
@@ -101,12 +106,23 @@ class ControlledCache implements SubscriptionCache {
     return this.#hold(this.#getHolds)
   }
 
+  /** Holds the next `delete`; `land` removes the entry and settles it. */
+  holdNextDelete(): Hold {
+    return this.#hold(this.#deleteHolds)
+  }
+
+  /** The number of lookups asked of the cache. */
+  gets(): number {
+    return this.#gets
+  }
+
   /** Makes every later `delete` reject. */
   failDeletes(): void {
     this.#deleting = false
   }
 
   get(key: string): Promise<string | null> {
+    this.#gets += 1
     const hold = this.#getHolds.shift()
     if (hold === undefined) return Promise.resolve(this.entries.get(key) ?? null)
     return new Promise<string | null>((resolve) => {
@@ -121,8 +137,9 @@ class ControlledCache implements SubscriptionCache {
       return Promise.resolve()
     }
     return new Promise<void>((resolve, reject) => {
+      hold.apply = () => this.entries.set(key, value)
       hold.land = () => {
-        this.entries.set(key, value)
+        hold.apply()
         resolve()
       }
       hold.fail = () => reject(new Error('cache set failed'))
@@ -132,12 +149,26 @@ class ControlledCache implements SubscriptionCache {
   delete(key: string): Promise<void> {
     this.#deleted += 1
     if (!this.#deleting) return Promise.reject(new Error('cache delete failed'))
-    this.entries.delete(key)
-    return Promise.resolve()
+    const hold = this.#deleteHolds.shift()
+    if (hold === undefined) {
+      this.entries.delete(key)
+      return Promise.resolve()
+    }
+    return new Promise<void>((resolve) => {
+      hold.land = () => {
+        this.entries.delete(key)
+        resolve()
+      }
+    })
   }
 
   #hold(queue: Hold[]): Hold {
-    const hold: Hold = { land: () => undefined, fail: () => undefined, answer: () => undefined }
+    const hold: Hold = {
+      apply: () => undefined,
+      land: () => undefined,
+      fail: () => undefined,
+      answer: () => undefined
+    }
     queue.push(hold)
     return hold
   }
@@ -476,6 +507,80 @@ describe('SnapshotCache', () => {
       expect(host.entries.get(KEY)).toBeUndefined()
       const next = await cache.read(ACCOUNT, () => Promise.resolve(NEW()))
       expect(next?.sourceCustomer?.id).toBe('new')
+    })
+
+    it('reaches the store, not the cache, while an overtaken fill is written and cleaned up', async () => {
+      // Scenario: the fill's set is held; the account is invalidated; the host applies the write
+      // before the set resolves, and its cleanup delete is held too. Every read in that interval
+      // goes to the store and returns the new snapshot, with no lookup and no new fill; afterwards
+      // the cache is used again.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const set = host.holdNextSet()
+      const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      await flush()
+      await cache.invalidate(ACCOUNT)
+      const cleanup = host.holdNextDelete()
+      set.apply()
+      expect(host.entries.get(KEY)).toContain('"old"')
+      const lookups = host.gets()
+      const load = jest.fn(() => Promise.resolve(NEW()))
+      expect((await cache.read(ACCOUNT, load))?.sourceCustomer?.id).toBe('new')
+      set.land()
+      await flush()
+      expect((await cache.read(ACCOUNT, load))?.sourceCustomer?.id).toBe('new')
+      expect(load).toHaveBeenCalledTimes(2)
+      expect(host.gets()).toBe(lookups)
+      cleanup.land()
+      await flush()
+      await reading
+      expect(host.entries.size).toBe(0)
+      await cache.read(ACCOUNT, load)
+      await flush()
+      await cache.read(ACCOUNT, load)
+      expect(load).toHaveBeenCalledTimes(3)
+    })
+
+    it('still looks in the cache while a fill is in flight that no invalidation overtook, and while an overtaken read has not started filling', async () => {
+      // Scenario: a fill is held with no invalidation; a second read looks in the cache. Then a
+      // read still loading is invalidated; a read after it also looks in the cache.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      host.holdNextSet()
+      await cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      const before = host.gets()
+      await cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      expect(host.gets()).toBe(before + 1)
+      const other: AccountReference = { accountId: 'acc-3' }
+      let finish!: (value: SubscriptionSnapshot | null) => void
+      const loading = cache.read(
+        other,
+        () => new Promise<SubscriptionSnapshot | null>((resolve) => (finish = resolve))
+      )
+      await flush()
+      await cache.invalidate(other)
+      const lookups = host.gets()
+      await cache.read(other, () => Promise.resolve(null))
+      expect(host.gets()).toBe(lookups + 1)
+      finish(null)
+      await loading
+    })
+
+    it('answers a read that is not behind an overtaken fill from the cache as usual', async () => {
+      // Scenario: a fill of one account is overtaken; a read of another account is served from its
+      // own entry.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const other: AccountReference = { accountId: 'acc-2' }
+      await cache.read(other, () => Promise.resolve(snapshotOf(other, 'two')))
+      await flush()
+      host.holdNextSet()
+      void cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      await flush()
+      await cache.invalidate(ACCOUNT)
+      const load = jest.fn(() => Promise.resolve(null))
+      expect((await cache.read(other, load))?.sourceCustomer?.id).toBe('two')
+      expect(load).not.toHaveBeenCalled()
     })
 
     it('answers the read at once and does not wait for a set that never settles', async () => {
