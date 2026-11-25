@@ -117,6 +117,20 @@ describe('reconciliation', () => {
     await app.close()
   })
 
+  it('goes on to the next page of the store while the batch has room', async () => {
+    // Scenario: a hundred and fifty stale accounts and a batch of that size; two pages are read.
+    const { app, service, source, wait } = await boot(150)
+    const result = await service.reconcile({
+      olderThanMs: DAY,
+      batchSize: 150,
+      maxCallsPerSecond: 1000,
+      wait
+    })
+    expect(result).toEqual({ refreshed: 150, failed: 0, remaining: 0, cursor: null })
+    expect(source.totalReads).toBe(150)
+    await app.close()
+  })
+
   it('waits through the function it is given when the rate is spent', async () => {
     // Scenario: six accounts at two a second; the waits it asks for add up to two seconds.
     const { app, service, clock } = await boot(6)
