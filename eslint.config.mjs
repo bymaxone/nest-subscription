@@ -60,9 +60,12 @@ const BOUNDARY_MESSAGE =
 /** A pattern that refuses a package subpath. */
 const subpath = (name) => ({ group: [`${PACKAGE}/${name}`], message: BOUNDARY_MESSAGE })
 
-/** A pattern that refuses a relative import of sibling directories. */
+/**
+ * A pattern that refuses a relative import of sibling directories, reached from a file at any
+ * depth: any run of `./` and `../` may precede the name.
+ */
 const sibling = (names, message = BOUNDARY_MESSAGE) => ({
-  regex: `^\\.{1,2}/(?:${names.join('|')})(?:/|$)`,
+  regex: `^(?:\\.{1,2}/)+(?:${names.join('|')})(?:/|$)`,
   message
 })
 

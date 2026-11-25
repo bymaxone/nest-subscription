@@ -114,15 +114,18 @@ const RULES: readonly Rule[] = [
 
 /**
  * Checks the options against every rule and throws one `SubscriptionError` that names each
- * offending option, in the order of the rules and each once. Nothing the host supplied is read
- * into the error, and no function the host supplied is called.
+ * offending option, in the order of the first rule that refuses it and each once, even when two
+ * rules refuse the same option. Nothing the host supplied is read into the error, and no function
+ * the host supplied is called.
  *
  * @param input The options exactly as the host passed them.
  * @throws SubscriptionError with the invalid-configuration code and the offending option paths.
  */
 export function validateOptions(input: unknown): asserts input is SubscriptionOptionsInput {
   const paths = isObject(input)
-    ? RULES.map((rule) => rule(input)).filter((path): path is string => path !== undefined)
+    ? [...new Set(RULES.map((rule) => rule(input)))].filter(
+        (path): path is string => path !== undefined
+      )
     : ['options']
   if (paths.length > 0) {
     throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID, { optionPaths: paths })

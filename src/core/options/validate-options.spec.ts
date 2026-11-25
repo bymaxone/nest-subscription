@@ -260,6 +260,21 @@ describe('validateOptions', () => {
       expect(error.optionPaths).toEqual(['confirmSandboxInProduction'])
     })
 
+    it('names the confirming option once when it is not a boolean', () => {
+      // Scenario: the per-option shape rule and the sandbox rule both refuse the same option.
+      const error = problems({
+        ...valid(),
+        allowSandbox: true,
+        isProduction: true,
+        confirmSandboxInProduction: 'yes'
+      })
+      expect(new Set(error.optionPaths).size).toBe(error.optionPaths.length)
+      expect(error.optionPaths).toEqual(['confirmSandboxInProduction'])
+      expect(error.message).toBe(
+        'An option is invalid. Offending options: confirmSandboxInProduction.'
+      )
+    })
+
     it('accepts it with the confirming option', () => {
       // Scenario: the host confirms the combination explicitly.
       expect(() =>

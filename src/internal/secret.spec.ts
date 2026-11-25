@@ -131,7 +131,7 @@ describe('Secret', () => {
       expect(new Secret(CURRENT).matches(PREVIOUS)).toBe(false)
     })
 
-    it('compares digests of equal length with timingSafeEqual and reaches no secret-dependent branch', () => {
+    it('does not throw for a presented value shorter or longer than the secret', () => {
       // Scenario: a presented value of a different length does not throw, which the raw
       // timingSafeEqual would do; the comparison is over fixed-width digests.
       expect(() => secret.matches('a')).not.toThrow()
