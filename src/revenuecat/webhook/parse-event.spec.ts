@@ -76,7 +76,7 @@ describe('parseEvent of a recorded event', () => {
     expect(parseEvent(body, NOW).unidentified).toBe(false)
   })
 
-  it('never reads a state from the payload', () => {
+  it('takes nothing but the identifier, the accounts, the kind, the time and the environment from the payload', () => {
     // Scenario: SEC01: nothing but identifiers, kind, time and environment leaves the parser.
     const body = bytes({
       event: {

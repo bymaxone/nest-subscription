@@ -293,7 +293,7 @@ describe('revenueCatSource webhooks', () => {
 })
 
 describe('revenueCatSource containment', () => {
-  it('shows no credential or secret on any serialization, copy or inspection path of the source', () => {
+  it('shows no credential or secret in JSON.stringify, a spread, util.inspect or the property names of the source', () => {
     // Scenario: SEC05 and D26: the four paths and the property names, over a source that holds every secret.
     const source = sourceWith({
       webhookAuthorization: { current: AUTHORIZATION },

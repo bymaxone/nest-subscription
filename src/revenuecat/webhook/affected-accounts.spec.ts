@@ -21,7 +21,7 @@ describe('affectedAccounts', () => {
     ).toStrictEqual({ accountIds: ['from_1', 'from_2', 'to_1'], anonymousCount: 0 })
   })
 
-  it('never changes the case of an identifier or treats two cases as one', () => {
+  it('keeps the case of each identifier and treats two cases as two identifiers', () => {
     // Scenario: App User IDs are case-sensitive.
     expect(
       affectedAccounts({ app_user_id: 'User', aliases: ['user', 'USER'] }).accountIds

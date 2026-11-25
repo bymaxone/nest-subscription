@@ -69,12 +69,11 @@ function signatureOf(options: RevenueCatRequestOptions, rawBody: Uint8Array): st
 
 /** The authorization header value, valid or flawed as the options say; `undefined` when absent. */
 function authorizationOf(options: RevenueCatRequestOptions): string | undefined {
-  if (options.authorization === undefined || options.flaw === 'missing_authorization') {
-    return undefined
-  }
-  return options.flaw === 'wrong_authorization'
-    ? `${options.authorization}-wrong`
-    : options.authorization
+  const { authorization, flaw } = options
+  if (flaw === 'missing_authorization') return undefined
+  return flaw === 'wrong_authorization' && authorization !== undefined
+    ? `${authorization}-wrong`
+    : authorization
 }
 
 /**

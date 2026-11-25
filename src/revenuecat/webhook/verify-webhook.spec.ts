@@ -140,7 +140,7 @@ describe('isAuthentic', () => {
     { rawBody: BODY, headers: null },
     { rawBody: BODY, headers: 'text' },
     { rawBody: BODY }
-  ])('refuses the malformed request %j before it reads the clock or any secret', (value) => {
+  ])('refuses the malformed request %j before it reads the clock', (value) => {
     // Scenario: the shape is checked first, so a malformed request costs no check at all.
     const clock = jest.fn(() => new Date(T * 1000))
     const options = optionsWith({ webhookSigningSecret: SIGNING, clock: { now: clock } })

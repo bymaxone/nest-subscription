@@ -4,7 +4,7 @@
  * and headers are what RevenueCat sends.
  * @layer testing
  */
-import { revenueCatSource } from '@bymax-one/nest-subscription/revenuecat'
+import { revenueCatSource, signRevenueCatWebhook } from '@bymax-one/nest-subscription/revenuecat'
 
 import {
   REVENUECAT_REQUEST_FLAWS,
@@ -106,6 +106,34 @@ describe('buildRevenueCatWebhookRequest', () => {
       expect({ headers: changedHeaders, body: bodyChanged }).toStrictEqual(expected[flaw])
     }
   )
+
+  it('writes each flaw as its exact value', () => {
+    // Scenario: the bytes and the header text of every flaw that has a value of its own.
+    const seconds = NOW.getTime() / 1000
+    const plain = new TextEncoder().encode(JSON.stringify(BODY))
+    const built = (flaw: RevenueCatRequestFlaw): ReturnType<typeof buildRevenueCatWebhookRequest> =>
+      buildRevenueCatWebhookRequest({ ...options, flaw })
+    expect(built('altered_body').rawBody).toStrictEqual(Uint8Array.from([...plain, 0x20]))
+    expect(built('malformed_signature').headers['x-revenuecat-webhook-signature']).toBe(
+      `t=${String(seconds)}`
+    )
+    expect(built('wrong_signature').headers['x-revenuecat-webhook-signature']).toBe(
+      signRevenueCatWebhook(`${SIGNING}-wrong`, seconds, plain)
+    )
+    expect(built('wrong_authorization').headers['authorization']).toBe(`${AUTHORIZATION}-wrong`)
+    expect(buildRevenueCatWebhookRequest(options).headers['content-type']).toBe('application/json')
+    expect(buildRevenueCatWebhookRequest(options).headers['authorization']).toBe(AUTHORIZATION)
+  })
+
+  it('adds no authorization header for a wrong authorization when none was given', () => {
+    // Scenario: the flaw has nothing to make wrong, so the header stays absent.
+    const request = buildRevenueCatWebhookRequest({
+      body: BODY,
+      now: NOW,
+      flaw: 'wrong_authorization'
+    })
+    expect(Object.keys(request.headers)).toStrictEqual(['content-type'])
+  })
 
   it('signs the timestamp of the clock, and moves it by the skew for a stale or a future one', () => {
     // Scenario: the timestamps of the three signatures.

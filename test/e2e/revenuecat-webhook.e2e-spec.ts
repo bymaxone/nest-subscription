@@ -273,7 +273,7 @@ describe('a non-renewing purchase notification behind the controller (D31)', () 
 })
 
 describe('what the receiver, the adapter and the logs hold', () => {
-  it('shows no secret on any path of the adapter, the service or the module, and none in a log or an observer payload', async () => {
+  it('shows no secret on the sweep paths of the service, and none in a log line or an observer payload', async () => {
     // Scenario: SEC05 and SEC06 end to end: every secret and the customer identifier are sentinels.
     running = await boot()
     running.stand.serveFixture(USER, 'active-subscription')
@@ -288,7 +288,7 @@ describe('what the receiver, the adapter and the logs hold', () => {
     expect(inspect(running.service, { depth: null, showHidden: true })).not.toContain(API_KEY)
   })
 
-  it('sends the key only to the stand-in, as a bearer credential', async () => {
+  it('sends the key as a bearer credential with each request to the stand-in', async () => {
     // Scenario: the credential travels in the header of every request, to the loopback address only.
     running = await boot()
     running.stand.serveFixture(USER, 'active-subscription')

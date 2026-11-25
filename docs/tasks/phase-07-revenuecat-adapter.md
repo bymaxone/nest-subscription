@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 8 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 8 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 

@@ -174,7 +174,7 @@ describe('RevenueCatHttp', () => {
     expect(error.code).toBe(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
   })
 
-  it('puts no key, identifier, address or body into an error of any failure', async () => {
+  it('puts no key, identifier, address or body into the error of a 404, a 500, a body that is not JSON or a network failure', async () => {
     // Scenario: every failure kind, with sentinels in the path, the key and the response body;
     // the message, the serialized form and the cause show none of them.
     const stubs: RevenueCatFetch[] = [
@@ -192,7 +192,7 @@ describe('RevenueCatHttp', () => {
     }
   })
 
-  it('makes exactly one request per call and never retries', async () => {
+  it('makes one request for a call that answers 503, and does not retry it', async () => {
     // Scenario: a 503 is surfaced at once; the caller decides whether to ask again.
     const stub = jest.fn<Promise<Response>, [string, RequestInit]>(() =>
       Promise.resolve(jsonResponse(503, {}))
@@ -216,6 +216,12 @@ describe('encodeSegment', () => {
 })
 
 describe('encodeSegment of a dot segment', () => {
+  it('is needed because the runtime resolves a dot segment even when it is percent-encoded', () => {
+    // Scenario: the premise of the refusal below, asserted: encoding cannot make `..` safe.
+    expect(new URL('http://host/a/%2E%2E/b').pathname).toBe('/b')
+    expect(new URL('http://host/a/%2e/b').pathname).toBe('/a/b')
+  })
+
   it.each(['.', '..'])('refuses %j, which a URL would resolve instead of send', (given) => {
     // Scenario: an identifier of dots would be read as a path step, even percent-encoded, so it
     // is an account RevenueCat cannot have: unknown.

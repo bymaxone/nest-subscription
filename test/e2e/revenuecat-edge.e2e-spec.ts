@@ -126,10 +126,7 @@ describe('lists the adapter cannot use', () => {
     ['a status other than not found', { status: 500 }],
     ['a rate limit', { status: 429 }],
     ['a body that is not JSON', { status: 200, body: '<html>' }],
-    [
-      'a redirect, which is never followed',
-      { status: 302, location: 'http://127.0.0.1:1/elsewhere' }
-    ]
+    ['a redirect', { status: 302, location: 'http://127.0.0.1:1/elsewhere' }]
   ])('is a source that cannot be read for %s', async (_label, answer) => {
     // Scenario: the HTTP failures, each mapped to the one fixed error.
     stand.respondWith(() => answer)
@@ -474,7 +471,7 @@ describe('webhook requests that are not the ordinary ones', () => {
     expect(() => signed({ webhookAuthorization: AUTHORIZATION, logger })).not.toThrow()
   })
 
-  it('refuses every request when no method is configured, and says nothing about the header-only method', async () => {
+  it('refuses a request when no method is configured, and says nothing about the header-only method', async () => {
     // Scenario: a source with neither secret verifies nothing, so nothing is accepted.
     const warn = jest.fn()
     const bare = signed({ logger: { warn } })

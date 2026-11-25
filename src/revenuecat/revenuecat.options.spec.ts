@@ -103,7 +103,7 @@ describe('resolveRevenueCatOptions', () => {
     expect(DEFAULT_SIGNATURE_TOLERANCE_MS).toBeLessThan(MAX_SIGNATURE_TOLERANCE_MS)
   })
 
-  it('holds every credential and secret in a Secret, in the pair a rotation needs', () => {
+  it('holds the API key and both webhook secrets in a Secret, with the pair of a rotation', () => {
     // Scenario: each secret option is given as a string, a pair and a holder; all become Secrets.
     const holder = new Secret(SIGNING)
     const resolved = resolveRevenueCatOptions({
@@ -118,7 +118,7 @@ describe('resolveRevenueCatOptions', () => {
     expect(resolved.webhookSigningSecret).toBe(holder)
   })
 
-  it('shows no secret on any serialization, copy or inspection path of the resolved options', () => {
+  it('shows no secret in JSON.stringify, a spread, util.inspect with showHidden or the property names of the resolved options', () => {
     // Scenario: the four containment paths, plus the property names, over options holding secrets.
     const resolved = resolveRevenueCatOptions({
       ...minimal,
