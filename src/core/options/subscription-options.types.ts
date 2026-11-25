@@ -3,7 +3,7 @@
  * factory returns and the frozen form the library reads. Types only.
  * @layer core
  */
-import type { ExecutionContext, InjectionToken, ModuleMetadata } from '@nestjs/common'
+import type { InjectionToken, ModuleMetadata } from '@nestjs/common'
 
 import type {
   Clock,
@@ -16,24 +16,10 @@ import type {
   SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
-/** What the fail policy does when a snapshot is missing or the store cannot be read. */
+import type { AccountResolver } from '../guard/account-resolver.types'
+
+/** What the guard does when it cannot show a snapshot current: refuse, or trust the last one. */
 export type SubscriptionFailPolicy = 'refuse' | 'last_known_state'
-
-/** The account a request belongs to, as the host's resolver names it. */
-export interface ResolvedAccountOption {
-  /** The account identifier. */
-  readonly accountId: string
-  /** The tenant of the account; absent when the host is not multi-tenant. */
-  readonly tenantId?: string | undefined
-}
-
-/**
- * Gives the guard the account of a request. It returns `null` for a request that carries no
- * account, which the guard refuses as unauthenticated.
- */
-export type AccountResolverOption = (
-  context: ExecutionContext
-) => ResolvedAccountOption | null | Promise<ResolvedAccountOption | null>
 
 /** What the host's hook receives after a snapshot changed and was stored. */
 export interface SubscriptionChangeNotification {
@@ -92,14 +78,29 @@ export interface SubscriptionOptionsInput {
   /** The persistence port. */
   readonly store: SubscriptionStore
   /** Tells the guard which account a request belongs to. */
-  readonly accountResolver: AccountResolverOption
+  readonly accountResolver: AccountResolver
   /** Told about every stored change. */
   readonly onChange?: SubscriptionChangeHook
-  /** What to do when a snapshot is missing or the store is down. Defaults to `refuse`. */
+  /**
+   * What the guard does when it cannot show the snapshot current: the store cannot be read, or the
+   * stored snapshot is older than `maxSnapshotAgeMs` and the guard, which never waits for the
+   * source, has not seen it refreshed. Defaults to `refuse`, which denies access. A store that
+   * answers with no record is not a failure: the account has no subscription and the guard
+   * refuses it as such under both values.
+   *
+   * `last_known_state` trusts such a snapshot while it is strictly younger than
+   * `lastKnownStateToleranceMs`. That extends access during an outage, including to an account
+   * whose subscription was refunded or cancelled during it, until the snapshot is refreshed or
+   * ages past the tolerance. Choose it only where that exposure is acceptable.
+   */
   readonly failPolicy?: SubscriptionFailPolicy
   /**
    * How old a stored snapshot may be and still be trusted under `last_known_state`, in
-   * milliseconds. Defaults to 24 hours.
+   * milliseconds; a snapshot aged exactly this is not trusted. It applies to a snapshot older than
+   * `maxSnapshotAgeMs`: a younger one is current and needs no tolerance, so a tolerance not above
+   * `maxSnapshotAgeMs` adds nothing over `refuse`. Defaults to 72 hours, three times the default
+   * `maxSnapshotAgeMs`, so the policy extends access for two days past the point a snapshot goes
+   * stale.
    */
   readonly lastKnownStateToleranceMs?: number
   /** The age after which a snapshot is refreshed on its next read, in milliseconds. */
@@ -160,10 +161,10 @@ export interface ResolvedSubscriptionOptions {
   /** The persistence port. */
   readonly store: SubscriptionStore
   /** Tells the guard which account a request belongs to. */
-  readonly accountResolver: AccountResolverOption
+  readonly accountResolver: AccountResolver
   /** The change hook, or `null` when the host set none. */
   readonly onChange: SubscriptionChangeHook | null
-  /** What to do when a snapshot is missing or the store is down. */
+  /** What the guard does when it cannot show a snapshot current. */
   readonly failPolicy: SubscriptionFailPolicy
   /** The tolerance of `last_known_state`, in milliseconds. */
   readonly lastKnownStateToleranceMs: number

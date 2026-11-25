@@ -3,14 +3,14 @@
  * @layer core
  */
 
-/** One hour in milliseconds, the unit the 24-hour defaults are written in. */
+/** One hour in milliseconds, the unit the hour-based defaults are written in. */
 const HOUR_MS = 3_600_000
 
 /** The fail policy when none is set: refuse access (SEC04). */
 export const DEFAULT_FAIL_POLICY = 'refuse'
 
-/** How long a stored snapshot is trusted under `last_known_state`: 24 hours (D12, FR31). */
-export const DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS = 24 * HOUR_MS
+/** How long a stored snapshot is trusted under `last_known_state`: 72 hours (D38, FR31). */
+export const DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS = 72 * HOUR_MS
 
 /** The age after which a snapshot is refreshed on its next read: 24 hours (D12, FR25). */
 export const DEFAULT_MAX_SNAPSHOT_AGE_MS = 24 * HOUR_MS

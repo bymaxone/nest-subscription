@@ -35,7 +35,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   account's state, queues signed notifications, delays or fails the next read and counts reads.
 - The option types `SubscriptionModuleOptions`, `SubscriptionModuleAsyncOptions`,
   `SubscriptionOptionsInput` and `ResolvedSubscriptionOptions`, and `resolveOptions`, which applies
-  the defaults (fail policy `refuse`, 24-hour tolerance and maximum age, sandbox access off,
+  the defaults (fail policy `refuse`, 72-hour tolerance, 24-hour maximum age, sandbox access off,
   webhook controller off) and returns a frozen object, exported from the root.
 - `validateOptions`, which refuses an invalid configuration with one `SubscriptionError` that names
   every offending option and carries none of the supplied values. `SubscriptionError` gains an
@@ -87,8 +87,45 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   function it is given and otherwise ends when its rate is spent.
 - `decodeAccountKey`, exported from the root: reads a key written by `encodeAccountKey` back into
   its account reference, and returns `null` for any other text.
+- `RequiresEntitlement(name)`, exported from the root: marks a route handler or controller as
+  needing one entitlement, the handler's name winning over the controller's. A blank name is
+  refused with `SUBSCRIPTION_INVALID_INPUT` when the decorator is applied. `AccountResolver` and
+  `ResolvedAccount`, exported from the root, are the contract of the resolver the host supplies.
+- `EntitlementGuard`, exported from the root, provided and exported by the module: it enforces
+  `RequiresEntitlement`. A route without the decorator is untouched. The account comes from the
+  host's resolver only; a request with no usable account is refused with HTTP 401
+  `SUBSCRIPTION_UNAUTHENTICATED`, an account without the entitlement with HTTP 403
+  `SUBSCRIPTION_ENTITLEMENT_REQUIRED`, and an account whose subscription gives no access with HTTP
+  403 `SUBSCRIPTION_NO_ACCESS`. Any unexpected failure refuses with HTTP 503
+  `SUBSCRIPTION_SOURCE_UNAVAILABLE`. A refusal body is `{ code, message }` and nothing else, except
+  that an HTTP exception with a status from 400 to 599 thrown or rejected by the host's resolver
+  leaves the guard unchanged. The guard reads the clock after the snapshot, and refuses when the
+  clock gives an instant that is not a finite date. The guard works for HTTP contexts; a decorated
+  route in another context is refused.
+- The fail policy of the guard, with `failPolicy` (`refuse` by default, or `last_known_state`) and
+  `lastKnownStateToleranceMs`. When the store cannot be read, or the stored snapshot is older than
+  `maxSnapshotAgeMs` (the guard never waits for its refresh), `refuse` denies with HTTP 503
+  `SUBSCRIPTION_SOURCE_UNAVAILABLE` and `last_known_state` trusts a snapshot strictly younger than
+  the tolerance and denies one aged exactly the tolerance or more. A store that answers with no
+  record is the empty snapshot and is refused as no subscription under both values. The option's
+  documentation states that `last_known_state` extends access during an outage, including for an
+  account that was refunded during it. The default tolerance is 72 hours; the maximum snapshot age
+  stays 24 hours.
+- The error code `SUBSCRIPTION_UNAUTHENTICATED` in `SUBSCRIPTION_ERROR_CODES`, with its fixed
+  message: a request with no usable account. `SUBSCRIPTION_ACCOUNT_UNKNOWN` keeps its meaning.
+- `createFailingStore(store)` in the `testing` subpath, with `FailingStore` and
+  `FailingStoreMethod`: wraps any `SubscriptionStore` and, once `fail()` is called, rejects the
+  methods named (every method when none is named) until `recover()`, so a host can test its own
+  outage handling. Until then it delegates unchanged.
 
 ### Changed
+
+- `AccountResolverOption` and `ResolvedAccountOption` are renamed `AccountResolver` and
+  `ResolvedAccount`. Apply to a derived backend: replace the two names in any import; the shapes
+  are unchanged.
+- A clock that returns an instant that is not a finite date no longer lets a snapshot or an
+  entitlement read as current: `hasEntitlement` answers `false`, `getSnapshot` starts the refresh it
+  starts for a stale snapshot, and the guard refuses with `SUBSCRIPTION_SOURCE_UNAVAILABLE`.
 
 - The store conformance case for stale-key paging asserts what the store port promises: at most
   `limit` keys per page, each key once, none skipped, and a listing that ends. A store that returns

@@ -5,6 +5,7 @@
 import { FakeSubscriptionSource } from './fake.source'
 import * as entry from './index'
 import { InMemorySubscriptionStore } from './in-memory.store'
+import { createFailingStore } from './failing.store'
 import { ManualClock } from './manual.clock'
 import { storeConformanceCases } from './store-conformance'
 
@@ -16,11 +17,13 @@ describe('testing entry point', () => {
       'FakeSubscriptionSource',
       'InMemorySubscriptionStore',
       'ManualClock',
+      'createFailingStore',
       'storeConformanceCases'
     ])
     expect(entry.FakeSubscriptionSource).toBe(FakeSubscriptionSource)
     expect(entry.InMemorySubscriptionStore).toBe(InMemorySubscriptionStore)
     expect(entry.ManualClock).toBe(ManualClock)
+    expect(entry.createFailingStore).toBe(createFailingStore)
     expect(entry.storeConformanceCases).toBe(storeConformanceCases)
   })
 

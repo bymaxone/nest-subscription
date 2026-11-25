@@ -23,5 +23,5 @@ export function ageOf(snapshot: SubscriptionSnapshot, now: Date): number {
  * @throws {SubscriptionError} as {@link ageOf} does.
  */
 export function isStale(snapshot: SubscriptionSnapshot, now: Date, maxAgeMs: number): boolean {
-  return ageOf(snapshot, now) > maxAgeMs
+  return !(ageOf(snapshot, now) <= maxAgeMs)
 }

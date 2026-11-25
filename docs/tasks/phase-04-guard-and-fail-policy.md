@@ -1,6 +1,6 @@
 # Phase 4 — Guard and fail policy
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 4 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P4 — guard-and-fail-policy
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,10 +39,10 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 
 | ID  | Task                                                | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 4.1 | Add the decorator and the account resolver contract | 📋 ToDo | P0       | S    | —          |
-| 4.2 | Implement the guard decision and its refusal codes  | 📋 ToDo | P0       | M    | 4.1        |
-| 4.3 | Implement the fail policy                           | 📋 ToDo | P0       | M    | 4.2        |
-| 4.4 | Prove the guard end to end                          | 📋 ToDo | P0       | M    | 4.3        |
+| 4.1 | Add the decorator and the account resolver contract | ✅ Done | P0       | S    | —          |
+| 4.2 | Implement the guard decision and its refusal codes  | ✅ Done | P0       | M    | 4.1        |
+| 4.3 | Implement the fail policy                           | ✅ Done | P0       | M    | 4.2        |
+| 4.4 | Prove the guard end to end                          | ✅ Done | P0       | M    | 4.3        |
 
 ---
 
@@ -50,7 +50,7 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 
 ### Task 4.1 — Add the decorator and the account resolver contract
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: —
@@ -61,11 +61,11 @@ Write the route decorator that names an entitlement and the contract of the reso
 
 #### Acceptance criteria
 
-- [ ] `@RequiresEntitlement('premium')` stores the entitlement name as metadata readable on a handler and on a controller, with the handler winning.
-- [ ] An empty or blank entitlement name is refused when the decorator is applied.
-- [ ] `AccountResolver` takes the NestJS `ExecutionContext` and returns a `ResolvedAccount` (`{ accountId, tenantId? }`) or `null`, synchronously or as a promise.
-- [ ] The metadata key is a `Symbol`.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `@RequiresEntitlement('premium')` stores the entitlement name as metadata readable on a handler and on a controller, with the handler winning.
+- [x] An empty or blank entitlement name is refused when the decorator is applied.
+- [x] `AccountResolver` takes the NestJS `ExecutionContext` and returns a `ResolvedAccount` (`{ accountId, tenantId? }`) or `null`, synchronously or as a promise.
+- [x] The metadata key is a `Symbol`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -130,7 +130,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 4.2 — Implement the guard decision and its refusal codes
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 4.1
@@ -141,13 +141,13 @@ Write the guard for the normal case: the store is readable and the snapshot exis
 
 #### Acceptance criteria
 
-- [ ] A route with no `RequiresEntitlement` metadata is allowed without resolving an account.
-- [ ] No resolvable account is refused as unauthenticated (HTTP 401), not as unsubscribed.
-- [ ] An account with the entitlement active is allowed.
-- [ ] An account with no subscription is refused with the "entitlement required" code, and an account whose subscription exists and gives no access (for example on hold) is refused with the "gives no access" code, both as HTTP 403.
-- [ ] The refusal body contains only the catalogue's code and message.
-- [ ] The decision is a pure function of the snapshot and the entitlement name, tested by table.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A route with no `RequiresEntitlement` metadata is allowed without resolving an account.
+- [x] No resolvable account is refused as unauthenticated (HTTP 401), not as unsubscribed.
+- [x] An account with the entitlement active is allowed.
+- [x] An account with no subscription is refused with the "entitlement required" code, and an account whose subscription exists and gives no access (for example on hold) is refused with the "gives no access" code, both as HTTP 403.
+- [x] The refusal body contains only the catalogue's code and message.
+- [x] The decision is a pure function of the snapshot and the entitlement name, tested by table.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -213,7 +213,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 4.3 — Implement the fail policy
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 4.2
@@ -224,12 +224,12 @@ Decide what the guard does when the snapshot is missing or the store cannot be r
 
 #### Acceptance criteria
 
-- [ ] Under the default policy, an unreadable store and a missing snapshot both refuse.
-- [ ] Under the last-known-state policy, a snapshot younger than the tolerance is trusted when it cannot be refreshed, and an older one refuses; a snapshot aged exactly the tolerance is pinned by a test.
-- [ ] Under the last-known-state policy with the store itself unreadable, the guard refuses unless the snapshot is available from the configured cache and is within the tolerance.
-- [ ] An unexpected error anywhere in the guard refuses, with the "source unavailable" code and HTTP 503.
-- [ ] The policy is one option with exactly two values, and no other code path grants access under failure.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Under the default policy, an unreadable store and a missing snapshot both refuse.
+- [x] Under the last-known-state policy, a snapshot younger than the tolerance is trusted when it cannot be refreshed, and an older one refuses; a snapshot aged exactly the tolerance is pinned by a test.
+- [x] Under the last-known-state policy with the store itself unreadable, the guard refuses unless the snapshot is available from the configured cache and is within the tolerance.
+- [x] An unexpected error anywhere in the guard refuses, with the "source unavailable" code and HTTP 503.
+- [x] The policy is one option with exactly two values, and no other code path grants access under failure.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -296,7 +296,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 4.4 — Prove the guard end to end
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 4.3
@@ -307,12 +307,12 @@ Write the end-to-end suite that protects real routes and closes the phase: the t
 
 #### Acceptance criteria
 
-- [ ] A real NestJS application with a decorated route returns 200, the "entitlement required" refusal and the "gives no access" refusal for three accounts.
-- [ ] A request with no resolvable account returns 401.
-- [ ] With the store failing and with the source failing, the guard behaves exactly as each policy value says (AC07).
-- [ ] With a fresh snapshot the fake source's read counter stays at zero across guard decisions; with a stale one each decision is returned while the fake source's read is still held unresolved by the test, and at most one read per account is started (NFR01).
-- [ ] No response body in the suite contains an account identifier or a tenant identifier.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A real NestJS application with a decorated route returns 200, the "entitlement required" refusal and the "gives no access" refusal for three accounts.
+- [x] A request with no resolvable account returns 401.
+- [x] With the store failing and with the source failing, the guard behaves exactly as each policy value says (AC07).
+- [x] With a fresh snapshot the fake source's read counter stays at zero across guard decisions; with a stale one each decision is returned while the fake source's read is still held unresolved by the test, and at most one read per account is started (NFR01).
+- [x] No response body in the suite contains an account identifier or a tenant identifier.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -385,3 +385,8 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 <!-- entries are added as tasks complete -->
+
+- 4.1 ✅ 2026-11-25 — the RequiresEntitlement decorator and the AccountResolver contract
+- 4.2 ✅ 2026-11-25 — the pure decideAccess and the EntitlementGuard with its stable refusal codes
+- 4.3 ✅ 2026-11-25 — the two-valued fail policy, pure and applied by the guard around its snapshot read
+- 4.4 ✅ 2026-11-25 — the guard end to end on real routes, createFailingStore and its end-to-end suites

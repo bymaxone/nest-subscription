@@ -21,11 +21,11 @@ import {
 import {
   SUBSCRIPTION_ERROR_CODES,
   createEmptySnapshot,
-  parseInstant,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
 import { SnapshotCache } from './cache/snapshot-cache'
+import { entitlementHeld } from './entitlement-held'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
 import {
   Reconciler,
@@ -86,10 +86,7 @@ export class SubscriptionService {
     const snapshot = await this.getSnapshot(account)
     const now = this.clock.now().getTime()
     return snapshot.entitlements.some(
-      (held) =>
-        held.name === entitlement &&
-        held.active &&
-        (held.until === null || parseInstant(held.until) > now)
+      (held) => held.name === entitlement && entitlementHeld(held, now)
     )
   }
 

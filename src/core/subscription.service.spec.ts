@@ -116,6 +116,33 @@ function setup(extra: SetupOptions = {}): {
 }
 
 describe('SubscriptionService reads', () => {
+  it('answers false for an entitlement when the clock gives an unreadable instant', async () => {
+    // Scenario: a held entitlement with no end is stored; the clock then returns an invalid date.
+    // The service cannot tell the entitlement is current, so it is not held.
+    const { source, clock, service } = setup()
+    const held = snapshotOf(ACCOUNT, true)
+    source.setAccount(ACCOUNT, {
+      ...held,
+      entitlements: held.entitlements.map((entitlement) => ({ ...entitlement, until: null }))
+    })
+    await service.refresh(ACCOUNT)
+    expect(await service.hasEntitlement(ACCOUNT, 'pro')).toBe(true)
+    jest.spyOn(clock, 'now').mockReturnValue(new Date(Number.NaN))
+    expect(await service.hasEntitlement(ACCOUNT, 'pro')).toBe(false)
+  })
+
+  it('starts a background refresh when the clock gives an unreadable instant', async () => {
+    // Scenario: a stored snapshot is never trusted as current under an unreadable clock, so the
+    // read starts the refresh it would start for a stale one.
+    const { source, clock, service } = setup()
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
+    await service.refresh(ACCOUNT)
+    const reads = source.totalReads
+    jest.spyOn(clock, 'now').mockReturnValue(new Date(Number.NaN))
+    await service.getSnapshot(ACCOUNT)
+    expect(source.totalReads).toBe(reads + 1)
+  })
+
   it('answers a snapshot from the store and carries its age, without calling the source', async () => {
     // Scenario: a snapshot stored a minute ago; the read returns it, one minute old, with no read
     // of the source.
