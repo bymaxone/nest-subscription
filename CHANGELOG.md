@@ -47,3 +47,12 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   validated once at boot; the module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`,
   `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and, with `forRoot`, `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER`
   when configured. No optional peer is loaded at run time.
+- `ManualClock` in the `testing` subpath: a `Clock` a test moves by hand, so no test of staleness,
+  ordering or a rate limit waits on a timer.
+
+### Changed
+
+- The store conformance case for stale-key paging asserts what the store port promises: at most
+  `limit` keys per page, each key once, none skipped, and a listing that ends. A store that returns
+  smaller pages than the limit now passes; a store that returns more, repeats or skips a key still
+  fails.

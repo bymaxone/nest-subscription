@@ -6,7 +6,7 @@
  * @layer core
  */
 import { Module } from '@nestjs/common'
-import type { DynamicModule, FactoryProvider, InjectionToken } from '@nestjs/common'
+import type { DynamicModule, FactoryProvider, InjectionToken, Type } from '@nestjs/common'
 
 import {
   SUBSCRIPTION_CACHE,
@@ -25,6 +25,7 @@ import type {
   SubscriptionModuleAsyncOptions,
   SubscriptionModuleOptions
 } from './options/subscription-options.types'
+import { SnapshotRefresher } from './refresh/snapshot-refresher'
 
 /** The path `forRootAsync` names when its factory rejects; the factory's own error is dropped. */
 const FACTORY_PATH = 'useFactory'
@@ -68,7 +69,16 @@ async function runFactory(
   }
 }
 
-/** Puts the pieces together as a dynamic module; every provider it lists is exported. */
+/**
+ * The classes the library provides for itself. They are built from the tokens above, so they
+ * follow whichever configuration the host chose.
+ */
+const OWN_CLASSES: readonly Type[] = [SnapshotRefresher]
+
+/**
+ * Puts the pieces together as a dynamic module; every token provider it lists is exported, and
+ * the library's own classes are provided without being exported.
+ */
 function assemble(
   global: boolean | undefined,
   imports: DynamicModule['imports'],
@@ -78,7 +88,7 @@ function assemble(
     module: SubscriptionModule,
     global: global ?? false,
     imports: imports ?? [],
-    providers,
+    providers: [...providers, ...OWN_CLASSES],
     exports: providers.map((provider) => provider.provide)
   }
 }

@@ -20,6 +20,7 @@ import {
 } from '@bymax-one/nest-subscription/testing'
 
 import type { SubscriptionOptionsInput } from './options/subscription-options.types'
+import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionModule } from './subscription.module'
 
 const SENTINEL = 'sentinel-secret-0b8e6d14'
@@ -33,8 +34,10 @@ function input(): SubscriptionOptionsInput {
   }
 }
 
+/** The token providers of a module; the library's own classes are listed apart. */
 function providersOf(module: { providers?: unknown }): FactoryProvider[] {
-  return Array.isArray(module.providers) ? (module.providers as FactoryProvider[]) : []
+  const all: unknown[] = Array.isArray(module.providers) ? module.providers : []
+  return all.filter((candidate): candidate is FactoryProvider => typeof candidate === 'object')
 }
 
 function provider(module: { providers?: unknown }, token: symbol): FactoryProvider {
@@ -60,6 +63,13 @@ describe('SubscriptionModule.forRoot', () => {
       SUBSCRIPTION_CLOCK
     ])
     expect(module.module).toBe(SubscriptionModule)
+  })
+
+  it('provides the refresher as a class and does not export it', () => {
+    // Scenario: the library's own classes are providers of the module, not part of what it exports.
+    const module = SubscriptionModule.forRoot(input())
+    expect(module.providers).toContain(SnapshotRefresher)
+    expect(module.exports).not.toContain(SnapshotRefresher)
   })
 
   it('provides the cache and the observer only when they are configured', () => {

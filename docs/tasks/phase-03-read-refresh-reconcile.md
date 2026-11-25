@@ -1,6 +1,6 @@
 # Phase 3 — Read, refresh and reconcile
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P3 — read-refresh-reconcile
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -38,7 +38,7 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 
 | ID  | Task                                                          | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 3.1 | Implement the refresher with single flight and ordered writes | 📋 ToDo | P0       | L    | —          |
+| 3.1 | Implement the refresher with single flight and ordered writes | ✅ Done | P0       | L    | —          |
 | 3.2 | Implement the service reads                                   | 📋 ToDo | P0       | M    | 3.1        |
 | 3.3 | Refresh a stale snapshot in the background                    | 📋 ToDo | P0       | M    | 3.2        |
 | 3.4 | Read through the optional cache                               | 📋 ToDo | P1       | M    | 3.2        |
@@ -50,7 +50,7 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 
 ### Task 3.1 — Implement the refresher with single flight and ordered writes
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: —
@@ -61,12 +61,12 @@ Write the one component that reads an account from the source and stores the res
 
 #### Acceptance criteria
 
-- [ ] One hundred concurrent refreshes of one account produce exactly one `readAccount` call on the fake source, and all hundred callers get the same snapshot.
-- [ ] Refreshes of different accounts, and of the same account identifier under different tenants, do not wait for each other.
-- [ ] A snapshot whose source-updated-at is older than the stored one is not written, under sequential calls and when two reads resolve in the opposite order to their start.
-- [ ] A failed read rejects every waiting caller with the "source unavailable" code, leaves the stored snapshot untouched, and the next refresh calls the source again.
-- [ ] The refresher returns the previous and the new snapshot and whether a write happened, for the notification phase to consume.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] One hundred concurrent refreshes of one account produce exactly one `readAccount` call on the fake source, and all hundred callers get the same snapshot.
+- [x] Refreshes of different accounts, and of the same account identifier under different tenants, do not wait for each other.
+- [x] A snapshot whose source-updated-at is older than the stored one is not written, under sequential calls and when two reads resolve in the opposite order to their start.
+- [x] A failed read rejects every waiting caller with the "source unavailable" code, leaves the stored snapshot untouched, and the next refresh calls the source again.
+- [x] The refresher returns the previous and the new snapshot and whether a write happened, for the notification phase to consume.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -470,5 +470,7 @@ Completion Protocol (after the work is reported done):
 ## Completion log
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
+
+- 3.1 ✅ 2026-11-25 — the refresher with single flight, ordered writes and a source-unavailable failure that leaves the stored snapshot untouched
 
 <!-- entries are added as tasks complete -->

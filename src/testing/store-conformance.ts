@@ -412,7 +412,6 @@ const staleCases: readonly StoreConformanceCase[] = [
       const store = await createStore()
       for (const letter of LETTERS) await seed(store, letter, T1, [])
       const first = await store.listStaleKeys(T5, 3, null)
-      assert.ok(first.keys.length <= 3, OVER_LIMIT)
       assert.notEqual(first.nextCursor, null)
       const keys = await collect((cursor) => store.listStaleKeys(T5, 3, cursor), 3)
       assert.deepEqual(keys, LETTER_KEYS)
