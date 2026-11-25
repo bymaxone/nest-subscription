@@ -499,3 +499,38 @@ describe('SnapshotRefresher observer', () => {
     expect(await reads({ onRefresh: jest.fn() })).toBe(3)
   })
 })
+
+describe('SnapshotRefresher callers that share a flight', () => {
+  it('makes one source read and one hook call for ten concurrent refreshes, with one delivery', async () => {
+    // Scenario: ten refreshes of one account start while the read is held; they share one flight,
+    // so the source is read once and the hook is called once, and each caller's delivery is the
+    // same promise.
+    const hook = jest.fn()
+    const { source, refresher } = withHook(hook)
+    source.setAccount(ACCOUNT, subscribed(T10))
+    const release = source.delayNextRead()
+    const callers = Array.from({ length: 10 }, () => refresher.refresh(ACCOUNT))
+    await flush()
+    release()
+    const results = await Promise.all(callers)
+    await results[0]?.delivery
+    expect(source.readCount(ACCOUNT)).toBe(1)
+    expect(hook).toHaveBeenCalledTimes(1)
+    for (const result of results) expect(result.delivery).toBe(results[0]?.delivery)
+  })
+
+  it('starts the delivery after the flight of the account is released', async () => {
+    // Scenario: the hook looks at how many flights are in progress when it is called.
+    let inFlight = -1
+    const hookRefresher: { current?: SnapshotRefresher } = {}
+    const { source, refresher } = withHook(() => {
+      inFlight = hookRefresher.current?.inFlight ?? -1
+    })
+    hookRefresher.current = refresher
+    source.setAccount(ACCOUNT, subscribed(T10))
+    await (
+      await refresher.refresh(ACCOUNT)
+    ).delivery
+    expect(inFlight).toBe(0)
+  })
+})

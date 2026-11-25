@@ -427,3 +427,47 @@ describe('Reconciler pending cursor', () => {
     expect((await reconciler.run({})).pendingCursor).toBeNull()
   })
 })
+
+describe('Reconciler option validation', () => {
+  it.each([
+    ['maxCallsPerSecond', 0],
+    ['maxCallsPerSecond', -1],
+    ['maxCallsPerSecond', 1.5],
+    ['maxCallsPerSecond', Number.NaN],
+    ['maxCallsPerSecond', Number.POSITIVE_INFINITY],
+    ['batchSize', 0],
+    ['batchSize', -3],
+    ['batchSize', 2.5],
+    ['batchSize', Number.NaN],
+    ['olderThanMs', -1],
+    ['olderThanMs', Number.NaN],
+    ['olderThanMs', Number.POSITIVE_INFINITY]
+  ])('refuses %s of %p before it lists, reads or calls anything', async (option, value) => {
+    // Scenario: pending changes are stored and the option is out of range; the run rejects with
+    // the invalid-input code, and neither listing, the source nor the hook is touched.
+    const hook = jest.fn()
+    const listPending = jest.fn()
+    const listStale = jest.fn()
+    const { source, store, reconciler } = withHook(hook, {}, (base) =>
+      delegating(base, {
+        listKeysWithPendingChanges: (limit, cursor) => {
+          listPending()
+          return base.listKeysWithPendingChanges(limit, cursor)
+        },
+        listStaleKeys: (olderThan, limit, cursor) => {
+          listStale()
+          return base.listStaleKeys(olderThan, limit, cursor)
+        }
+      })
+    )
+    await seedPending(store, 2)
+    await expect(reconciler.run({ [option]: value })).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
+    })
+    expect(hook).not.toHaveBeenCalled()
+    expect(listPending).not.toHaveBeenCalled()
+    expect(listStale).not.toHaveBeenCalled()
+    expect(source.totalReads).toBe(0)
+    expect(await pendingAccounts(store)).toBe(2)
+  })
+})

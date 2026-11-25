@@ -541,3 +541,29 @@ describe('change notifications for an entitlement with several grantors', () => 
     ])
   })
 })
+
+describe('change notifications when the hook refreshes the same account', () => {
+  it('lets a hook await a refresh of its own account, without the two waiting for each other', async () => {
+    // Scenario: the hook, on its first call, awaits a refresh of the account it was called for.
+    // The outer refresh must resolve, the hook's own call must return, and its changes must be
+    // cleared; the race below names the outcome by assertion instead of by a timeout.
+    const { service, source, store, notifications, setBehaviour } = await boot()
+    let inner = 'not returned'
+    setBehaviour(async () => {
+      if (notifications.length > 1) return
+      await service.refresh(ACCOUNT)
+      inner = 'returned'
+    })
+    source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
+    const stuck = (async (): Promise<string> => {
+      for (let turn = 0; turn < 20; turn += 1) await new Promise((resolve) => setImmediate(resolve))
+      return 'stuck'
+    })()
+    const winner = await Promise.race([service.refresh(ACCOUNT).then(() => 'resolved'), stuck])
+    expect(winner).toBe('resolved')
+    expect(inner).toBe('returned')
+    expect(notifications).toHaveLength(1)
+    expect(await pendingKeys(store)).toStrictEqual([])
+    expect(source.readCount(ACCOUNT)).toBe(2)
+  })
+})

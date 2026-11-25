@@ -95,6 +95,8 @@ interface RunConfig {
   readonly batchSize: number
   readonly cursor: string | null
   readonly pendingCursor: string | null
+  /** The rate of source reads, built here so an invalid rate is refused with every other option. */
+  readonly limiter: RateLimiter
 }
 
 /** How many accounts were refreshed and how many failed so far in one run. */
@@ -130,11 +132,7 @@ export class Reconciler {
   async run(input: ReconcileOptions): Promise<ReconcileResult> {
     const config = this.#configure(input)
     const pendingCursor = await this.#deliverPending(config.batchSize, config.pendingCursor)
-    const limiter = new RateLimiter(
-      this.clock,
-      input.maxCallsPerSecond ?? DEFAULT_MAX_CALLS_PER_SECOND,
-      RATE_WINDOW_MS
-    )
+    const { limiter } = config
     const tally: Tally = { refreshed: 0, failed: 0 }
     const { olderThan } = config
     let budget = config.batchSize
@@ -193,7 +191,12 @@ export class Reconciler {
       olderThan: threshold.toISOString(),
       batchSize,
       cursor: input.cursor ?? null,
-      pendingCursor: input.pendingCursor ?? null
+      pendingCursor: input.pendingCursor ?? null,
+      limiter: new RateLimiter(
+        this.clock,
+        input.maxCallsPerSecond ?? DEFAULT_MAX_CALLS_PER_SECOND,
+        RATE_WINDOW_MS
+      )
     }
   }
 

@@ -55,6 +55,16 @@ export interface RefreshResult {
   readonly delivery: Promise<void>
 }
 
+/**
+ * What one flight of a refresh yields: what the observer needs, and `finish`, which builds the
+ * result with its delivery. The delivery does not start inside the flight, because a hook that
+ * awaits a refresh of its own account would join the flight it is called from and wait for itself.
+ */
+interface Flight extends Pick<RefreshResult, 'written' | 'changes'> {
+  /** Builds the result and starts its delivery on the first call; every later call gives the same. */
+  readonly finish: () => RefreshResult
+}
+
 /** The instant a snapshot is ordered by: what the source says, or else when it was read. */
 function orderInstant(snapshot: SubscriptionSnapshot): string {
   return snapshot.sourceUpdatedAt ?? snapshot.fetchedAt
@@ -66,7 +76,7 @@ function orderInstant(snapshot: SubscriptionSnapshot): string {
  */
 @Injectable()
 export class SnapshotRefresher {
-  readonly #flights = new SingleFlight<RefreshResult>()
+  readonly #flights = new SingleFlight<Flight>()
 
   constructor(
     @Inject(SUBSCRIPTION_SOURCE) private readonly source: SubscriptionSource,
@@ -92,11 +102,15 @@ export class SnapshotRefresher {
    */
   async refresh(account: AccountReference): Promise<RefreshResult> {
     const key = encodeAccountKey(account)
-    return this.#flights.run(key, () => this.#refreshOnce(key, account))
+    const flight = await this.#flights.run(key, () => this.#refreshOnce(key, account))
+    // The flight has been released here, so a hook that refreshes this account starts a flight of
+    // its own. Every caller that shared the flight gets the one result, and its delivery is
+    // started once.
+    return flight.finish()
   }
 
   /** One read of the source and the ordered write of its result, reported to the observer. */
-  async #refreshOnce(key: string, account: AccountReference): Promise<RefreshResult> {
+  async #refreshOnce(key: string, account: AccountReference): Promise<Flight> {
     const started = this.observer.mark()
     let read: SubscriptionSnapshot
     try {
@@ -120,7 +134,7 @@ export class SnapshotRefresher {
     key: string,
     account: AccountReference,
     read: SubscriptionSnapshot
-  ): Promise<RefreshResult> {
+  ): Promise<Flight> {
     const snapshot: SubscriptionSnapshot = { ...read, fetchedAt: this.clock.now().toISOString() }
     const orderedAt = orderInstant(snapshot)
     const previous = await this.#stored(key, account)
@@ -132,18 +146,32 @@ export class SnapshotRefresher {
     const changes = this.dispatcher === null ? NO_CHANGES : diffSnapshots(previous, snapshot)
     if (await this.store.putSnapshot(key, snapshot, changes, orderedAt)) {
       await this.cache?.invalidate(account)
-      // The hook is called only now: the write has succeeded and the cache no longer holds the old
-      // snapshot.
-      const delivery =
-        this.dispatcher?.deliver(key, previous, snapshot, changes) ?? Promise.resolve()
-      return { previous, current: snapshot, written: true, changes, delivery }
+      // The hook is called only once the write has succeeded and the cache no longer holds the old
+      // snapshot, and only after the flight is released.
+      let result: RefreshResult | undefined
+      const finish = (): RefreshResult =>
+        (result ??= {
+          previous,
+          current: snapshot,
+          written: true,
+          changes,
+          delivery: this.dispatcher?.deliver(key, previous, snapshot, changes) ?? Promise.resolve()
+        })
+      return { written: true, changes, finish }
     }
     return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot)
   }
 
   /** The result of a refresh whose snapshot was not stored because a newer one is. */
-  #kept(previous: SubscriptionSnapshot | null, current: SubscriptionSnapshot): RefreshResult {
-    return { previous, current, written: false, changes: NO_CHANGES, delivery: Promise.resolve() }
+  #kept(previous: SubscriptionSnapshot | null, current: SubscriptionSnapshot): Flight {
+    const result: RefreshResult = {
+      previous,
+      current,
+      written: false,
+      changes: NO_CHANGES,
+      delivery: Promise.resolve()
+    }
+    return { written: false, changes: NO_CHANGES, finish: () => result }
   }
 
   /** The snapshot the store holds for the account, or `null` when none or one that does not fit. */
