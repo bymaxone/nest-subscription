@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 5 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 6 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -47,7 +47,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | 7.3 | Implement the mapping tables                              | ✅ Done | P0       | M    | 7.1        |
 | 7.4 | Read a customer into a snapshot                           | ✅ Done | P0       | L    | 7.2, 7.3   |
 | 7.5 | Verify RevenueCat webhooks                                | ✅ Done | P0       | M    | 7.2        |
-| 7.6 | Parse events and handle identity                          | 📋 ToDo | P0       | M    | 7.4, 7.5   |
+| 7.6 | Parse events and handle identity                          | ✅ Done | P0       | M    | 7.4, 7.5   |
 | 7.8 | Read non-renewing purchases and map them into the model   | 📋 ToDo | P0       | L    | 7.3, 7.4   |
 | 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6, 7.8   |
 
@@ -479,7 +479,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.6 — Parse events and handle identity
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 7.4, 7.5
@@ -490,13 +490,13 @@ Turn a verified RevenueCat event into the port's notification: event identifier,
 
 #### Acceptance criteria
 
-- [ ] Each event kind of Appendix A.2 yields a notification; `TEST` and kinds that cannot change subscription state yield the "changes nothing" kind; a kind not in the list yields the unknown kind, which triggers a refresh.
-- [ ] A `TRANSFER` event names both the identifiers that lost and gained the purchases as affected accounts.
-- [ ] An event whose only identifier is anonymous (prefix `$RCAnonymousID:`) is reported through the observer and the log with no identifier in them, and yields a notification with no account to refresh, never a silent drop.
-- [ ] Aliases listed on an event are included as affected accounts.
-- [ ] A body that is not the expected shape after verification yields the unknown kind with whatever accounts could be read, never a thrown error.
-- [ ] The event identifier is the event's `id`, and the environment is carried into the notification.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Each event kind of Appendix A.2 yields a notification; `TEST` and kinds that cannot change subscription state yield the "changes nothing" kind; a kind not in the list yields the unknown kind, which triggers a refresh.
+- [x] A `TRANSFER` event names both the identifiers that lost and gained the purchases as affected accounts.
+- [x] An event whose only identifier is anonymous (prefix `$RCAnonymousID:`) is reported through the observer and the log with no identifier in them, and yields a notification with no account to refresh, never a silent drop.
+- [x] Aliases listed on an event are included as affected accounts.
+- [x] A body that is not the expected shape after verification yields the unknown kind with whatever accounts could be read, never a thrown error.
+- [x] The event identifier is the event's `id`, and the environment is carried into the notification.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -767,3 +767,4 @@ Completion Protocol (after the work is reported done):
 - 7.3 ✅ 2026-11-25 — the status, renewal and store tables as data checked against Appendix A.3, with a billing issue following the source's access flag
 - 7.4 ✅ 2026-11-25 — the read of a customer's subscriptions into a snapshot, with the sandbox filter, paged reads with a bound, and the unknown customer as an empty snapshot
 - 7.5 ✅ 2026-11-25 — both webhook verification methods over the raw bytes with a timestamp tolerance, constant-time comparison, two valid secrets, one refusal value and a header-only report
+- 7.6 ✅ 2026-11-25 — event parsing into the port's notification with transfers, aliases and anonymous identifiers, and the revenueCatSource factory with secrets held in private fields
