@@ -37,6 +37,15 @@ import { ageOf, isStale } from './refresh/staleness'
 import { toSnapshotView, type AgedSnapshot } from './snapshot-view'
 import { hasTenant } from './tenant'
 
+/** Whether an instant can be read and is later than `now`; an instant that cannot be read is not. */
+function isLater(instant: string, now: number): boolean {
+  try {
+    return parseInstant(instant) > now
+  } catch {
+    return false
+  }
+}
+
 /**
  * The reads and the on-demand refresh of the library. Every method takes the account as the
  * caller's argument: the tenant and the account identifier are never taken from a payload.
@@ -76,7 +85,7 @@ export class SubscriptionService {
   /**
    * Whether the account has the named entitlement now: its active flag, which the source's access
    * flag gave it, is true and its `until` is `null` (no end) or later than now by the injected
-   * clock. An entitlement the account lacks is `false`. The source is not waited for.
+   * clock. An entitlement the account lacks, or whose `until` cannot be read, is `false`. The source is not waited for.
    *
    * @throws {SubscriptionError} as {@link SubscriptionService.getSnapshot} does.
    */
@@ -87,7 +96,7 @@ export class SubscriptionService {
       (held) =>
         held.name === entitlement &&
         held.active &&
-        (held.until === null || parseInstant(held.until) > now)
+        (held.until === null || isLater(held.until, now))
     )
   }
 

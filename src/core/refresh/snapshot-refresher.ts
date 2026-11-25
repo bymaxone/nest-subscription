@@ -24,6 +24,7 @@ import {
 } from '@bymax-one/nest-subscription/shared'
 
 import { SingleFlight } from './single-flight'
+import { isSnapshotFor } from './source-snapshot'
 import { SnapshotCache } from '../cache/snapshot-cache'
 
 /** What one refresh did. */
@@ -91,12 +92,21 @@ export class SnapshotRefresher {
     return { previous, current: kept, written: false }
   }
 
-  /** Reads the source; any failure becomes one error that carries the original as its cause. */
+  /**
+   * Reads the source. A failure becomes one error that carries the original as its cause, and a
+   * snapshot that does not name the account asked for or holds an unreadable instant becomes the
+   * same error with none.
+   */
   async #read(account: AccountReference): Promise<SubscriptionSnapshot> {
+    let read: SubscriptionSnapshot
     try {
-      return await this.source.readAccount(account)
+      read = await this.source.readAccount(account)
     } catch (cause) {
       throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE, { cause })
     }
+    if (!isSnapshotFor(read, account)) {
+      throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    }
+    return read
   }
 }

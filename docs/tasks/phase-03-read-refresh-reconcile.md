@@ -396,7 +396,7 @@ Expose a method that refreshes the accounts whose snapshot is older than a thres
 
 - [x] A run refreshes only accounts older than the threshold, and stops at the configured batch bound.
 - [x] The number of source calls in any window never exceeds the configured rate, asserted with a controllable clock.
-- [x] One account's failure does not stop the run; the result reports refreshed, failed and remaining counts and a cursor to continue.
+- [x] One account's failure does not stop the run; the result reports refreshed and failed counts and a cursor that tells the host where to continue.
 - [x] A run makes no change for an account whose refresh returns an older or identical state.
 - [x] The library starts no timer and no scheduler of its own.
 - [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
@@ -436,7 +436,7 @@ DELIVERABLES
 
 1. `rate-limiter.ts`: a limiter driven by the injected `Clock` and an injectable wait function, so tests advance time by hand.
 
-2. `reconciler.ts`: pages through `listStaleKeys`, refreshes each account through `SnapshotRefresher`, respects the batch bound and the rate, and returns `{ refreshed, failed, remaining, cursor }`.
+2. `reconciler.ts`: pages through `listStaleKeys`, refreshes each account through `SnapshotRefresher`, respects the batch bound and the rate, and returns `{ refreshed, failed, cursor }`.
 
 3. The stale listing returns keys; the reconciler needs the account reference back. If the key cannot be decoded, extend the store port to return the account reference with each key, update the conformance suite and the in-memory store in this task, and record the change in `docs/tasks/README.md`.
 

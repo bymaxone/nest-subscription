@@ -222,6 +222,24 @@ describe('SubscriptionService reads', () => {
     await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
   })
 
+  it('answers false, and does not reject, for an active entitlement whose until cannot be read', async () => {
+    // Scenario: a host store holds an entitlement whose until is not an instant.
+    const { store, service } = setup()
+    const entitlement = {
+      name: 'pro',
+      active: true,
+      until: 'not-a-date',
+      grantingSubscriptionReference: null
+    }
+    await store.putSnapshot(
+      encodeAccountKey(ACCOUNT),
+      { ...snapshotOf(ACCOUNT, true), entitlements: [entitlement] },
+      [],
+      T0
+    )
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+  })
+
   it('answers false for an entitlement the account does not have', async () => {
     // Scenario: the account has `pro` and is asked about `team`.
     const { source, service } = setup()

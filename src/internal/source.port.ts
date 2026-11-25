@@ -89,7 +89,9 @@ export interface SubscriptionSource {
   /**
    * Reads the current state of one account from the source. An account the source does not know
    * is a snapshot with no entitlements and no subscriptions, not an error. A source that cannot
-   * be reached rejects.
+   * be reached rejects. The snapshot's `accountId` and `tenantId` are those of the account asked
+   * for (no `tenantId` when none was given), and every instant in it is an ISO 8601 instant with
+   * a zone; the library refuses a snapshot that is not, as a failure to read the source.
    */
   readAccount(account: AccountReference): Promise<SubscriptionSnapshot>
 

@@ -414,3 +414,106 @@ describe('SnapshotRefresher with a cache', () => {
     await expect(refresher.refresh(ACCOUNT)).resolves.toMatchObject({ written: true })
   })
 })
+
+describe('SnapshotRefresher with a snapshot that does not fit the account asked for', () => {
+  const TENANTED: AccountReference = { tenantId: 'one', accountId: 'acc-1' }
+  const subscription = {
+    subscriptionReference: 's',
+    status: 'active',
+    givesAccess: true,
+    willRenew: 'yes',
+    origin: 'web',
+    environment: 'production',
+    productReference: 'p',
+    billingInterval: 'month',
+    currentPeriodStart: T0,
+    currentPeriodEnd: T10,
+    accessUntil: null,
+    billingIssueSince: null,
+    cancelledAt: null,
+    refundedAt: null,
+    managementReference: null
+  } as const
+  const rows: ReadonlyArray<readonly [string, AccountReference, Record<string, unknown>]> = [
+    ['another account', ACCOUNT, { accountId: 'other' }],
+    ['another tenant', TENANTED, { tenantId: 'two' }],
+    ['no tenant for a tenanted account', TENANTED, { tenantId: undefined }],
+    ['a tenant for an account with none', ACCOUNT, { tenantId: 'one' }],
+    [
+      'an entitlement whose until cannot be read',
+      ACCOUNT,
+      {
+        entitlements: [
+          { name: 'pro', active: true, until: 'not-a-date', grantingSubscriptionReference: null }
+        ]
+      }
+    ],
+    ['a source instant that cannot be read', ACCOUNT, { sourceUpdatedAt: 'later' }],
+    ['a fetch instant that cannot be read', ACCOUNT, { fetchedAt: 'now' }],
+    [
+      'a subscription instant that cannot be read',
+      ACCOUNT,
+      { subscriptions: [{ ...subscription, billingIssueSince: '31 Feb' }] }
+    ],
+    ['a list that is not a list', ACCOUNT, { entitlements: 'none' }]
+  ]
+
+  it.each(rows)(
+    'refuses %s as a source failure, stores nothing and leaves the stored snapshot',
+    async (_name, account, patch) => {
+      // Scenario: a good refresh stores a snapshot; the source then returns a damaged one.
+      const { source, store, clock, refresher } = setup()
+      source.setAccount(account, snapshotOf(account, T10, 'good'))
+      await refresher.refresh(account)
+      const before = await stored(store, account)
+      clock.advance(1000)
+      source.setAccount(account, Object.assign({}, snapshotOf(account, T20, 'bad'), patch))
+      const error = await refresher.refresh(account).catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(SubscriptionError)
+      expect((error as SubscriptionError).code).toBe(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+      expect((error as SubscriptionError).message).not.toContain('acc-1')
+      expect(await stored(store, account)).toEqual(before)
+    }
+  )
+
+  it('stores nothing at all for the first refresh when the snapshot is refused', async () => {
+    // Scenario: nothing stored yet; the source names another account.
+    const { source, store, refresher } = setup()
+    source.setAccount(ACCOUNT, { ...snapshotOf(ACCOUNT, T10), accountId: 'other' })
+    await expect(refresher.refresh(ACCOUNT)).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    })
+    expect(await stored(store, ACCOUNT)).toBeNull()
+    expect(await stored(store, { accountId: 'other' })).toBeNull()
+  })
+
+  it('serves reads from the cache again after a good refresh follows a refused one', async () => {
+    // Scenario: with a cache, a refused snapshot leaves no entry; the next good refresh and read fill it.
+    const entries = new Map<string, string>()
+    const cache: SubscriptionCache = {
+      get: (key) => Promise.resolve(entries.get(key) ?? null),
+      set: (key, value) => {
+        entries.set(key, value)
+        return Promise.resolve()
+      },
+      delete: (key) => {
+        entries.delete(key)
+        return Promise.resolve()
+      }
+    }
+    const { source, store, clock } = setup()
+    const snapshotCache = new SnapshotCache(cache, 30_000)
+    const refresher = new SnapshotRefresher(source, store, clock, snapshotCache)
+    const load = async (): Promise<SubscriptionSnapshot | null> => stored(store, TENANTED)
+    source.setAccount(TENANTED, { ...snapshotOf(TENANTED, T10), tenantId: 'two' })
+    await refresher.refresh(TENANTED).catch(() => undefined)
+    expect(await snapshotCache.read(TENANTED, load)).toBeNull()
+    source.setAccount(TENANTED, snapshotOf(TENANTED, T20, 'good'))
+    await refresher.refresh(TENANTED)
+    const loader = jest.fn(load)
+    await snapshotCache.read(TENANTED, loader)
+    await snapshotCache.read(TENANTED, loader)
+    expect(loader).toHaveBeenCalledTimes(1)
+    expect(entries.size).toBe(1)
+  })
+})

@@ -254,6 +254,74 @@ describe('read and refresh: the service in a running application', () => {
     await app.close()
   })
 
+  it('refuses a source snapshot that names another account and keeps what is stored', async () => {
+    // Scenario: a good snapshot is stored; the source then returns another account's.
+    const { app, source, store } = await boot()
+    const service = app.get(SubscriptionService)
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
+    await service.refresh(ACCOUNT)
+    const before = await store.getSnapshot(encodeAccountKey(ACCOUNT))
+    source.setAccount(ACCOUNT, {
+      ...snapshotOf(ACCOUNT, '2026-01-01T00:00:20.000Z'),
+      accountId: 'x'
+    })
+    const error = await service.refresh(ACCOUNT).catch((caught: unknown) => caught)
+    expect((error as SubscriptionError).code).toBe(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    expect(await store.getSnapshot(encodeAccountKey(ACCOUNT))).toEqual(before)
+    await app.close()
+  })
+
+  it('accepts a snapshot with a subscription and refuses one whose subscription instant is unreadable', async () => {
+    // Scenario: the same subscription with readable instants is stored, then with a garbled one.
+    const { app, source } = await boot()
+    const service = app.get(SubscriptionService)
+    const subscription = {
+      subscriptionReference: 's',
+      status: 'active',
+      givesAccess: true,
+      willRenew: 'yes',
+      origin: 'web',
+      environment: 'production',
+      productReference: 'p',
+      billingInterval: 'month',
+      currentPeriodStart: T10,
+      currentPeriodEnd: '2026-02-01T00:00:00.000Z',
+      accessUntil: null,
+      billingIssueSince: null,
+      cancelledAt: null,
+      refundedAt: null,
+      managementReference: null
+    } as const
+    source.setAccount(ACCOUNT, { ...snapshotOf(ACCOUNT, T10), subscriptions: [subscription] })
+    await expect(service.refresh(ACCOUNT)).resolves.toBeDefined()
+    source.setAccount(ACCOUNT, {
+      ...snapshotOf(ACCOUNT, '2026-01-01T00:00:20.000Z'),
+      subscriptions: [{ ...subscription, cancelledAt: 'yesterday' }]
+    })
+    await expect(service.refresh(ACCOUNT)).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    })
+    await app.close()
+  })
+
+  it('answers false for an entitlement whose until cannot be read, without rejecting', async () => {
+    // Scenario: a host store holds an active entitlement with an unreadable until.
+    const { app, store } = await boot()
+    await store.putSnapshot(
+      encodeAccountKey(ACCOUNT),
+      {
+        ...snapshotOf(ACCOUNT, T10),
+        entitlements: [
+          { name: 'pro', active: true, until: 'not-a-date', grantingSubscriptionReference: null }
+        ]
+      },
+      [],
+      T10
+    )
+    await expect(app.get(SubscriptionService).hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+    await app.close()
+  })
+
   it('answers an unknown account as an empty snapshot and false without a source call', async () => {
     // Scenario: nothing is stored for the account; the source is held and still no read waits.
     const { app, source } = await boot()
