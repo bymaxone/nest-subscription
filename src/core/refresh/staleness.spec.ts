@@ -46,6 +46,11 @@ describe('ageOf', () => {
 })
 
 describe('isStale', () => {
+  it('is stale when now is not a readable instant', () => {
+    // Scenario: a clock that returns an invalid date cannot show any snapshot current.
+    expect(isStale(fetchedAt(FETCHED), new Date(Number.NaN), 60_000)).toBe(true)
+  })
+
   const MAX = 60_000
 
   it('is false when the snapshot is younger than the maximum age', () => {

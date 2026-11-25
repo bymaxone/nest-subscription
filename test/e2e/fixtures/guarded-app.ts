@@ -9,6 +9,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
   Injectable,
   Post,
   UseGuards,
@@ -50,7 +51,7 @@ export const ACCOUNT_HEADER = 'x-test-account'
 export const TENANT_HEADER = 'x-test-tenant'
 /** The header that makes the resolver answer with the JSON it holds, whatever its shape. */
 export const RAW_HEADER = 'x-test-raw'
-/** The header that makes the resolver throw. */
+/** The header that makes the resolver throw: `http:<status>` for an HTTP exception, else an error. */
 export const THROW_HEADER = 'x-test-throw'
 
 /** The instant every test starts at, and the one the clock reads before it is moved. */
@@ -86,7 +87,11 @@ export class StandInAuthGuard implements CanActivate {
 /** The host's resolver: what the stand-in authentication left, or what a test header dictates. */
 export const resolveFromRequest: AccountResolver = (context) => {
   const request = context.switchToHttp().getRequest<AuthenticatedRequest>()
-  if (headerOf(request, THROW_HEADER) !== undefined) throw new Error('resolver failed')
+  const failure = headerOf(request, THROW_HEADER)
+  if (failure?.startsWith('http:') === true) {
+    throw new HttpException({ hint: 'host refusal' }, Number(failure.slice('http:'.length)))
+  }
+  if (failure !== undefined) throw new Error('resolver failed')
   const raw = headerOf(request, RAW_HEADER)
   if (raw !== undefined) {
     const parsed: unknown = JSON.parse(raw)

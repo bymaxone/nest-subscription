@@ -171,6 +171,55 @@ describe('guard: the account comes from the resolver only', () => {
     expectRefusal(response, 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
   })
 
+  it.each([
+    [401, 401],
+    [403, 403],
+    [302, 503],
+    [200, 503]
+  ])('answers %d for a resolver HTTP exception of status %d', async (status, expected) => {
+    // Scenario: the host's resolver refuses with its own HTTP exception. From 400 to 599 it leaves
+    // the guard with the host's body; any other status is an unexpected failure.
+    const built = await boot()
+    const response = await request(built.app.getHttpServer())
+      .get('/premium')
+      .set(THROW_HEADER, `http:${status}`)
+    expect(response.status).toBe(expected)
+    if (expected === 503) {
+      expectRefusal(response, 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    } else {
+      expect(response.body).toStrictEqual({ hint: 'host refusal' })
+    }
+  })
+
+  it('does not pass an HTTP exception of the store through', async () => {
+    // Scenario: the store rejects with an unauthorized exception; the guard's own refusal answers.
+    const built = await boot()
+    await seedThree(built)
+    built.store.fail(['getSnapshot'], new HttpException({ hint: 'store' }, 401))
+    expectRefusal(
+      await get(built, '/premium', HELD),
+      503,
+      SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    )
+  })
+
+  it.each([
+    ['an invalid date', (): Date => new Date(Number.NaN)],
+    ['a value that is not a date', (): Date => Object.create(null)]
+  ])('refuses as source unavailable when the clock gives %s', async (_title, now) => {
+    // Scenario: the clock cannot say what time it is after the snapshot was read; the guard refuses
+    // an account that would otherwise be allowed.
+    const built = await boot()
+    await seedThree(built)
+    expect((await get(built, '/premium', HELD)).status).toBe(200)
+    jest.spyOn(built.clock, 'now').mockImplementation(now)
+    expectRefusal(
+      await get(built, '/premium', HELD),
+      503,
+      SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    )
+  })
+
   it('decides for the account the resolver names, whatever the body, query and headers say', async () => {
     // Scenario: the caller is `acc-none` but the body, the query string and other headers all name
     // `acc-held`; it is refused. The reverse is allowed. The guard reads none of them.
@@ -533,15 +582,20 @@ describe('guard: cases a request cannot make', () => {
     expect(refusal.getStatus()).toBe(503)
   })
 
-  it('applies one rule to the service and the guard, including an end it cannot read', () => {
-    // Scenario: an entitlement that is active with an `until` that is not an instant gives no
-    // access to the pure decision, as the service gives none to the stored one.
+  it('gives no access for an end it cannot read, to the decision, the service and the guard', async () => {
+    // Scenario: an entitlement that is active with an `until` that is not an instant. The pure
+    // decision refuses it; the same snapshot written straight into the store reads as absent
+    // through the service, which answers false, and the guard refuses the route.
     const snapshot = {
-      ...createEmptySnapshot({ accountId: 'acc-1', source: 'fake', fetchedAt: START }),
+      ...createEmptySnapshot({ accountId: 'acc-held', source: 'fake', fetchedAt: START }),
       entitlements: [
         { name: 'premium', active: true, until: 'not-a-date', grantingSubscriptionReference: 's' }
       ]
     }
     expect(decideAccess(snapshot, 'premium', new Date(START))).toBe('no_access')
+    const built = await boot()
+    await built.seed(snapshot)
+    expect(await built.service.hasEntitlement(HELD, 'premium')).toBe(false)
+    expect((await get(built, '/premium', HELD)).status).toBe(403)
   })
 })

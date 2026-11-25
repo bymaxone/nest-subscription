@@ -8,11 +8,11 @@ import { parseInstant, type EntitlementState } from '@bymax-one/nest-subscriptio
 
 /**
  * Whether an entitlement gives access at `nowMs` (milliseconds since the epoch): its active flag
- * is true and its `until` is `null` (no end) or later than `nowMs`. An `until` that cannot be read
- * gives no access.
+ * is true and its `until` is `null` (no end) or later than `nowMs`. An `until` that cannot be read,
+ * and a `nowMs` that is not a finite number, give no access.
  */
 export function entitlementHeld(entitlement: EntitlementState, nowMs: number): boolean {
-  if (!entitlement.active) return false
+  if (!Number.isFinite(nowMs) || !entitlement.active) return false
   if (entitlement.until === null) return true
   try {
     return parseInstant(entitlement.until) > nowMs

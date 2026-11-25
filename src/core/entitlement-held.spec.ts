@@ -16,6 +16,15 @@ function state(active: boolean, until: string | null): EntitlementState {
 }
 
 describe('entitlementHeld', () => {
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'gives no access when the instant is %d',
+    (instant) => {
+      // Scenario: an entitlement with no end and a clock that cannot say what time it is; with no
+      // readable now nothing is held.
+      expect(entitlementHeld(state(true, null), instant)).toBe(false)
+    }
+  )
+
   it.each([
     ['active with no end', state(true, null), true],
     ['active until a later instant', state(true, '2026-01-01T00:00:00.001Z'), true],

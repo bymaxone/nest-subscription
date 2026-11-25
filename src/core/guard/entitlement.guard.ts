@@ -22,7 +22,7 @@ import { hasTenant } from '../tenant'
 import type { ResolvedAccount } from './account-resolver.types'
 import { decideAccess } from './decide-access'
 import { applyFailPolicy } from './fail-policy'
-import { GuardRefusal } from './guard-refusal'
+import { GuardRefusal, ResolverRefusal, fromResolver } from './guard-refusal'
 import { readRequiredEntitlement } from './requires-entitlement.decorator'
 
 /** The options the guard reads. */
@@ -79,15 +79,16 @@ export class EntitlementGuard implements CanActivate {
    * @throws {HttpException} 401 `SUBSCRIPTION_UNAUTHENTICATED` when no account is resolved, 403
    * `SUBSCRIPTION_ENTITLEMENT_REQUIRED` or `SUBSCRIPTION_NO_ACCESS` when the decision refuses,
    * and 503 `SUBSCRIPTION_SOURCE_UNAVAILABLE` for any failure the guard did not expect. The body
-   * is `{ code, message }` and nothing else.
+   * is `{ code, message }` and nothing else, except that an HTTP exception with a status from
+   * 400 to 599 thrown by the host's resolver leaves unchanged.
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
       return await this.#decide(context)
     } catch (error) {
-      throw error instanceof GuardRefusal
-        ? error
-        : new GuardRefusal(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+      if (error instanceof GuardRefusal) throw error
+      if (error instanceof ResolverRefusal) throw error.exception
+      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
     }
   }
 
@@ -99,10 +100,19 @@ export class EntitlementGuard implements CanActivate {
       throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
     }
     const account = await this.#account(context)
-    const now = this.options.clock.now()
     const read = await this.#read(account)
+    const now = this.#now()
     const usable = read !== null && !isStale(read, now, this.options.maxSnapshotAgeMs)
     return this.#verdict(usable ? read : this.#underFailure(read, now), required, now)
+  }
+
+  /** The instant to decide at, read after the snapshot; an unreadable one is a refusal. */
+  #now(): Date {
+    const now = this.options.clock.now()
+    if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    }
+    return now
   }
 
   /** The snapshot the service answers with; `null` when the store could not be read. */
@@ -130,9 +140,18 @@ export class EntitlementGuard implements CanActivate {
     return outcome.snapshot
   }
 
+  /** What the host's resolver answers; an HTTP refusal of its own is marked to pass through. */
+  async #resolve(context: ExecutionContext): Promise<unknown> {
+    try {
+      return await this.options.accountResolver(context)
+    } catch (error) {
+      throw fromResolver(error)
+    }
+  }
+
   /** The account the host's resolver names, or a refusal as unauthenticated. */
   async #account(context: ExecutionContext): Promise<AccountReference> {
-    const resolved: unknown = await this.options.accountResolver(context)
+    const resolved = await this.#resolve(context)
     if (!isResolvedAccount(resolved)) {
       throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
     }

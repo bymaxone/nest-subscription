@@ -28,6 +28,27 @@ function statusOf(code: GuardRefusalCode): number {
   }
 }
 
+/** Whether an error is an HTTP exception with a status a host can mean as a refusal: 400 to 599. */
+function isHostRefusal(error: unknown): error is HttpException {
+  if (!(error instanceof HttpException)) return false
+  const status = error.getStatus()
+  return Number.isInteger(status) && status >= 400 && status <= 599
+}
+
+/** An HTTP exception of the host's resolver that leaves the guard unchanged. */
+export class ResolverRefusal {
+  /** @param exception The exception the resolver threw or rejected with. */
+  constructor(readonly exception: HttpException) {}
+}
+
+/**
+ * What to throw for an error of the host's resolver: a {@link ResolverRefusal} for an HTTP
+ * exception with a status from 400 to 599, and the error itself for anything else.
+ */
+export function fromResolver(error: unknown): unknown {
+  return isHostRefusal(error) ? new ResolverRefusal(error) : error
+}
+
 /**
  * A refusal by the guard. Its response is `{ code, message }` taken from the catalogue: no
  * account, tenant, entitlement name or error text of the host can reach it.

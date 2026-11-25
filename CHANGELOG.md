@@ -97,8 +97,11 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   `SUBSCRIPTION_UNAUTHENTICATED`, an account without the entitlement with HTTP 403
   `SUBSCRIPTION_ENTITLEMENT_REQUIRED`, and an account whose subscription gives no access with HTTP
   403 `SUBSCRIPTION_NO_ACCESS`. Any unexpected failure refuses with HTTP 503
-  `SUBSCRIPTION_SOURCE_UNAVAILABLE`. A refusal body is `{ code, message }` and nothing else. The
-  guard works for HTTP contexts; a decorated route in another context is refused.
+  `SUBSCRIPTION_SOURCE_UNAVAILABLE`. A refusal body is `{ code, message }` and nothing else, except
+  that an HTTP exception with a status from 400 to 599 thrown or rejected by the host's resolver
+  leaves the guard unchanged. The guard reads the clock after the snapshot, and refuses when the
+  clock gives an instant that is not a finite date. The guard works for HTTP contexts; a decorated
+  route in another context is refused.
 - The fail policy of the guard, with `failPolicy` (`refuse` by default, or `last_known_state`) and
   `lastKnownStateToleranceMs`. When the store cannot be read, or the stored snapshot is older than
   `maxSnapshotAgeMs` (the guard never waits for its refresh), `refuse` denies with HTTP 503
@@ -120,6 +123,9 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - `AccountResolverOption` and `ResolvedAccountOption` are renamed `AccountResolver` and
   `ResolvedAccount`. Apply to a derived backend: replace the two names in any import; the shapes
   are unchanged.
+- A clock that returns an instant that is not a finite date no longer lets a snapshot or an
+  entitlement read as current: `hasEntitlement` answers `false`, `getSnapshot` starts the refresh it
+  starts for a stale snapshot, and the guard refuses with `SUBSCRIPTION_SOURCE_UNAVAILABLE`.
 
 - The store conformance case for stale-key paging asserts what the store port promises: at most
   `limit` keys per page, each key once, none skipped, and a listing that ends. A store that returns

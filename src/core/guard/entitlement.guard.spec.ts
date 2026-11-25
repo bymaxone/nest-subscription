@@ -5,7 +5,12 @@
  * the message only, and every unexpected failure refuses.
  * @layer core
  */
-import { HttpException, type ExecutionContext } from '@nestjs/common'
+import {
+  ForbiddenException,
+  HttpException,
+  UnauthorizedException,
+  type ExecutionContext
+} from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host'
 import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
@@ -351,6 +356,135 @@ describe('EntitlementGuard', () => {
     )
   })
 
+  describe('the decision clock', () => {
+    it('reads the clock after the snapshot, so an end passed during the read refuses', async () => {
+      // Scenario: the snapshot read is held by the test; the manual clock passes the entitlement's
+      // end while it is held; once released the request is refused, not decided on the instant
+      // taken before the read.
+      const until = '2026-01-01T00:01:00.000Z'
+      const { guard, clock, getSnapshot } = rig({ accountId: 'acc-1' })
+      let release: () => void = () => undefined
+      const held = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      let started: () => void = () => undefined
+      const reading = new Promise<void>((resolve) => {
+        started = resolve
+      })
+      getSnapshot.mockImplementation(async () => {
+        started()
+        await held
+        return snapshotWith(premium(true, until))
+      })
+      const pending = outcome(guard)
+      await reading
+      clock.set(until)
+      release()
+      expectRefusal(await pending, 403, SUBSCRIPTION_ERROR_CODES.NO_ACCESS)
+    })
+
+    it.each([
+      ['an invalid date', (): Date => new Date(Number.NaN)],
+      ['an infinite date', (): Date => new Date(Infinity)],
+      ['a value that is not a date', (): Date => Object.create(null)]
+    ])('refuses as source unavailable when the clock gives %s', async (_title, now) => {
+      // Scenario: a stale snapshot whose entitlement has no end, and a clock that cannot say what
+      // time it is; staleness and the end instant cannot be judged, so the guard refuses.
+      const stale = { ...snapshotWith(premium()), fetchedAt: '2020-01-01T00:00:00.000Z' }
+      const { guard } = rig({ accountId: 'acc-1' }, stale, {
+        clock: { now },
+        failPolicy: 'last_known_state'
+      })
+      expectRefusal(await outcome(guard), 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    })
+  })
+
+  describe("a resolver's own HTTP exception", () => {
+    it.each([
+      [
+        'an unauthorized exception thrown',
+        (): never => {
+          throw new UnauthorizedException('no token')
+        },
+        401
+      ],
+      [
+        'a forbidden exception rejected',
+        (): Promise<never> => Promise.reject(new ForbiddenException('banned')),
+        403
+      ],
+      [
+        'status 400',
+        (): never => {
+          throw new HttpException('bad', 400)
+        },
+        400
+      ],
+      [
+        'status 599',
+        (): never => {
+          throw new HttpException('edge', 599)
+        },
+        599
+      ]
+    ])('leaves %s unchanged', async (_title, resolver, status) => {
+      // Scenario: the host's resolver refuses its own way; that exception, with its own body,
+      // leaves the guard, and nothing is read from the store.
+      const { guard, getSnapshot } = rig(null, snapshotWith(premium()), {
+        accountResolver: resolver
+      })
+      const result = await outcome(guard)
+      expect(result).toBeInstanceOf(HttpException)
+      expect((result as HttpException).getStatus()).toBe(status)
+      expect((result as HttpException).getResponse()).not.toEqual(
+        new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE).toJSON()
+      )
+      expect(getSnapshot).not.toHaveBeenCalled()
+    })
+
+    it('returns the very exception the resolver threw', async () => {
+      // Scenario: identity and body of the host's exception are untouched.
+      const thrown = new UnauthorizedException({ hint: 'sign in' })
+      const { guard } = rig(null, snapshotWith(premium()), {
+        accountResolver: (): never => {
+          throw thrown
+        }
+      })
+      expect(await outcome(guard)).toBe(thrown)
+    })
+
+    it.each([199, 200, 302, 399, 600])(
+      'refuses with the catalogue body for an HTTP exception of status %d',
+      async (status) => {
+        // Scenario: a status outside 400 to 599 is not a refusal the host can mean; it is an
+        // unexpected failure.
+        const { guard } = rig(null, snapshotWith(premium()), {
+          accountResolver: (): never => {
+            throw new HttpException('x', status)
+          }
+        })
+        expectRefusal(await outcome(guard), 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+      }
+    )
+
+    it('refuses with the catalogue body for a plain error of the resolver', async () => {
+      // Scenario: only HTTP exceptions pass through.
+      const { guard } = rig(null, snapshotWith(premium()), {
+        accountResolver: (): never => {
+          throw new Error('broke')
+        }
+      })
+      expectRefusal(await outcome(guard), 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    })
+
+    it('does not pass through an HTTP exception of the store or the service', async () => {
+      // Scenario: the snapshot read throws an UnauthorizedException; only the resolver's errors
+      // pass through, so the guard's own refusal answers.
+      const { guard } = rig({ accountId: 'acc-1' }, new UnauthorizedException('store says no'))
+      expectRefusal(await outcome(guard), 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    })
+  })
+
   describe('an unexpected failure', () => {
     it.each([
       [
@@ -364,9 +498,9 @@ describe('EntitlementGuard', () => {
         (): Promise<never> => Promise.reject(new Error('resolver broke'))
       ],
       [
-        'a resolver that throws an HTTP exception of its own',
+        'a resolver that throws an HTTP exception outside 400 to 599',
         (): never => {
-          throw new HttpException({ detail: 'acc-secret-9 is banned' }, 418)
+          throw new HttpException({ detail: 'acc-secret-9 is moved' }, 302)
         }
       ]
     ])('refuses as source unavailable for %s', async (_title, resolver) => {
