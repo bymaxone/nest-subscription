@@ -201,7 +201,7 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Let a host configure the library once, and refuse a wrong configuration at boot with a message that names options and never values.
 - **Scope**:
-  - In: `forRoot` and `forRootAsync`; the options for the adapter and its credentials, the store, the account resolver, the hook, the fail policy, the staleness limits with their 24-hour defaults (D12), the sandbox switch, the optional cache and the controller switches; one aggregated validation error (§6.3); symbol injection tokens; secret containment for credentials and webhook secrets (SEC05); the sandbox option and the refusal to enable it in production without the second confirming option (SEC07); the option shape for two valid webhook secrets (SEC09); loading only the configured adapter (NFR05); the optional peers `@bymax-one/nest-cache` and `@bymax-one/nest-core`.
+  - In: `forRoot` and `forRootAsync`; the options for the store, the account resolver, the hook, the fail policy, the staleness limits with their 24-hour defaults (D12), the sandbox switch, the optional cache and the controller switches; one aggregated validation error (§6.3); symbol injection tokens; the `Secret` holder for credentials and webhook secrets (SEC05, SEC09); the sandbox option and the refusal to enable it in production without the second confirming option (SEC07); loading only the configured adapter (NFR05); the optional peers `@bymax-one/nest-cache` and `@bymax-one/nest-core`.
   - Out: what the options drive (P3 to P8); adapter-specific option validation beyond the common shape, which arrives with each adapter.
 - **Definition of Done**:
   - [ ] A NestJS application boots with the fake source and the in-memory store through both `forRoot` and `forRootAsync`.
@@ -212,7 +212,7 @@ The specification leaves the file layout to this roadmap. These are the director
 - **Context / preconditions**: P1 is done. The fake source and the in-memory store exist, so the module is testable without an adapter.
 - **Rules-of-phase**:
   1. The library reads no environment variable. What "production" means is a value the host passes in.
-  2. Secret containment is applied at the one place the resolved options object is built, and never by redefining a property on an object the host owns.
+  2. Secret containment never redefines a property on an object the host owns.
   3. An absent optional peer is a supported configuration with its own test, not an error path.
 - **References**:
   - Spec §6.2, §6.3, §8, §8.2 (SEC05, SEC07, SEC09), §10.1 (D07, D12)

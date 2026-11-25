@@ -1,7 +1,7 @@
 /**
  * @fileoverview The NestJS module. It resolves and validates the options once, when the
  * application boots, and provides the options, the source, the store and the clock, plus the cache
- * and the observer the host configured, each under its symbol token. An optional integration is
+ * and the observer, each under its symbol token. An optional integration is
  * something the host passes in: the module imports no optional peer at run time.
  * @layer core
  */

@@ -10,14 +10,14 @@
 
 At the start the library has its model, its two ports and its test doubles, and nothing a NestJS application can import as a module.
 
-At the end a host configures the library once, with `SubscriptionModule.forRoot` or `forRootAsync`, and a wrong configuration stops the boot with one message that names every offending option and none of their values. The resolved options hold credentials and webhook secrets so that no serialization, spread or inspection exposes them. The module provides the source, the store, the clock and the optional cache and observer under their tokens. What those options drive (reads, guard, webhooks) arrives in later phases; this phase validates and wires them.
+At the end a host configures the library once, with `SubscriptionModule.forRoot` or `forRootAsync`, and a wrong configuration stops the boot with one message that names every offending option and none of their values. The module provides the source, the store, the clock and the optional cache and observer under their tokens. What those options drive (reads, guard, webhooks) arrives in later phases; this phase validates and wires them.
 
 ---
 
 ## Rules-of-phase
 
 1. The library reads no environment variable. What "production" means is a value the host passes in.
-2. Secret containment is applied at the one place the resolved options object is built, and never by redefining a property on an object the host owns.
+2. Secret containment never redefines a property on an object the host owns.
 3. An absent optional peer (`@bymax-one/nest-cache`, `@bymax-one/nest-core`) is a supported configuration with its own test, not an error path.
 4. `src/core/` never imports an adapter: the host passes a `SubscriptionSource` built by the adapter's factory, which is how an unused adapter loads no code (NFR05).
 5. A validation message names options and never values.
@@ -103,7 +103,7 @@ DELIVERABLES
 
 2. `defaults.ts`: named constants for every default, each with a doc comment citing the decision it comes from.
 
-3. `resolve-options.ts`: `resolveOptions(input)` returning a deeply frozen `ResolvedSubscriptionOptions` built from a copy of the input. It does not validate (task 2.2) and does not hide secrets (task 2.3).
+3. `resolve-options.ts`: `resolveOptions(input)` returning a frozen `ResolvedSubscriptionOptions` built from a copy of the input. It does not validate (task 2.2).
 
 Constraints:
 - Copy the host's object before touching it; never freeze or redefine a property on it.
@@ -259,15 +259,13 @@ REQUIRED READING (only these — do not load more):
 - `docs/tasks/README.md` §8 (the secret rule and the four paths)
 
 TASK
-Implement a `Secret` holder in `src/internal/` and use it for every secret the resolved options and the adapters will hold.
+Implement a `Secret` holder in `src/internal/` and use it for every secret the adapters hold.
 
 DELIVERABLES
 
 1. `secret.ts`: a class holding its values in a `#private` field, with `reveal()` returning the current value, `candidates()` returning every valid value for verification during rotation, a `toJSON` and a `util.inspect.custom` method that return a placeholder. Exported from the internal bundle and from the root, so adapters and hosts share one class.
 
-2. In `resolve-options.ts`: any secret-bearing option exposed through a non-enumerable getter on the resolved object.
-
-3. `test/e2e/secret-containment.e2e-spec.ts`: boots a module with sentinel secrets and applies the four paths to the resolved options and to every provider the module exports. Later phases add their providers to this test.
+2. `test/e2e/secret-containment.e2e-spec.ts`: boots a module with sentinel secrets and applies the four paths to the resolved options and to every provider the module exports. Later phases add their providers to this test.
 
 Constraints:
 - Never rely on TypeScript `private`: it is erased at run time and the property stays enumerable.
@@ -311,7 +309,7 @@ Write `SubscriptionModule`, which validates the options at boot and provides the
 
 - [x] A NestJS application boots with `FakeSubscriptionSource` and `InMemorySubscriptionStore` through `forRoot` and through `forRootAsync` with an injected factory.
 - [x] An invalid configuration fails the boot with the aggregated error, in both forms.
-- [x] The module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER` only when configured.
+- [x] The module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and, through `forRoot`, `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER` only when configured.
 - [x] With `@bymax-one/nest-cache` and `@bymax-one/nest-core` absent from the module graph, the application boots and every test of the phase passes.
 - [x] Every provider uses explicit `@Inject` with a symbol token.
 - [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
@@ -474,6 +472,6 @@ Completion Protocol (after the work is reported done):
 
 - 2.1 ✅ 2026-11-24 — option types, defaults pinned to the specification, frozen resolved form and the system clock
 - 2.2 ✅ 2026-11-24 — table-driven validator that aggregates every offending option into one error without any supplied value
-- 2.3 ✅ 2026-11-24 — Secret holder, non-enumerable secret accessor on the resolved options and the sentinel sweep over the four paths
+- 2.3 ✅ 2026-11-24 — Secret holder and the sentinel sweep over the four paths
 - 2.4 ✅ 2026-11-24 — SubscriptionModule with forRoot and forRootAsync, boot e2e in both forms and the secret sweep over every provider
 - 2.5 ✅ 2026-11-24 — adapter isolation proven on the packed tarball in both formats and the import boundaries enforced per directory by lint
