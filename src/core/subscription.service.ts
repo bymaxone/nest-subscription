@@ -4,7 +4,7 @@
  * waits for the source.
  * @layer core
  */
-import { Inject, Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 
 import {
   SUBSCRIPTION_CLOCK,
@@ -26,6 +26,7 @@ import {
 
 import { SnapshotCache } from './cache/snapshot-cache'
 import { entitlementHeld } from './entitlement-held'
+import { logEvent } from './logging/subscription-logger'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
 import {
   Reconciler,
@@ -44,8 +45,6 @@ import { hasTenant } from './tenant'
  */
 @Injectable()
 export class SubscriptionService {
-  readonly #logger = new Logger(SubscriptionService.name)
-
   constructor(
     @Inject(SUBSCRIPTION_SOURCE) private readonly source: SubscriptionSource,
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
@@ -92,7 +91,9 @@ export class SubscriptionService {
 
   /**
    * Reads the account from the source now and returns the snapshot the store holds afterwards.
-   * Concurrent refreshes of one account share one source call.
+   * Concurrent refreshes of one account share one source call. When the host set a change hook and
+   * the refresh stored changes, the call returns after the hook has returned or failed; a failing
+   * hook never fails the refresh.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be
    * read, with the stored snapshot untouched; with `SUBSCRIPTION_INVALID_INPUT` as
@@ -100,7 +101,8 @@ export class SubscriptionService {
    */
   async refresh(account: AccountReference): Promise<AgedSnapshot> {
     this.#keyOf(account)
-    const { current } = await this.refresher.refresh(account)
+    const { current, delivery } = await this.refresher.refresh(account)
+    await delivery
     return this.#view(current, this.clock.now())
   }
 
@@ -169,7 +171,7 @@ export class SubscriptionService {
   #reportFailure(error: unknown): void {
     const code = error instanceof SubscriptionError ? error.code : null
     try {
-      this.#logger.warn(`Background refresh of a stale snapshot failed: ${code ?? 'unclassified'}.`)
+      logEvent(this.options.logger, 'background_refresh_failed', code)
       // `Promise.resolve` adopts a returned promise or thenable, so its rejection is handled here.
       void Promise.resolve(this.options.observer?.onBackgroundRefreshFailure?.({ code })).catch(
         () => undefined

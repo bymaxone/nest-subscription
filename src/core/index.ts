@@ -49,7 +49,6 @@ export type {
 export { resolveOptions } from './options/resolve-options'
 export { validateOptions } from './options/validate-options'
 export type {
-  BackgroundRefreshFailure,
   ResolvedSubscriptionOptions,
   SubscriptionCache,
   SubscriptionChangeHook,
@@ -57,9 +56,24 @@ export type {
   SubscriptionFailPolicy,
   SubscriptionModuleAsyncOptions,
   SubscriptionModuleOptions,
-  SubscriptionObserverOption,
   SubscriptionOptionsInput
 } from './options/subscription-options.types'
+export type { SubscriptionLogger } from './logging/subscription-logger'
+export type {
+  BackgroundRefreshFailure,
+  CacheEvent,
+  CacheOutcome,
+  ChangeDeliveryEvent,
+  ChangeDeliveryOutcome,
+  GuardDecisionEvent,
+  GuardOutcome,
+  RefreshEvent,
+  RefreshOutcome,
+  SourceErrorEvent,
+  SubscriptionObserver,
+  WebhookEvent,
+  WebhookOutcome
+} from './observer/observer.types'
 export { EntitlementGuard } from './guard/entitlement.guard'
 export { RequiresEntitlement } from './guard/requires-entitlement.decorator'
 export type { AccountResolver, ResolvedAccount } from './guard/account-resolver.types'

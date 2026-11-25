@@ -15,6 +15,7 @@ import {
 import {
   SUBSCRIPTION_ERROR_CODES,
   createEmptySnapshot,
+  type SubscriptionRecord,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 import {
@@ -24,7 +25,12 @@ import {
 } from '@bymax-one/nest-subscription/testing'
 
 import { SnapshotCache } from '../cache/snapshot-cache'
-import type { SubscriptionCache } from '../options/subscription-options.types'
+import { ChangeDispatcher } from '../notifications/change-dispatcher'
+import { ObserverBridge } from '../observer/observer-bridge'
+import type {
+  SubscriptionCache,
+  SubscriptionChangeNotification
+} from '../options/subscription-options.types'
 import { SnapshotRefresher } from './snapshot-refresher'
 
 const ACCOUNT: AccountReference = { accountId: 'acc-1' }
@@ -65,7 +71,12 @@ function setup(): {
   const source = new FakeSubscriptionSource()
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(T0)
-  return { source, store, clock, refresher: new SnapshotRefresher(source, store, clock, null) }
+  return {
+    source,
+    store,
+    clock,
+    refresher: new SnapshotRefresher(source, store, clock, null, null)
+  }
 }
 
 /** The store with some methods replaced; the others reach it unchanged. */
@@ -187,7 +198,7 @@ describe('SnapshotRefresher', () => {
     const { source, store, clock } = setup()
     const putSnapshot = jest.fn(store.putSnapshot.bind(store))
     const counting = delegating(store, { putSnapshot })
-    const refresher = new SnapshotRefresher(source, counting, clock, null)
+    const refresher = new SnapshotRefresher(source, counting, clock, null, null)
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20, 'newer'))
     const first = await refresher.refresh(ACCOUNT)
     clock.advance(1000)
@@ -227,8 +238,8 @@ describe('SnapshotRefresher', () => {
     // Scenario: two refreshers share a store, as two processes would. The first read starts, is
     // held and returns older data; the second starts later, finishes first with newer data.
     const { source, store, clock } = setup()
-    const slow = new SnapshotRefresher(source, store, clock, null)
-    const fast = new SnapshotRefresher(source, store, clock, null)
+    const slow = new SnapshotRefresher(source, store, clock, null, null)
+    const fast = new SnapshotRefresher(source, store, clock, null, null)
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10, 'older'))
     const release = source.delayNextRead()
     const slowRefresh = slow.refresh(ACCOUNT)
@@ -255,7 +266,7 @@ describe('SnapshotRefresher', () => {
         return store.putSnapshot(key, snapshot, changes, at)
       }
     })
-    const result = await new SnapshotRefresher(source, racing, clock, null).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(source, racing, clock, null, null).refresh(ACCOUNT)
     expect(result.written).toBe(false)
     expect(result.previous).toBeNull()
     expect(result.current.sourceCustomer?.id).toBe('winner')
@@ -270,7 +281,7 @@ describe('SnapshotRefresher', () => {
       getSnapshot: (): Promise<StoredSnapshot | null> => Promise.resolve(null),
       putSnapshot: () => Promise.resolve(false)
     })
-    const result = await new SnapshotRefresher(source, refusing, clock, null).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(source, refusing, clock, null, null).refresh(ACCOUNT)
     expect(result.written).toBe(false)
     expect(result.current.sourceCustomer?.id).toBe('fetched')
   })
@@ -345,9 +356,9 @@ describe('SnapshotRefresher', () => {
     const { source, store, clock } = setup()
     const failure = new Error('store down')
     const broken = delegating(store, { getSnapshot: () => Promise.reject(failure) })
-    await expect(new SnapshotRefresher(source, broken, clock, null).refresh(ACCOUNT)).rejects.toBe(
-      failure
-    )
+    await expect(
+      new SnapshotRefresher(source, broken, clock, null, null).refresh(ACCOUNT)
+    ).rejects.toBe(failure)
   })
 })
 
@@ -378,7 +389,8 @@ describe('SnapshotRefresher with a cache', () => {
       source,
       store,
       clock,
-      new SnapshotCache(cache, 30_000, clock)
+      new SnapshotCache(cache, 30_000, clock),
+      null
     )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     let settled = false
@@ -401,7 +413,8 @@ describe('SnapshotRefresher with a cache', () => {
       source,
       store,
       clock,
-      new SnapshotCache(cache, 30_000, clock)
+      new SnapshotCache(cache, 30_000, clock),
+      null
     )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20))
     await refresher.refresh(ACCOUNT)
@@ -423,7 +436,8 @@ describe('SnapshotRefresher with a cache', () => {
       source,
       store,
       clock,
-      new SnapshotCache(cache, 30_000, clock)
+      new SnapshotCache(cache, 30_000, clock),
+      null
     )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     await expect(refresher.refresh(ACCOUNT)).resolves.toMatchObject({ written: true })
@@ -543,7 +557,7 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
     }
     const { source, store, clock } = setup()
     const snapshotCache = new SnapshotCache(cache, 30_000, clock)
-    const refresher = new SnapshotRefresher(source, store, clock, snapshotCache)
+    const refresher = new SnapshotRefresher(source, store, clock, snapshotCache, null)
     const load = async (): Promise<SubscriptionSnapshot | null> => stored(store, TENANTED)
     source.setAccount(TENANTED, { ...snapshotOf(TENANTED, T10), tenantId: 'two' })
     await refresher.refresh(TENANTED).catch(() => undefined)
@@ -567,9 +581,238 @@ describe('SnapshotRefresher with a stored snapshot that cannot be read', () => {
       getSnapshot: () => Promise.resolve({ snapshot: corrupt, pendingChanges: [] })
     })
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20, 'good'))
-    const result = await new SnapshotRefresher(source, reading, clock, null).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(source, reading, clock, null, null).refresh(ACCOUNT)
     expect(result.previous).toBeNull()
     expect(result.written).toBe(true)
     expect(result.current.sourceCustomer?.id).toBe('good')
+  })
+})
+
+const RECORD: SubscriptionRecord = {
+  subscriptionReference: 'sub-1',
+  status: 'active',
+  givesAccess: true,
+  willRenew: 'yes',
+  origin: 'app_store',
+  environment: 'production',
+  productReference: 'pro_monthly',
+  billingInterval: 'P1M',
+  currentPeriodStart: '2026-01-01T00:00:00.000Z',
+  currentPeriodEnd: '2026-02-01T00:00:00.000Z',
+  accessUntil: '2026-02-01T00:00:00.000Z',
+  billingIssueSince: null,
+  cancelledAt: null,
+  refundedAt: null,
+  managementReference: null
+}
+
+/** A snapshot with one subscription whose period ends at the given instant. */
+function subscribed(
+  sourceUpdatedAt: string,
+  periodEnd = RECORD.currentPeriodEnd
+): SubscriptionSnapshot {
+  return {
+    ...snapshotOf(ACCOUNT, sourceUpdatedAt),
+    subscriptions: [{ ...RECORD, currentPeriodEnd: periodEnd }]
+  }
+}
+
+/** A dispatcher over a hook and a store, whose log lines are collected. */
+function dispatcherOver(
+  hook: (notification: SubscriptionChangeNotification) => unknown,
+  store: SubscriptionStore,
+  clock: ManualClock,
+  lines: string[] = []
+): ChangeDispatcher {
+  const logger = { warn: (message: string): void => void lines.push(message) }
+  return new ChangeDispatcher(hook, store, logger, new ObserverBridge(null, clock))
+}
+
+/** A refresher with a change dispatcher over a hook, with the log lines it produces. */
+function withHook(hook: (notification: SubscriptionChangeNotification) => unknown): {
+  source: FakeSubscriptionSource
+  store: InMemorySubscriptionStore
+  clock: ManualClock
+  refresher: SnapshotRefresher
+  lines: string[]
+} {
+  const { source, store, clock } = setup()
+  const lines: string[] = []
+  const dispatcher = dispatcherOver(hook, store, clock, lines)
+  const refresher = new SnapshotRefresher(source, store, clock, null, dispatcher)
+  return { source, store, clock, lines, refresher }
+}
+
+describe('SnapshotRefresher change notifications', () => {
+  it('stores the changes with the snapshot in one write', async () => {
+    // Scenario: the first refresh finds a subscription; the store receives the `started` change in
+    // the same putSnapshot call as the snapshot, and nowhere else.
+    const { source, store, clock, refresher } = withHook(jest.fn())
+    const putSnapshot = jest.spyOn(store, 'putSnapshot')
+    source.setAccount(ACCOUNT, subscribed(T10))
+    clock.set(T20)
+    const result = await refresher.refresh(ACCOUNT)
+    await result.delivery
+    expect(putSnapshot).toHaveBeenCalledTimes(1)
+    expect(putSnapshot.mock.calls[0]?.[2]).toStrictEqual(result.changes)
+    expect(result.changes.map((change) => change.kind)).toStrictEqual(['started'])
+  })
+
+  it('calls the hook with the previous snapshot, the new one and the changes, then clears them', async () => {
+    // Scenario: a renewal between two refreshes reaches the hook once and leaves nothing pending.
+    const hook = jest.fn()
+    const { source, store, clock, refresher } = withHook(hook)
+    source.setAccount(ACCOUNT, subscribed(T10))
+    await (
+      await refresher.refresh(ACCOUNT)
+    ).delivery
+    hook.mockClear()
+    clock.advance(1000)
+    source.setAccount(ACCOUNT, subscribed(T20, '2026-03-01T00:00:00.000Z'))
+    const result = await refresher.refresh(ACCOUNT)
+    await result.delivery
+    expect(hook).toHaveBeenCalledTimes(1)
+    expect(hook).toHaveBeenCalledWith({
+      previous: result.previous,
+      current: result.current,
+      changes: result.changes,
+      redelivery: false
+    })
+    expect(result.changes.map((change) => change.kind)).toStrictEqual(['renewed'])
+    expect((await store.getSnapshot(encodeAccountKey(ACCOUNT)))?.pendingChanges).toStrictEqual([])
+  })
+
+  it('does not call the hook until the store write has resolved', async () => {
+    // Scenario: the write is held; the hook has not run, and it runs after the write is released.
+    const hook = jest.fn()
+    const { source, store, clock } = setup()
+    let release: () => void = () => undefined
+    const slow = delegating(store, {
+      putSnapshot: async (key, snapshot, changes, at) => {
+        await new Promise<void>((resolve) => {
+          release = resolve
+        })
+        return store.putSnapshot(key, snapshot, changes, at)
+      }
+    })
+    const refresher = new SnapshotRefresher(
+      source,
+      slow,
+      clock,
+      null,
+      dispatcherOver(hook, slow, clock)
+    )
+    source.setAccount(ACCOUNT, subscribed(T10))
+    const refreshing = refresher.refresh(ACCOUNT)
+    await flush()
+    expect(hook).not.toHaveBeenCalled()
+    release()
+    await (
+      await refreshing
+    ).delivery
+    expect(hook).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not call the hook when the store refuses the write', async () => {
+    // Scenario: a newer snapshot is already stored, so the write returns false and no change exists.
+    const hook = jest.fn()
+    const { source, store, clock } = setup()
+    const refusing = delegating(store, { putSnapshot: () => Promise.resolve(false) })
+    const refresher = new SnapshotRefresher(
+      source,
+      refusing,
+      clock,
+      null,
+      dispatcherOver(hook, refusing, clock)
+    )
+    source.setAccount(ACCOUNT, subscribed(T10))
+    const result = await refresher.refresh(ACCOUNT)
+    await result.delivery
+    expect(result.written).toBe(false)
+    expect(result.changes).toStrictEqual([])
+    expect(hook).not.toHaveBeenCalled()
+  })
+
+  it('does not call the hook when the stored snapshot is newer than the one read', async () => {
+    // Scenario: the source answers with an older state than the store holds.
+    const hook = jest.fn()
+    const { source, refresher } = withHook(hook)
+    source.setAccount(ACCOUNT, subscribed(T20))
+    await (
+      await refresher.refresh(ACCOUNT)
+    ).delivery
+    hook.mockClear()
+    source.setAccount(ACCOUNT, subscribed(T10, '2026-03-01T00:00:00.000Z'))
+    const result = await refresher.refresh(ACCOUNT)
+    await result.delivery
+    expect(result.written).toBe(false)
+    expect(hook).not.toHaveBeenCalled()
+  })
+
+  it('calls no hook for a refresh that changes nothing', async () => {
+    // Scenario: the same state is read again later; only the fetch instant differs.
+    const hook = jest.fn()
+    const { source, store, clock, refresher } = withHook(hook)
+    source.setAccount(ACCOUNT, subscribed(T10))
+    await (
+      await refresher.refresh(ACCOUNT)
+    ).delivery
+    hook.mockClear()
+    clock.advance(60_000)
+    const result = await refresher.refresh(ACCOUNT)
+    await result.delivery
+    expect(result.changes).toStrictEqual([])
+    expect(hook).not.toHaveBeenCalled()
+    expect((await store.getSnapshot(encodeAccountKey(ACCOUNT)))?.pendingChanges).toStrictEqual([])
+  })
+
+  it('resolves before a slow hook finishes, and delivery settles when it does', async () => {
+    // Scenario: a webhook-style caller that does not wait for the host's reaction.
+    let release: () => void = () => undefined
+    const hook = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        })
+    )
+    const { source, refresher } = withHook(hook)
+    source.setAccount(ACCOUNT, subscribed(T10))
+    const result = await refresher.refresh(ACCOUNT)
+    let settled = false
+    void result.delivery.then(() => {
+      settled = true
+    })
+    await flush()
+    expect(hook).toHaveBeenCalledTimes(1)
+    expect(settled).toBe(false)
+    release()
+    await result.delivery
+    expect(settled).toBe(true)
+  })
+
+  it('keeps the stored snapshot and the pending changes when the hook throws', async () => {
+    // Scenario: the hook fails; the refresh still resolves with the snapshot written.
+    const { source, store, refresher, lines } = withHook(() => {
+      throw new Error('boom')
+    })
+    source.setAccount(ACCOUNT, subscribed(T10))
+    const result = await refresher.refresh(ACCOUNT)
+    await result.delivery
+    const held = await store.getSnapshot(encodeAccountKey(ACCOUNT))
+    expect(result.written).toBe(true)
+    expect(held?.snapshot).toStrictEqual(result.current)
+    expect(held?.pendingChanges).toStrictEqual(result.changes)
+    expect(lines).toHaveLength(1)
+  })
+
+  it('stores no change when the host set no hook', async () => {
+    // Scenario: no dispatcher; a subscription appears and the store receives an empty change list.
+    const { source, store, clock } = setup()
+    const putSnapshot = jest.spyOn(store, 'putSnapshot')
+    source.setAccount(ACCOUNT, subscribed(T10))
+    const result = await new SnapshotRefresher(source, store, clock, null, null).refresh(ACCOUNT)
+    await result.delivery
+    expect(putSnapshot.mock.calls[0]?.[2]).toStrictEqual([])
+    expect(result.changes).toStrictEqual([])
   })
 })

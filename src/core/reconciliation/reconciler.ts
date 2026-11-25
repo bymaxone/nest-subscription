@@ -1,7 +1,8 @@
 /**
- * @fileoverview Reconciliation: refreshes the accounts whose snapshot is older than a threshold,
- * in a bounded batch and under a rate limit, for the host to call from its own scheduler. It
- * starts no timer and no job; a run does its work when called and returns.
+ * @fileoverview Reconciliation: delivers the changes still marked as not delivered, then refreshes
+ * the accounts whose snapshot is older than a threshold, each in a bounded batch and the second
+ * under a rate limit, for the host to call from its own scheduler. It starts no timer and no job;
+ * a run does its work when called and returns.
  * @layer core
  */
 import { Inject, Injectable } from '@nestjs/common'
@@ -19,6 +20,7 @@ import {
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import { RateLimiter, type Wait } from './rate-limiter'
+import { ChangeDispatcher } from '../notifications/change-dispatcher'
 import type { ResolvedSubscriptionOptions } from '../options/subscription-options.types'
 import { SnapshotRefresher } from '../refresh/snapshot-refresher'
 import { hasTenant } from '../tenant'
@@ -39,7 +41,10 @@ export interface ReconcileOptions {
    * Defaults to the maximum snapshot age of the module.
    */
   readonly olderThanMs?: number
-  /** The most accounts one run attempts, a positive whole number. Defaults to 100. */
+  /**
+   * The most accounts one run attempts, a positive whole number. Defaults to 100. It bounds the
+   * accounts whose pending changes are delivered again and, separately, the accounts refreshed.
+   */
   readonly batchSize?: number
   /**
    * The most source reads one run starts in any second, a positive whole number. Defaults to 10.
@@ -90,20 +95,26 @@ export class Reconciler {
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
     @Inject(SUBSCRIPTION_CLOCK) private readonly clock: Clock,
     @Inject(SnapshotRefresher) private readonly refresher: SnapshotRefresher,
-    @Inject(SUBSCRIPTION_OPTIONS) private readonly options: ResolvedSubscriptionOptions
+    @Inject(SUBSCRIPTION_OPTIONS) private readonly options: ResolvedSubscriptionOptions,
+    @Inject(ChangeDispatcher) private readonly dispatcher: ChangeDispatcher | null
   ) {}
 
   /**
-   * Runs one reconciliation: lists the accounts fetched before the threshold, refreshes them in
-   * order up to the batch bound and the rate, and reports what it did. One account's failure does
+   * Runs one reconciliation. First it delivers again, up to the batch bound, the changes that are
+   * still marked as not delivered, as redeliveries with the same keys and no previous snapshot; a
+   * change whose hook call fails stays marked for the next run, and the run goes on. Then it lists
+   * the accounts fetched before the threshold, refreshes them in order up to the batch bound and
+   * the rate, and reports what it did. One account's failure does
    * not end the run. The threshold is fixed when the run starts, so an account refreshed during it
    * is not met again.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for an option out of range,
-   * before anything is listed or read. A failure of the store's listing rejects the run.
+   * before anything is listed or read. A failure of the store's listing, of pending changes or of
+   * stale snapshots, rejects the run.
    */
   async run(input: ReconcileOptions): Promise<ReconcileResult> {
     const config = this.#configure(input)
+    await this.#deliverPending(config.batchSize)
     const limiter = new RateLimiter(
       this.clock,
       input.maxCallsPerSecond ?? DEFAULT_MAX_CALLS_PER_SECOND,
@@ -124,6 +135,27 @@ export class Reconciler {
       budget -= page.keys.length
       cursor = page.nextCursor
       if (cursor === null) return { ...tally, cursor }
+    }
+  }
+
+  /**
+   * Delivers again the pending changes of up to `batchSize` accounts, a page at a time. An account
+   * whose hook call fails stays pending and is not met again in this run, and one whose key the
+   * library cannot use is skipped.
+   */
+  async #deliverPending(batchSize: number): Promise<void> {
+    if (this.dispatcher === null) return
+    let budget = batchSize
+    let cursor: string | null = null
+    while (budget > 0) {
+      const page = await this.store.listKeysWithPendingChanges(Math.min(PAGE_SIZE, budget), cursor)
+      for (const key of page.keys) {
+        const account = this.#accountOf(key)
+        if (account !== null) await this.dispatcher.redeliver(key, account)
+      }
+      budget -= page.keys.length
+      cursor = page.nextCursor
+      if (cursor === null) return
     }
   }
 
@@ -168,7 +200,10 @@ export class Reconciler {
   /** Refreshes one account and counts the outcome; a failure is counted and goes no further. */
   async #refreshOne(account: AccountReference, tally: Tally): Promise<void> {
     try {
-      await this.refresher.refresh(account)
+      const { delivery } = await this.refresher.refresh(account)
+      // The run is done with an account when the host has heard of its changes, so a run never
+      // leaves a hook call running after it returns.
+      await delivery
       tally.refreshed += 1
     } catch {
       tally.failed += 1

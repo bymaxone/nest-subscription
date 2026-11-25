@@ -26,10 +26,8 @@ import {
 
 import { resolveOptions } from './options/resolve-options'
 import { SnapshotCache } from './cache/snapshot-cache'
-import type {
-  SubscriptionCache,
-  SubscriptionObserverOption
-} from './options/subscription-options.types'
+import type { SubscriptionObserver } from './observer/observer.types'
+import type { SubscriptionCache } from './options/subscription-options.types'
 import { Reconciler } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
@@ -79,7 +77,7 @@ function snapshotOf(account: AccountReference, givesAccess: boolean): Subscripti
 interface SetupOptions {
   readonly multiTenant?: boolean
   readonly maxSnapshotAgeMs?: number
-  readonly observer?: SubscriptionObserverOption
+  readonly observer?: SubscriptionObserver
   readonly cache?: SubscriptionCache
 }
 
@@ -97,7 +95,7 @@ function setup(extra: SetupOptions = {}): {
   const options = resolveOptions({ source, store, clock, accountResolver: () => null, ...extra })
   const snapshotCache =
     extra.cache === undefined ? null : new SnapshotCache(extra.cache, 30_000, clock)
-  const refresher = new SnapshotRefresher(source, store, clock, snapshotCache)
+  const refresher = new SnapshotRefresher(source, store, clock, snapshotCache, null)
   return {
     source,
     store,
@@ -110,7 +108,7 @@ function setup(extra: SetupOptions = {}): {
       options,
       refresher,
       snapshotCache,
-      new Reconciler(store, clock, refresher, options)
+      new Reconciler(store, clock, refresher, options, null)
     )
   }
 }

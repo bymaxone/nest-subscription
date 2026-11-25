@@ -1,6 +1,6 @@
 # Phase 5 — Change notifications and observer
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P5 — change-notifications-and-observer
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -40,7 +40,7 @@ At the end every stored change is compared with the previous snapshot into a typ
 | --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 5.1 | Compare two snapshots into the typed change list          | ✅ Done | P0       | L    | —          |
 | 5.2 | Give each change a stable key                             | ✅ Done | P0       | S    | 5.1        |
-| 5.3 | Call the host hook after the write                        | 📋 ToDo | P0       | M    | 5.2        |
+| 5.3 | Call the host hook after the write                        | ✅ Done | P0       | M    | 5.2        |
 | 5.4 | Add the observer                                          | 📋 ToDo | P1       | M    | 5.3        |
 | 5.5 | Prove that logs and observer payloads carry no identifier | 📋 ToDo | P0       | S    | 5.4        |
 
@@ -214,7 +214,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 5.3 — Call the host hook after the write
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 5.2
@@ -225,16 +225,16 @@ Store the changes with the snapshot as not delivered, call the host hook after t
 
 #### Acceptance criteria
 
-- [ ] The refresher computes the change list before the write and passes it to `putSnapshot`, so the snapshot and its undelivered changes are stored in one write.
-- [ ] After a refresh that wrote a changed snapshot, the hook receives the previous snapshot, the new one and the change list, and the delivered change keys are cleared from the store.
-- [ ] A crash simulated between the write and the hook leaves the changes pending, and the next reconciliation run delivers them: the hook is called with the same change keys.
-- [ ] Reconciliation delivers pending changes in bounded pages, and clears only the keys whose hook call returned.
-- [ ] The hook is never invoked when the write did not happen, and never before the write resolved.
-- [ ] A hook that throws or rejects leaves the stored snapshot in place and the changes pending; the failure is logged with its error code and reported to the observer hook point.
-- [ ] A refresh that changes nothing calls no hook.
-- [ ] A redelivery is marked as one and gives the hook the new snapshot and the changes, with no previous snapshot (D20), pinned by a test.
-- [ ] The caller of `refresh` can choose not to wait for the hook, which is what the webhook receiver will need.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The refresher computes the change list before the write and passes it to `putSnapshot`, so the snapshot and its undelivered changes are stored in one write.
+- [x] After a refresh that wrote a changed snapshot, the hook receives the previous snapshot, the new one and the change list, and the delivered change keys are cleared from the store.
+- [x] A crash simulated between the write and the hook leaves the changes pending, and the next reconciliation run delivers them: the hook is called with the same change keys.
+- [x] Reconciliation delivers pending changes in bounded pages, and clears only the keys whose hook call returned.
+- [x] The hook is never invoked when the write did not happen, and never before the write resolved.
+- [x] A hook that throws or rejects leaves the stored snapshot in place and the changes pending; the failure is logged with its error code and reported to the observer hook point.
+- [x] A refresh that changes nothing calls no hook.
+- [x] A redelivery is marked as one and gives the hook the new snapshot and the changes, with no previous snapshot (D20), pinned by a test.
+- [x] The caller of `refresh` can choose not to wait for the hook, which is what the webhook receiver will need.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -484,3 +484,4 @@ Completion Protocol (after the work is reported done):
 
 - 5.1 ✅ 2026-11-25 — the pure comparison of two snapshots into the typed change candidates, one rule group per concern
 - 5.2 ✅ 2026-11-25 — the stable change key, hashed field by field from snapshot data, attached to every change by diffSnapshots
+- 5.3 ✅ 2026-11-25 — changes stored with the snapshot as pending, the host hook called after the write, redelivery from reconciliation without the previous snapshot

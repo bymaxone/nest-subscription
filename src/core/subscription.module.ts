@@ -21,6 +21,8 @@ import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import { SnapshotCache } from './cache/snapshot-cache'
 import { EntitlementGuard } from './guard/entitlement.guard'
+import { ChangeDispatcher } from './notifications/change-dispatcher'
+import { ObserverBridge } from './observer/observer-bridge'
 import { resolveOptions } from './options/resolve-options'
 import type {
   ResolvedSubscriptionOptions,
@@ -101,6 +103,30 @@ const SNAPSHOT_CACHE_PROVIDER: FactoryProvider = {
   inject: [{ token: SUBSCRIPTION_CACHE, optional: true }, SUBSCRIPTION_OPTIONS]
 }
 
+/** The bridge to the host's observer; a no-op when the host set none. */
+const OBSERVER_BRIDGE_PROVIDER: FactoryProvider = {
+  provide: ObserverBridge,
+  useFactory: (options: ResolvedSubscriptionOptions): ObserverBridge =>
+    new ObserverBridge(options.observer, options.clock),
+  inject: [SUBSCRIPTION_OPTIONS]
+}
+
+/**
+ * The change dispatcher: built when the host set a hook, and `null` when it did not, so a host
+ * without a hook stores no change and runs no delivery code.
+ */
+const CHANGE_DISPATCHER_PROVIDER: FactoryProvider = {
+  provide: ChangeDispatcher,
+  useFactory: (
+    options: ResolvedSubscriptionOptions,
+    bridge: ObserverBridge
+  ): ChangeDispatcher | null =>
+    options.onChange === null
+      ? null
+      : new ChangeDispatcher(options.onChange, options.store, options.logger, bridge),
+  inject: [SUBSCRIPTION_OPTIONS, ObserverBridge]
+}
+
 /**
  * Puts the pieces together as a dynamic module; every token provider it lists is exported, and
  * so are the service and the guard. The refresher is provided for the library's own use and is not exported.
@@ -114,7 +140,13 @@ function assemble(
     module: SubscriptionModule,
     global: global ?? false,
     imports: imports ?? [],
-    providers: [...providers, SNAPSHOT_CACHE_PROVIDER, ...OWN_CLASSES],
+    providers: [
+      ...providers,
+      SNAPSHOT_CACHE_PROVIDER,
+      OBSERVER_BRIDGE_PROVIDER,
+      CHANGE_DISPATCHER_PROVIDER,
+      ...OWN_CLASSES
+    ],
     exports: [
       ...providers.map((provider) => provider.provide),
       SubscriptionService,

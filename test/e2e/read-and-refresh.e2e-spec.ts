@@ -146,7 +146,7 @@ describe('read and refresh: the refresher in a running application', () => {
     // first is held and returns an older state after the second has stored a newer one.
     const { app, source, store, clock } = await boot()
     const slow = app.get(SnapshotRefresher)
-    const fast = new SnapshotRefresher(source, store, clock, null)
+    const fast = new SnapshotRefresher(source, store, clock, null, null)
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     const release = source.delayNextRead()
     const late = slow.refresh(ACCOUNT)
@@ -176,7 +176,7 @@ describe('read and refresh: the refresher in a running application', () => {
       }
     })
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
-    const late = new SnapshotRefresher(source, gated, clock, null).refresh(ACCOUNT)
+    const late = new SnapshotRefresher(source, gated, clock, null, null).refresh(ACCOUNT)
     for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, '2026-01-01T00:00:20.000Z'))
     await app.get(SnapshotRefresher).refresh(ACCOUNT)
@@ -206,7 +206,7 @@ describe('read and refresh: the refresher in a running application', () => {
       putSnapshot: () => Promise.resolve(false)
     })
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
-    const result = await new SnapshotRefresher(source, refusing, clock, null).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(source, refusing, clock, null, null).refresh(ACCOUNT)
     expect(result.written).toBe(false)
     expect(result.current.sourceUpdatedAt).toBe(T10)
     await app.close()

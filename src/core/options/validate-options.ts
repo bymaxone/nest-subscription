@@ -114,6 +114,7 @@ const RULES: readonly Rule[] = [
   optional('multiTenant', isBoolean),
   optional('cache', (value) => hasMethods(value, CACHE_METHODS)),
   optional('observer', isObject),
+  optional('logger', (value) => hasMethods(value, ['warn'])),
   optional('clock', (value) => hasMethods(value, ['now']))
 ]
 

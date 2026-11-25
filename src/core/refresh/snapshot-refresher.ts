@@ -20,12 +20,18 @@ import {
 import {
   SUBSCRIPTION_ERROR_CODES,
   parseInstant,
+  type SubscriptionChange,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
 import { SingleFlight } from './single-flight'
 import { SnapshotCache } from '../cache/snapshot-cache'
+import { ChangeDispatcher } from '../notifications/change-dispatcher'
+import { diffSnapshots } from '../notifications/diff-snapshots'
 import { isSnapshotFor } from '../snapshot-fit'
+
+/** The changes of a refresh that stored nothing, and of one with no hook to tell. */
+const NO_CHANGES: readonly SubscriptionChange[] = Object.freeze([])
 
 /** What one refresh did. */
 export interface RefreshResult {
@@ -35,6 +41,17 @@ export interface RefreshResult {
   readonly current: SubscriptionSnapshot
   /** Whether the store took the snapshot just read. `false` means a newer one was kept. */
   readonly written: boolean
+  /**
+   * The changes the write stored with the snapshot, each still pending until the host's hook
+   * returned for it; empty when nothing was written or the host set no hook.
+   */
+  readonly changes: readonly SubscriptionChange[]
+  /**
+   * Settles when the host's hook has been called for those changes and they were cleared, or the
+   * call failed. It never rejects, and it is already running when the refresh resolves: a caller
+   * that does not want to wait for the host's reaction, such as a webhook answer, ignores it.
+   */
+  readonly delivery: Promise<void>
 }
 
 /** The instant a snapshot is ordered by: what the source says, or else when it was read. */
@@ -54,7 +71,8 @@ export class SnapshotRefresher {
     @Inject(SUBSCRIPTION_SOURCE) private readonly source: SubscriptionSource,
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
     @Inject(SUBSCRIPTION_CLOCK) private readonly clock: Clock,
-    @Inject(SnapshotCache) private readonly cache: SnapshotCache | null
+    @Inject(SnapshotCache) private readonly cache: SnapshotCache | null,
+    @Inject(ChangeDispatcher) private readonly dispatcher: ChangeDispatcher | null
   ) {}
 
   /** The number of accounts being refreshed now. */
@@ -82,14 +100,25 @@ export class SnapshotRefresher {
     const orderedAt = orderInstant(snapshot)
     const previous = await this.#stored(key, account)
     if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {
-      return { previous, current: previous, written: false }
+      return this.#kept(previous, previous)
     }
-    if (await this.store.putSnapshot(key, snapshot, [], orderedAt)) {
+    // The changes are computed from the two snapshots before the write and stored with the
+    // snapshot in that one write, so a crash after it cannot lose them.
+    const changes = this.dispatcher === null ? NO_CHANGES : diffSnapshots(previous, snapshot)
+    if (await this.store.putSnapshot(key, snapshot, changes, orderedAt)) {
       await this.cache?.invalidate(account)
-      return { previous, current: snapshot, written: true }
+      // The hook is called only now: the write has succeeded and the cache no longer holds the old
+      // snapshot.
+      const delivery =
+        this.dispatcher?.deliver(key, previous, snapshot, changes) ?? Promise.resolve()
+      return { previous, current: snapshot, written: true, changes, delivery }
     }
-    const kept = (await this.#stored(key, account)) ?? snapshot
-    return { previous, current: kept, written: false }
+    return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot)
+  }
+
+  /** The result of a refresh whose snapshot was not stored because a newer one is. */
+  #kept(previous: SubscriptionSnapshot | null, current: SubscriptionSnapshot): RefreshResult {
+    return { previous, current, written: false, changes: NO_CHANGES, delivery: Promise.resolve() }
   }
 
   /** The snapshot the store holds for the account, or `null` when none or one that does not fit. */

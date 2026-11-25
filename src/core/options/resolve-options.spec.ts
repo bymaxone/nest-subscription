@@ -3,6 +3,8 @@
  * resolved form is frozen, complete and built without touching the host's object.
  * @layer core
  */
+import { Logger } from '@nestjs/common'
+
 import { inspect } from 'node:util'
 
 import { Secret } from '@bymax-one/nest-subscription/internal'
@@ -75,6 +77,7 @@ describe('resolveOptions', () => {
     const onChange = jest.fn()
     const cache = { get: jest.fn(), set: jest.fn(), delete: jest.fn() }
     const observer = {}
+    const logger = { warn: jest.fn() }
     const clock = { now: () => new Date(0) }
     const input: SubscriptionOptionsInput = {
       ...minimal(),
@@ -88,6 +91,7 @@ describe('resolveOptions', () => {
       isProduction: true,
       cache,
       observer,
+      logger,
       eventRetentionMs: 3000,
       webhookController: true,
       webhookPath: 'hooks/billing',
@@ -109,12 +113,18 @@ describe('resolveOptions', () => {
       isProduction: true,
       cache,
       observer,
+      logger,
       eventRetentionMs: 3000,
       webhookController: true,
       webhookPath: 'hooks/billing',
       multiTenant: true,
       clock
     })
+  })
+
+  it('defaults the logger to a NestJS Logger that has a warn method', () => {
+    // Scenario: no logger is given; the resolved one is a NestJS Logger the library can warn on.
+    expect(resolveOptions(minimal()).logger).toBeInstanceOf(Logger)
   })
 
   it('freezes the resolved object', () => {
