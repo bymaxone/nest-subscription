@@ -5,6 +5,7 @@
  */
 import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 
+import { purchasesOf } from './purchases'
 import { rawChange, type RawChange, type SubscriptionPair } from './raw-change'
 
 /** `refunded` when a refund instant appears, told apart by that instant. */
@@ -15,9 +16,17 @@ export function refundChanges({ previous, current }: SubscriptionPair): RawChang
   return []
 }
 
+/** The references of every subscription and every non-renewing purchase a snapshot holds. */
+function referencesOf(snapshot: SubscriptionSnapshot): string[] {
+  return [
+    ...snapshot.subscriptions.map((subscription) => subscription.subscriptionReference),
+    ...purchasesOf(snapshot).map((purchase) => purchase.purchaseReference)
+  ]
+}
+
 /**
  * At most one `transferred` for the account: the source's customer reference changed, or
- * subscriptions the previous snapshot held are gone. It is told apart by the customer reference
+ * subscriptions or purchases the previous snapshot held are gone. It is told apart by the customer reference
  * now held and by the references that left, in sorted order, so the order of the lists is not
  * part of it. A first contact has nothing to move away from.
  */
@@ -26,11 +35,8 @@ export function transferChanges(
   current: SubscriptionSnapshot
 ): RawChange[] {
   if (previous === null) return []
-  const held = new Set(
-    current.subscriptions.map((subscription) => subscription.subscriptionReference)
-  )
-  const gone = previous.subscriptions
-    .map((subscription) => subscription.subscriptionReference)
+  const held = new Set(referencesOf(current))
+  const gone = referencesOf(previous)
     .filter((reference) => !held.has(reference))
     .sort()
   const customer = current.sourceCustomer?.id

@@ -1,15 +1,12 @@
 /**
  * @fileoverview Reads one customer from version 2 of the RevenueCat REST API and builds the
  * snapshot. A customer RevenueCat does not know is the empty snapshot, not an error. The
- * entitlements come from the grantors the source names (each subscription's own entitlement
- * list), the sandbox filter runs before they are resolved, and access is the source's flag.
+ * entitlements come from the grantors the source names (each subscription's and each purchase's
+ * own entitlement list), the sandbox filter runs before they are resolved, and access is the
+ * source's flag.
  * @layer revenuecat
  */
-import {
-  SubscriptionError,
-  type AccountReference,
-  type Clock
-} from '@bymax-one/nest-subscription/internal'
+import { SubscriptionError, type AccountReference } from '@bymax-one/nest-subscription/internal'
 import {
   createEmptySnapshot,
   resolveEntitlements,
@@ -18,31 +15,13 @@ import {
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
-import type { RevenueCatHttp } from '../revenuecat-http'
 import { encodeSegment } from '../revenuecat-http'
 import { listAll } from './list-all'
 import { mapSubscription } from './map-subscription'
 import { parseEntitlementNames, parseSubscription, type ParsedSubscription } from './parse-customer'
-import { applySandboxFilter, type GrantedRecords } from './sandbox-filter'
-
-/** What a read needs from the adapter. */
-export interface RevenueCatReadContext {
-  /** The client of the REST API. */
-  readonly http: RevenueCatHttp
-  /** The RevenueCat project. */
-  readonly projectId: string
-  /** The name stored on every snapshot. */
-  readonly sourceName: string
-  /** Whether sandbox purchases grant access. */
-  readonly allowSandbox: boolean
-  /** The time source of the read. */
-  readonly clock: Clock
-}
-
-/** The error of a response that cannot be used: the source could not be read. */
-function unreadable(): SubscriptionError {
-  return new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
-}
+import { unreadable, type RevenueCatReadContext } from './read-context'
+import { readPurchases } from './read-purchases'
+import { applySandboxFilter, filterSandboxPurchases, type GrantedRecords } from './sandbox-filter'
 
 /**
  * The entitlement names a subscription grants. The nested list that came with it is used when it
@@ -86,6 +65,33 @@ async function readGranted(
   return { records, grants }
 }
 
+/** The snapshot of a customer RevenueCat knows. */
+async function buildSnapshot(
+  context: RevenueCatReadContext,
+  account: AccountReference,
+  fetchedAt: string
+): Promise<SubscriptionSnapshot> {
+  const granted = applySandboxFilter(
+    await readGranted(context, account.accountId, fetchedAt),
+    context.allowSandbox
+  )
+  const purchases = filterSandboxPurchases(
+    await readPurchases(context, account.accountId, fetchedAt),
+    context.allowSandbox
+  )
+  return {
+    accountId: account.accountId,
+    ...(account.tenantId === undefined ? {} : { tenantId: account.tenantId }),
+    entitlements: resolveEntitlements(granted.records, granted.grants, purchases).entitlements,
+    subscriptions: granted.records,
+    nonRenewingPurchases: purchases,
+    source: context.sourceName,
+    sourceCustomer: { id: account.accountId },
+    fetchedAt,
+    sourceUpdatedAt: null
+  }
+}
+
 /**
  * Reads the current state of one account.
  *
@@ -100,22 +106,8 @@ export async function readRevenueCatAccount(
   account: AccountReference
 ): Promise<SubscriptionSnapshot> {
   const fetchedAt = context.clock.now().toISOString()
-  const tenant = account.tenantId === undefined ? {} : { tenantId: account.tenantId }
   try {
-    const granted = applySandboxFilter(
-      await readGranted(context, account.accountId, fetchedAt),
-      context.allowSandbox
-    )
-    return {
-      accountId: account.accountId,
-      ...tenant,
-      entitlements: resolveEntitlements(granted.records, granted.grants).entitlements,
-      subscriptions: granted.records,
-      source: context.sourceName,
-      sourceCustomer: { id: account.accountId },
-      fetchedAt,
-      sourceUpdatedAt: null
-    }
+    return await buildSnapshot(context, account, fetchedAt)
   } catch (error) {
     if (
       error instanceof SubscriptionError &&
@@ -123,7 +115,7 @@ export async function readRevenueCatAccount(
     ) {
       return createEmptySnapshot({
         accountId: account.accountId,
-        ...tenant,
+        ...(account.tenantId === undefined ? {} : { tenantId: account.tenantId }),
         source: context.sourceName,
         fetchedAt
       })

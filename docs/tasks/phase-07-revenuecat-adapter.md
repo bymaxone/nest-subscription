@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 6 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 7 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -48,7 +48,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | 7.4 | Read a customer into a snapshot                           | ✅ Done | P0       | L    | 7.2, 7.3   |
 | 7.5 | Verify RevenueCat webhooks                                | ✅ Done | P0       | M    | 7.2        |
 | 7.6 | Parse events and handle identity                          | ✅ Done | P0       | M    | 7.4, 7.5   |
-| 7.8 | Read non-renewing purchases and map them into the model   | 📋 ToDo | P0       | L    | 7.3, 7.4   |
+| 7.8 | Read non-renewing purchases and map them into the model   | ✅ Done | P0       | L    | 7.3, 7.4   |
 | 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6, 7.8   |
 
 ---
@@ -660,7 +660,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.8 — Read non-renewing purchases and map them into the model
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 7.3, 7.4
@@ -671,16 +671,16 @@ Read the one-time and lifetime purchases that RevenueCat reports as granting an 
 
 #### Acceptance criteria
 
-- [ ] `docs/revenuecat-facts.md` is extended with the endpoint, fields and values that report a non-renewing purchase and the entitlement it grants, read from the RevenueCat customer and purchases pages on the day, with their URLs; the unknowns of Appendix A.6 about purchases are resolved or kept explicitly unknown.
-- [ ] The shared model expresses a non-renewing purchase as FR02 describes (what the source calls it, the entitlement it grants, origin, environment, whether it gives access, when access ends or null for a lifetime grant, and when it was refunded), and `resolveEntitlements` counts it beside subscriptions: an entitlement it grants is active while it gives access, with `until` null for a lifetime grant, and the entitlement names the purchase that grants it. Existing exports keep working; any change to a public type is listed in the pull request.
-- [ ] `readAccount` returns the purchases that grant an entitlement, in the snapshot, with the sandbox filter applied to them as to subscriptions (FR13).
-- [ ] A consumable, and a purchase that grants no entitlement, produces no entry and no entitlement.
-- [ ] A recorded, sanitized fixture of a non-renewing purchase that grants an entitlement and one of a lifetime grant exist under `test/fixtures/revenuecat/`; through the service, the first yields an active entitlement with the instant RevenueCat reports and the second with `until` null.
-- [ ] A refunded non-renewing purchase removes the access it granted on the next read, and `diffSnapshots` reports the grant and its removal through the existing change kinds, extended with tests if it did not compare purchases.
-- [ ] `test/e2e/fixtures/revenuecat-stand-in.ts` exists, serves the recorded fixtures at the version 2 paths on a loopback address, and the adapter reads it through its `baseUrl` option in the cases above.
-- [ ] A subscription and a purchase that grant the same entitlement give one active entitlement, with the latest `until`, and null if a lifetime grant is among them.
-- [ ] Table-driven tests cover the resolution over zero, one and several purchases, alone and mixed with subscriptions.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `docs/revenuecat-facts.md` is extended with the endpoint, fields and values that report a non-renewing purchase and the entitlement it grants, read from the RevenueCat customer and purchases pages on the day, with their URLs; the unknowns of Appendix A.6 about purchases are resolved or kept explicitly unknown.
+- [x] The shared model expresses a non-renewing purchase as FR02 describes (what the source calls it, the entitlement it grants, origin, environment, whether it gives access, when access ends or null for a lifetime grant, and when it was refunded), and `resolveEntitlements` counts it beside subscriptions: an entitlement it grants is active while it gives access, with `until` null for a lifetime grant, and the entitlement names the purchase that grants it. Existing exports keep working; any change to a public type is listed in the pull request.
+- [x] `readAccount` returns the purchases that grant an entitlement, in the snapshot, with the sandbox filter applied to them as to subscriptions (FR13).
+- [x] A consumable, and a purchase that grants no entitlement, produces no entry and no entitlement.
+- [x] A recorded, sanitized fixture of a non-renewing purchase that grants an entitlement and one of a lifetime grant exist under `test/fixtures/revenuecat/`; through the service, the first yields an active entitlement with the instant RevenueCat reports and the second with `until` null.
+- [x] A refunded non-renewing purchase removes the access it granted on the next read, and `diffSnapshots` reports the grant and its removal through the existing change kinds, extended with tests if it did not compare purchases.
+- [x] `test/e2e/fixtures/revenuecat-stand-in.ts` exists, serves the recorded fixtures at the version 2 paths on a loopback address, and the adapter reads it through its `baseUrl` option in the cases above.
+- [x] A subscription and a purchase that grant the same entitlement give one active entitlement, with the latest `until`, and null if a lifetime grant is among them.
+- [x] Table-driven tests cover the resolution over zero, one and several purchases, alone and mixed with subscriptions.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -768,3 +768,4 @@ Completion Protocol (after the work is reported done):
 - 7.4 ✅ 2026-11-25 — the read of a customer's subscriptions into a snapshot, with the sandbox filter, paged reads with a bound, and the unknown customer as an empty snapshot
 - 7.5 ✅ 2026-11-25 — both webhook verification methods over the raw bytes with a timestamp tolerance, constant-time comparison, two valid secrets, one refusal value and a header-only report
 - 7.6 ✅ 2026-11-25 — event parsing into the port's notification with transfers, aliases and anonymous identifiers, and the revenueCatSource factory with secrets held in private fields
+- 7.8 ✅ 2026-11-25 — non-renewing purchases that grant an entitlement read, mapped and filtered, the model extended with an optional purchase list that the resolution, the change rules and the fit check count, and the local stand-in

@@ -20,7 +20,8 @@ import type {
   SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
-import { readRevenueCatAccount, type RevenueCatReadContext } from './read/read-account'
+import { readRevenueCatAccount } from './read/read-account'
+import type { RevenueCatReadContext } from './read/read-context'
 import { RevenueCatHttp } from './revenuecat-http'
 import {
   resolveRevenueCatOptions,

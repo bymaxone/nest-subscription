@@ -19,6 +19,7 @@ export type {
 } from './values'
 export type {
   EntitlementState,
+  NonRenewingPurchaseRecord,
   SourceCustomerReference,
   SubscriptionRecord,
   SubscriptionSnapshot

@@ -43,7 +43,7 @@ This document says in which order the specification is built and when each part 
 | P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done        | 4/4      | M    | 2026-11-25   |
 | P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done        | 5/5      | M    | 2026-11-25   |
 | P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | ✅ Done        | 5/5      | L    | 2026-11-25   |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 🔄 In Progress | 6/8      | L    | 2026-11-25   |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 🔄 In Progress | 7/8      | L    | 2026-11-25   |
 | P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo        | 0/9      | L    | —            |
 | P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo        | 0/6      | M    | —            |
 | P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo        | 0/5      | L    | —            |

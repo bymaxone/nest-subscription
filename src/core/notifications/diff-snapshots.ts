@@ -16,6 +16,7 @@ import { lifecycleChanges, startedChanges } from './diff-rules/lifecycle'
 import { overlapChanges } from './diff-rules/overlap'
 import { pauseChanges } from './diff-rules/pause'
 import { productChanges } from './diff-rules/product'
+import { purchaseChanges, purchaseStartedChanges } from './diff-rules/purchases'
 import type { RawChange, SubscriptionPair } from './diff-rules/raw-change'
 import { refundChanges, transferChanges } from './diff-rules/refund-transfer'
 import { renewalIntentChanges } from './diff-rules/renewal-intent'
@@ -62,6 +63,8 @@ export function diffCandidates(
 ): RawChange[] {
   const found = [
     ...startedChanges(previous, current),
+    ...purchaseStartedChanges(previous, current),
+    ...purchaseChanges(previous, current),
     ...pairsOf(previous, current).flatMap((pair) => PAIR_RULES.flatMap((rule) => rule(pair))),
     ...transferChanges(previous, current),
     ...overlapChanges(previous, current)

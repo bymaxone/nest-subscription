@@ -16,7 +16,8 @@ import { RevenueCatHttp } from '../revenuecat-http'
 import type { RevenueCatFetch } from '../revenuecat.options'
 import { fixtureFetch, loadFixture, type FetchCall } from '../revenuecat.fixture'
 import { MAX_PAGES, PAGE_LIMIT } from './list-all'
-import { readRevenueCatAccount, type RevenueCatReadContext } from './read-account'
+import { readRevenueCatAccount } from './read-account'
+import type { RevenueCatReadContext } from './read-context'
 
 const NOW = '2026-11-25T12:00:00.000Z'
 const PERIOD_START = '2026-11-18T11:06:40.000Z'
@@ -223,6 +224,7 @@ describe('readRevenueCatAccount of a recorded fixture', () => {
         accountId: customer,
         entitlements,
         subscriptions: records,
+        nonRenewingPurchases: [],
         source: 'revenuecat',
         sourceCustomer: { id: customer },
         fetchedAt: NOW,
@@ -276,6 +278,7 @@ describe('readRevenueCatAccount of a recorded fixture', () => {
       accountId: 'customer_PLACEHOLDER_empty',
       entitlements: [],
       subscriptions: [],
+      nonRenewingPurchases: [],
       source: 'revenuecat',
       sourceCustomer: { id: 'customer_PLACEHOLDER_empty' },
       fetchedAt: NOW,
@@ -343,6 +346,27 @@ describe('readRevenueCatAccount and the sandbox', () => {
   })
 })
 
+/** A subscriptions list whose only item has a nested entitlement list that is cut short. */
+function cutSubscriptions(): unknown {
+  return {
+    object: 'list',
+    items: [
+      {
+        id: 'sub_PLACEHOLDER_1',
+        status: 'active',
+        gives_access: true,
+        environment: 'production',
+        entitlements: {
+          object: 'list',
+          items: [{ id: 'entl_0', lookup_key: 'premium' }],
+          next_page: 'https://elsewhere.invalid/next'
+        }
+      }
+    ],
+    next_page: null
+  }
+}
+
 describe('readRevenueCatAccount requests', () => {
   it('asks for the customer subscriptions with an encoded identifier, a page size and the key', async () => {
     // Scenario: the identifier is free text; nothing in it can change the path.
@@ -350,44 +374,37 @@ describe('readRevenueCatAccount requests', () => {
     await readRevenueCatAccount(contextFor(fixtureFetch('active-subscription', calls)), {
       accountId: '$RCAnonymousID:a/b?c'
     })
+    const customer =
+      'http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/customers/%24RCAnonymousID%3Aa%2Fb%3Fc'
     expect(calls.map((call) => call.url)).toStrictEqual([
-      `http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/customers/%24RCAnonymousID%3Aa%2Fb%3Fc/subscriptions?limit=${PAGE_LIMIT}`
+      `${customer}/subscriptions?limit=${PAGE_LIMIT}`,
+      `${customer}/purchases?limit=${PAGE_LIMIT}`
     ])
     expect(calls[0]?.init.method).toBe('GET')
   })
 
-  it('does not read purchases or active entitlements for a customer of subscriptions only', async () => {
-    // Scenario: one list is read when the nested entitlement list is complete.
+  it('reads the purchases but not the active entitlements for a customer with no purchase', async () => {
+    // Scenario: the active entitlements are looked up only when some purchase grants something.
     const calls: FetchCall[] = []
     await snapshotOf('two-subscriptions', 'c', calls)
-    expect(calls).toHaveLength(1)
+    expect(calls.map((call) => new URL(call.url).pathname.split('/').at(-1))).toStrictEqual([
+      'subscriptions',
+      'purchases'
+    ])
   })
 
   it('reads the entitlements of a subscription from its own endpoint when the nested list is cut', async () => {
     // Scenario: the nested list has a next page; the per-subscription list is read to its end and
     // replaces it, with the cursor built from the last item.
     const calls: string[] = []
-    const cut = {
-      object: 'list',
-      items: [
-        {
-          id: 'sub_PLACEHOLDER_1',
-          status: 'active',
-          gives_access: true,
-          environment: 'production',
-          entitlements: {
-            object: 'list',
-            items: [{ id: 'entl_0', lookup_key: 'premium' }],
-            next_page: 'https://elsewhere.invalid/next'
-          }
-        }
-      ],
-      next_page: null
-    }
+    const cut = cutSubscriptions()
     const stub: RevenueCatFetch = (url) => {
       calls.push(url)
       if (new URL(url).pathname.endsWith('/customers/c/subscriptions')) {
         return Promise.resolve(new Response(JSON.stringify(cut)))
+      }
+      if (new URL(url).pathname.endsWith('/customers/c/purchases')) {
+        return Promise.resolve(new Response(JSON.stringify({ items: [], next_page: null })))
       }
       const second = new URL(url).searchParams.get('starting_after') === 'entl_1'
       return Promise.resolve(
@@ -409,7 +426,8 @@ describe('readRevenueCatAccount requests', () => {
     expect(calls).toStrictEqual([
       `http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/customers/c/subscriptions?limit=${PAGE_LIMIT}`,
       `http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_1/entitlements?limit=${PAGE_LIMIT}`,
-      `http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_1/entitlements?limit=${PAGE_LIMIT}&starting_after=entl_1`
+      `http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_1/entitlements?limit=${PAGE_LIMIT}&starting_after=entl_1`,
+      `http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/customers/c/purchases?limit=${PAGE_LIMIT}`
     ])
     expect(calls.some((url) => url.includes('elsewhere.invalid'))).toBe(false)
   })

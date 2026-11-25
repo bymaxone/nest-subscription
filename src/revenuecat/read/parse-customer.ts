@@ -48,12 +48,25 @@ export function parseList(value: unknown): ParsedList | null {
   return { items, hasMore: typeof next === 'string' && next.length > 0 }
 }
 
-/** The entitlements of a nested list item by name; an item with no `lookup_key` is dropped. */
-export function parseEntitlementNames(items: readonly unknown[]): readonly string[] {
+/** One entitlement of a nested list: its internal identifier and the name a host gives it. */
+export interface ParsedEntitlement {
+  /** The entitlement's `id`, which the active-entitlements list uses; `null` when absent. */
+  readonly id: string | null
+  /** The entitlement's `lookup_key`: its name. */
+  readonly name: string
+}
+
+/** The entitlements of a nested list; an item with no `lookup_key` is dropped. */
+export function parseEntitlements(items: readonly unknown[]): readonly ParsedEntitlement[] {
   return items.flatMap((item) => {
     const name = isRecord(item) ? readString(item, 'lookup_key') : null
-    return name === null ? [] : [name]
+    return isRecord(item) && name !== null ? [{ id: readString(item, 'id'), name }] : []
   })
+}
+
+/** The names of the entitlements of a nested list; an item with no `lookup_key` is dropped. */
+export function parseEntitlementNames(items: readonly unknown[]): readonly string[] {
+  return parseEntitlements(items).map((entitlement) => entitlement.name)
 }
 
 /** A subscription as the adapter reads it. Every field but `id` may be absent. */
