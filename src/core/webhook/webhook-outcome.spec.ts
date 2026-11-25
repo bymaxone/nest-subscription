@@ -45,8 +45,8 @@ describe('toHttpAnswer', () => {
     })
   })
 
-  it('answers every refusal with the same object', () => {
-    // Scenario: two refusals, however they came about, get the very same answer.
+  it('answers two refused outcomes with the very same answer object', () => {
+    // Scenario: two refused outcomes get the very same answer, not two equal ones.
     expect(toHttpAnswer({ kind: 'refused' })).toBe(toHttpAnswer({ kind: 'refused' }))
   })
 

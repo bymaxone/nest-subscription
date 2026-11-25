@@ -142,7 +142,7 @@ describe('SubscriptionWebhookController receive', () => {
     expect(body).toBe(toHttpAnswer({ kind: 'failed' }).body)
   })
 
-  it('logs one warning, whatever the number of such requests, and reports each to the observer', async () => {
+  it('logs one warning for two such requests and reports each to the observer', async () => {
     // Scenario: the warning is a fixed sentence written once; the observer hears every failure.
     const { controller, capture, status } = build()
     const request = { headers: {}, body: { id: 'evt-1' } }

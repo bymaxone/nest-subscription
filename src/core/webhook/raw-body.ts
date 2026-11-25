@@ -12,22 +12,25 @@ export interface RawBodyCarrier {
   readonly rawBody?: unknown
   /** What the body parser made of the body; unset when no parser ran. */
   readonly body?: unknown
+  /** The request headers; they say whether a body was sent. */
+  readonly headers: Readonly<Record<string, string | readonly string[] | undefined>>
 }
 
 /**
  * What a request holds of its raw body. `present` carries the bytes. `missing` means the request
- * has no body a parser could keep, whatever the application's setting: a body of another content
- * type, or none. `unconfigured` means a parser ran and parsed the body and no bytes were kept,
- * which only happens when the application was created without `rawBody: true`.
+ * carries no body at all. `unconfigured` means a body was sent and no bytes were kept: a parser
+ * produced a value of any type, or the headers declare a body no parser read. That happens when
+ * the application was created without `rawBody: true`, and also for a body of a content type no
+ * parser reads.
  */
 export type RawBodyReading =
   | { readonly kind: 'present'; readonly bytes: Uint8Array }
   | { readonly kind: 'missing' }
   | { readonly kind: 'unconfigured' }
 
-/** Whether a body parser produced something from the request. */
-function wasParsed(body: unknown): boolean {
-  return typeof body === 'object' && body !== null && Object.keys(body).length > 0
+/** Whether the headers say a body was sent: a length above zero, or any transfer encoding. */
+function declaresBody(headers: RawBodyCarrier['headers']): boolean {
+  return Number(headers['content-length']) > 0 || headers['transfer-encoding'] !== undefined
 }
 
 /**
@@ -41,5 +44,8 @@ function wasParsed(body: unknown): boolean {
 export function readRawBody(request: RawBodyCarrier): RawBodyReading {
   const { rawBody } = request
   if (Buffer.isBuffer(rawBody)) return { kind: 'present', bytes: rawBody }
-  return wasParsed(request.body) ? { kind: 'unconfigured' } : { kind: 'missing' }
+  // Express 5's body parser leaves `req.body` undefined for a request it did not parse, so a
+  // value of any type, an empty object included, means a parser ran and kept no bytes.
+  const sent = request.body !== undefined || declaresBody(request.headers)
+  return sent ? { kind: 'unconfigured' } : { kind: 'missing' }
 }

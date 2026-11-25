@@ -28,12 +28,13 @@ import {
 } from './fixtures/webhook-app'
 
 const REFUSED = toHttpAnswer({ kind: 'refused' })
-const FORMS: ReadonlyArray<readonly [string, string]> = [
-  ['the controller', CONTROLLER_ROUTE],
-  ['the processor on a host route', DIRECT_ROUTE]
+/** Each form, with the status it gives a body of a content type no parser reads (D44). */
+const FORMS: ReadonlyArray<readonly [string, string, number]> = [
+  ['the controller', CONTROLLER_ROUTE, 503],
+  ['the processor on a host route', DIRECT_ROUTE, 401]
 ]
 
-describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
+describe.each(FORMS)('webhook receiver through %s', (_form, route, unreadStatus) => {
   let app: WebhookApp
 
   beforeEach(async () => {
@@ -61,14 +62,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
         }
       }
     ],
-    [
-      'a body of another content type that is not a notification',
-      (current) => ({
-        ...signed(current),
-        bytes: Buffer.from('not a notification'),
-        contentType: 'text/plain'
-      })
-    ],
+    ['an unsigned body that is not a notification', () => ({ bytes: Buffer.from('{"a":1}') })],
     ['an empty body', () => ({ bytes: Buffer.alloc(0) })]
   ]
 
@@ -85,6 +79,18 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
     expect(app.hook).toHaveBeenCalledTimes(0)
   })
 
+  it('answers a signed body of a content type no parser reads with the status of its form', async () => {
+    // Scenario: the bytes are sent but no parser keeps them. The controller answers a temporary
+    // failure without verifying (D44); the host's own route hands the adapter empty bytes and
+    // gets the refusal. Either way nothing is read, recorded or stored.
+    const verify = jest.spyOn(app.source, 'verifyWebhook')
+    const answer = await send(app, route, { ...signed(app), contentType: 'text/plain' })
+    expect(answer.status).toBe(unreadStatus)
+    expect(verify).toHaveBeenCalledTimes(unreadStatus === 503 ? 0 : 1)
+    expect(app.source.totalReads).toBe(0)
+    expect(await app.store.getSnapshot(encodeAccountKey(ACCOUNT))).toBeNull()
+  })
+
   it('processes a signed notification and stores the source state', async () => {
     // Scenario: a good request ends in the stored state of the source, and the host hook is told.
     app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:10.000Z'))
@@ -97,7 +103,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
     expect(app.hook).toHaveBeenCalledTimes(1)
   })
 
-  it('never applies the state a signed payload claims', async () => {
+  it('does not store the subscription a signed payload claims', async () => {
     // Scenario: the signed payload claims an active subscription; the source says there is none.
     const claimed = { ...NOTIFICATION, subscriptions: [{ status: 'active', givesAccess: true }] }
     const answer = await send(app, route, signed(app, claimed))
@@ -218,7 +224,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
     await send(
       app,
       route,
-      withHeader({ bytes: Buffer.from(sentinels[3] ?? ''), contentType: 'text/plain' })
+      withHeader({ bytes: Buffer.from(JSON.stringify({ body: sentinels[3] })) })
     )
     await send(
       app,

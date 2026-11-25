@@ -253,7 +253,7 @@ describe('WebhookProcessor verified notifications', () => {
     expect(source.readCount({ accountId: 'acc-2' })).toBe(1)
   })
 
-  it('treats an event kind nobody knows like any other', async () => {
+  it('accepts an event kind nobody knows and reads the account', async () => {
     // Scenario: a kind added by the source tomorrow is accepted and refreshes the account (FR20).
     const { source, processor } = harness()
     const outcome = await processor.process(
@@ -283,6 +283,7 @@ describe('WebhookProcessor verified notifications', () => {
     expect(outcome).toStrictEqual({ kind: 'ignored' })
     expect(mark).toHaveBeenCalledTimes(0)
     expect(source.totalReads).toBe(0)
+    expect(await store.getSnapshot(encodeAccountKey(ACCOUNT))).toBeNull()
   })
 
   it('does not wait for the host hook', async () => {
@@ -313,20 +314,28 @@ describe('WebhookProcessor observer payloads', () => {
     return h.capture.payloads.filter((entry) => entry.method === 'onWebhook').map((e) => e.payload)
   }
 
-  it('reports that no identifier was retained for every outcome but a failed forget', async () => {
-    // Scenario: processed, ignored and a store that cannot record each say `retained: false`.
+  it('reports retained false for a processed, a duplicate, an ignored, a refused and a failed event', async () => {
+    // Scenario: five outcomes in turn, the failed one with an identifier the store forgot; each
+    // payload says `retained: false`, and a store that cannot record says it too.
     const h = harness()
     await h.processor.process(h.source.buildRequest(NOTIFICATION))
+    await h.processor.process(h.source.buildRequest(NOTIFICATION))
     await h.processor.process(h.source.buildRequest({ ...NOTIFICATION, accountIds: [] }))
+    await h.processor.process({ rawBody: new Uint8Array(), headers: {} })
+    h.source.failNextRead(new Error('source down'))
+    await h.processor.process(h.source.buildRequest({ ...NOTIFICATION, eventId: 'evt-2' }))
     const down = harness({
       store: (base) =>
         delegating(base, { markEventProcessed: () => Promise.reject(new Error('x')) })
     })
     await down.processor.process(down.source.buildRequest(NOTIFICATION))
-    expect(told(h)).toStrictEqual([
-      { outcome: 'processed', durationMs: 0, retained: false },
-      { outcome: 'ignored', durationMs: 0, retained: false }
-    ])
+    expect(told(h)).toStrictEqual(
+      ['processed', 'duplicate', 'ignored', 'refused', 'failed'].map((outcome) => ({
+        outcome,
+        durationMs: 0,
+        retained: false
+      }))
+    )
     expect(told(down)).toStrictEqual([{ outcome: 'failed', durationMs: 0, retained: false }])
   })
 
@@ -636,14 +645,28 @@ describe('WebhookProcessor tenants', () => {
     expect(h.capture.payloads).toStrictEqual([])
   })
 
-  it('never takes the tenant from the body', async () => {
-    // Scenario: a payload that names a tenant of its own is read under the route's tenant only.
-    const h = harness({ multiTenant: true })
-    const withTenant = { ...NOTIFICATION, tenantId: 'evil' }
-    await h.processor.process(h.source.buildRequest(withTenant), { tenantId: 't-1' })
-    expect(h.source.readCount({ tenantId: 'evil', accountId: 'acc-1' })).toBe(0)
-    expect(h.source.readCount({ tenantId: 't-1', accountId: 'acc-1' })).toBe(1)
-  })
+  it.each([
+    ['a top-level tenantId', { tenantId: 'evil' }, {}],
+    ['a top-level tenant', { tenant: 'evil' }, {}],
+    ['a tenant nested in metadata', { metadata: { tenantId: 'evil' } }, {}],
+    ['a tenant nested in an event', { event: { tenant_id: 'evil' } }, {}],
+    ['a list of tenants', { tenants: ['evil'] }, {}],
+    ['a tenant in a request header', {}, { 'x-tenant-id': 'evil' }]
+  ])(
+    'reads under the route tenant only when the request carries %s',
+    async (_n, extra, headers) => {
+      // Scenario: a signed payload, or a header, that names a tenant of its own; the one read is
+      // under the tenant of the host's route (SEC08).
+      const h = harness({ multiTenant: true })
+      const built = h.source.buildRequest({ ...NOTIFICATION, ...extra })
+      await h.processor.process(
+        { ...built, headers: { ...built.headers, ...headers } },
+        { tenantId: 't-1' }
+      )
+      expect(h.source.totalReads).toBe(1)
+      expect(h.source.readCount({ tenantId: 't-1', accountId: 'acc-1' })).toBe(1)
+    }
+  )
 
   it('ignores a blank tenant in a single-tenant host', async () => {
     // Scenario: a blank tenant means none; the account is read without one.

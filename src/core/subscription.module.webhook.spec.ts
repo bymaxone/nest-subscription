@@ -50,11 +50,14 @@ describe('SubscriptionModule.forRoot controller', () => {
     expect(SubscriptionModule.forRoot(input()).controllers).toStrictEqual([])
   })
 
-  it('mounts no controller when the switch is off, whatever the route', () => {
-    // Scenario: a route alone does not switch the controller on.
-    const module = SubscriptionModule.forRoot(input({ webhookPath: 'hooks/billing' }))
-    expect(module.controllers).toStrictEqual([])
-  })
+  it.each(['hooks/billing', 'a', '/leading', 'a/b/c.d'])(
+    'mounts no controller for the route %s when the switch is off',
+    (route) => {
+      // Scenario: a route alone does not switch the controller on.
+      const module = SubscriptionModule.forRoot(input({ webhookPath: route }))
+      expect(module.controllers).toStrictEqual([])
+    }
+  )
 
   it('mounts one controller at the route when the switch is on', () => {
     // Scenario: the one POST route exists at the route the host chose.

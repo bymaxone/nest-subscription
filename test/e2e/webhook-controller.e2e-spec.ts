@@ -24,22 +24,41 @@ const NOTIFICATION: SourceNotification = {
 }
 
 describe('webhook controller', () => {
-  it('registers no route when the switch is off', async () => {
-    // Scenario: with the controller off, a POST to the path the host never configured is a 404.
-    const built = await buildWebhookApp({ module: { webhookController: false } })
+  it.each(['post', 'get', 'put', 'patch', 'delete'] as const)(
+    'answers 404 to a %s request at the route when the switch is off',
+    async (method) => {
+      // Scenario: with the controller off nothing is registered at the path, for any of these
+      // methods, and the adapter is never asked.
+      const built = await buildWebhookApp({ module: { webhookController: false } })
+      const verify = jest.spyOn(built.source, 'verifyWebhook')
+      const response = await request(built.app.getHttpServer())[method](CONTROLLER_ROUTE).send('{}')
+      expect(response.status).toBe(404)
+      expect(verify).toHaveBeenCalledTimes(0)
+      await built.app.close()
+    }
+  )
+
+  it('reaches the receiver with a POST to the configured path', async () => {
+    // Scenario: a POST with a body nobody signed reaches the receiver and is refused.
+    const built = await buildWebhookApp()
     const response = await request(built.app.getHttpServer()).post(CONTROLLER_ROUTE).send('{}')
-    expect(response.status).toBe(404)
+    expect(response.status).toBe(401)
     await built.app.close()
   })
 
-  it('registers one POST route at the configured path and no other method', async () => {
-    // Scenario: a GET to the route finds nothing, and a POST reaches the receiver.
-    const built = await buildWebhookApp()
-    const server = built.app.getHttpServer()
-    expect((await request(server).get(CONTROLLER_ROUTE)).status).toBe(404)
-    expect((await request(server).post(CONTROLLER_ROUTE).send('{}')).status).toBe(401)
-    await built.app.close()
-  })
+  it.each(['get', 'put', 'patch', 'delete'] as const)(
+    'finds no route at the configured path for a %s request',
+    async (method) => {
+      // Scenario: only POST is registered, so each of the other methods finds nothing, and the
+      // adapter is never asked.
+      const built = await buildWebhookApp()
+      const verify = jest.spyOn(built.source, 'verifyWebhook')
+      const response = await request(built.app.getHttpServer())[method](CONTROLLER_ROUTE).send('{}')
+      expect(response.status).toBe(404)
+      expect(verify).toHaveBeenCalledTimes(0)
+      await built.app.close()
+    }
+  )
 
   it('hands the adapter the exact bytes it received, whitespace and key order included', async () => {
     // Scenario: a body whose formatting a re-serialization would change reaches verification as sent.
@@ -86,21 +105,57 @@ describe('webhook controller', () => {
     await built.app.close()
   })
 
-  it('refuses a request with no body a parser could keep like any other failed check', async () => {
-    // Scenario: without the raw body but with nothing parsed, the answer is the refusal, so a
-    // caller cannot tell the application's setting from it.
+  it.each([
+    ['an empty object', 'application/json', '{}'],
+    ['an empty array', 'application/json', '[]'],
+    ['an object', 'application/json', '{"id":"x"}']
+  ])(
+    'answers a failure without verifying when a body parsed as %s kept no bytes',
+    async (_name, contentType, body) => {
+      // Scenario: the application did not enable the raw body and a parser produced a value, even
+      // an empty one; the adapter is never asked (D44).
+      const built = await buildWebhookApp({ raw: false })
+      const verify = jest.spyOn(built.source, 'verifyWebhook')
+      const response = await request(built.app.getHttpServer())
+        .post(CONTROLLER_ROUTE)
+        .set('Content-Type', contentType)
+        .send(body)
+      expect(response.status).toBe(503)
+      expect(verify).toHaveBeenCalledTimes(0)
+      await built.app.close()
+    }
+  )
+
+  it.each([true, false])(
+    'answers a failure without verifying for a body of a content type no parser reads, with rawBody %s',
+    async (raw) => {
+      // Scenario: the headers declare a body and no parser kept bytes, whatever the application's
+      // raw body setting; the adapter is never asked (D44).
+      const built = await buildWebhookApp({ raw })
+      const verify = jest.spyOn(built.source, 'verifyWebhook')
+      const response = await request(built.app.getHttpServer())
+        .post(CONTROLLER_ROUTE)
+        .set('Content-Type', 'text/plain')
+        .send('hello')
+      expect(response.status).toBe(503)
+      expect(verify).toHaveBeenCalledTimes(0)
+      await built.app.close()
+    }
+  )
+
+  it('refuses a request with no body at all like any other failed check', async () => {
+    // Scenario: nothing is sent and nothing is parsed, so the adapter gets empty bytes and refuses.
     const built = await buildWebhookApp({ raw: false })
-    const response = await request(built.app.getHttpServer())
-      .post(CONTROLLER_ROUTE)
-      .set('Content-Type', 'text/plain')
-      .send('hello')
+    const verify = jest.spyOn(built.source, 'verifyWebhook')
+    const response = await request(built.app.getHttpServer()).post(CONTROLLER_ROUTE)
     expect(response.status).toBe(401)
+    expect(verify).toHaveBeenCalledTimes(1)
     await built.app.close()
   })
 
-  it('leaves a body that is not valid JSON to the framework, which answers before the controller', async () => {
+  it('leaves a body that is not valid JSON to the framework, which answers before the controller (D45)', async () => {
     // Scenario: with a JSON content type the framework's parser rejects the text with its own
-    // answer; the adapter is never asked.
+    // answer, which D45 puts outside the uniform refusal; the adapter is never asked.
     const built = await buildWebhookApp()
     const verify = jest.spyOn(built.source, 'verifyWebhook')
     const response = await request(built.app.getHttpServer())

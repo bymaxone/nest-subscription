@@ -147,7 +147,7 @@ describe.each([
 })
 
 describe('webhook receiver tenants', () => {
-  it('reads under the tenant of the host route and never one from the body', async () => {
+  it('reads under the tenant of the host route and not the one a signed body names', async () => {
     // Scenario: a multi-tenant host passes the tenant its authentication gave (SEC08); a tenant
     // named in the signed body is not used.
     const app = await buildWebhookApp({
@@ -164,7 +164,7 @@ describe('webhook receiver tenants', () => {
     await app.app.close()
   })
 
-  it('fails the route before anything is called when a multi-tenant host gives no tenant', async () => {
+  it('fails the route before the adapter is called when a multi-tenant host gives no tenant', async () => {
     // Scenario: the host's route forgot the tenant, which is its own mistake and not the request's.
     const app = await buildWebhookApp({
       module: { multiTenant: true, webhookController: false }
@@ -226,7 +226,7 @@ describe('retention purge by reconciliation', () => {
     await app.app.close()
   })
 
-  it('logs a failed purge by its code and finishes the run', async () => {
+  it('logs one line for a failed purge, without the error text, and finishes the run', async () => {
     // Scenario: the store cannot purge; the run still ends and the line carries no text of the error.
     let failing: FailingStore | undefined
     const app = await buildWebhookApp({

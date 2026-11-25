@@ -76,8 +76,8 @@ describe('Reconciler event purge', () => {
     expect(await store.markEventProcessed('fake', 'young', T0)).toBe(false)
   })
 
-  it('purges before it lists anything', async () => {
-    // Scenario: the purge is the first store call of a run.
+  it('purges before it lists the pending changes', async () => {
+    // Scenario: the purge is called before the listing of pending changes.
     const store = new InMemorySubscriptionStore({ logger: () => undefined })
     const order: string[] = []
     jest.spyOn(store, 'deleteEventsOlderThan').mockImplementation(() => {
