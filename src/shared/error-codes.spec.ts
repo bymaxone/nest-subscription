@@ -9,11 +9,12 @@ describe('SUBSCRIPTION_ERROR_CODES', () => {
   const codes = Object.values(SUBSCRIPTION_ERROR_CODES)
 
   it('covers each case the specification names, and no other', () => {
-    // Scenario: refused webhook, unknown account, entitlement required, no access, source
+    // Scenario: refused webhook, unknown account, unauthenticated request, entitlement required, no access, source
     // unavailable, operation not possible and the configuration errors, plus invalid input.
     expect(SUBSCRIPTION_ERROR_CODES).toEqual({
       WEBHOOK_REFUSED: 'SUBSCRIPTION_WEBHOOK_REFUSED',
       ACCOUNT_UNKNOWN: 'SUBSCRIPTION_ACCOUNT_UNKNOWN',
+      UNAUTHENTICATED: 'SUBSCRIPTION_UNAUTHENTICATED',
       ENTITLEMENT_REQUIRED: 'SUBSCRIPTION_ENTITLEMENT_REQUIRED',
       NO_ACCESS: 'SUBSCRIPTION_NO_ACCESS',
       SOURCE_UNAVAILABLE: 'SUBSCRIPTION_SOURCE_UNAVAILABLE',

@@ -23,6 +23,7 @@ import type { SubscriptionOptionsInput } from './subscription-options.types'
 import { systemClock } from '../system-clock'
 
 const HOURS_24_MS = 24 * 60 * 60 * 1000
+const HOURS_72_MS = 72 * 60 * 60 * 1000
 
 function minimal(): SubscriptionOptionsInput {
   return {
@@ -35,7 +36,7 @@ function minimal(): SubscriptionOptionsInput {
 describe('defaults', () => {
   it.each([
     ['fail policy', DEFAULT_FAIL_POLICY, 'refuse'],
-    ['last known state tolerance (D12)', DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS, HOURS_24_MS],
+    ['last known state tolerance (D38)', DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS, HOURS_72_MS],
     ['maximum snapshot age (D12)', DEFAULT_MAX_SNAPSHOT_AGE_MS, HOURS_24_MS],
     ['sandbox access (SEC07)', DEFAULT_ALLOW_SANDBOX, false],
     ['webhook controller (D10)', DEFAULT_WEBHOOK_CONTROLLER, false],
@@ -53,7 +54,7 @@ describe('resolveOptions', () => {
     expect(resolved).toMatchObject({
       onChange: null,
       failPolicy: 'refuse',
-      lastKnownStateToleranceMs: HOURS_24_MS,
+      lastKnownStateToleranceMs: HOURS_72_MS,
       maxSnapshotAgeMs: HOURS_24_MS,
       cacheTtlMs: 30_000,
       allowSandbox: false,

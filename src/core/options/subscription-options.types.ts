@@ -97,8 +97,10 @@ export interface SubscriptionOptionsInput {
   /**
    * How old a stored snapshot may be and still be trusted under `last_known_state`, in
    * milliseconds; a snapshot aged exactly this is not trusted. It applies to a snapshot older than
-   * `maxSnapshotAgeMs`: a younger one is current and needs no tolerance, so a tolerance below
-   * `maxSnapshotAgeMs` changes nothing. Defaults to 24 hours.
+   * `maxSnapshotAgeMs`: a younger one is current and needs no tolerance, so a tolerance not above
+   * `maxSnapshotAgeMs` adds nothing over `refuse`. Defaults to 72 hours, three times the default
+   * `maxSnapshotAgeMs`, so the policy extends access for two days past the point a snapshot goes
+   * stale.
    */
   readonly lastKnownStateToleranceMs?: number
   /** The age after which a snapshot is refreshed on its next read, in milliseconds. */

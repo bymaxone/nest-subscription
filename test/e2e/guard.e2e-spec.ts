@@ -145,7 +145,7 @@ describe('guard: the account comes from the resolver only', () => {
     // Scenario: no header, so the resolver answers null; 401 with the account code.
     const built = await boot()
     await seedThree(built)
-    expectRefusal(await get(built, '/premium'), 401, SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+    expectRefusal(await get(built, '/premium'), 401, SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
   })
 
   it.each([
@@ -160,7 +160,7 @@ describe('guard: the account comes from the resolver only', () => {
     const built = await boot()
     await seedThree(built)
     const response = await request(built.app.getHttpServer()).get('/premium').set(RAW_HEADER, raw)
-    expectRefusal(response, 401, SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+    expectRefusal(response, 401, SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
   })
 
   it('refuses as source unavailable when the resolver throws, and says nothing of why', async () => {
@@ -202,7 +202,7 @@ describe('guard: the account comes from the resolver only', () => {
       403,
       SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED
     )
-    expectRefusal(await get(built, '/premium', HELD), 401, SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+    expectRefusal(await get(built, '/premium', HELD), 401, SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
   })
 
   it('puts no account or tenant identifier in any refusal body', async () => {
@@ -380,6 +380,23 @@ describe('guard: the fail policy with the source down', () => {
     }
   })
 
+  it.each([
+    ['two days old', 48 * HOUR_MS, 200],
+    ['one millisecond under 72 hours', 72 * HOUR_MS - 1, 200],
+    ['exactly 72 hours', 72 * HOUR_MS, 503]
+  ])(
+    'with the default tolerance a snapshot %s answers %d under last_known_state',
+    async (_t, ageMs, status) => {
+      // Scenario: only the policy is set; the tolerance is the default and the stored snapshot is
+      // stale (past the default 24-hour maximum) with the source down.
+      const built = await boot({ failPolicy: 'last_known_state' })
+      await built.seed(snapshotOf(HELD, { givesAccess: true, entitlement: 'premium' }))
+      built.clock.advance(ageMs)
+      built.source.failNextRead(new Error('source down'))
+      expect((await get(built, '/premium', HELD)).status).toBe(status)
+    }
+  )
+
   it('still refuses a trusted stale snapshot whose entitlement is not held', async () => {
     // Scenario: the policy only lets the stale snapshot be read; the account is on hold in it.
     const built = await boot({
@@ -503,7 +520,7 @@ describe('guard: cases a request cannot make', () => {
     const refusal = await refusalOf(built.guard, contextOf('rpc', handler))
     expect(refusal.getStatus()).toBe(401)
     expect(refusal.getResponse()).toStrictEqual(
-      new InternalError(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN).toJSON()
+      new InternalError(SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED).toJSON()
     )
   })
 

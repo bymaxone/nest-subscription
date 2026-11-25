@@ -35,7 +35,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   account's state, queues signed notifications, delays or fails the next read and counts reads.
 - The option types `SubscriptionModuleOptions`, `SubscriptionModuleAsyncOptions`,
   `SubscriptionOptionsInput` and `ResolvedSubscriptionOptions`, and `resolveOptions`, which applies
-  the defaults (fail policy `refuse`, 24-hour tolerance and maximum age, sandbox access off,
+  the defaults (fail policy `refuse`, 72-hour tolerance, 24-hour maximum age, sandbox access off,
   webhook controller off) and returns a frozen object, exported from the root.
 - `validateOptions`, which refuses an invalid configuration with one `SubscriptionError` that names
   every offending option and carries none of the supplied values. `SubscriptionError` gains an
@@ -94,7 +94,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - `EntitlementGuard`, exported from the root, provided and exported by the module: it enforces
   `RequiresEntitlement`. A route without the decorator is untouched. The account comes from the
   host's resolver only; a request with no usable account is refused with HTTP 401
-  `SUBSCRIPTION_ACCOUNT_UNKNOWN`, an account without the entitlement with HTTP 403
+  `SUBSCRIPTION_UNAUTHENTICATED`, an account without the entitlement with HTTP 403
   `SUBSCRIPTION_ENTITLEMENT_REQUIRED`, and an account whose subscription gives no access with HTTP
   403 `SUBSCRIPTION_NO_ACCESS`. Any unexpected failure refuses with HTTP 503
   `SUBSCRIPTION_SOURCE_UNAVAILABLE`. A refusal body is `{ code, message }` and nothing else. The
@@ -106,7 +106,10 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   the tolerance and denies one aged exactly the tolerance or more. A store that answers with no
   record is the empty snapshot and is refused as no subscription under both values. The option's
   documentation states that `last_known_state` extends access during an outage, including for an
-  account that was refunded during it.
+  account that was refunded during it. The default tolerance is 72 hours; the maximum snapshot age
+  stays 24 hours.
+- The error code `SUBSCRIPTION_UNAUTHENTICATED` in `SUBSCRIPTION_ERROR_CODES`, with its fixed
+  message: a request with no usable account. `SUBSCRIPTION_ACCOUNT_UNKNOWN` keeps its meaning.
 - `createFailingStore(store)` in the `testing` subpath, with `FailingStore` and
   `FailingStoreMethod`: wraps any `SubscriptionStore` and, once `fail()` is called, rejects the
   methods named (every method when none is named) until `recover()`, so a host can test its own

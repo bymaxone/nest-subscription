@@ -14,6 +14,8 @@ export const SUBSCRIPTION_ERROR_CODES = Object.freeze({
   WEBHOOK_REFUSED: 'SUBSCRIPTION_WEBHOOK_REFUSED',
   /** The account is not known, or the subscription does not belong to the account. */
   ACCOUNT_UNKNOWN: 'SUBSCRIPTION_ACCOUNT_UNKNOWN',
+  /** The request carries no account the host's resolver can name. */
+  UNAUTHENTICATED: 'SUBSCRIPTION_UNAUTHENTICATED',
   /** A route needs an entitlement the account does not hold. */
   ENTITLEMENT_REQUIRED: 'SUBSCRIPTION_ENTITLEMENT_REQUIRED',
   /** The subscription does not give access. */
@@ -42,6 +44,7 @@ export const SUBSCRIPTION_ERROR_MESSAGES: Readonly<Record<SubscriptionErrorCode,
   Object.freeze({
     SUBSCRIPTION_WEBHOOK_REFUSED: 'The webhook request was refused.',
     SUBSCRIPTION_ACCOUNT_UNKNOWN: 'The account or subscription is not known.',
+    SUBSCRIPTION_UNAUTHENTICATED: 'The request carries no account.',
     SUBSCRIPTION_ENTITLEMENT_REQUIRED: 'The required entitlement is not held.',
     SUBSCRIPTION_NO_ACCESS: 'The subscription does not give access.',
     SUBSCRIPTION_SOURCE_UNAVAILABLE: 'The billing source could not be read.',

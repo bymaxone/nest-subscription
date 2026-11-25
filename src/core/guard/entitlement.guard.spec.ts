@@ -142,14 +142,14 @@ describe('EntitlementGuard', () => {
       // Scenario: the resolver answers with something that is not an account; the guard answers
       // 401 with the catalogue's account code before the service is asked anything.
       const { guard, getSnapshot } = rig(resolved, snapshotWith(premium()))
-      expectRefusal(await outcome(guard), 401, SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+      expectRefusal(await outcome(guard), 401, SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
       expect(getSnapshot).not.toHaveBeenCalled()
     })
 
     it('is refused as unauthenticated when the resolver answers with a promise of null', async () => {
       // Scenario: the resolver is asynchronous and finds no account.
       const { guard } = rig(Promise.resolve(null), snapshotWith(premium()))
-      expectRefusal(await outcome(guard), 401, SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+      expectRefusal(await outcome(guard), 401, SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
     })
 
     it('is refused as unauthenticated when a multi-tenant host resolves no tenant', async () => {
@@ -158,7 +158,7 @@ describe('EntitlementGuard', () => {
       const { guard, getSnapshot } = rig({ accountId: 'acc-1' }, snapshotWith(premium()), {
         multiTenant: true
       })
-      expectRefusal(await outcome(guard), 401, SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+      expectRefusal(await outcome(guard), 401, SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
       expect(getSnapshot).not.toHaveBeenCalled()
     })
 
@@ -167,7 +167,7 @@ describe('EntitlementGuard', () => {
       // nothing there and refuses.
       const { guard, resolver } = rig({ accountId: 'acc-1' }, snapshotWith(premium()))
       const result = await outcome(guard, contextOf(Controller.prototype.protectedHandler, 'rpc'))
-      expectRefusal(result, 401, SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+      expectRefusal(result, 401, SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
       expect(resolver).not.toHaveBeenCalled()
     })
   })

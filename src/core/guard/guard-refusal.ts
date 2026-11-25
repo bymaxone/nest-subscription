@@ -11,7 +11,7 @@ import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 /** A code the guard can refuse with. */
 export type GuardRefusalCode =
-  | typeof SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN
+  | typeof SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED
   | typeof SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED
   | typeof SUBSCRIPTION_ERROR_CODES.NO_ACCESS
   | typeof SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
@@ -19,7 +19,7 @@ export type GuardRefusalCode =
 /** The HTTP status a refusal with the code is answered with. */
 function statusOf(code: GuardRefusalCode): number {
   switch (code) {
-    case SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN:
+    case SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED:
       return 401
     case SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE:
       return 503

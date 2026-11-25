@@ -76,7 +76,7 @@ export class EntitlementGuard implements CanActivate {
   /**
    * Whether the request may proceed.
    *
-   * @throws {HttpException} 401 `SUBSCRIPTION_ACCOUNT_UNKNOWN` when no account is resolved, 403
+   * @throws {HttpException} 401 `SUBSCRIPTION_UNAUTHENTICATED` when no account is resolved, 403
    * `SUBSCRIPTION_ENTITLEMENT_REQUIRED` or `SUBSCRIPTION_NO_ACCESS` when the decision refuses,
    * and 503 `SUBSCRIPTION_SOURCE_UNAVAILABLE` for any failure the guard did not expect. The body
    * is `{ code, message }` and nothing else.
@@ -96,7 +96,7 @@ export class EntitlementGuard implements CanActivate {
     const required = readRequiredEntitlement(this.reflector, context)
     if (required === undefined) return true
     if (context.getType() !== 'http') {
-      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
     }
     const account = await this.#account(context)
     const now = this.options.clock.now()
@@ -134,11 +134,11 @@ export class EntitlementGuard implements CanActivate {
   async #account(context: ExecutionContext): Promise<AccountReference> {
     const resolved: unknown = await this.options.accountResolver(context)
     if (!isResolvedAccount(resolved)) {
-      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
     }
     const { accountId, tenantId } = resolved
     if (this.options.multiTenant && !hasTenant(tenantId)) {
-      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+      throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.UNAUTHENTICATED)
     }
     return tenantId === undefined ? { accountId } : { accountId, tenantId }
   }
