@@ -57,14 +57,27 @@ describe('createFailingStore', () => {
     await expect(pending).rejects.toThrow('failing store')
   })
 
-  it('fails only the methods named and delegates the rest', async () => {
-    // Scenario: only `getSnapshot` is named; a write still reaches the wrapped store and the
-    // read of what was written is the one that fails.
+  it.each(METHODS)(
+    'fails only %s when it alone is named, and delegates every other',
+    async (named) => {
+      // Scenario: one method of the port is named; it rejects, and each of the other seven still
+      // answers as the wrapped store does.
+      const store = createFailingStore(inner())
+      store.fail([named])
+      await expect(CALLS[named](store)).rejects.toThrow('failing store')
+      for (const other of METHODS.filter((method) => method !== named)) {
+        await expect(CALLS[other](store)).resolves.not.toThrow()
+      }
+    }
+  )
+
+  it('reaches the wrapped store with a write that is not named', async () => {
+    // Scenario: only `getSnapshot` is named; a write still lands in the wrapped store, which the
+    // test reads directly.
     const wrapped = inner()
     const store = createFailingStore(wrapped)
     store.fail(['getSnapshot'])
     await expect(store.putSnapshot(KEY, SNAPSHOT, [], AT)).resolves.toBe(true)
-    await expect(store.getSnapshot(KEY)).rejects.toThrow('failing store')
     expect((await wrapped.getSnapshot(KEY))?.snapshot).toEqual(SNAPSHOT)
   })
 

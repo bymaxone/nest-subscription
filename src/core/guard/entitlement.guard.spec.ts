@@ -234,22 +234,83 @@ describe('EntitlementGuard', () => {
       expectRefusal(await outcome(guard), 403, SUBSCRIPTION_ERROR_CODES.NO_ACCESS)
     })
 
-    it('never puts an identifier in the body of a refusal', async () => {
-      // Scenario: both 403 refusals and the 401, serialized: none holds the account, the tenant or
-      // the entitlement name.
-      const secretive = { accountId: 'acc-secret-9', tenantId: 'tenant-secret-9' }
-      const held = snapshotWith(premium(false))
-      const bodies = await Promise.all([
-        outcome(rig(secretive, held, { multiTenant: true }).guard),
-        outcome(rig(secretive, snapshotWith(), { multiTenant: true }).guard),
-        outcome(rig(null).guard)
-      ])
-      for (const refusal of bodies) {
-        const text = JSON.stringify((refusal as HttpException).getResponse())
-        expect(text).not.toMatch(/secret-9|premium/)
-        expect(Object.keys((refusal as HttpException).getResponse())).toEqual(['code', 'message'])
+    /** The account and tenant every refusal below must keep out of its body. */
+    const secretive = { accountId: 'acc-secret-9', tenantId: 'tenant-secret-9' }
+    const staleOptions = { maxSnapshotAgeMs: 3_600_000, failPolicy: 'refuse' as const }
+
+    /** One way to refuse each: the guard's outcome, the status it must answer and the rig. */
+    const refusals: ReadonlyArray<readonly [string, number, () => Promise<unknown>]> = [
+      [
+        'no account resolved',
+        401,
+        () => outcome(rig(null, snapshotWith(premium()), { multiTenant: true }).guard)
+      ],
+      [
+        'a tenant missing in a multi-tenant host',
+        401,
+        () =>
+          outcome(
+            rig({ accountId: secretive.accountId }, snapshotWith(premium()), { multiTenant: true })
+              .guard
+          )
+      ],
+      [
+        'the entitlement required',
+        403,
+        () => outcome(rig(secretive, snapshotWith(), { multiTenant: true }).guard)
+      ],
+      [
+        'no access',
+        403,
+        () => outcome(rig(secretive, snapshotWith(premium(false)), { multiTenant: true }).guard)
+      ],
+      [
+        'the store down',
+        503,
+        () =>
+          outcome(
+            rig(secretive, new Error('store down for acc-secret-9'), { multiTenant: true }).guard
+          )
+      ],
+      [
+        'a stale snapshot under refuse',
+        503,
+        async () => {
+          const built = rig(secretive, snapshotWith(premium()), {
+            ...staleOptions,
+            multiTenant: true
+          })
+          built.clock.advance(2 * 3_600_000)
+          return outcome(built.guard)
+        }
+      ],
+      [
+        'an unexpected error of the resolver',
+        503,
+        () =>
+          outcome(
+            rig(null, snapshotWith(premium()), {
+              accountResolver: (): never => {
+                throw new Error('resolver broke for acc-secret-9 in tenant-secret-9')
+              }
+            }).guard
+          )
+      ]
+    ]
+
+    it.each(refusals)(
+      'puts no account, tenant or entitlement name in the body of a refusal for %s',
+      async (_title, status, run) => {
+        // Scenario: every kind of refusal the guard produces (401, both 403s, and the 503 of the
+        // store down, a stale snapshot under refuse and an unexpected error), each swept for the
+        // account, the tenant and the entitlement name; the body is the code and the message.
+        const refusal = (await run()) as HttpException
+        expect(refusal.getStatus()).toBe(status)
+        const body = refusal.getResponse()
+        expect(JSON.stringify(body)).not.toMatch(/secret-9|premium/)
+        expect(Object.keys(body)).toEqual(['code', 'message'])
       }
-    })
+    )
   })
 
   describe('the fail policy', () => {
