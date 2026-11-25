@@ -4,7 +4,11 @@
  * fail a read or a write.
  * @layer core
  */
-import { encodeAccountKey, type AccountReference } from '@bymax-one/nest-subscription/internal'
+import {
+  encodeAccountKey,
+  type AccountReference,
+  type Clock
+} from '@bymax-one/nest-subscription/internal'
 import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 
 import type { SubscriptionCache } from '../options/subscription-options.types'
@@ -55,24 +59,34 @@ function parse(text: string): SubscriptionSnapshot | null {
  * A read-through cache of snapshots. A cache that is down, full or answering with something that
  * is not a snapshot is a miss, so the store answers instead. While this process holds a fill that
  * an invalidation overtook, reads of that account go to the store until the fill has removed its
- * entry; another process can see that entry for as long as the removal takes.
+ * entry, and so do reads of an account after a delete of its entry failed, for one entry lifetime
+ * on the injected clock; another process can see an entry for as long as its removal takes.
  */
 export class SnapshotCache {
   readonly #pending = new Map<string, Set<Ticket>>()
+  /** Accounts whose entry may still be in the host cache after a failed delete, and until when. */
+  readonly #blocked = new Map<string, number>()
   #reading = 0
 
   /**
    * @param cache The cache the host provided.
    * @param ttlMs How long an entry lives, in milliseconds.
+   * @param clock The time source that measures how long a failed delete keeps an account off the cache.
    */
   constructor(
     private readonly cache: SubscriptionCache,
-    private readonly ttlMs: number
+    private readonly ttlMs: number,
+    private readonly clock: Clock
   ) {}
 
   /** The number of reads that have not finished. */
   get pendingLoads(): number {
     return this.#reading
+  }
+
+  /** The number of accounts kept off the cache after a failed delete. */
+  get blockedAccounts(): number {
+    return this.#blocked.size
   }
 
   /** The number of accounts with a read that has not finished. */
@@ -97,7 +111,7 @@ export class SnapshotCache {
   ): Promise<SubscriptionSnapshot | null> {
     const accountKey = encodeAccountKey(account)
     const key = `${KEY_PREFIX}${accountKey}`
-    if (this.#overtaken(accountKey)) return load()
+    if (this.#overtaken(accountKey) || this.#blockedNow(accountKey)) return load()
     const ticket = this.#open(accountKey)
     try {
       const cached = await this.#get(key, account)
@@ -117,15 +131,15 @@ export class SnapshotCache {
    * Removes the account's entry and marks every read of it in flight, so none fills the cache
    * with what it read before the change. A fill whose write was already started is not waited
    * for: it removes its own entry when its write settles, so an invalidation is never undone by a
-   * write that lands after it, and reads in this process bypass the cache until it has. A cache
-   * that cannot delete leaves its entry to expire.
+   * write that lands after it, and reads in this process bypass the cache until it has. A delete
+   * that fails keeps the account off the cache until the entry's lifetime has passed.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank account identifier.
    */
   async invalidate(account: AccountReference): Promise<void> {
     const accountKey = encodeAccountKey(account)
     for (const ticket of this.#pending.get(accountKey) ?? []) ticket.invalidated = true
-    await this.#delete(`${KEY_PREFIX}${accountKey}`)
+    await this.#delete(accountKey)
   }
 
   /**
@@ -179,16 +193,31 @@ export class SnapshotCache {
     } catch {
       // The next read loads from the store again.
     }
-    if (ticket.invalidated) await this.#delete(key)
+    if (ticket.invalidated) await this.#delete(ticket.accountKey)
     this.#close(ticket)
   }
 
-  /** Removes an entry; a cache that cannot delete leaves it to expire. */
-  async #delete(key: string): Promise<void> {
+  /**
+   * Removes an account's entry. A delete that fails keeps the account off the cache for one entry
+   * lifetime from now, since the entry cannot outlive that; a delete that succeeds ends it.
+   */
+  async #delete(accountKey: string): Promise<void> {
     try {
-      await this.cache.delete(key)
+      await this.cache.delete(`${KEY_PREFIX}${accountKey}`)
+      this.#blocked.delete(accountKey)
     } catch {
-      // A failed delete never fails the read or the write behind it.
+      const now = this.clock.now().getTime()
+      for (const [other, until] of this.#blocked) if (until <= now) this.#blocked.delete(other)
+      this.#blocked.set(accountKey, now + this.ttlMs)
     }
+  }
+
+  /** Whether a failed delete still keeps the account off the cache; a mark that ran out is dropped. */
+  #blockedNow(accountKey: string): boolean {
+    const until = this.#blocked.get(accountKey)
+    if (until === undefined) return false
+    if (until > this.clock.now().getTime()) return true
+    this.#blocked.delete(accountKey)
+    return false
   }
 }

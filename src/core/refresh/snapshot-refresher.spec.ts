@@ -374,7 +374,12 @@ describe('SnapshotRefresher with a cache', () => {
     })
     const cache = hostCache(held)
     const { source, store, clock } = setup()
-    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache, 30_000))
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      new SnapshotCache(cache, 30_000, clock)
+    )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     let settled = false
     const refreshing = refresher.refresh(ACCOUNT).then((result) => {
@@ -392,7 +397,12 @@ describe('SnapshotRefresher with a cache', () => {
     // Scenario: a newer state is stored; the older one is refused before the write.
     const cache = hostCache()
     const { source, store, clock } = setup()
-    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache, 30_000))
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      new SnapshotCache(cache, 30_000, clock)
+    )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20))
     await refresher.refresh(ACCOUNT)
     cache.deleted.length = 0
@@ -409,7 +419,12 @@ describe('SnapshotRefresher with a cache', () => {
       delete: () => Promise.reject(new Error('cache down'))
     }
     const { source, store, clock } = setup()
-    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache, 30_000))
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      new SnapshotCache(cache, 30_000, clock)
+    )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     await expect(refresher.refresh(ACCOUNT)).resolves.toMatchObject({ written: true })
   })
@@ -502,7 +517,7 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
       }
     }
     const { source, store, clock } = setup()
-    const snapshotCache = new SnapshotCache(cache, 30_000)
+    const snapshotCache = new SnapshotCache(cache, 30_000, clock)
     const refresher = new SnapshotRefresher(source, store, clock, snapshotCache)
     const load = async (): Promise<SubscriptionSnapshot | null> => stored(store, TENANTED)
     source.setAccount(TENANTED, { ...snapshotOf(TENANTED, T10), tenantId: 'two' })

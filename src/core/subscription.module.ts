@@ -90,7 +90,7 @@ const SNAPSHOT_CACHE_PROVIDER: FactoryProvider = {
     options: ResolvedSubscriptionOptions
   ): SnapshotCache | null => {
     const host = cache ?? null
-    return host === null ? null : new SnapshotCache(host, options.cacheTtlMs)
+    return host === null ? null : new SnapshotCache(host, options.cacheTtlMs, options.clock)
   },
   inject: [{ token: SUBSCRIPTION_CACHE, optional: true }, SUBSCRIPTION_OPTIONS]
 }

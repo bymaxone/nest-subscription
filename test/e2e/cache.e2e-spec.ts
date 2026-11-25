@@ -321,6 +321,47 @@ describe('cache', () => {
     await app.close()
   })
 
+  it('reads the store after a delete failed until the entry lifetime has passed on the injected clock', async () => {
+    // Scenario: the host cache keeps an old entry because its delete rejects; a refresh changes the
+    // account; reads see the change at once, and the cache is used again after the lifetime.
+    const clock = new ManualClock()
+    const cache = mapCache()
+    const failing: SubscriptionCache = {
+      get: (key) => cache.get(key),
+      set: (key, value, ttl) => cache.set(key, value, ttl),
+      delete: () => Promise.reject(new Error('delete failed'))
+    }
+    const { app, service, source, store } = await boot(failing, false, { clock, cacheTtlMs: 5000 })
+    const other: AccountReference = { accountId: 'acc-2' }
+    for (const account of [ACCOUNT, other]) {
+      source.setAccount(account, snapshotOf(account, true, '2026-01-01T00:00:10.000Z'))
+      await service.refresh(account)
+      await service.getSnapshot(account)
+    }
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, false, '2026-01-01T00:00:20.000Z'))
+    await service.refresh(ACCOUNT)
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+    clock.advance(5000)
+    const reads = jest.spyOn(store, 'getSnapshot')
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+    await service.refresh(other)
+    expect(reads).toHaveBeenCalled()
+    await app.close()
+  })
+
+  it('answers from the store when only the host cache lookup throws', async () => {
+    // Scenario: get rejects while set and delete work; the lookup is a miss and the store answers.
+    const cache: SubscriptionCache = {
+      ...mapCache(),
+      get: () => Promise.reject(new Error('lookup failed'))
+    }
+    const { app, service, source } = await boot(cache)
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
+    await service.refresh(ACCOUNT)
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+    await app.close()
+  })
+
   it('keeps answering reads and refreshes when the host cache throws on every call', async () => {
     // Scenario: get, set and delete all reject.
     const { app, service, source } = await boot(THROWING_CACHE)
