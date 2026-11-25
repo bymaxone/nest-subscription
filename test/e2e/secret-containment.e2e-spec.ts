@@ -11,6 +11,7 @@ import {
   Secret,
   SubscriptionError,
   SubscriptionModule,
+  EntitlementGuard,
   SubscriptionService,
   resolveOptions
 } from '@bymax-one/nest-subscription'
@@ -58,6 +59,7 @@ describe('secret containment', () => {
     await service.refresh({ accountId: 'acc-1' })
     expectNoSentinel(outputsOf(service))
     expectNoSentinel(outputsOf(app.get(SnapshotRefresher)))
+    expectNoSentinel(outputsOf(app.get(EntitlementGuard)))
     expectNoSentinel(outputsOf(await service.getSnapshot({ accountId: 'acc-1' })))
     expect(inspect(service, { depth: null, showHidden: true })).toContain('[Secret]')
     await app.close()

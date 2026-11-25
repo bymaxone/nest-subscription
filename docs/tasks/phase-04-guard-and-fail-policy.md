@@ -1,6 +1,6 @@
 # Phase 4 — Guard and fail policy
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 4 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P4 — guard-and-fail-policy
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,7 +42,7 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 | 4.1 | Add the decorator and the account resolver contract | ✅ Done | P0       | S    | —          |
 | 4.2 | Implement the guard decision and its refusal codes  | ✅ Done | P0       | M    | 4.1        |
 | 4.3 | Implement the fail policy                           | ✅ Done | P0       | M    | 4.2        |
-| 4.4 | Prove the guard end to end                          | 📋 ToDo | P0       | M    | 4.3        |
+| 4.4 | Prove the guard end to end                          | ✅ Done | P0       | M    | 4.3        |
 
 ---
 
@@ -296,7 +296,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 4.4 — Prove the guard end to end
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 4.3
@@ -307,12 +307,12 @@ Write the end-to-end suite that protects real routes and closes the phase: the t
 
 #### Acceptance criteria
 
-- [ ] A real NestJS application with a decorated route returns 200, the "entitlement required" refusal and the "gives no access" refusal for three accounts.
-- [ ] A request with no resolvable account returns 401.
-- [ ] With the store failing and with the source failing, the guard behaves exactly as each policy value says (AC07).
-- [ ] With a fresh snapshot the fake source's read counter stays at zero across guard decisions; with a stale one each decision is returned while the fake source's read is still held unresolved by the test, and at most one read per account is started (NFR01).
-- [ ] No response body in the suite contains an account identifier or a tenant identifier.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A real NestJS application with a decorated route returns 200, the "entitlement required" refusal and the "gives no access" refusal for three accounts.
+- [x] A request with no resolvable account returns 401.
+- [x] With the store failing and with the source failing, the guard behaves exactly as each policy value says (AC07).
+- [x] With a fresh snapshot the fake source's read counter stays at zero across guard decisions; with a stale one each decision is returned while the fake source's read is still held unresolved by the test, and at most one read per account is started (NFR01).
+- [x] No response body in the suite contains an account identifier or a tenant identifier.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -389,3 +389,4 @@ Completion Protocol (after the work is reported done):
 - 4.1 ✅ 2026-11-25 — the RequiresEntitlement decorator and the AccountResolver contract
 - 4.2 ✅ 2026-11-25 — the pure decideAccess and the EntitlementGuard with its stable refusal codes
 - 4.3 ✅ 2026-11-25 — the two-valued fail policy, pure and applied by the guard around its snapshot read
+- 4.4 ✅ 2026-11-25 — the guard end to end on real routes, createFailingStore and its end-to-end suites

@@ -107,6 +107,10 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   record is the empty snapshot and is refused as no subscription under both values. The option's
   documentation states that `last_known_state` extends access during an outage, including for an
   account that was refunded during it.
+- `createFailingStore(store)` in the `testing` subpath, with `FailingStore` and
+  `FailingStoreMethod`: wraps any `SubscriptionStore` and, once `fail()` is called, rejects the
+  methods named (every method when none is named) until `recover()`, so a host can test its own
+  outage handling. Until then it delegates unchanged.
 
 ### Changed
 

@@ -77,11 +77,14 @@ const TESTING_EXPORTS = [
   'FakeSubscriptionSource',
   'InMemorySubscriptionStore',
   'ManualClock',
+  'createFailingStore',
   'storeConformanceCases'
 ]
 
 /** Every runtime name of the root entry point. */
 const ROOT_EXPORTS = [
+  'EntitlementGuard',
+  'RequiresEntitlement',
   'SECRET_PLACEHOLDER',
   'SUBSCRIPTION_CACHE',
   'SUBSCRIPTION_CLOCK',
