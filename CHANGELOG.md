@@ -76,7 +76,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   with the fixed prefix `subscription:snapshot:` and the account key, hold only snapshots the store
   returned, and a cache that throws or returns something that is not a snapshot is treated as a
   miss, so it never fails a read or a write. A cache write is not waited for by the read that made it, and one still in flight when its
-  account is invalidated removes its own entry when it settles, so an invalidation is not undone.
+  account is invalidated removes its own entry when it settles.
 
 - `SubscriptionService.reconcile(options)`, with `ReconcileOptions`, `ReconcileResult` and `Wait`
   exported from the root. A run refreshes the accounts whose snapshot is older than a threshold, up
