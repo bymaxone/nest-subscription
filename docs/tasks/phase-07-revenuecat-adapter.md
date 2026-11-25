@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -43,7 +43,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | ID  | Task                                                      | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 7.1 | Re-read the RevenueCat facts and record the fixtures      | ✅ Done | P0       | M    | —          |
-| 7.2 | Add the adapter options and the HTTP client               | 📋 ToDo | P0       | M    | 7.1        |
+| 7.2 | Add the adapter options and the HTTP client               | ✅ Done | P0       | M    | 7.1        |
 | 7.3 | Implement the mapping tables                              | 📋 ToDo | P0       | M    | 7.1        |
 | 7.4 | Read a customer into a snapshot                           | 📋 ToDo | P0       | L    | 7.2, 7.3   |
 | 7.5 | Verify RevenueCat webhooks                                | 📋 ToDo | P0       | M    | 7.2        |
@@ -140,7 +140,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.2 — Add the adapter options and the HTTP client
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 7.1
@@ -151,12 +151,12 @@ Write the options of the RevenueCat adapter and a small client over the runtime'
 
 #### Acceptance criteria
 
-- [ ] `RevenueCatSourceOptions` carries the project identifier, the API key, the webhook authorization value and signing secret (each optionally as two valid values), the timestamp tolerance, the request timeout, an injectable `fetch`, and `baseUrl`, the adapter's own option for the API's base address: it defaults to the address recorded in `docs/revenuecat-facts.md`, must be an absolute URL, is refused over plain HTTP unless the host is a loopback address, and is how a test points the adapter at a local stand-in.
-- [ ] Secrets are held in `Secret`, and the four containment paths expose none of them.
-- [ ] A network error, a timeout, a 5xx and a 429 become `SubscriptionError` with the source-unavailable code; a 404 for a customer becomes "unknown account", which the read turns into the empty snapshot.
-- [ ] No error message, cause or log line contains the API key, the URL's customer identifier or a response body.
-- [ ] Invalid options are refused when the factory is called, naming options and never values.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `RevenueCatSourceOptions` carries the project identifier, the API key, the webhook authorization value and signing secret (each optionally as two valid values), the timestamp tolerance, the request timeout, an injectable `fetch`, and `baseUrl`, the adapter's own option for the API's base address: it defaults to the address recorded in `docs/revenuecat-facts.md`, must be an absolute URL, is refused over plain HTTP unless the host is a loopback address, and is how a test points the adapter at a local stand-in.
+- [x] Secrets are held in `Secret`, and the four containment paths expose none of them.
+- [x] A network error, a timeout, a 5xx and a 429 become `SubscriptionError` with the source-unavailable code; a 404 for a customer becomes "unknown account", which the read turns into the empty snapshot.
+- [x] No error message, cause or log line contains the API key, the URL's customer identifier or a response body.
+- [x] Invalid options are refused when the factory is called, naming options and never values.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -763,3 +763,4 @@ Completion Protocol (after the work is reported done):
 <!-- entries are added as tasks complete -->
 
 - 7.1 ✅ 2026-11-25 — the provider facts re-read and recorded with their pages, the sandbox and documentation fixtures, and a sanitization check that fails on a planted identifier
+- 7.2 ✅ 2026-11-25 — the adapter options with their validation and a fetch-based client that maps every failure to a fixed library error
