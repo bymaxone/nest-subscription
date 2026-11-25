@@ -1,6 +1,6 @@
 # Phase 4 — Guard and fail policy
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P4 — guard-and-fail-policy
 > **Source spec**: [`docs/spec.md`](../spec.md)
 

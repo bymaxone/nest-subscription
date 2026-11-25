@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 3 / 10 phases of the first release done (30%) — P0 to P9
-**Active phase**: P3 — read-refresh-reconcile
+**Overall progress**: 🔄 4 / 10 phases of the first release done (40%) — P0 to P9
+**Active phase**: P4 — guard-and-fail-policy
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -34,19 +34,19 @@ This document says in which order the specification is built and when each part 
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                     | Status    | Progress | Size | Last updated |
-| --- | --------------------------------------------------------------------------------------------------------- | --------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done   | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done   | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | 👀 Review | 5/5      | L    | 2026-11-25   |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | 📋 ToDo   | 0/4      | M    | —            |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 📋 ToDo   | 0/5      | M    | —            |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo   | 0/5      | L    | —            |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo   | 0/8      | L    | —            |
-| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo   | 0/9      | L    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo   | 0/6      | M    | —            |
-| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo   | 0/5      | L    | —            |
+| ID  | Phase                                                                                                     | Status         | Progress | Size | Last updated |
+| --- | --------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done        | 5/5      | M    | 2026-11-25   |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done        | 5/5      | L    | 2026-11-25   |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | 🔄 In Progress | 0/4      | M    | —            |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 📋 ToDo        | 0/5      | M    | —            |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo        | 0/5      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo        | 0/8      | L    | —            |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo        | 0/9      | L    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo        | 0/6      | M    | —            |
+| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo        | 0/5      | L    | —            |
 
 ---
 
@@ -227,11 +227,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the service's two reads, which answer from the store and never wait for the source (FR28); refresh on demand, with concurrent refreshes of one account collapsed into one source call (FR24, NFR03); the age on every snapshot and the background refresh of a stale one on its next read (FR25); the rule that an older snapshot never replaces a newer one (FR27); reconciliation in bounded batches under a rate limit, as a method the host schedules (FR26, NFR04); the optional read-through cache with invalidation on every change (FR23); the tenant in every key, taken from the caller and never from a body (SEC08).
   - Out: the guard (P4); telling the host about a change (P5); webhooks (P6).
 - **Definition of Done**:
-  - [ ] Reading a fresh snapshot or asking for an entitlement on one makes zero calls on the fake source, and no read ever waits for a source call unless a refresh was requested.
-  - [ ] One hundred concurrent refreshes of one account produce one source call; refreshes of different accounts do not wait for each other.
-  - [ ] A snapshot the source reports as older than the stored one is not written, under sequential and under concurrent writes.
-  - [ ] A reconciliation run refreshes only accounts older than the threshold, stops at the configured batch bound and never exceeds the configured rate.
-  - [ ] With a cache configured, a change is visible on the next read; with none, every test in the phase still passes.
+  - [x] Reading a fresh snapshot or asking for an entitlement on one makes zero calls on the fake source, and no read ever waits for a source call unless a refresh was requested.
+  - [x] One hundred concurrent refreshes of one account produce one source call; refreshes of different accounts do not wait for each other.
+  - [x] A snapshot the source reports as older than the stored one is not written, under sequential and under concurrent writes.
+  - [x] A reconciliation run refreshes only accounts older than the threshold, stops at the configured batch bound and never exceeds the configured rate.
+  - [x] With a cache configured, a change is visible on the next read; with none, every test in the phase still passes.
 - **Context / preconditions**: P2 is done.
 - **Rules-of-phase**:
   1. A background refresh never changes what the current read returns and never rejects it.
@@ -446,6 +446,7 @@ When a phase moves status:
 - P0 ✅ 2026-11-24 — scaffold, gates, CI and repository documents merged in #4; CI passed is a required check
 - P1 ✅ 2026-11-24 — the model, the two ports, the in-memory store, the conformance suite and the fake source merged in #6
 - P2 ✅ 2026-11-25 — the module, its options and their validation, secret containment and the sandbox boot refusal merged in #7
+- P3 ✅ 2026-11-25 — reads, refresh with single flight, staleness, the cache and reconciliation merged in #9
 
 ---
 

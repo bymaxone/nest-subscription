@@ -1,6 +1,6 @@
 # Phase 3 — Read, refresh and reconcile
 
-> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: ✅ Done &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P3 — read-refresh-reconcile
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
