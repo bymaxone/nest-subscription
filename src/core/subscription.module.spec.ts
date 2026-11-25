@@ -24,6 +24,7 @@ import { createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
 import { resolveOptions } from './options/resolve-options'
 import { SnapshotCache } from './cache/snapshot-cache'
 import { Reconciler } from './reconciliation/reconciler'
+import { EntitlementGuard } from './guard/entitlement.guard'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionModule } from './subscription.module'
 import { SubscriptionService } from './subscription.service'
@@ -72,7 +73,8 @@ describe('SubscriptionModule.forRoot', () => {
       SUBSCRIPTION_SOURCE,
       SUBSCRIPTION_STORE,
       SUBSCRIPTION_CLOCK,
-      SubscriptionService
+      SubscriptionService,
+      EntitlementGuard
     ])
     expect(module.module).toBe(SubscriptionModule)
   })
@@ -87,6 +89,13 @@ describe('SubscriptionModule.forRoot', () => {
     expect(module.exports).not.toContain(Reconciler)
     expect(module.exports).toContain(SubscriptionService)
     expect(module.exports).not.toContain(SnapshotRefresher)
+  })
+
+  it('provides and exports the guard, so a host module that imports this one can use it', () => {
+    // Scenario: the guard is a provider of the module and one of its exports.
+    const module = SubscriptionModule.forRoot(input())
+    expect(module.providers).toContain(EntitlementGuard)
+    expect(module.exports).toContain(EntitlementGuard)
   })
 
   it('builds the snapshot cache over the host cache, and as null when there is none', () => {
@@ -271,7 +280,7 @@ describe('SubscriptionModule.forRootAsync', () => {
       SUBSCRIPTION_CACHE,
       SUBSCRIPTION_OBSERVER
     ])
-    expect(module.exports).toHaveLength(7)
+    expect(module.exports).toHaveLength(8)
   })
 
   it('hands the injected values to the factory and resolves what it returns', async () => {

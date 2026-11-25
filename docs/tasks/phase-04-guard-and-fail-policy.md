@@ -1,6 +1,6 @@
 # Phase 4 — Guard and fail policy
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P4 — guard-and-fail-policy
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -40,7 +40,7 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 | ID  | Task                                                | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 4.1 | Add the decorator and the account resolver contract | ✅ Done | P0       | S    | —          |
-| 4.2 | Implement the guard decision and its refusal codes  | 📋 ToDo | P0       | M    | 4.1        |
+| 4.2 | Implement the guard decision and its refusal codes  | ✅ Done | P0       | M    | 4.1        |
 | 4.3 | Implement the fail policy                           | 📋 ToDo | P0       | M    | 4.2        |
 | 4.4 | Prove the guard end to end                          | 📋 ToDo | P0       | M    | 4.3        |
 
@@ -130,7 +130,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 4.2 — Implement the guard decision and its refusal codes
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 4.1
@@ -141,13 +141,13 @@ Write the guard for the normal case: the store is readable and the snapshot exis
 
 #### Acceptance criteria
 
-- [ ] A route with no `RequiresEntitlement` metadata is allowed without resolving an account.
-- [ ] No resolvable account is refused as unauthenticated (HTTP 401), not as unsubscribed.
-- [ ] An account with the entitlement active is allowed.
-- [ ] An account with no subscription is refused with the "entitlement required" code, and an account whose subscription exists and gives no access (for example on hold) is refused with the "gives no access" code, both as HTTP 403.
-- [ ] The refusal body contains only the catalogue's code and message.
-- [ ] The decision is a pure function of the snapshot and the entitlement name, tested by table.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A route with no `RequiresEntitlement` metadata is allowed without resolving an account.
+- [x] No resolvable account is refused as unauthenticated (HTTP 401), not as unsubscribed.
+- [x] An account with the entitlement active is allowed.
+- [x] An account with no subscription is refused with the "entitlement required" code, and an account whose subscription exists and gives no access (for example on hold) is refused with the "gives no access" code, both as HTTP 403.
+- [x] The refusal body contains only the catalogue's code and message.
+- [x] The decision is a pure function of the snapshot and the entitlement name, tested by table.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -387,3 +387,4 @@ Completion Protocol (after the work is reported done):
 <!-- entries are added as tasks complete -->
 
 - 4.1 ✅ 2026-11-25 — the RequiresEntitlement decorator and the AccountResolver contract
+- 4.2 ✅ 2026-11-25 — the pure decideAccess and the EntitlementGuard with its stable refusal codes

@@ -91,6 +91,14 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   needing one entitlement, the handler's name winning over the controller's. A blank name is
   refused with `SUBSCRIPTION_INVALID_INPUT` when the decorator is applied. `AccountResolver` and
   `ResolvedAccount`, exported from the root, are the contract of the resolver the host supplies.
+- `EntitlementGuard`, exported from the root, provided and exported by the module: it enforces
+  `RequiresEntitlement`. A route without the decorator is untouched. The account comes from the
+  host's resolver only; a request with no usable account is refused with HTTP 401
+  `SUBSCRIPTION_ACCOUNT_UNKNOWN`, an account without the entitlement with HTTP 403
+  `SUBSCRIPTION_ENTITLEMENT_REQUIRED`, and an account whose subscription gives no access with HTTP
+  403 `SUBSCRIPTION_NO_ACCESS`. Any unexpected failure refuses with HTTP 503
+  `SUBSCRIPTION_SOURCE_UNAVAILABLE`. A refusal body is `{ code, message }` and nothing else. The
+  guard works for HTTP contexts; a decorated route in another context is refused.
 
 ### Changed
 

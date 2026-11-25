@@ -457,6 +457,11 @@ proposal below is what the code does until the owner answers.
   fixes one. Proposal: both stay unset (`null` in the resolved options) until the webhook phase
   decides, and an unset retention means identifiers are not purged by the library. The webhook
   phase (P6) decides it from the provider's documented retry policy.
+- **Q04. Which catalogue code does a request with no resolvable account carry?** FR29 says the
+  request is refused as unauthenticated, and the closed catalogue of §6.4 has no code for that.
+  Proposal: the guard answers HTTP 401 with `SUBSCRIPTION_ACCOUNT_UNKNOWN`, so the status carries
+  "unauthenticated" and the body stays inside the catalogue; the owner may instead add a dedicated
+  code, which is a public change to the closed set.
 
 ---
 

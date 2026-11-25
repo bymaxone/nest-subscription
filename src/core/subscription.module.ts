@@ -20,6 +20,7 @@ import {
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import { SnapshotCache } from './cache/snapshot-cache'
+import { EntitlementGuard } from './guard/entitlement.guard'
 import { resolveOptions } from './options/resolve-options'
 import type {
   ResolvedSubscriptionOptions,
@@ -77,7 +78,12 @@ async function runFactory(
  * The classes the library provides for itself. They are built from the tokens above, so they
  * follow whichever configuration the host chose.
  */
-const OWN_CLASSES: readonly Type[] = [SnapshotRefresher, Reconciler, SubscriptionService]
+const OWN_CLASSES: readonly Type[] = [
+  SnapshotRefresher,
+  Reconciler,
+  SubscriptionService,
+  EntitlementGuard
+]
 
 /**
  * The snapshot cache: built over the host's cache when there is one, and `null` when there is not,
@@ -97,7 +103,7 @@ const SNAPSHOT_CACHE_PROVIDER: FactoryProvider = {
 
 /**
  * Puts the pieces together as a dynamic module; every token provider it lists is exported, and
- * so is the service. The refresher is provided for the library's own use and is not exported.
+ * so are the service and the guard. The refresher is provided for the library's own use and is not exported.
  */
 function assemble(
   global: boolean | undefined,
@@ -109,7 +115,11 @@ function assemble(
     global: global ?? false,
     imports: imports ?? [],
     providers: [...providers, SNAPSHOT_CACHE_PROVIDER, ...OWN_CLASSES],
-    exports: [...providers.map((provider) => provider.provide), SubscriptionService]
+    exports: [
+      ...providers.map((provider) => provider.provide),
+      SubscriptionService,
+      EntitlementGuard
+    ]
   }
 }
 

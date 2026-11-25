@@ -60,6 +60,7 @@ export type {
   SubscriptionObserverOption,
   SubscriptionOptionsInput
 } from './options/subscription-options.types'
+export { EntitlementGuard } from './guard/entitlement.guard'
 export { RequiresEntitlement } from './guard/requires-entitlement.decorator'
 export type { AccountResolver, ResolvedAccount } from './guard/account-resolver.types'
 export { SubscriptionModule } from './subscription.module'
