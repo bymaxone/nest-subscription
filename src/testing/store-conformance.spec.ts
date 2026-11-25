@@ -174,6 +174,26 @@ describe('storeConformanceCases', () => {
     }
   )
 
+  it('keeps the short-page variant different from the in-memory store, so its pass proves something', async () => {
+    // Scenario: five stale keys listed three at a time; the variant's first page holds two keys
+    // and a cursor, where the reference store's holds three.
+    const create = VALID_VARIANTS['pagesOneKeyShort']
+    const variant = create?.() ?? new InMemorySubscriptionStore()
+    const reference = new InMemorySubscriptionStore({ logger: () => undefined })
+    for (const store of [variant, reference]) {
+      for (const key of ['a', 'b', 'c', 'd', 'e']) {
+        const fetchedAt = '2026-01-01T00:00:00.000Z'
+        const snapshot = createEmptySnapshot({ accountId: key, source: 's', fetchedAt })
+        await store.putSnapshot(key, snapshot, [], fetchedAt)
+      }
+    }
+    const later = '2026-06-01T00:00:00.000Z'
+    expect((await reference.listStaleKeys(later, 3, null)).keys).toEqual(['a', 'b', 'c'])
+    const short = await variant.listStaleKeys(later, 3, null)
+    expect(short.keys).toEqual(['a', 'b'])
+    expect(short.nextCursor).not.toBeNull()
+  })
+
   it('keeps the variant different from the in-memory store, so its pass proves something', async () => {
     // Scenario: the variant lists a page in the opposite order to the reference store.
     const create = VALID_VARIANTS['reversesTheKeysOfEachPage']
