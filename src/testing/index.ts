@@ -2,6 +2,8 @@
  * @fileoverview Entry point of the `testing` directory: the in-memory store, the conformance cases, the fake source and the request builders for tests.
  * @layer testing
  */
+export { assertNoSentinel, createCapture } from './capture'
+export type { Capture, CapturedPayload } from './capture'
 export { createFailingStore } from './failing.store'
 export type { FailingStore, FailingStoreMethod } from './failing.store'
 export { FakeSubscriptionSource } from './fake.source'

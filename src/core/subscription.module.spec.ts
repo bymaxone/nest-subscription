@@ -77,7 +77,8 @@ describe('SubscriptionModule.forRoot', () => {
       SUBSCRIPTION_STORE,
       SUBSCRIPTION_CLOCK,
       SubscriptionService,
-      EntitlementGuard
+      EntitlementGuard,
+      ObserverBridge
     ])
     expect(module.module).toBe(SubscriptionModule)
   })
@@ -319,7 +320,7 @@ describe('SubscriptionModule.forRootAsync', () => {
       SUBSCRIPTION_CACHE,
       SUBSCRIPTION_OBSERVER
     ])
-    expect(module.exports).toHaveLength(8)
+    expect(module.exports).toHaveLength(9)
   })
 
   it('hands the injected values to the factory and resolves what it returns', async () => {

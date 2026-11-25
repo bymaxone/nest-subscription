@@ -8,6 +8,7 @@
 import {
   SubscriptionError,
   encodeAccountKey,
+  hashAccountKey,
   type AccountReference,
   type SubscriptionStore
 } from '@bymax-one/nest-subscription/internal'
@@ -91,7 +92,7 @@ describe('ChangeDispatcher.deliver', () => {
     expect(hook.mock.calls[0]?.[0]).toMatchObject({ previous: null, redelivery: false })
   })
 
-  it('clears the delivered keys and no others after the hook returned', async () => {
+  it('clears the delivered keys and no others', async () => {
     // Scenario: two changes pending, the hook is told of one; only that key is cleared.
     const hook = jest.fn()
     const { dispatcher, store } = await setup(hook)
@@ -143,7 +144,7 @@ describe('ChangeDispatcher.deliver', () => {
       expect(await pendingKeys(store)).toStrictEqual(['key-1', 'key-2'])
       expect((await store.getSnapshot(KEY))?.snapshot.sourceCustomer?.id).toBe('now')
       expect(lines).toStrictEqual([
-        'The change hook failed; its changes stay pending and are delivered again: SUBSCRIPTION_INVALID_INPUT.'
+        `The change hook failed; its changes stay pending and are delivered again (account ${hashAccountKey(KEY)}): SUBSCRIPTION_INVALID_INPUT.`
       ])
     }
   )
@@ -190,7 +191,7 @@ describe('ChangeDispatcher.deliver', () => {
     await expect(dispatcher.deliver(KEY, null, snapshot('now'), CHANGES)).resolves.toBeUndefined()
     expect(await pendingKeys(store)).toStrictEqual(['key-1', 'key-2'])
     expect(lines).toStrictEqual([
-      'The change hook returned but its changes could not be cleared; they are delivered again: SUBSCRIPTION_SOURCE_UNAVAILABLE.'
+      `The change hook returned but its changes could not be cleared; they are delivered again (account ${hashAccountKey(KEY)}): SUBSCRIPTION_SOURCE_UNAVAILABLE.`
     ])
   })
 })
@@ -296,7 +297,7 @@ describe('ChangeDispatcher.redeliver', () => {
     await expect(dispatcher.redeliver(KEY, ACCOUNT)).resolves.toBeUndefined()
     expect(hook).not.toHaveBeenCalled()
     expect(lines).toStrictEqual([
-      'The pending changes of an account could not be read for delivery: unclassified.'
+      `The pending changes of an account could not be read for delivery (account ${hashAccountKey(KEY)}): unclassified.`
     ])
   })
 })

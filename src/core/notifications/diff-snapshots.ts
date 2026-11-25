@@ -85,10 +85,8 @@ export function diffSnapshots(
   previous: SubscriptionSnapshot | null,
   current: SubscriptionSnapshot
 ): SubscriptionChange[] {
-  const { accountId, tenantId } = current
-  const accountKey = encodeAccountKey(
-    tenantId === undefined ? { accountId } : { accountId, tenantId }
-  )
+  // A snapshot names its account and tenant, which is all `encodeAccountKey` reads.
+  const accountKey = encodeAccountKey(current)
   return diffCandidates(previous, current).map((change) => ({
     kind: change.kind,
     key: changeKey(accountKey, change)

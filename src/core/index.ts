@@ -13,7 +13,8 @@ export {
   Secret,
   SubscriptionError,
   decodeAccountKey,
-  encodeAccountKey
+  encodeAccountKey,
+  hashAccountKey
 } from '@bymax-one/nest-subscription/internal'
 export type {
   AccountReference,

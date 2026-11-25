@@ -36,6 +36,7 @@ describe('core entry point', () => {
       'decodeAccountKey',
       'diffSnapshots',
       'encodeAccountKey',
+      'hashAccountKey',
       'resolveOptions',
       'validateOptions'
     ])

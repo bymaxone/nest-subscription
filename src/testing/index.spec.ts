@@ -2,6 +2,7 @@
  * @fileoverview Pins the names the `testing` entry point exports.
  * @layer testing
  */
+import { assertNoSentinel, createCapture } from './capture'
 import { FakeSubscriptionSource } from './fake.source'
 import * as entry from './index'
 import { InMemorySubscriptionStore } from './in-memory.store'
@@ -17,12 +18,16 @@ describe('testing entry point', () => {
       'FakeSubscriptionSource',
       'InMemorySubscriptionStore',
       'ManualClock',
+      'assertNoSentinel',
+      'createCapture',
       'createFailingStore',
       'storeConformanceCases'
     ])
     expect(entry.FakeSubscriptionSource).toBe(FakeSubscriptionSource)
     expect(entry.InMemorySubscriptionStore).toBe(InMemorySubscriptionStore)
     expect(entry.ManualClock).toBe(ManualClock)
+    expect(entry.assertNoSentinel).toBe(assertNoSentinel)
+    expect(entry.createCapture).toBe(createCapture)
     expect(entry.createFailingStore).toBe(createFailingStore)
     expect(entry.storeConformanceCases).toBe(storeConformanceCases)
   })

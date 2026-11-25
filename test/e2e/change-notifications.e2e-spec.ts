@@ -9,11 +9,15 @@
 import { Test } from '@nestjs/testing'
 import type { TestingModule } from '@nestjs/testing'
 import {
+  SUBSCRIPTION_ERROR_CODES,
+  SubscriptionError,
   SubscriptionModule,
   SubscriptionService,
   encodeAccountKey,
+  hashAccountKey,
   type SubscriptionChangeNotification,
   type SubscriptionObserver,
+  type StoredSnapshot,
   type SubscriptionStore
 } from '@bymax-one/nest-subscription'
 import type { SubscriptionRecord, SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
@@ -123,7 +127,7 @@ async function pendingKeys(store: SubscriptionStore): Promise<string[]> {
 }
 
 describe('change notifications', () => {
-  it('calls the hook after the write with the previous snapshot, the new one and the changes', async () => {
+  it('calls the hook with the previous snapshot, the new one and the changes, and clears them', async () => {
     // Scenario: a first refresh finds a subscription, a second one a renewal.
     const { service, source, store, clock, notifications } = await boot()
     source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
@@ -181,7 +185,7 @@ describe('change notifications', () => {
     expect(held?.snapshot.subscriptions).toHaveLength(1)
     expect(held?.pendingChanges.map((change) => change.kind)).toStrictEqual(['started'])
     expect(lines).toStrictEqual([
-      'The change hook failed; its changes stay pending and are delivered again: unclassified.'
+      `The change hook failed; its changes stay pending and are delivered again (account ${hashAccountKey(KEY)}): unclassified.`
     ])
     expect(onChangeDelivery).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: 'failed', redelivery: false, changeCount: 1 })
@@ -304,7 +308,7 @@ describe('change notifications', () => {
     expect(finished).toBe(true)
   })
 
-  it('gives the same change the same key whenever it is computed', async () => {
+  it('gives the same change the same key in two applications', async () => {
     // Scenario: two applications compute the same transition from the same two source states; the
     // keys they hand the hook are equal.
     const keysOf = async (): Promise<string[]> => {
@@ -317,5 +321,194 @@ describe('change notifications', () => {
       return notifications.flatMap((n) => n.changes.map((change) => change.key))
     }
     expect(await keysOf()).toStrictEqual(await keysOf())
+  })
+})
+
+/** The store with some methods replaced; the others reach it unchanged. */
+function over(
+  base: InMemorySubscriptionStore,
+  overrides: Partial<SubscriptionStore>
+): SubscriptionStore {
+  return {
+    getSnapshot: (key) => base.getSnapshot(key),
+    putSnapshot: (key, snapshot, changes, at) => base.putSnapshot(key, snapshot, changes, at),
+    clearPendingChanges: (key, keys) => base.clearPendingChanges(key, keys),
+    listKeysWithPendingChanges: (limit, cursor) => base.listKeysWithPendingChanges(limit, cursor),
+    markEventProcessed: (name, id, at) => base.markEventProcessed(name, id, at),
+    forgetEvent: (name, id) => base.forgetEvent(name, id),
+    deleteEventsOlderThan: (instant) => base.deleteEventsOlderThan(instant),
+    listStaleKeys: (olderThan, limit, cursor) => base.listStaleKeys(olderThan, limit, cursor),
+    ...overrides
+  }
+}
+
+describe('change notifications when the store or the observer misbehaves', () => {
+  it('logs a failure to clear and delivers the same changes again on the next run', async () => {
+    // Scenario: the hook returns but the store cannot clear; the next run calls it again with the
+    // same keys, and this time the clear works.
+    let clearing = false
+    const { service, source, store, lines, notifications } = await boot({
+      wrap: (base) =>
+        over(base, {
+          clearPendingChanges: (key, keys) =>
+            clearing ? base.clearPendingChanges(key, keys) : Promise.reject(new Error('store down'))
+        })
+    })
+    source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
+    await service.refresh(ACCOUNT)
+    expect(await pendingKeys(store)).toHaveLength(1)
+    expect(lines).toStrictEqual([
+      `The change hook returned but its changes could not be cleared; they are delivered again (account ${hashAccountKey(KEY)}): unclassified.`
+    ])
+    clearing = true
+    await service.reconcile({})
+    expect(notifications.map((n) => n.redelivery)).toStrictEqual([false, true])
+    expect(notifications[1]?.changes).toStrictEqual(notifications[0]?.changes)
+    expect(await pendingKeys(store)).toStrictEqual([])
+  })
+
+  it('logs that pending changes could not be read and keeps them for the next run', async () => {
+    // Scenario: the store cannot be read while a run tries to deliver; nothing is called or cleared.
+    let reading = true
+    const { service, source, store, lines, notifications, setBehaviour } = await boot({
+      wrap: (base) =>
+        over(base, {
+          getSnapshot: (key) =>
+            reading ? Promise.reject(new Error('store down')) : base.getSnapshot(key)
+        })
+    })
+    setBehaviour(() => Promise.reject(new Error('hook down')))
+    reading = false
+    source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
+    await service.refresh(ACCOUNT)
+    reading = true
+    lines.length = 0
+    await service.reconcile({})
+    reading = false
+    expect(lines).toContain(
+      `The pending changes of an account could not be read for delivery (account ${hashAccountKey(KEY)}): unclassified.`
+    )
+    expect(notifications).toHaveLength(1)
+    expect(await pendingKeys(store)).toHaveLength(1)
+  })
+
+  it('skips a pending key it cannot decode and delivers the others', async () => {
+    // Scenario: the listing holds a key the library never wrote; the run goes on.
+    const { service, source, notifications, setBehaviour } = await boot({
+      wrap: (base) =>
+        over(base, {
+          listKeysWithPendingChanges: async (limit, cursor) => {
+            const page = await base.listKeysWithPendingChanges(limit, cursor)
+            return { ...page, keys: ['not-a-key', ...page.keys] }
+          }
+        })
+    })
+    setBehaviour(() => Promise.reject(new Error('hook down')))
+    source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
+    await service.refresh(ACCOUNT)
+    setBehaviour(() => undefined)
+    await service.reconcile({})
+    expect(notifications.map((n) => n.redelivery)).toStrictEqual([false, true])
+  })
+
+  it.each([
+    [
+      'throws',
+      {
+        onRefresh: (): never => {
+          throw new Error('observer broke')
+        },
+        onCacheLookup: (): Promise<void> => Promise.reject(new Error('observer rejected'))
+      }
+    ],
+    [
+      'exposes a method that throws when read',
+      Object.defineProperty({}, 'onRefresh', {
+        get(): never {
+          throw new Error('getter broke')
+        }
+      })
+    ]
+  ])('does not fail a refresh or a read when the observer %s', async (_how, observer) => {
+    // Scenario: an observer that breaks in each way; the host's operations succeed.
+    const { service, source } = await boot({ observer })
+    source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
+    await expect(service.refresh(ACCOUNT)).resolves.toMatchObject({ accountId: 'acc-1' })
+    await expect(service.getSnapshot(ACCOUNT)).resolves.toMatchObject({ accountId: 'acc-1' })
+  })
+})
+
+describe('change notifications from reconciliation, bounds and defences', () => {
+  it('logs the code of a library error the hook throws', async () => {
+    // Scenario: the hook throws an error of the library's catalogue; its code is what is logged.
+    const { service, source, lines, setBehaviour } = await boot()
+    setBehaviour(() => {
+      throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.OPERATION_NOT_POSSIBLE)
+    })
+    source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
+    await service.refresh(ACCOUNT)
+    expect(lines).toStrictEqual([
+      `The change hook failed; its changes stay pending and are delivered again (account ${hashAccountKey(KEY)}): SUBSCRIPTION_OPERATION_NOT_POSSIBLE.`
+    ])
+  })
+
+  it('delivers no more accounts in a run than the batch bound and the rest in the next run', async () => {
+    // Scenario: three accounts pending and a bound of two; the next run delivers the third.
+    const { service, store, notifications } = await boot()
+    for (const accountId of ['acc-a', 'acc-b', 'acc-c']) {
+      const account = { accountId }
+      await store.putSnapshot(
+        encodeAccountKey(account),
+        { ...sourceState('2026-02-01T00:00:00.000Z', T0), accountId },
+        [{ kind: 'started', key: `key-${accountId}` }],
+        T0
+      )
+    }
+    await service.reconcile({ batchSize: 2 })
+    expect(notifications).toHaveLength(2)
+    await service.reconcile({ batchSize: 2 })
+    expect(notifications).toHaveLength(3)
+    expect(notifications.every((notification) => notification.redelivery)).toBe(true)
+  })
+
+  it.each([
+    ['no snapshot', (): Promise<null> => Promise.resolve(null)],
+    [
+      'no pending change',
+      (base: SubscriptionStore): Promise<unknown> =>
+        base
+          .getSnapshot(KEY)
+          .then((held) => (held === null ? null : { ...held, pendingChanges: [] }))
+    ],
+    [
+      'the snapshot of another account',
+      (base: SubscriptionStore): Promise<unknown> =>
+        base
+          .getSnapshot(KEY)
+          .then((held) =>
+            held === null
+              ? null
+              : { ...held, snapshot: { ...held.snapshot, accountId: 'someone-else' } }
+          )
+    ]
+  ])('calls no hook on a redelivery when the store answers with %s', async (_what, answer) => {
+    // Scenario: the pending list names the account, but what the store then holds cannot be
+    // delivered; the hook is not called and nothing is cleared.
+    let answering = false
+    const { service, source, store, notifications, setBehaviour } = await boot({
+      wrap: (base) =>
+        over(base, {
+          getSnapshot: async (key) =>
+            answering ? ((await answer(base)) as StoredSnapshot | null) : base.getSnapshot(key)
+        })
+    })
+    setBehaviour(() => Promise.reject(new Error('hook down')))
+    source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
+    await service.refresh(ACCOUNT)
+    answering = true
+    await service.reconcile({})
+    answering = false
+    expect(notifications).toHaveLength(1)
+    expect(await pendingKeys(store)).toHaveLength(1)
   })
 })

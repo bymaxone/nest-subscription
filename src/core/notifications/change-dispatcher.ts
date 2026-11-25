@@ -81,7 +81,7 @@ export class ChangeDispatcher {
     try {
       stored = await this.store.getSnapshot(key)
     } catch (error) {
-      logEvent(this.logger, 'change_read_failed', codeOf(error))
+      logEvent(this.logger, 'change_read_failed', codeOf(error), key)
       return
     }
     if (stored === null || stored.pendingChanges.length === 0) return
@@ -102,7 +102,7 @@ export class ChangeDispatcher {
       await this.hook(notification)
     } catch (error) {
       this.observer.changeDelivery('failed', redelivery, changes.length, started, codeOf(error))
-      logEvent(this.logger, 'change_hook_failed', codeOf(error))
+      logEvent(this.logger, 'change_hook_failed', codeOf(error), key)
       return
     }
     this.observer.changeDelivery('delivered', redelivery, changes.length, started, null)
@@ -112,7 +112,7 @@ export class ChangeDispatcher {
         changes.map((change) => change.key)
       )
     } catch (error) {
-      logEvent(this.logger, 'change_clear_failed', codeOf(error))
+      logEvent(this.logger, 'change_clear_failed', codeOf(error), key)
     }
   }
 }

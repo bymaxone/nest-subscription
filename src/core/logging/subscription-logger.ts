@@ -4,6 +4,7 @@
  * payload and no error text can reach a log through it.
  * @layer core
  */
+import { hashAccountKey } from '@bymax-one/nest-subscription/internal'
 import type { SubscriptionErrorCode } from '@bymax-one/nest-subscription/shared'
 
 /**
@@ -34,21 +35,27 @@ function sentenceOf(event: LogEvent): string {
 }
 
 /**
- * Logs one event with the code of the error that caused it, or `unclassified` for an error that
- * is not the library's. Nothing raised by the logger leaves this function, so a broken logger
- * never turns a handled failure into an unhandled one.
+ * Logs one event with a short hash of the account, so the lines of one account can be correlated,
+ * and the code of the error that caused it, or `unclassified` for an error that is not the
+ * library's. The account itself, the tenant and the error's text never reach the line. Nothing
+ * raised by the logger leaves this function, so a broken logger never turns a handled failure into
+ * an unhandled one.
  *
  * @param logger The logger the host configured.
  * @param event The event; it picks the sentence.
  * @param code The catalogue code of the error, or `null` when it was not one.
+ * @param accountKey The output of `encodeAccountKey` for the account the event concerns.
  */
 export function logEvent(
   logger: SubscriptionLogger,
   event: LogEvent,
-  code: SubscriptionErrorCode | null
+  code: SubscriptionErrorCode | null,
+  accountKey: string
 ): void {
   try {
-    logger.warn(`${sentenceOf(event)}: ${code ?? 'unclassified'}.`)
+    logger.warn(
+      `${sentenceOf(event)} (account ${hashAccountKey(accountKey)}): ${code ?? 'unclassified'}.`
+    )
   } catch {
     // A logger that throws must not break the operation it reports on.
   }

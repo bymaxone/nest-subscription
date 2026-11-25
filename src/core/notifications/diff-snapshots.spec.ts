@@ -181,6 +181,26 @@ describe('diffCandidates', () => {
     expect(kindsOf(snapshotOf([record()]), current)).toStrictEqual(['renewed', 'product_changed'])
   })
 
+  it('puts a kind that comes earlier in the model first even when its rule runs later', () => {
+    // Scenario: one subscription expires and stops renewing; the model lists will_not_renew before
+    // expired, though the lifecycle rule runs before the renewal rule.
+    const current = snapshotOf([record({ status: 'expired', givesAccess: false, willRenew: 'no' })])
+    expect(kindsOf(snapshotOf([record()]), current)).toStrictEqual(['will_not_renew', 'expired'])
+  })
+
+  it('puts the kinds of two subscriptions in the order of the model, not of the subscriptions', () => {
+    // Scenario: the first subscription expires and the second stops renewing.
+    const previous = snapshotOf([
+      record({ subscriptionReference: 'a' }),
+      record({ subscriptionReference: 'b' })
+    ])
+    const current = snapshotOf([
+      record({ subscriptionReference: 'a', status: 'expired', givesAccess: false }),
+      record({ subscriptionReference: 'b', willRenew: 'no' })
+    ])
+    expect(kindsOf(previous, current)).toStrictEqual(['will_not_renew', 'expired'])
+  })
+
   it('orders several subscriptions of one kind by their order in the current snapshot', () => {
     // Scenario: two subscriptions refunded in one comparison.
     const refunded = (reference: string): SubscriptionRecord =>
@@ -269,7 +289,7 @@ const VARIANTS: Record<ChangeKind, readonly [SubscriptionSnapshot | null, Subscr
 }
 
 describe('diffSnapshots', () => {
-  it('gives each change a key of 64 lowercase hexadecimal characters', () => {
+  it('gives a change a key of 64 lowercase hexadecimal characters', () => {
     // Scenario: an account and a tenant with recognizable names still give a fixed-width hex key.
     const current = {
       ...snapshotOf([record()]),
@@ -281,7 +301,7 @@ describe('diffSnapshots', () => {
     expect(keys[0]).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  it('returns the kind of each change beside its key', () => {
+  it('returns the kind of a change beside its key', () => {
     // Scenario: the typed list carries both fields of a change.
     const changes = diffSnapshots(null, snapshotOf([record()]))
     expect(changes).toStrictEqual([

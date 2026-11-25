@@ -1,6 +1,6 @@
 # Phase 5 — Change notifications and observer
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P5 — change-notifications-and-observer
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,7 +42,7 @@ At the end every stored change is compared with the previous snapshot into a typ
 | 5.2 | Give each change a stable key                             | ✅ Done | P0       | S    | 5.1        |
 | 5.3 | Call the host hook after the write                        | ✅ Done | P0       | M    | 5.2        |
 | 5.4 | Add the observer                                          | ✅ Done | P1       | M    | 5.3        |
-| 5.5 | Prove that logs and observer payloads carry no identifier | 📋 ToDo | P0       | S    | 5.4        |
+| 5.5 | Prove that logs and observer payloads carry no identifier | ✅ Done | P0       | S    | 5.4        |
 
 ---
 
@@ -393,7 +393,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 5.5 — Prove that logs and observer payloads carry no identifier
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 5.4
@@ -404,11 +404,11 @@ Add the short-hash helper for correlation and the assertions that no account ide
 
 #### Acceptance criteria
 
-- [ ] A helper produces a short, salted, one-way hash of an account key for correlation in logs.
-- [ ] An end-to-end test runs refresh, read, reconcile and a throwing hook with sentinel account and tenant identifiers, captures every log line and every observer payload, and finds no sentinel.
-- [ ] The assertion helper is exported from the testing subpath, so P6, P7 and P9 reuse it.
-- [ ] Every Definition of Done item of P5 in `docs/plan.md` has a named test.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A helper produces a short, salted, one-way hash of an account key for correlation in logs.
+- [x] An end-to-end test runs refresh, read, reconcile and a throwing hook with sentinel account and tenant identifiers, captures every log line and every observer payload, and finds no sentinel.
+- [x] The assertion helper is exported from the testing subpath, so P6, P7 and P9 reuse it.
+- [x] Every Definition of Done item of P5 in `docs/plan.md` has a named test.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -486,3 +486,4 @@ Completion Protocol (after the work is reported done):
 - 5.2 ✅ 2026-11-25 — the stable change key, hashed field by field from snapshot data, attached to every change by diffSnapshots
 - 5.3 ✅ 2026-11-25 — changes stored with the snapshot as pending, the host hook called after the write, redelivery from reconciliation without the previous snapshot
 - 5.4 ✅ 2026-11-25 — the optional observer with closed payload types and a bridge that costs nothing without one, wired into refreshes, source errors, the cache, the guard and delivery
+- 5.5 ✅ 2026-11-25 — the salted account hash, the capturing logger and observer with the sentinel sweep, and the end-to-end proof that no identifier reaches a log or an observer

@@ -163,16 +163,17 @@ export class SubscriptionService {
 
   /** Starts a refresh without waiting for it; whatever it ends with is handled here. */
   #refreshInBackground(account: AccountReference): void {
-    this.refresher.refresh(account).catch((error: unknown) => this.#reportFailure(error))
+    const key = encodeAccountKey(account)
+    this.refresher.refresh(account).catch((error: unknown) => this.#reportFailure(error, key))
   }
 
   /**
-   * Logs a failed background refresh by its code alone and tells the observer. Neither the account
-   * nor the error's text is passed on, and neither a broken logger nor a broken observer can raise.
+   * Logs a failed background refresh by its code and a short hash of the account, and tells the
+   * observer by its code alone. Neither the account nor the error's text is passed on, and neither a broken logger nor a broken observer can raise.
    */
-  #reportFailure(error: unknown): void {
+  #reportFailure(error: unknown, key: string): void {
     const code = error instanceof SubscriptionError ? error.code : null
-    logEvent(this.options.logger, 'background_refresh_failed', code)
+    logEvent(this.options.logger, 'background_refresh_failed', code, key)
     this.observer.backgroundRefreshFailure(code)
   }
 }

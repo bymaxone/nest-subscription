@@ -117,6 +117,41 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   `FailingStoreMethod`: wraps any `SubscriptionStore` and, once `fail()` is called, rejects the
   methods named (every method when none is named) until `recover()`, so a host can test its own
   outage handling. Until then it delegates unchanged.
+- `diffSnapshots(previous, current)`, exported from the root: the pure comparison of two snapshots
+  into the typed list of changes of `CHANGE_KINDS`, each with a stable key. It reads the two
+  snapshots and nothing else, never a webhook payload, and reads the access flag, never a status
+  name, to decide overlap. The list is ordered by kind as `CHANGE_KINDS` is, then by the order of
+  the subscriptions; a change of `fetchedAt` alone gives an empty list. The snapshot does not say
+  which entitlement a subscription grants, so `overlap_detected` means two or more subscriptions
+  give access where at most one did.
+- The change key is 64 hexadecimal characters derived from the account, the subscription, the kind
+  and the fact that tells the change from the next (for a renewal, the period end), each field
+  hashed on its own before they are joined. It holds no identifier and does not depend on the fetch
+  instant.
+- The change hook (`onChange`) is called after the store write has succeeded and never before it,
+  with the previous snapshot, the new one and the changes. Delivery is at least once: the changes
+  are stored with the snapshot in the same write as not delivered and cleared only after the hook
+  returned, so a hook that throws or rejects leaves the stored snapshot in place and its changes
+  pending, and `SubscriptionService.reconcile` calls it again with the same change keys, marked
+  `redelivery: true` and with a `null` previous snapshot. The failure is logged by its error code
+  and reported to the observer. The same change can reach the hook more than once; make the
+  reaction idempotent on the change key. `SubscriptionService.refresh` returns after the hook has
+  returned or failed. With no `onChange` no change is computed or stored.
+- `reconcile` delivers pending changes again before it refreshes stale accounts, in pages of at
+  most one hundred accounts and up to `batchSize` accounts, and clears only the changes whose hook
+  call returned.
+- The observer option takes a `SubscriptionObserver` with the optional methods `onRefresh`,
+  `onSourceError`, `onCacheLookup`, `onGuardDecision`, `onChangeDelivery`, `onWebhook` and
+  `onBackgroundRefreshFailure`. Every payload is a closed record of outcomes, counts and durations
+  on the injected clock, with no account, tenant or payload content. A method that throws or
+  rejects never affects the operation it observes, and with no observer nothing is built or timed.
+  The option type `SubscriptionObserverOption` is replaced by `SubscriptionObserver`.
+- The `logger` option: where the library writes its warnings, a NestJS `Logger` by default. A line is
+  a fixed sentence, a short salted hash of the account and an error code, never the account, the
+  tenant, a payload or an error's text. `hashAccountKey(key, salt?)`, exported from the root, makes
+  that hash; it is for correlation in logs and is not an access control.
+- `createCapture` and `assertNoSentinel` in the `testing` subpath: a logger and an observer that
+  record everything, and the assertion that no recorded line or payload holds a given sentinel.
 
 ### Changed
 

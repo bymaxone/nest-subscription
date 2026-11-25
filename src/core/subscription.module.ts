@@ -130,7 +130,8 @@ const CHANGE_DISPATCHER_PROVIDER: FactoryProvider = {
 
 /**
  * Puts the pieces together as a dynamic module; every token provider it lists is exported, and
- * so are the service and the guard. The refresher is provided for the library's own use and is not exported.
+ * so are the service, the guard and the observer bridge the guard injects. The refresher is
+ * provided for the library's own use and is not exported.
  */
 function assemble(
   global: boolean | undefined,
@@ -151,7 +152,9 @@ function assemble(
     exports: [
       ...providers.map((provider) => provider.provide),
       SubscriptionService,
-      EntitlementGuard
+      EntitlementGuard,
+      // The guard is built in the module of the route that uses it, so what it injects is exported.
+      ObserverBridge
     ]
   }
 }

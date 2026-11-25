@@ -34,19 +34,19 @@ This document says in which order the specification is built and when each part 
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                     | Status         | Progress | Size | Last updated |
-| --- | --------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done        | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done        | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done        | 5/5      | M    | 2026-11-25   |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done        | 5/5      | L    | 2026-11-25   |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done        | 4/4      | M    | 2026-11-25   |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 🔄 In Progress | 4/5      | M    | 2026-11-25   |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo        | 0/5      | L    | —            |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo        | 0/8      | L    | —            |
-| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo        | 0/9      | L    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo        | 0/6      | M    | —            |
-| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo        | 0/5      | L    | —            |
+| ID  | Phase                                                                                                     | Status    | Progress | Size | Last updated |
+| --- | --------------------------------------------------------------------------------------------------------- | --------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done   | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done   | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done   | 5/5      | L    | 2026-11-25   |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done   | 4/4      | M    | 2026-11-25   |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 👀 Review | 5/5      | M    | 2026-11-25   |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo   | 0/5      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo   | 0/8      | L    | —            |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo   | 0/9      | L    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo   | 0/6      | M    | —            |
+| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo   | 0/5      | L    | —            |
 
 ---
 
@@ -276,12 +276,12 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the comparison of the previous and the new snapshot into the typed change list of FR32, including `overlap_detected` (FR05) and `transferred`; the hook call after the store write, with the previous snapshot, the new one and the list, and without the previous snapshot on a redelivery (FR32, D20); at-least-once delivery through changes stored with the snapshot as not delivered, cleared after the hook returns and delivered again by reconciliation (FR33, D17); the stable key per change, and containment of a hook that throws (FR33); the optional observer with counters and timings for webhooks by outcome, refreshes, source errors, cache hits and guard decisions (FR34); account identifiers absent from observer payloads and logs, or present only as a short hash (SEC06).
   - Out: a queue, a timer or a retry loop of the library's own; the webhook receiver that will later be one of the callers.
 - **Definition of Done**:
-  - [ ] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces none for two equal snapshots.
-  - [ ] The same change computed twice carries the same key; two consecutive renewals carry different keys.
-  - [ ] A hook that throws leaves the stored snapshot in place and its changes marked as not delivered, and the failure reaches the log and the observer.
-  - [ ] A crash simulated between the write and the hook is followed by a reconciliation run that delivers the same change keys.
-  - [ ] The hook is never invoked before the store write has succeeded.
-  - [ ] Every observer payload in the suite is asserted free of account identifiers and payload content.
+  - [x] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces none for two equal snapshots.
+  - [x] The same change computed twice carries the same key; two consecutive renewals carry different keys.
+  - [x] A hook that throws leaves the stored snapshot in place and its changes marked as not delivered, and the failure reaches the log and the observer.
+  - [x] A crash simulated between the write and the hook is followed by a reconciliation run that delivers the same change keys.
+  - [x] The hook is never invoked before the store write has succeeded.
+  - [x] Every observer payload in the suite is asserted free of account identifiers and payload content.
 - **Context / preconditions**: P3 is done. P4 is independent and may be in progress.
 - **Rules-of-phase**:
   1. The change list is a pure function of two snapshots. It never reads a webhook payload.

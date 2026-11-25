@@ -460,6 +460,14 @@ proposal below is what the code does until the owner answers.
   fixes one. Proposal: both stay unset (`null` in the resolved options) until the webhook phase
   decides, and an unset retention means identifiers are not purged by the library. The webhook
   phase (P6) decides it from the provider's documented retry policy.
+- **Q04. How does `overlap_detected` know which entitlement two subscriptions share?** FR05 and FR32
+  say "more than one subscription gives access to one entitlement", but the snapshot keeps one
+  `grantingSubscriptionReference` per entitlement and not the list of grantors, so the comparison
+  of two snapshots cannot see the grants. Proposal: until the owner answers, any two subscriptions
+  that both give access count as overlapping when at most one did before, which can report an
+  overlap between subscriptions that grant different entitlements. The exact rule would need the
+  snapshot to carry the grantors of each entitlement, or the mapping from the adapter's tables to
+  reach the comparison.
 
 ---
 

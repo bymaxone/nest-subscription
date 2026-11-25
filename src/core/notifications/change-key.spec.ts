@@ -58,4 +58,28 @@ describe('changeKey', () => {
     const key = changeKey('sentinel-account', rawChange('renewed', 'sentinel-sub', 'sentinel-fact'))
     expect(key).not.toMatch(/sentinel/)
   })
+
+  it('tells a change of the whole account from a subscription whose reference is the word null', () => {
+    // Scenario: the absent subscription must not read as the text "null".
+    expect(changeKey(ACCOUNT, rawChange('transferred', null, 'f'))).not.toBe(
+      changeKey(ACCOUNT, rawChange('transferred', 'null', 'f'))
+    )
+  })
+
+  it.each([
+    [
+      'a subscription change',
+      rawChange('renewed', 'sub-1', '2026-03-01T00:00:00.000Z'),
+      '7294e4816a7b76e844308f1e02888ee8716b9efa815b00e40060b2e6e032af4d'
+    ],
+    [
+      'an account change',
+      rawChange('transferred', null, 'cust-2', 'a'),
+      '8c6364fca81e2ee0d7971ddb4d18b7f441fe4e48ea466de606c5eac9c22ff1ad'
+    ]
+  ])('keeps the key of %s the same across versions', (_name, change, pinned) => {
+    // Scenario: a host stores keys to make its reaction idempotent, so the construction (SHA-256
+    // of each field, joined by a colon, hashed again) must not change; the digests are pinned.
+    expect(changeKey(ACCOUNT, change)).toBe(pinned)
+  })
 })

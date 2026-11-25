@@ -144,4 +144,16 @@ describe('lifecycleChanges', () => {
     // Scenario: nothing about the subscription changed.
     expect(lifecycleChanges({ previous: record(), current: record() })).toStrictEqual([])
   })
+
+  it.each(['trialing', 'in_grace', 'expired'] as const)(
+    'reports no trial conversion when a trial becomes %s',
+    (status) => {
+      // Scenario: only a move to active is a conversion.
+      const previous = record({ status: 'trialing' })
+      const kinds = lifecycleChanges({ previous, current: record({ status }) }).map(
+        (change) => change.kind
+      )
+      expect(kinds).not.toContain('trial_converted')
+    }
+  )
 })
