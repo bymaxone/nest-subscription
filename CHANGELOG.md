@@ -126,7 +126,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   and gives access, sorted with no duplicate and empty when none does, beside the decisive
   `grantingSubscriptionReference`, which is one of them. A snapshot without it is refused as
   unreadable. Apply to a derived backend: add the field to any `EntitlementState` you build.
-- The change key is 64 hexadecimal characters derived from the account, the subscription, the kind
+- The change key is a hexadecimal digest derived from the account, the subscription, the kind
   and the fact that tells the change from the next (for a renewal, the period end), each field
   hashed on its own before they are joined. It holds no identifier and does not depend on the fetch
   instant.
@@ -139,12 +139,11 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   and reported to the observer. The same change can reach the hook more than once; make the
   reaction idempotent on the change key. `SubscriptionService.refresh` returns after the hook has
   returned or failed. With no `onChange` no change is computed or stored.
-- `reconcile` delivers pending changes again before it refreshes stale accounts, in pages of at
-  most one hundred accounts and up to `batchSize` accounts, and clears only the changes whose hook
+- `reconcile` delivers pending changes again before it refreshes stale accounts, a page at a
+  time and up to `batchSize` accounts, and clears only the changes whose hook
   call returned.
-- The observer option takes a `SubscriptionObserver` with the optional methods `onRefresh`,
-  `onSourceError`, `onCacheLookup`, `onGuardDecision`, `onChangeDelivery`, `onWebhook` and
-  `onBackgroundRefreshFailure`. Every payload is a closed record of outcomes, counts and durations
+- The observer option takes a `SubscriptionObserver`, every method of it optional, one per event
+  family. Every payload is a closed record of outcomes, counts and durations
   on the injected clock, with no account, tenant or payload content. A method that throws or
   rejects never affects the operation it observes, and with no observer nothing is built or timed.
   The option type `SubscriptionObserverOption` is replaced by `SubscriptionObserver`.
