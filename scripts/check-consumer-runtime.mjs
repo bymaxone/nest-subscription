@@ -94,6 +94,7 @@ const ROOT_EXPORTS = [
   'SubscriptionError',
   'SubscriptionModule',
   'SubscriptionService',
+  'decodeAccountKey',
   'encodeAccountKey',
   'resolveOptions',
   'validateOptions'

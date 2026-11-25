@@ -461,6 +461,14 @@ proposal below is what the code does until the owner answers.
   `cacheTtlMs`, with the 30-second default. Every write invalidates the entry, so the lifetime only
   bounds how long a missed invalidation (a cache that failed to delete) can show an old value.
 
+- **Q05. What are the defaults and the scope of the reconciliation rate and batch?** FR26 and NFR04
+  say "bounded batches" and "a rate limit that respects the source's" and fix no number. Proposal:
+  per call, `batchSize` 100, `maxCallsPerSecond` 10 and a threshold equal to the maximum snapshot
+  age; the rate is kept per run, not across runs or across concurrent runs, so the host runs one
+  at a time; and a run with no `wait` function ends when its rate is spent and reports the rest as
+  `remaining`, because the library starts no timer (§3.2). The owner may prefer module options for
+  these values and a per-source rate.
+
 ---
 
 ## 11. First implementation phase must also deliver

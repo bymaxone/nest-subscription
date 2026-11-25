@@ -11,7 +11,8 @@
  * (tenant, account) pairs can only produce the same key if the parse of that key were not unique,
  * which it is. Nothing is hashed, so a host that stores the key can still read it.
  *
- * Tenant and account never meet anywhere else in the library.
+ * Tenant and account never meet anywhere else in the library. The decoder lives beside the
+ * encoder so the two cannot drift apart; it accepts only what the encoder writes.
  */
 import { SUBSCRIPTION_ERROR_CODES, SubscriptionError } from '@bymax-one/nest-subscription/shared'
 
@@ -38,4 +39,34 @@ export function encodeAccountKey(account: AccountReference): string {
   return account.tenantId === undefined
     ? encodedAccount
     : `${field('t', account.tenantId)}:${encodedAccount}`
+}
+
+/** A field as `field` wrote it, read leniently from `from`: its marker, its text and its end. */
+function readField(
+  key: string,
+  from: number
+): { readonly marker: string; readonly value: string; readonly end: number } {
+  const colon = key.indexOf(':', from)
+  const end = colon + 1 + Number(key.slice(from + 1, colon))
+  return { marker: key.charAt(from), value: key.slice(colon + 1, end), end }
+}
+
+/**
+ * Reads a key written by {@link encodeAccountKey} back into its account reference, or returns
+ * `null` for anything the encoder could not have written. The key is read leniently and the
+ * result is accepted only when encoding it gives exactly the key, so whatever the reading made of
+ * malformed text, only a key the encoder writes comes back. The tenant is absent from the result
+ * when the key has none.
+ */
+export function decodeAccountKey(key: string): AccountReference | null {
+  const first = readField(key, 0)
+  const reference: AccountReference =
+    first.marker === 't'
+      ? { tenantId: first.value, accountId: readField(key, first.end + 1).value }
+      : { accountId: first.value }
+  try {
+    return encodeAccountKey(reference) === key ? reference : null
+  } catch {
+    return null
+  }
 }

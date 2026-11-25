@@ -30,6 +30,7 @@ import type {
   SubscriptionCache,
   SubscriptionObserverOption
 } from './options/subscription-options.types'
+import { Reconciler } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
 
@@ -101,7 +102,15 @@ function setup(extra: SetupOptions = {}): {
     store,
     clock,
     refresher,
-    service: new SubscriptionService(source, store, clock, options, refresher, snapshotCache)
+    service: new SubscriptionService(
+      source,
+      store,
+      clock,
+      options,
+      refresher,
+      snapshotCache,
+      new Reconciler(store, clock, refresher, options)
+    )
   }
 }
 
@@ -301,6 +310,40 @@ async function flush(): Promise<void> {
 function nextTurn(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve))
 }
+
+describe('SubscriptionService reconcile', () => {
+  it('refreshes the stale accounts through the reconciler and returns its result', async () => {
+    // Scenario: two accounts a day and a half old; the service's reconcile refreshes both.
+    const { source, store, clock, service } = setup()
+    for (const n of [1, 2]) {
+      const reference = { accountId: `acc-${n}` }
+      await store.putSnapshot(encodeAccountKey(reference), snapshotOf(reference, true), [], T0)
+    }
+    clock.advance(36 * 3_600_000)
+    const result = await service.reconcile({ olderThanMs: 24 * 3_600_000 })
+    expect(result).toEqual({ refreshed: 2, failed: 0, remaining: 0, cursor: null })
+    expect(source.totalReads).toBe(2)
+  })
+
+  it('refuses an option out of range as invalid input', async () => {
+    // Scenario: a batch of zero.
+    const { service } = setup()
+    await expect(service.reconcile({ batchSize: 0 })).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
+    })
+  })
+
+  it('runs with its defaults when called with no argument', async () => {
+    // Scenario: nothing stored, nothing to do.
+    const { service } = setup()
+    await expect(service.reconcile()).resolves.toEqual({
+      refreshed: 0,
+      failed: 0,
+      remaining: 0,
+      cursor: null
+    })
+  })
+})
 
 describe('SubscriptionService background refresh', () => {
   const DAY = 24 * 3_600_000

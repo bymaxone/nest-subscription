@@ -3,7 +3,7 @@
  * @layer internal
  */
 export { SubscriptionError } from '@bymax-one/nest-subscription/shared'
-export { encodeAccountKey } from './account-key'
+export { decodeAccountKey, encodeAccountKey } from './account-key'
 export { SECRET_PLACEHOLDER, Secret } from './secret'
 export type { SecretInput } from './secret'
 export {

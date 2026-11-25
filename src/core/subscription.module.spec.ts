@@ -21,6 +21,7 @@ import {
 
 import type { SubscriptionOptionsInput } from './options/subscription-options.types'
 import { SnapshotCache } from './cache/snapshot-cache'
+import { Reconciler } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionModule } from './subscription.module'
 import { SubscriptionService } from './subscription.service'
@@ -74,12 +75,14 @@ describe('SubscriptionModule.forRoot', () => {
     expect(module.module).toBe(SubscriptionModule)
   })
 
-  it('provides the refresher and the service as classes and exports the service only', () => {
+  it('provides the refresher, the reconciler and the service as classes and exports the service only', () => {
     // Scenario: both classes are providers of the module; a host injects the service, and the
     // refresher stays inside the module.
     const module = SubscriptionModule.forRoot(input())
     expect(module.providers).toContain(SnapshotRefresher)
     expect(module.providers).toContain(SubscriptionService)
+    expect(module.providers).toContain(Reconciler)
+    expect(module.exports).not.toContain(Reconciler)
     expect(module.exports).toContain(SubscriptionService)
     expect(module.exports).not.toContain(SnapshotRefresher)
   })

@@ -47,12 +47,13 @@ describe('entry points', () => {
         'SubscriptionError',
         'SubscriptionModule',
         'SubscriptionService',
+        'decodeAccountKey',
         'encodeAccountKey',
         'resolveOptions',
         'validateOptions'
       ].sort()
     )
-    expect(Object.values(core)).toHaveLength(15)
+    expect(Object.values(core)).toHaveLength(16)
     expect(Object.keys(internal).sort()).toEqual(
       [
         'SUBSCRIPTION_CACHE',
@@ -64,10 +65,11 @@ describe('entry points', () => {
         'SECRET_PLACEHOLDER',
         'Secret',
         'SubscriptionError',
+        'decodeAccountKey',
         'encodeAccountKey'
       ].sort()
     )
-    expect(Object.values(internal)).toHaveLength(10)
+    expect(Object.values(internal)).toHaveLength(11)
     expect(core.SubscriptionError).toBe(shared.SubscriptionError)
     expect(internal.SubscriptionError).toBe(shared.SubscriptionError)
   })

@@ -93,6 +93,27 @@ async function boot(
   return { app, service: app.get(SubscriptionService), source, store }
 }
 
+/** A store whose reads wait for `gate.hold`, when it is set, after they have read. */
+function holdingStore(): { store: SubscriptionStore; gate: { hold: Promise<void> | undefined } } {
+  const memory = new InMemorySubscriptionStore({ logger: () => undefined })
+  const gate: { hold: Promise<void> | undefined } = { hold: undefined }
+  const store: SubscriptionStore = {
+    getSnapshot: async (key) => {
+      const result = await memory.getSnapshot(key)
+      await gate.hold
+      return result
+    },
+    putSnapshot: (key, snapshot, changes, at) => memory.putSnapshot(key, snapshot, changes, at),
+    clearPendingChanges: (key, keys) => memory.clearPendingChanges(key, keys),
+    listKeysWithPendingChanges: (limit, cursor) => memory.listKeysWithPendingChanges(limit, cursor),
+    markEventProcessed: (name, id, at) => memory.markEventProcessed(name, id, at),
+    forgetEvent: (name, id) => memory.forgetEvent(name, id),
+    deleteEventsOlderThan: (instant) => memory.deleteEventsOlderThan(instant),
+    listStaleKeys: (olderThan, limit, cursor) => memory.listStaleKeys(olderThan, limit, cursor)
+  }
+  return { store, gate }
+}
+
 describe('cache', () => {
   it('does not reach the store for a second read of one account', async () => {
     // Scenario: refresh, then three reads; the store is read once, the cache answers the others.
@@ -166,24 +187,7 @@ describe('cache', () => {
     // invalidates; the old value is released, answered, and not cached.
     const cache = mapCache()
     const source = new FakeSubscriptionSource()
-    const memory = new InMemorySubscriptionStore({ logger: () => undefined })
-    let release!: () => void
-    let hold: Promise<void> | undefined
-    const store: SubscriptionStore = {
-      getSnapshot: async (key) => {
-        const result = await memory.getSnapshot(key)
-        await hold
-        return result
-      },
-      putSnapshot: (key, snapshot, changes, at) => memory.putSnapshot(key, snapshot, changes, at),
-      clearPendingChanges: (key, keys) => memory.clearPendingChanges(key, keys),
-      listKeysWithPendingChanges: (limit, cursor) =>
-        memory.listKeysWithPendingChanges(limit, cursor),
-      markEventProcessed: (name, id, at) => memory.markEventProcessed(name, id, at),
-      forgetEvent: (name, id) => memory.forgetEvent(name, id),
-      deleteEventsOlderThan: (instant) => memory.deleteEventsOlderThan(instant),
-      listStaleKeys: (olderThan, limit, cursor) => memory.listStaleKeys(olderThan, limit, cursor)
-    }
+    const { store, gate } = holdingStore()
     const app = await Test.createTestingModule({
       imports: [
         SubscriptionModule.forRoot({
@@ -198,14 +202,15 @@ describe('cache', () => {
     const service = app.get(SubscriptionService)
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
     await service.refresh(ACCOUNT)
-    hold = new Promise<void>((resolve) => {
+    let release!: () => void
+    gate.hold = new Promise<void>((resolve) => {
       release = resolve
     })
     const stale = service.hasEntitlement(ACCOUNT, 'pro')
     const alsoStale = service.getSnapshot(ACCOUNT)
     for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
-    const open = hold
-    hold = undefined
+    const open = gate.hold
+    gate.hold = undefined
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, false, '2026-01-01T00:00:20.000Z'))
     await service.refresh(ACCOUNT)
     release()

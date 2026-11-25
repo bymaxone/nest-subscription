@@ -1,6 +1,6 @@
 # Phase 3 — Read, refresh and reconcile
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P3 — read-refresh-reconcile
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,7 +42,7 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 | 3.2 | Implement the service reads                                   | ✅ Done | P0       | M    | 3.1        |
 | 3.3 | Refresh a stale snapshot in the background                    | ✅ Done | P0       | M    | 3.2        |
 | 3.4 | Read through the optional cache                               | ✅ Done | P1       | M    | 3.2        |
-| 3.5 | Implement reconciliation                                      | 📋 ToDo | P0       | M    | 3.1, 3.2   |
+| 3.5 | Implement reconciliation                                      | ✅ Done | P0       | M    | 3.1, 3.2   |
 
 ---
 
@@ -383,7 +383,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 3.5 — Implement reconciliation
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 3.1, 3.2
@@ -394,12 +394,12 @@ Expose a method that refreshes the accounts whose snapshot is older than a thres
 
 #### Acceptance criteria
 
-- [ ] A run refreshes only accounts older than the threshold, and stops at the configured batch bound.
-- [ ] The number of source calls in any window never exceeds the configured rate, asserted with a controllable clock.
-- [ ] One account's failure does not stop the run; the result reports refreshed, failed and remaining counts and a cursor to continue.
-- [ ] A run makes no change for an account whose refresh returns an older or identical state.
-- [ ] The library starts no timer and no scheduler of its own.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A run refreshes only accounts older than the threshold, and stops at the configured batch bound.
+- [x] The number of source calls in any window never exceeds the configured rate, asserted with a controllable clock.
+- [x] One account's failure does not stop the run; the result reports refreshed, failed and remaining counts and a cursor to continue.
+- [x] A run makes no change for an account whose refresh returns an older or identical state.
+- [x] The library starts no timer and no scheduler of its own.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -478,5 +478,7 @@ Completion Protocol (after the work is reported done):
 - 3.3 ✅ 2026-11-25 — a stale read returns the stored snapshot at once and refreshes it in the background, with failures logged by code and reported to the observer
 
 - 3.4 ✅ 2026-11-25 — the optional read-through cache with invalidation on every write and containment of every cache failure
+
+- 3.5 ✅ 2026-11-25 — reconciliation in bounded, rate-limited batches with a cursor, driven by the injected clock and the host's wait function
 
 <!-- entries are added as tasks complete -->

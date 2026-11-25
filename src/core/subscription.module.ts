@@ -27,6 +27,7 @@ import type {
   SubscriptionCache,
   SubscriptionModuleOptions
 } from './options/subscription-options.types'
+import { Reconciler } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
 
@@ -76,7 +77,7 @@ async function runFactory(
  * The classes the library provides for itself. They are built from the tokens above, so they
  * follow whichever configuration the host chose.
  */
-const OWN_CLASSES: readonly Type[] = [SnapshotRefresher, SubscriptionService]
+const OWN_CLASSES: readonly Type[] = [SnapshotRefresher, Reconciler, SubscriptionService]
 
 /**
  * The snapshot cache: built over the host's cache when there is one, and `null` when there is not,

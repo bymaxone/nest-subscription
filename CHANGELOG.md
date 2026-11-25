@@ -72,6 +72,15 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   returned, and a cache that throws or returns something that is not a snapshot is treated as a
   miss, so it never fails a read or a write.
 
+- `SubscriptionService.reconcile(options)`, with `ReconcileOptions`, `ReconcileResult` and `Wait`
+  exported from the root. A run refreshes the accounts whose snapshot is older than a threshold, up
+  to a batch bound and under a rate measured on the injected clock, and returns `refreshed`,
+  `failed`, `remaining` and a `cursor` to go on from. One account's failure does not end the run.
+  The library starts no timer: a run waits only through the `wait` function it is given and
+  otherwise ends when its rate is spent.
+- `decodeAccountKey`, exported from the root: reads a key written by `encodeAccountKey` back into
+  its account reference, and returns `null` for any other text.
+
 ### Changed
 
 - The store conformance case for stale-key paging asserts what the store port promises: at most

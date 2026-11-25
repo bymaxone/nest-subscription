@@ -28,6 +28,7 @@ describe('core entry point', () => {
       'SubscriptionError',
       'SubscriptionModule',
       'SubscriptionService',
+      'decodeAccountKey',
       'encodeAccountKey',
       'resolveOptions',
       'validateOptions'

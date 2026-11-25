@@ -6,7 +6,7 @@
  */
 import { SubscriptionError } from '@bymax-one/nest-subscription/shared'
 
-import { encodeAccountKey } from './account-key'
+import { decodeAccountKey, encodeAccountKey } from './account-key'
 
 /** Every string of up to two characters over an alphabet chosen to hurt a naive join. */
 function strings(): string[] {
@@ -113,5 +113,47 @@ describe('encodeAccountKey', () => {
       return undefined
     })()
     expect(failure?.message).not.toContain('tenant-sentinel')
+  })
+})
+
+describe('decodeAccountKey', () => {
+  it('gives back the pair of every key the encoder makes, whatever characters it holds', () => {
+    // Scenario: every pair of the generated set survives a round trip, delimiters, markers,
+    // digits, accents, an astral character and a lone surrogate included.
+    for (const pair of pairs()) {
+      const decoded = decodeAccountKey(encodeAccountKey(pair))
+      expect(decoded).toEqual(pair.tenantId === undefined ? { accountId: pair.accountId } : pair)
+      expect(Object.keys(decoded ?? {})).toEqual(
+        pair.tenantId === undefined ? ['accountId'] : ['tenantId', 'accountId']
+      )
+    }
+  })
+
+  it('reads the two shapes the encoder writes', () => {
+    // Scenario: a key with a tenant and one without, read by hand.
+    expect(decodeAccountKey('t4:acme:a5:acc_1')).toEqual({ tenantId: 'acme', accountId: 'acc_1' })
+    expect(decodeAccountKey('a5:acc_1')).toEqual({ accountId: 'acc_1' })
+    expect(decodeAccountKey('t0::a1:x')).toEqual({ tenantId: '', accountId: 'x' })
+  })
+
+  it.each([
+    ['an empty key', ''],
+    ['a key with an unknown marker', 'x1:a'],
+    ['a key with no length', 'a:x'],
+    ['a key with no colon after the length', 'a1'],
+    ['a key whose length is not digits', 'ax:1'],
+    ['a key whose length is signed', 'a-1:x'],
+    ['a key whose length is longer than what remains', 'a5:abc'],
+    ['a key with text after the account', 'a1:xy'],
+    ['a key whose length has a leading zero', 'a01:x'],
+    ['a key whose tenant is not followed by a separator', 't1:xa1:b'],
+    ['a key whose tenant is not followed by an account', 't1:x:t1:y'],
+    ['a key that ends after the tenant', 't1:x:'],
+    ['a key with a tenant and no account marker', 't1:x:b1:y'],
+    ['a key whose account is blank', 'a1: '],
+    ['a key whose length is beyond any string', `a${'9'.repeat(30)}:x`]
+  ])('returns null for %s', (_name, key) => {
+    // Scenario: text the encoder could not have written is not an account.
+    expect(decodeAccountKey(key)).toBeNull()
   })
 })

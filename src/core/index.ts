@@ -12,6 +12,7 @@ export {
   SUBSCRIPTION_STORE,
   Secret,
   SubscriptionError,
+  decodeAccountKey,
   encodeAccountKey
 } from '@bymax-one/nest-subscription/internal'
 export type {
@@ -64,3 +65,5 @@ export type {
 export { SubscriptionModule } from './subscription.module'
 export { SubscriptionService } from './subscription.service'
 export type { AgedSnapshot } from './snapshot-view'
+export type { ReconcileOptions, ReconcileResult } from './reconciliation/reconciler'
+export type { Wait } from './reconciliation/rate-limiter'

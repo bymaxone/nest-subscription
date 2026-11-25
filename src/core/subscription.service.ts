@@ -26,14 +26,15 @@ import {
 
 import { SnapshotCache } from './cache/snapshot-cache'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
+import {
+  Reconciler,
+  type ReconcileOptions,
+  type ReconcileResult
+} from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { ageOf, isStale } from './refresh/staleness'
 import { toSnapshotView, type AgedSnapshot } from './snapshot-view'
-
-/** Whether a tenant identifier names a tenant. */
-function hasTenant(tenantId: string | undefined): boolean {
-  return tenantId !== undefined && tenantId.trim().length > 0
-}
+import { hasTenant } from './tenant'
 
 /**
  * The reads and the on-demand refresh of the library. Every method takes the account as the
@@ -49,7 +50,8 @@ export class SubscriptionService {
     @Inject(SUBSCRIPTION_CLOCK) private readonly clock: Clock,
     @Inject(SUBSCRIPTION_OPTIONS) private readonly options: ResolvedSubscriptionOptions,
     @Inject(SnapshotRefresher) private readonly refresher: SnapshotRefresher,
-    @Inject(SnapshotCache) private readonly cache: SnapshotCache | null
+    @Inject(SnapshotCache) private readonly cache: SnapshotCache | null,
+    @Inject(Reconciler) private readonly reconciler: Reconciler
   ) {}
 
   /**
@@ -93,6 +95,18 @@ export class SubscriptionService {
     this.#keyOf(account)
     const { current } = await this.refresher.refresh(account)
     return this.#view(current, this.clock.now())
+  }
+
+  /**
+   * Refreshes the accounts whose snapshot was fetched before a threshold, up to a batch bound and
+   * under a rate, for the host to call from its own scheduler. The library starts no timer: the
+   * host decides when to call and, with `wait`, how a run waits for its rate. One account's
+   * failure does not end the run. Call it from one place at a time, since the rate is kept per run.
+   *
+   * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for an option out of range.
+   */
+  reconcile(options: ReconcileOptions = {}): Promise<ReconcileResult> {
+    return this.reconciler.run(options)
   }
 
   /** The stored snapshot, through the cache when the host configured one; `undefined` when none. */
