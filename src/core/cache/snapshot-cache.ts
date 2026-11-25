@@ -96,8 +96,8 @@ export class SnapshotCache {
 
   /**
    * Answers from the cache when it holds the account, and otherwise from `load`, filling the cache
-   * with what `load` returned. A value loaded before an invalidation of the same account is
-   * returned to its caller but not stored, so the invalidation is never undone. A `load` that
+   * with what `load` returned. A lookup that overlapped an invalidation of the account counts as
+   * a miss, and a value loaded before one is returned but not stored, so it is never undone. A `load` that
    * rejects rejects the read. The fill is written after the read has answered and the read does
    * not wait for it, so a host cache that is slow or never answers delays nothing.
    *
@@ -115,7 +115,7 @@ export class SnapshotCache {
     const ticket = this.#open(accountKey)
     try {
       const cached = await this.#get(key, account)
-      if (cached !== null) return cached
+      if (cached !== null && !ticket.invalidated) return cached
       const loaded = await load()
       if (loaded !== null && !ticket.invalidated) {
         ticket.filling = true
@@ -199,17 +199,20 @@ export class SnapshotCache {
 
   /**
    * Removes an account's entry. A delete that fails keeps the account off the cache for one entry
-   * lifetime from now, since the entry cannot outlive that; a delete that succeeds ends it.
+   * lifetime from now, since the entry cannot outlive that; a delete that succeeds ends it. Every
+   * delete drops the marks that have run out.
    */
   async #delete(accountKey: string): Promise<void> {
+    let failed = false
     try {
       await this.cache.delete(`${KEY_PREFIX}${accountKey}`)
-      this.#blocked.delete(accountKey)
     } catch {
-      const now = this.clock.now().getTime()
-      for (const [other, until] of this.#blocked) if (until <= now) this.#blocked.delete(other)
-      this.#blocked.set(accountKey, now + this.ttlMs)
+      failed = true
     }
+    const now = this.clock.now().getTime()
+    for (const [other, until] of this.#blocked) if (until <= now) this.#blocked.delete(other)
+    if (failed) this.#blocked.set(accountKey, now + this.ttlMs)
+    else this.#blocked.delete(accountKey)
   }
 
   /** Whether a failed delete still keeps the account off the cache; a mark that ran out is dropped. */

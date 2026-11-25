@@ -313,9 +313,32 @@ describe('SnapshotCache interleavings', () => {
         expect(host.gets()).toBe(lookups + 1)
       })
 
-      it('drops a mark whose lifetime has passed when it is next looked at, and prunes old marks on the next failed delete', async () => {
+      it('prunes the marks whose lifetime has passed on a delete that succeeds', async () => {
+        // Scenario: three accounts fail a delete, the lifetime passes, the cache recovers and
+        // another account is invalidated; the expired marks are gone.
+        const { host, cache, clock } = setup()
+        host.failDeletes()
+        for (const id of ['a', 'b', 'c']) await cache.invalidate({ accountId: id })
+        clock.advance(TTL_MS)
+        host.failDeletes(false)
+        await cache.invalidate({ accountId: 'd' })
+        expect(cache.blockedAccounts).toBe(0)
+      })
+
+      it('keeps a mark whose lifetime has not passed when another account is deleted', async () => {
+        // Scenario: one tick before the lifetime ends, a delete of another account succeeds.
+        const { host, cache, clock } = setup()
+        host.failDeletes()
+        await cache.invalidate({ accountId: 'a' })
+        clock.advance(TTL_MS - 1)
+        host.failDeletes(false)
+        await cache.invalidate({ accountId: 'd' })
+        expect(cache.blockedAccounts).toBe(1)
+      })
+
+      it('drops a mark whose lifetime has passed when it is next looked at, and prunes old marks on the next delete', async () => {
         // Scenario: three accounts fail a delete; after the lifetime a read of one drops its mark and
-        // a new failed delete drops the rest.
+        // a new delete drops the rest.
         const { host, cache, clock } = setup()
         host.failDeletes()
         for (const id of ['a', 'b', 'c']) await cache.invalidate({ accountId: id })
@@ -405,7 +428,7 @@ describe('SnapshotCache interleavings', () => {
       expect(cache.pendingLoads).toBe(0)
     })
 
-    it('answers a read whose cache lookup began before an invalidation without filling the cache with it', async () => {
+    it('answers the store, not the old entry, to a read whose cache lookup began before an invalidation, and fills nothing', async () => {
       // Scenario: the lookup is held and returns the old entry after the invalidation.
       const host = controlled()
       const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
@@ -414,7 +437,8 @@ describe('SnapshotCache interleavings', () => {
       await flush()
       await cache.invalidate(ACCOUNT)
       lookup.answer(JSON.stringify(OLD()))
-      await reading
+      expect((await reading)?.sourceCustomer?.id).toBe('new')
+      await flush()
       expect(host.entries.size).toBe(0)
       const next = await cache.read(ACCOUNT, () => Promise.resolve(NEW()))
       expect(next?.sourceCustomer?.id).toBe('new')
