@@ -10,6 +10,7 @@ import { SubscriptionModule, SubscriptionService } from '@bymax-one/nest-subscri
 import type {
   AccountReference,
   SubscriptionCache,
+  SubscriptionModuleOptions,
   SubscriptionOptionsInput,
   SubscriptionStore
 } from '@bymax-one/nest-subscription'
@@ -69,7 +70,8 @@ const THROWING_CACHE: SubscriptionCache = {
 /** An application with the given cache, or none. */
 async function boot(
   cache?: SubscriptionCache,
-  multiTenant = false
+  multiTenant = false,
+  extra: Partial<SubscriptionModuleOptions> = {}
 ): Promise<{
   app: TestingModule
   service: SubscriptionService
@@ -86,7 +88,8 @@ async function boot(
         multiTenant,
         clock: new ManualClock(),
         accountResolver: () => null,
-        ...(cache === undefined ? {} : { cache })
+        ...(cache === undefined ? {} : { cache }),
+        ...extra
       })
     ]
   }).compile()
@@ -114,7 +117,49 @@ function holdingStore(): { store: SubscriptionStore; gate: { hold: Promise<void>
   return { store, gate }
 }
 
+/** A host cache that honours the lifetime it is given, measured on the injected clock. */
+function expiringCache(clock: ManualClock): SubscriptionCache {
+  const entries = new Map<string, { value: string; until: number }>()
+  return {
+    get: (key) => {
+      const entry = entries.get(key)
+      return Promise.resolve(
+        entry !== undefined && entry.until > clock.now().getTime() ? entry.value : null
+      )
+    },
+    set: (key, value, ttlMs) => {
+      entries.set(key, { value, until: clock.now().getTime() + ttlMs })
+      return Promise.resolve()
+    },
+    delete: (key) => {
+      entries.delete(key)
+      return Promise.resolve()
+    }
+  }
+}
+
 describe('cache', () => {
+  it('serves an entry younger than the lifetime the host set and not one older', async () => {
+    // Scenario: a lifetime of five seconds on the injected clock; a read 4.999 s after the fill is
+    // served from the cache, a read 5 s after it reaches the store.
+    const clock = new ManualClock()
+    const { app, service, source, store } = await boot(expiringCache(clock), false, {
+      clock,
+      cacheTtlMs: 5000
+    })
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
+    await service.refresh(ACCOUNT)
+    await service.getSnapshot(ACCOUNT)
+    const reads = jest.spyOn(store, 'getSnapshot')
+    clock.advance(4999)
+    await service.getSnapshot(ACCOUNT)
+    expect(reads).toHaveBeenCalledTimes(0)
+    clock.advance(1)
+    await service.getSnapshot(ACCOUNT)
+    expect(reads).toHaveBeenCalledTimes(1)
+    await app.close()
+  })
+
   it('does not reach the store for a second read of one account', async () => {
     // Scenario: refresh, then three reads; the store is read once, the cache answers the others.
     const { app, service, source, store } = await boot(mapCache())

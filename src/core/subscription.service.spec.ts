@@ -95,7 +95,7 @@ function setup(extra: SetupOptions = {}): {
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(T0)
   const options = resolveOptions({ source, store, clock, accountResolver: () => null, ...extra })
-  const snapshotCache = extra.cache === undefined ? null : new SnapshotCache(extra.cache)
+  const snapshotCache = extra.cache === undefined ? null : new SnapshotCache(extra.cache, 30_000)
   const refresher = new SnapshotRefresher(source, store, clock, snapshotCache)
   return {
     source,

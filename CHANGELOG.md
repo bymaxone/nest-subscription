@@ -66,7 +66,8 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   exported from the root.
 
 - The optional cache option is used: when the host passes a `cache`, `getSnapshot` and
-  `hasEntitlement` read through it in front of the store with a 30-second lifetime, and every write
+  `hasEntitlement` read through it in front of the store for `cacheTtlMs` milliseconds (default
+  30 000; a positive safe integer, refused otherwise), and every write
   of a snapshot invalidates the account's entry before the write is answered. Entries are keyed
   with the fixed prefix `subscription:snapshot:` and the account key, hold only snapshots the store
   returned, and a cache that throws or returns something that is not a snapshot is treated as a

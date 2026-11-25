@@ -9,9 +9,6 @@ import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 
 import type { SubscriptionCache } from '../options/subscription-options.types'
 
-/** How long an entry lives when the host does not say otherwise, in milliseconds. */
-export const DEFAULT_CACHE_TTL_MS = 30_000
-
 /** The fixed prefix of every key this library writes to the host's cache. */
 const KEY_PREFIX = 'subscription:snapshot:'
 
@@ -62,7 +59,7 @@ export class SnapshotCache {
    */
   constructor(
     private readonly cache: SubscriptionCache,
-    private readonly ttlMs: number = DEFAULT_CACHE_TTL_MS
+    private readonly ttlMs: number
   ) {}
 
   /** The number of reads that have not finished. */

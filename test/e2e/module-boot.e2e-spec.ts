@@ -206,6 +206,7 @@ const INVALID: readonly (readonly [string, Record<string, unknown>])[] = [
   ['lastKnownStateToleranceMs', { lastKnownStateToleranceMs: SENTINEL }],
   ['maxSnapshotAgeMs', { maxSnapshotAgeMs: -1 }],
   ['eventRetentionMs', { eventRetentionMs: Number.NaN }],
+  ['cacheTtlMs', { cacheTtlMs: 1.5 }],
   ['allowSandbox', { allowSandbox: SENTINEL }],
   ['confirmSandboxInProduction', { confirmSandboxInProduction: SENTINEL }],
   ['isProduction', { isProduction: SENTINEL }],

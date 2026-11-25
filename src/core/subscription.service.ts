@@ -101,7 +101,8 @@ export class SubscriptionService {
    * Refreshes the accounts whose snapshot was fetched before a threshold, up to a batch bound and
    * under a rate, for the host to call from its own scheduler. The library starts no timer: the
    * host decides when to call and, with `wait`, how a run waits for its rate. One account's
-   * failure does not end the run. Call it from one place at a time, since the rate is kept per run.
+   * failure does not end the run. The rate is kept per run, not across runs: run one at a time,
+   * because concurrent runs add their rates together.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for an option out of range.
    */

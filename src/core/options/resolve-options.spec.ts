@@ -12,6 +12,7 @@ import {
 } from '@bymax-one/nest-subscription/testing'
 import {
   DEFAULT_ALLOW_SANDBOX,
+  DEFAULT_CACHE_TTL_MS,
   DEFAULT_FAIL_POLICY,
   DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS,
   DEFAULT_MAX_SNAPSHOT_AGE_MS,
@@ -37,7 +38,8 @@ describe('defaults', () => {
     ['last known state tolerance (D12)', DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS, HOURS_24_MS],
     ['maximum snapshot age (D12)', DEFAULT_MAX_SNAPSHOT_AGE_MS, HOURS_24_MS],
     ['sandbox access (SEC07)', DEFAULT_ALLOW_SANDBOX, false],
-    ['webhook controller (D10)', DEFAULT_WEBHOOK_CONTROLLER, false]
+    ['webhook controller (D10)', DEFAULT_WEBHOOK_CONTROLLER, false],
+    ['cache lifetime (D34)', DEFAULT_CACHE_TTL_MS, 30_000]
   ])('pins the default of the %s to the specification', (_name, actual, expected) => {
     // Scenario: each constant is compared with the literal the specification states.
     expect(actual).toBe(expected)
@@ -53,6 +55,7 @@ describe('resolveOptions', () => {
       failPolicy: 'refuse',
       lastKnownStateToleranceMs: HOURS_24_MS,
       maxSnapshotAgeMs: HOURS_24_MS,
+      cacheTtlMs: 30_000,
       allowSandbox: false,
       confirmSandboxInProduction: false,
       isProduction: false,
@@ -78,6 +81,7 @@ describe('resolveOptions', () => {
       failPolicy: 'last_known_state',
       lastKnownStateToleranceMs: 1000,
       maxSnapshotAgeMs: 2000,
+      cacheTtlMs: 2500,
       allowSandbox: true,
       confirmSandboxInProduction: true,
       isProduction: true,
@@ -98,6 +102,7 @@ describe('resolveOptions', () => {
       failPolicy: 'last_known_state',
       lastKnownStateToleranceMs: 1000,
       maxSnapshotAgeMs: 2000,
+      cacheTtlMs: 2500,
       allowSandbox: true,
       confirmSandboxInProduction: true,
       isProduction: true,

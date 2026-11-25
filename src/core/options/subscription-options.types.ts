@@ -101,6 +101,11 @@ export interface SubscriptionOptionsInput {
   readonly lastKnownStateToleranceMs?: number
   /** The age after which a snapshot is refreshed on its next read, in milliseconds. */
   readonly maxSnapshotAgeMs?: number
+  /**
+   * How long an entry of the snapshot cache lives, in milliseconds, a positive safe integer.
+   * Defaults to 30 000. It has no effect without a `cache`.
+   */
+  readonly cacheTtlMs?: number
   /** Whether sandbox purchases grant access. Defaults to `false`. */
   readonly allowSandbox?: boolean
   /** Confirms that sandbox access is meant in a production environment. Defaults to `false`. */
@@ -161,6 +166,8 @@ export interface ResolvedSubscriptionOptions {
   readonly lastKnownStateToleranceMs: number
   /** The age after which a snapshot is refreshed on its next read, in milliseconds. */
   readonly maxSnapshotAgeMs: number
+  /** The lifetime of an entry of the snapshot cache, in milliseconds. */
+  readonly cacheTtlMs: number
   /** Whether sandbox purchases grant access. */
   readonly allowSandbox: boolean
   /** Whether sandbox access in production is confirmed. */

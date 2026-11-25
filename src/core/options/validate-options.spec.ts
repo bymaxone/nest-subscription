@@ -124,6 +124,20 @@ const ROWS: readonly Row[] = [
     bad: [SENTINEL, null, -1, 0, Number.NaN, Number.POSITIVE_INFINITY]
   },
   {
+    path: 'cacheTtlMs',
+    good: { cacheTtlMs: 1 },
+    bad: [
+      SENTINEL,
+      null,
+      -1,
+      0,
+      1.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.MAX_SAFE_INTEGER + 1
+    ]
+  },
+  {
     path: 'eventRetentionMs',
     good: { eventRetentionMs: 1 },
     bad: [SENTINEL, null, -1, 0, Number.NaN, Number.POSITIVE_INFINITY]

@@ -374,7 +374,7 @@ describe('SnapshotRefresher with a cache', () => {
     })
     const cache = hostCache(held)
     const { source, store, clock } = setup()
-    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache))
+    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache, 30_000))
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     let settled = false
     const refreshing = refresher.refresh(ACCOUNT).then((result) => {
@@ -392,7 +392,7 @@ describe('SnapshotRefresher with a cache', () => {
     // Scenario: a newer state is stored; the older one is refused before the write.
     const cache = hostCache()
     const { source, store, clock } = setup()
-    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache))
+    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache, 30_000))
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20))
     await refresher.refresh(ACCOUNT)
     cache.deleted.length = 0
@@ -409,7 +409,7 @@ describe('SnapshotRefresher with a cache', () => {
       delete: () => Promise.reject(new Error('cache down'))
     }
     const { source, store, clock } = setup()
-    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache))
+    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache, 30_000))
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     await expect(refresher.refresh(ACCOUNT)).resolves.toMatchObject({ written: true })
   })

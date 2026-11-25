@@ -85,11 +85,14 @@ const OWN_CLASSES: readonly Type[] = [SnapshotRefresher, Reconciler, Subscriptio
  */
 const SNAPSHOT_CACHE_PROVIDER: FactoryProvider = {
   provide: SnapshotCache,
-  useFactory: (cache?: SubscriptionCache | null): SnapshotCache | null => {
+  useFactory: (
+    cache: SubscriptionCache | null | undefined,
+    options: ResolvedSubscriptionOptions
+  ): SnapshotCache | null => {
     const host = cache ?? null
-    return host === null ? null : new SnapshotCache(host)
+    return host === null ? null : new SnapshotCache(host, options.cacheTtlMs)
   },
-  inject: [{ token: SUBSCRIPTION_CACHE, optional: true }]
+  inject: [{ token: SUBSCRIPTION_CACHE, optional: true }, SUBSCRIPTION_OPTIONS]
 }
 
 /**
