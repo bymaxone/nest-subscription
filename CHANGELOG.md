@@ -87,8 +87,16 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   function it is given and otherwise ends when its rate is spent.
 - `decodeAccountKey`, exported from the root: reads a key written by `encodeAccountKey` back into
   its account reference, and returns `null` for any other text.
+- `RequiresEntitlement(name)`, exported from the root: marks a route handler or controller as
+  needing one entitlement, the handler's name winning over the controller's. A blank name is
+  refused with `SUBSCRIPTION_INVALID_INPUT` when the decorator is applied. `AccountResolver` and
+  `ResolvedAccount`, exported from the root, are the contract of the resolver the host supplies.
 
 ### Changed
+
+- `AccountResolverOption` and `ResolvedAccountOption` are renamed `AccountResolver` and
+  `ResolvedAccount`. Apply to a derived backend: replace the two names in any import; the shapes
+  are unchanged.
 
 - The store conformance case for stale-key paging asserts what the store port promises: at most
   `limit` keys per page, each key once, none skipped, and a listing that ends. A store that returns

@@ -3,7 +3,7 @@
  * factory returns and the frozen form the library reads. Types only.
  * @layer core
  */
-import type { ExecutionContext, InjectionToken, ModuleMetadata } from '@nestjs/common'
+import type { InjectionToken, ModuleMetadata } from '@nestjs/common'
 
 import type {
   Clock,
@@ -16,24 +16,10 @@ import type {
   SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
+import type { AccountResolver } from '../guard/account-resolver.types'
+
 /** What the fail policy does when a snapshot is missing or the store cannot be read. */
 export type SubscriptionFailPolicy = 'refuse' | 'last_known_state'
-
-/** The account a request belongs to, as the host's resolver names it. */
-export interface ResolvedAccountOption {
-  /** The account identifier. */
-  readonly accountId: string
-  /** The tenant of the account; absent when the host is not multi-tenant. */
-  readonly tenantId?: string | undefined
-}
-
-/**
- * Gives the guard the account of a request. It returns `null` for a request that carries no
- * account, which the guard refuses as unauthenticated.
- */
-export type AccountResolverOption = (
-  context: ExecutionContext
-) => ResolvedAccountOption | null | Promise<ResolvedAccountOption | null>
 
 /** What the host's hook receives after a snapshot changed and was stored. */
 export interface SubscriptionChangeNotification {
@@ -92,7 +78,7 @@ export interface SubscriptionOptionsInput {
   /** The persistence port. */
   readonly store: SubscriptionStore
   /** Tells the guard which account a request belongs to. */
-  readonly accountResolver: AccountResolverOption
+  readonly accountResolver: AccountResolver
   /** Told about every stored change. */
   readonly onChange?: SubscriptionChangeHook
   /** What to do when a snapshot is missing or the store is down. Defaults to `refuse`. */
@@ -160,7 +146,7 @@ export interface ResolvedSubscriptionOptions {
   /** The persistence port. */
   readonly store: SubscriptionStore
   /** Tells the guard which account a request belongs to. */
-  readonly accountResolver: AccountResolverOption
+  readonly accountResolver: AccountResolver
   /** The change hook, or `null` when the host set none. */
   readonly onChange: SubscriptionChangeHook | null
   /** What to do when a snapshot is missing or the store is down. */

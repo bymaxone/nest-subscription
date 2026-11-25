@@ -1,6 +1,6 @@
 # Phase 4 — Guard and fail policy
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P4 — guard-and-fail-policy
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,7 +39,7 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 
 | ID  | Task                                                | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 4.1 | Add the decorator and the account resolver contract | 📋 ToDo | P0       | S    | —          |
+| 4.1 | Add the decorator and the account resolver contract | ✅ Done | P0       | S    | —          |
 | 4.2 | Implement the guard decision and its refusal codes  | 📋 ToDo | P0       | M    | 4.1        |
 | 4.3 | Implement the fail policy                           | 📋 ToDo | P0       | M    | 4.2        |
 | 4.4 | Prove the guard end to end                          | 📋 ToDo | P0       | M    | 4.3        |
@@ -50,7 +50,7 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 
 ### Task 4.1 — Add the decorator and the account resolver contract
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: —
@@ -61,11 +61,11 @@ Write the route decorator that names an entitlement and the contract of the reso
 
 #### Acceptance criteria
 
-- [ ] `@RequiresEntitlement('premium')` stores the entitlement name as metadata readable on a handler and on a controller, with the handler winning.
-- [ ] An empty or blank entitlement name is refused when the decorator is applied.
-- [ ] `AccountResolver` takes the NestJS `ExecutionContext` and returns a `ResolvedAccount` (`{ accountId, tenantId? }`) or `null`, synchronously or as a promise.
-- [ ] The metadata key is a `Symbol`.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `@RequiresEntitlement('premium')` stores the entitlement name as metadata readable on a handler and on a controller, with the handler winning.
+- [x] An empty or blank entitlement name is refused when the decorator is applied.
+- [x] `AccountResolver` takes the NestJS `ExecutionContext` and returns a `ResolvedAccount` (`{ accountId, tenantId? }`) or `null`, synchronously or as a promise.
+- [x] The metadata key is a `Symbol`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -385,3 +385,5 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 <!-- entries are added as tasks complete -->
+
+- 4.1 ✅ 2026-11-25 — the RequiresEntitlement decorator and the AccountResolver contract

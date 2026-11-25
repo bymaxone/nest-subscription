@@ -8,6 +8,7 @@ import * as entry from './index'
 import { resolveOptions } from './options/resolve-options'
 import { validateOptions } from './options/validate-options'
 import { SubscriptionModule } from './subscription.module'
+import { RequiresEntitlement } from './guard/requires-entitlement.decorator'
 import { SubscriptionService } from './subscription.service'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
@@ -16,6 +17,7 @@ describe('core entry point', () => {
     // Scenario: the entry point is loaded by its relative path; a name exported without its own
     // test would appear here and fail the case.
     expect(Object.keys(entry).sort()).toEqual([
+      'RequiresEntitlement',
       'SECRET_PLACEHOLDER',
       'SUBSCRIPTION_CACHE',
       'SUBSCRIPTION_CLOCK',
@@ -43,6 +45,7 @@ describe('core entry point', () => {
     expect(entry.validateOptions).toBe(validateOptions)
     expect(entry.SubscriptionModule).toBe(SubscriptionModule)
     expect(entry.SubscriptionService).toBe(SubscriptionService)
+    expect(entry.RequiresEntitlement).toBe(RequiresEntitlement)
     for (const [name, value] of Object.entries(internal)) {
       expect(entry[name as keyof typeof entry]).toBe(value)
     }

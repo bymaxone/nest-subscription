@@ -49,9 +49,7 @@ export type {
 export { resolveOptions } from './options/resolve-options'
 export { validateOptions } from './options/validate-options'
 export type {
-  AccountResolverOption,
   BackgroundRefreshFailure,
-  ResolvedAccountOption,
   ResolvedSubscriptionOptions,
   SubscriptionCache,
   SubscriptionChangeHook,
@@ -62,6 +60,8 @@ export type {
   SubscriptionObserverOption,
   SubscriptionOptionsInput
 } from './options/subscription-options.types'
+export { RequiresEntitlement } from './guard/requires-entitlement.decorator'
+export type { AccountResolver, ResolvedAccount } from './guard/account-resolver.types'
 export { SubscriptionModule } from './subscription.module'
 export { SubscriptionService } from './subscription.service'
 export type { AgedSnapshot } from './snapshot-view'
