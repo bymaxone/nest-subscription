@@ -35,9 +35,13 @@ const METHODS = Object.keys(CALLS) as FailingStoreMethod[]
 
 describe('createFailingStore', () => {
   it.each(METHODS)('delegates %s to the wrapped store until told to fail', async (method) => {
-    // Scenario: nothing is switched; each method answers as the wrapped store answers.
-    const store = createFailingStore(inner())
-    await expect(CALLS[method](store)).resolves.not.toThrow()
+    // Scenario: nothing is switched; the wrapped store's method is called once and the wrapper
+    // answers with the very value that call resolved to.
+    const wrapped = inner()
+    const spy = jest.spyOn(wrapped, method)
+    const answer = await CALLS[method](createFailingStore(wrapped))
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(answer).toBe(await (spy.mock.results[0]?.value as Promise<unknown>))
   })
 
   it('returns what the wrapped store returns, not a copy of it', async () => {
@@ -103,21 +107,26 @@ describe('createFailingStore', () => {
     await expect(store.getSnapshot(KEY)).rejects.toBe(boom)
   })
 
-  it('does not call the wrapped store while a method is failing', async () => {
-    // Scenario: a failing write leaves the wrapped store as it was.
+  it('does not call the wrapped store while a write is failing', async () => {
+    // Scenario: a failing write never reaches the wrapped store's method and leaves it as it was.
     const wrapped = inner()
+    const spy = jest.spyOn(wrapped, 'putSnapshot')
     const store = createFailingStore(wrapped)
     store.fail(['putSnapshot'])
     await expect(store.putSnapshot(KEY, SNAPSHOT, [], AT)).rejects.toThrow('failing store')
+    expect(spy).not.toHaveBeenCalled()
     expect(await wrapped.getSnapshot(KEY)).toBeNull()
   })
 
   it('delegates again after recover', async () => {
-    // Scenario: a store switched to failing and back reads as before.
-    const store = createFailingStore(inner())
+    // Scenario: a store switched to failing and back reaches the wrapped store's read again.
+    const wrapped = inner()
+    const spy = jest.spyOn(wrapped, 'getSnapshot')
+    const store = createFailingStore(wrapped)
     store.fail()
     store.recover()
     await expect(store.getSnapshot(KEY)).resolves.toBeNull()
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 
   it('replaces the earlier failing set when told to fail again', async () => {
