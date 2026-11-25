@@ -93,10 +93,11 @@ describe('decideAccess', () => {
   })
 
   it('does not change the snapshot it reads', () => {
-    // Scenario: the decision is a pure function; the snapshot is frozen and the call neither
-    // throws nor alters it.
-    const snapshot = Object.freeze(snapshotWith(entitlement(true, null)))
+    // Scenario: the decision is a pure function; the snapshot read is equal, at every depth, to
+    // an independent copy taken before the call.
+    const snapshot = snapshotWith(entitlement(true, null))
+    const before = structuredClone(snapshot)
     expect(decideAccess(snapshot, 'premium', NOW)).toBe('allow')
-    expect(snapshot.entitlements).toHaveLength(1)
+    expect(snapshot).toStrictEqual(before)
   })
 })
