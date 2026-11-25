@@ -71,6 +71,78 @@ async function flush(): Promise<void> {
   for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
 }
 
+/** A held call of the controlled host cache. */
+interface Hold {
+  land: () => void
+  fail: () => void
+  answer: (value: string | null) => void
+}
+
+/** A host cache that applies a write when its held `set` is released, and can hold or fail calls. */
+class ControlledCache implements SubscriptionCache {
+  readonly entries = new Map<string, string>()
+  readonly #setHolds: Hold[] = []
+  readonly #getHolds: Hold[] = []
+  #deleting = true
+  #deleted = 0
+
+  /** The number of deletes asked of the cache. */
+  deletes(): number {
+    return this.#deleted
+  }
+
+  /** Holds the next `set`; `land` writes it and settles it, `fail` rejects it. */
+  holdNextSet(): Hold {
+    return this.#hold(this.#setHolds)
+  }
+
+  /** Holds the next `get`; `answer` settles it with the given text. */
+  holdNextGet(): Hold {
+    return this.#hold(this.#getHolds)
+  }
+
+  /** Makes every later `delete` reject. */
+  failDeletes(): void {
+    this.#deleting = false
+  }
+
+  get(key: string): Promise<string | null> {
+    const hold = this.#getHolds.shift()
+    if (hold === undefined) return Promise.resolve(this.entries.get(key) ?? null)
+    return new Promise<string | null>((resolve) => {
+      hold.answer = resolve
+    })
+  }
+
+  set(key: string, value: string): Promise<void> {
+    const hold = this.#setHolds.shift()
+    if (hold === undefined) {
+      this.entries.set(key, value)
+      return Promise.resolve()
+    }
+    return new Promise<void>((resolve, reject) => {
+      hold.land = () => {
+        this.entries.set(key, value)
+        resolve()
+      }
+      hold.fail = () => reject(new Error('cache set failed'))
+    })
+  }
+
+  delete(key: string): Promise<void> {
+    this.#deleted += 1
+    if (!this.#deleting) return Promise.reject(new Error('cache delete failed'))
+    this.entries.delete(key)
+    return Promise.resolve()
+  }
+
+  #hold(queue: Hold[]): Hold {
+    const hold: Hold = { land: () => undefined, fail: () => undefined, answer: () => undefined }
+    queue.push(hold)
+    return hold
+  }
+}
+
 describe('SnapshotCache', () => {
   it('loads on a miss, fills the cache and answers the second read without loading', async () => {
     // Scenario: two reads of one account; the load runs once.
@@ -380,5 +452,149 @@ describe('SnapshotCache', () => {
     })
     expect(host.sets).toEqual([])
     expect(host.deletes).toEqual([])
+  })
+
+  describe('with a host cache whose calls settle when the test says', () => {
+    const controlled = (): ControlledCache => new ControlledCache()
+
+    const KEY = `subscription:snapshot:${encodeAccountKey(ACCOUNT)}`
+    const OLD = (): SubscriptionSnapshot => snapshotOf(ACCOUNT, 'old')
+    const NEW = (): SubscriptionSnapshot => snapshotOf(ACCOUNT, 'new')
+
+    it('does not leave a fill in the cache that was still being written when its account was invalidated', async () => {
+      // Scenario: the read misses and loads the old value; its set is held by the host cache; the
+      // account is invalidated and the invalidation completes; the held set then lands.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const set = host.holdNextSet()
+      const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      await flush()
+      await cache.invalidate(ACCOUNT)
+      set.land()
+      await flush()
+      await reading
+      expect(host.entries.get(KEY)).toBeUndefined()
+      const next = await cache.read(ACCOUNT, () => Promise.resolve(NEW()))
+      expect(next?.sourceCustomer?.id).toBe('new')
+    })
+
+    it('answers the read at once and does not wait for a set that never settles', async () => {
+      // Scenario: the host cache's set is held and never released; the read and an invalidation
+      // both resolve.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      host.holdNextSet()
+      const result = await cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      expect(result?.sourceCustomer?.id).toBe('old')
+      await expect(cache.invalidate(ACCOUNT)).resolves.toBeUndefined()
+    })
+
+    it('leaves nothing and fails nothing when the set that was in flight at an invalidation rejects', async () => {
+      // Scenario: the held set fails after the account was invalidated.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const set = host.holdNextSet()
+      const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      await flush()
+      await cache.invalidate(ACCOUNT)
+      set.fail()
+      await flush()
+      await expect(reading).resolves.toBeDefined()
+      expect(host.entries.size).toBe(0)
+      expect(cache.pendingLoads).toBe(0)
+    })
+
+    it('tries to remove a late write even when the invalidation itself could not delete, and fails nothing', async () => {
+      // Scenario: every delete rejects; the held set lands after the invalidation; the fill's own
+      // delete is tried (two deletes in all) and no call fails.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const set = host.holdNextSet()
+      const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      await flush()
+      host.failDeletes()
+      await expect(cache.invalidate(ACCOUNT)).resolves.toBeUndefined()
+      set.land()
+      await flush()
+      await expect(reading).resolves.toBeDefined()
+      expect(host.deletes()).toBe(2)
+    })
+
+    it('does not serve the old value when an older fill lands after a newer fill did', async () => {
+      // Scenario: fill A (old) is held; the account is invalidated; read B fills the new value;
+      // A lands last. The next read answers the new value.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const first = host.holdNextSet()
+      const readA = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      await flush()
+      await cache.invalidate(ACCOUNT)
+      await cache.read(ACCOUNT, () => Promise.resolve(NEW()))
+      first.land()
+      await flush()
+      await readA
+      const after = await cache.read(ACCOUNT, () => Promise.resolve(NEW()))
+      expect(after?.sourceCustomer?.id).toBe('new')
+    })
+
+    it('cleans up after every fill that was in flight at an invalidation', async () => {
+      // Scenario: two fills of one account are held; one invalidation; both land.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const first = host.holdNextSet()
+      const second = host.holdNextSet()
+      const readA = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      const readB = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      await flush()
+      await cache.invalidate(ACCOUNT)
+      first.land()
+      second.land()
+      await flush()
+      await Promise.all([readA, readB])
+      expect(host.entries.size).toBe(0)
+      expect(cache.pendingLoads).toBe(0)
+    })
+
+    it('answers a read whose cache lookup began before an invalidation without filling the cache with it', async () => {
+      // Scenario: the lookup is held and returns the old entry after the invalidation.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const lookup = host.holdNextGet()
+      const reading = cache.read(ACCOUNT, () => Promise.resolve(NEW()))
+      await flush()
+      await cache.invalidate(ACCOUNT)
+      lookup.answer(JSON.stringify(OLD()))
+      await reading
+      expect(host.entries.size).toBe(0)
+      const next = await cache.read(ACCOUNT, () => Promise.resolve(NEW()))
+      expect(next?.sourceCustomer?.id).toBe('new')
+    })
+
+    it('keeps the fill of an account it was not asked to invalidate', async () => {
+      // Scenario: a held fill of one account lands after another account was invalidated.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const set = host.holdNextSet()
+      const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      await flush()
+      await cache.invalidate({ accountId: 'acc-2' })
+      set.land()
+      await flush()
+      await reading
+      expect(host.entries.has(KEY)).toBe(true)
+    })
+
+    it('keeps the account tracked while a fill is still being written, and forgets it when it settles', async () => {
+      // Scenario: the read has answered; its set is held; then it lands.
+      const host = controlled()
+      const cache = new SnapshotCache(host, TTL_MS)
+      const set = host.holdNextSet()
+      await cache.read(ACCOUNT, () => Promise.resolve(OLD()))
+      expect(cache.pendingAccounts).toBe(1)
+      set.land()
+      await flush()
+      expect(cache.pendingAccounts).toBe(0)
+      expect(cache.pendingLoads).toBe(0)
+    })
   })
 })

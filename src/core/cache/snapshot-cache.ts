@@ -80,7 +80,8 @@ export class SnapshotCache {
    * Answers from the cache when it holds the account, and otherwise from `load`, filling the cache
    * with what `load` returned. A value loaded before an invalidation of the same account is
    * returned to its caller but not stored, so the invalidation is never undone. A `load` that
-   * rejects rejects the read.
+   * rejects rejects the read. The fill is written after the read has answered and the read does
+   * not wait for it, so a host cache that is slow or never answers delays nothing.
    *
    * @param account The account, as the caller named it.
    * @param load Reads the snapshot from the store; `null` when none is stored.
@@ -93,31 +94,34 @@ export class SnapshotCache {
     const accountKey = encodeAccountKey(account)
     const key = `${KEY_PREFIX}${accountKey}`
     const ticket = this.#open(accountKey)
+    let filling = false
     try {
       const cached = await this.#get(key, account)
       if (cached !== null) return cached
       const loaded = await load()
-      if (loaded !== null && !ticket.invalidated) await this.#set(key, loaded)
+      if (loaded !== null && !ticket.invalidated) {
+        filling = true
+        void this.#fill(key, loaded, ticket)
+      }
       return loaded
     } finally {
-      this.#close(ticket)
+      if (!filling) this.#close(ticket)
     }
   }
 
   /**
    * Removes the account's entry and marks every read of it in flight, so none fills the cache
-   * with what it read before the change. A cache that cannot delete leaves its entry to expire.
+   * with what it read before the change. A fill whose write was already started is not waited
+   * for: it removes its own entry when its write settles, so an invalidation is never undone by a
+   * write that lands after it, although that entry can be seen from when it lands until that
+   * removal. A cache that cannot delete leaves its entry to expire.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank account identifier.
    */
   async invalidate(account: AccountReference): Promise<void> {
     const accountKey = encodeAccountKey(account)
     for (const ticket of this.#pending.get(accountKey) ?? []) ticket.invalidated = true
-    try {
-      await this.cache.delete(`${KEY_PREFIX}${accountKey}`)
-    } catch {
-      // The entry expires with its lifetime; a failed delete never fails the write behind it.
-    }
+    await this.#delete(`${KEY_PREFIX}${accountKey}`)
   }
 
   /** Registers a read in flight for an account. */
@@ -151,12 +155,26 @@ export class SnapshotCache {
     }
   }
 
-  /** Stores a snapshot; a cache that cannot store is not an error. */
-  async #set(key: string, snapshot: SubscriptionSnapshot): Promise<void> {
+  /**
+   * Writes a snapshot and then forgets the read it belongs to. When the account was invalidated
+   * while the write was in flight, the entry the write left is removed. It never rejects.
+   */
+  async #fill(key: string, snapshot: SubscriptionSnapshot, ticket: Ticket): Promise<void> {
     try {
       await this.cache.set(key, JSON.stringify(snapshot), this.ttlMs)
     } catch {
       // The next read loads from the store again.
+    }
+    if (ticket.invalidated) await this.#delete(key)
+    this.#close(ticket)
+  }
+
+  /** Removes an entry; a cache that cannot delete leaves it to expire. */
+  async #delete(key: string): Promise<void> {
+    try {
+      await this.cache.delete(key)
+    } catch {
+      // A failed delete never fails the read or the write behind it.
     }
   }
 }

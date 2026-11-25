@@ -282,6 +282,44 @@ describe('cache', () => {
     await app.close()
   })
 
+  it('does not serve revoked access after a held cache write lands behind a refresh', async () => {
+    // Scenario: a read fills the cache with active access, and the host cache holds that write; a
+    // refresh then revokes the access and invalidates; the held write lands afterwards.
+    const entries = new Map<string, string>()
+    let land = (): void => undefined
+    let first = true
+    const cache: SubscriptionCache = {
+      get: (key) => Promise.resolve(entries.get(key) ?? null),
+      set: (key, value) => {
+        if (!first) {
+          entries.set(key, value)
+          return Promise.resolve()
+        }
+        first = false
+        return new Promise<void>((resolve) => {
+          land = () => {
+            entries.set(key, value)
+            resolve()
+          }
+        })
+      },
+      delete: (key) => {
+        entries.delete(key)
+        return Promise.resolve()
+      }
+    }
+    const { app, service, source } = await boot(cache)
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
+    await service.refresh(ACCOUNT)
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, false, '2026-01-01T00:00:20.000Z'))
+    await service.refresh(ACCOUNT)
+    land()
+    for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
+    await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+    await app.close()
+  })
+
   it('keeps answering reads and refreshes when the host cache throws on every call', async () => {
     // Scenario: get, set and delete all reject.
     const { app, service, source } = await boot(THROWING_CACHE)
