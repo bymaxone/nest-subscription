@@ -41,10 +41,12 @@ describe('createFailingStore', () => {
   })
 
   it('returns what the wrapped store returns, not a copy of it', async () => {
-    // Scenario: a written snapshot is read back through the wrapper with its content intact.
-    const store = createFailingStore(inner())
-    await store.putSnapshot(KEY, SNAPSHOT, [], AT)
-    expect((await store.getSnapshot(KEY))?.snapshot).toEqual(SNAPSHOT)
+    // Scenario: the wrapped store answers a known object; the wrapper hands back that object.
+    const wrapped = inner()
+    const answer = { snapshot: SNAPSHOT, pendingChanges: [] }
+    jest.spyOn(wrapped, 'getSnapshot').mockResolvedValue(answer)
+    const store = createFailingStore(wrapped)
+    await expect(store.getSnapshot(KEY)).resolves.toBe(answer)
   })
 
   it.each(METHODS)('fails %s with a rejection when no method is named', async (method) => {
