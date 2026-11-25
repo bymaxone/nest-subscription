@@ -92,15 +92,15 @@ describe('assertNoSentinel', () => {
     )
   })
 
-  it('searches a payload that has no JSON form as text without failing', () => {
-    // Scenario: a payload of `undefined` has no JSON; it holds no sentinel and does not throw.
+  it('passes a payload of undefined, which holds no sentinel', () => {
+    // Scenario: the observer received `undefined`; the walk finds nothing and does not throw.
     const capture = createCapture()
     capture.observer.onWebhook?.(undefined as never)
     expect(() => assertNoSentinel(capture, ['secret-account'])).not.toThrow()
   })
 })
 
-describe('assertNoSentinel on what JSON would hide', () => {
+describe('assertNoSentinel walking the payload', () => {
   /** A capture whose observer received the payload, whatever its shape. */
   function receiving(payload: unknown): ReturnType<typeof createCapture> {
     const capture = createCapture()
@@ -127,7 +127,7 @@ describe('assertNoSentinel on what JSON would hide', () => {
     ['three levels of nesting', 'secret-account', { a: { b: { c: ['x-secret-account-y'] } } }],
     ['a Map nested in an array', 'secret-account', [new Map([[{ k: 'secret-account' }, 1]])]]
   ])('finds a sentinel held as %s', (_where, sentinel, payload) => {
-    // Scenario: the payload holds the sentinel where serialising to JSON loses or escapes it.
+    // Scenario: the payload holds the sentinel in one place of its structure; the walk reaches it.
     expect(() => assertNoSentinel(receiving(payload), [sentinel])).toThrow(
       'Sentinel 0 was found in observer payload 0 (onWebhook).'
     )
@@ -158,7 +158,7 @@ describe('assertNoSentinel on what JSON would hide', () => {
   })
 
   it('passes a payload of functions, symbols and undefined values that hold no sentinel', () => {
-    // Scenario: values JSON cannot hold are searched without failing.
+    // Scenario: values with no text are walked without failing.
     const payload = { run: () => 1, tag: Symbol('x'), nothing: undefined, none: null }
     expect(() => assertNoSentinel(receiving(payload), ['secret-account'])).not.toThrow()
   })

@@ -184,15 +184,12 @@ describe('no identifiers', () => {
     ['a Set member', 'sentinel-planted', new Set(['sentinel-planted'])],
     ['a BigInt', '12345678901234567890', { count: 12345678901234567890n }],
     ['a string with a quote and a newline', 'sentinel"planted\n', { source: 'sentinel"planted\n' }]
-  ])(
-    'finds a planted sentinel held as %s, which a JSON search would lose or escape',
-    (_where, sentinel, payload) => {
-      // Scenario: shapes whose JSON form drops or escapes the value; the sweep walks them instead.
-      const capture = createCapture()
-      capture.observer.onWebhook?.(payload as never)
-      expect(() => assertNoSentinel(capture, [sentinel])).toThrow(/found in observer payload 0/)
-    }
-  )
+  ])('finds a planted sentinel held as %s', (_where, sentinel, payload) => {
+    // Scenario: the sentinel sits in one place of the payload's structure; the walk reaches it.
+    const capture = createCapture()
+    capture.observer.onWebhook?.(payload as never)
+    expect(() => assertNoSentinel(capture, [sentinel])).toThrow(/found in observer payload 0/)
+  })
 
   it('finds a planted sentinel beside a reference to the payload itself', () => {
     // Scenario: the payload contains itself; the search ends and still reaches the string.
