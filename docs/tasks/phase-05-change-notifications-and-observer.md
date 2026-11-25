@@ -1,6 +1,6 @@
 # Phase 5 — Change notifications and observer
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P5 — change-notifications-and-observer
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -38,7 +38,7 @@ At the end every stored change is compared with the previous snapshot into a typ
 
 | ID  | Task                                                      | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 5.1 | Compare two snapshots into the typed change list          | 📋 ToDo | P0       | L    | —          |
+| 5.1 | Compare two snapshots into the typed change list          | ✅ Done | P0       | L    | —          |
 | 5.2 | Give each change a stable key                             | 📋 ToDo | P0       | S    | 5.1        |
 | 5.3 | Call the host hook after the write                        | 📋 ToDo | P0       | M    | 5.2        |
 | 5.4 | Add the observer                                          | 📋 ToDo | P1       | M    | 5.3        |
@@ -50,7 +50,7 @@ At the end every stored change is compared with the previous snapshot into a typ
 
 ### Task 5.1 — Compare two snapshots into the typed change list
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: —
@@ -61,11 +61,11 @@ Write the pure function that turns a previous and a new snapshot into the list o
 
 #### Acceptance criteria
 
-- [ ] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces an empty list for two equal snapshots.
-- [ ] The rules are pinned: `started` (no subscription before, one now); `renewed` (same subscription, later period, still active); `trial_converted` (`trialing` to `active`); `will_not_renew` and `will_renew_again` (will renew flips to and from `no`); `entered_grace`, `put_on_hold`, `recovered`; `paused`, `resumed`; `product_changed` (product reference differs); `expired`; `refunded` (refunded-at appears); `transferred` (the source customer reference changes or the subscriptions move away); `overlap_detected` (more than one subscription gives access to one entitlement, and did not before).
-- [ ] One comparison can yield several kinds, in a fixed documented order.
-- [ ] A change of fetched-at alone yields nothing.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces an empty list for two equal snapshots.
+- [x] The rules are pinned: `started` (no subscription before, one now); `renewed` (same subscription, later period, still active); `trial_converted` (`trialing` to `active`); `will_not_renew` and `will_renew_again` (will renew flips to and from `no`); `entered_grace`, `put_on_hold`, `recovered`; `paused`, `resumed`; `product_changed` (product reference differs); `expired`; `refunded` (refunded-at appears); `transferred` (the source customer reference changes or the subscriptions move away); `overlap_detected` (more than one subscription gives access to one entitlement, and did not before).
+- [x] One comparison can yield several kinds, in a fixed documented order.
+- [x] A change of fetched-at alone yields nothing.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -481,3 +481,5 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 <!-- entries are added as tasks complete -->
+
+- 5.1 ✅ 2026-11-25 — the pure comparison of two snapshots into the typed change candidates, one rule group per concern
