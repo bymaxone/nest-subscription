@@ -301,11 +301,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the processor that takes raw bytes and headers and returns an outcome, and the controller behind a switch that is off by default (FR17, D10); the refusal to start the controller without access to the unparsed body; the rule that a verified notification only triggers a read of the source (FR16, SEC01); verification delegated to the adapter over raw bytes before parsing (SEC02); one indistinguishable answer for every failed check (SEC03); the five outcomes and their HTTP answers (FR18); de-duplication by event identifier with a retention the host sets (FR19); acceptance of unknown event kinds and fields (FR20); the deadline, answered as a temporary failure when the source read is slow (FR21, NFR02); nothing of the raw payload stored or logged (SEC06).
   - Out: any provider's signature scheme or event names, which belong to the adapters.
 - **Definition of Done**:
-  - [ ] Driven by the fake source, a verified notification results in a stored snapshot read from the source, and the payload's own state is provably ignored.
-  - [ ] A notification that fails verification is refused with one answer that is identical for every kind of failure, and changes nothing (AC02 for the receiver).
-  - [ ] The same event delivered five times causes one source read and one host notification (AC03).
-  - [ ] Events delivered in reverse order leave the snapshot equal to the source's current state (AC04).
-  - [ ] A source read slower than the deadline is answered as a temporary failure before the deadline, and a later retry of that event is processed.
+  - [x] Driven by the fake source, a verified notification results in a stored snapshot read from the source, and the payload's own state is provably ignored.
+  - [x] A notification that fails verification is refused with one answer that is identical for every kind of failure, and changes nothing (AC02 for the receiver).
+  - [x] The same event delivered five times causes one source read and one host notification (AC03).
+  - [x] Events delivered in reverse order leave the snapshot equal to the source's current state (AC04).
+  - [x] A source read slower than the deadline is answered as a temporary failure before the deadline, and a later retry of that event is processed.
 - **Context / preconditions**: P3 and P5 are done. De-duplication of a failed event follows D16.
 - **Rules-of-phase**:
   1. No code path writes a snapshot from payload content.

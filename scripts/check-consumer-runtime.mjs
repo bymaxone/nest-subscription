@@ -99,11 +99,14 @@ const ROOT_EXPORTS = [
   'SubscriptionError',
   'SubscriptionModule',
   'SubscriptionService',
+  'SubscriptionWebhookController',
+  'WebhookProcessor',
   'decodeAccountKey',
   'diffSnapshots',
   'encodeAccountKey',
   'hashAccountKey',
   'resolveOptions',
+  'toHttpAnswer',
   'validateOptions'
 ]
 

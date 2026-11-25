@@ -307,6 +307,38 @@ describe('WebhookProcessor verified notifications', () => {
   })
 })
 
+describe('WebhookProcessor observer payloads', () => {
+  /** What the observer was told about webhooks, in order. */
+  function told(h: Harness): unknown[] {
+    return h.capture.payloads.filter((entry) => entry.method === 'onWebhook').map((e) => e.payload)
+  }
+
+  it('reports that no identifier was retained for every outcome but a failed forget', async () => {
+    // Scenario: processed, ignored and a store that cannot record each say `retained: false`.
+    const h = harness()
+    await h.processor.process(h.source.buildRequest(NOTIFICATION))
+    await h.processor.process(h.source.buildRequest({ ...NOTIFICATION, accountIds: [] }))
+    const down = harness({
+      store: (base) =>
+        delegating(base, { markEventProcessed: () => Promise.reject(new Error('x')) })
+    })
+    await down.processor.process(down.source.buildRequest(NOTIFICATION))
+    expect(told(h)).toStrictEqual([
+      { outcome: 'processed', durationMs: 0, retained: false },
+      { outcome: 'ignored', durationMs: 0, retained: false }
+    ])
+    expect(told(down)).toStrictEqual([{ outcome: 'failed', durationMs: 0, retained: false }])
+  })
+
+  it('reads an account of a single-tenant host without a tenant key at all', async () => {
+    // Scenario: the reference handed to the source has no `tenantId` property, not an undefined one.
+    const h = harness()
+    const read = jest.spyOn(h.source, 'readAccount')
+    await h.processor.process(h.source.buildRequest(NOTIFICATION))
+    expect(read.mock.calls[0]?.[0]).toStrictEqual({ accountId: 'acc-1' })
+  })
+})
+
 describe('WebhookProcessor refusals', () => {
   /** A request signed for a notification, and ways to break it. */
   function signed(source: FakeSubscriptionSource): WebhookRequest {

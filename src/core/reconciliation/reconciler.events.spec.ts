@@ -97,9 +97,10 @@ describe('Reconciler event purge', () => {
     // Scenario: a retention longer than any date can represent leaves nothing older to purge.
     const store = new InMemorySubscriptionStore({ logger: () => undefined })
     const purge = jest.spyOn(store, 'deleteEventsOlderThan')
-    const { reconciler } = setup(store, Number.MAX_SAFE_INTEGER)
+    const { reconciler, lines } = setup(store, Number.MAX_SAFE_INTEGER)
     await expect(reconciler.run({})).resolves.toMatchObject({ failed: 0 })
     expect(purge).toHaveBeenCalledTimes(0)
+    expect(lines).toStrictEqual([])
   })
 
   it('logs a failed purge by its code and still runs', async () => {

@@ -135,6 +135,21 @@ describe('timerWait', () => {
     expect(jest.getTimerCount()).toBe(0)
   })
 
+  it('listens once for the abort and stops listening when it finishes', async () => {
+    // Scenario: the listener is registered for the abort event, once, and removed under the same
+    // name with the same function when the timer fires, so nothing stays attached to the signal.
+    const controller = new AbortController()
+    const add = jest.spyOn(controller.signal, 'addEventListener')
+    const remove = jest.spyOn(controller.signal, 'removeEventListener')
+    const done = timerWait(500, controller.signal)
+    expect(add).toHaveBeenCalledTimes(1)
+    expect(add).toHaveBeenCalledWith('abort', expect.any(Function), { once: true })
+    jest.advanceTimersByTime(500)
+    await done
+    expect(remove).toHaveBeenCalledTimes(1)
+    expect(remove).toHaveBeenCalledWith('abort', add.mock.calls[0]?.[1])
+  })
+
   it('does not resolve before the time has passed', async () => {
     // Scenario: a wait that has been started and not aborted stays pending.
     const controller = new AbortController()
