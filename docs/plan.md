@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 4 / 10 phases of the first release done (40%) — P0 to P9
-**Active phase**: P4 — guard-and-fail-policy
+**Overall progress**: 🔄 5 / 10 phases of the first release done (50%) — P0 to P9
+**Active phase**: P5 — change-notifications-and-observer
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -34,19 +34,19 @@ This document says in which order the specification is built and when each part 
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                     | Status    | Progress | Size | Last updated |
-| --- | --------------------------------------------------------------------------------------------------------- | --------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done   | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done   | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done   | 5/5      | L    | 2026-11-25   |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | 👀 Review | 4/4      | M    | 2026-11-25   |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 📋 ToDo   | 0/5      | M    | —            |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo   | 0/5      | L    | —            |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo   | 0/8      | L    | —            |
-| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo   | 0/9      | L    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo   | 0/6      | M    | —            |
-| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo   | 0/5      | L    | —            |
+| ID  | Phase                                                                                                     | Status         | Progress | Size | Last updated |
+| --- | --------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done        | 5/5      | M    | 2026-11-25   |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done        | 5/5      | L    | 2026-11-25   |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done        | 4/4      | M    | 2026-11-25   |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 🔄 In Progress | 0/5      | M    | 2026-11-25   |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo        | 0/5      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo        | 0/8      | L    | —            |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo        | 0/9      | L    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo        | 0/6      | M    | —            |
+| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo        | 0/5      | L    | —            |
 
 ---
 
@@ -251,11 +251,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the decorator naming an entitlement and the guard that enforces it; the account resolver the host supplies, and the unauthenticated refusal when it yields no account (FR29); the stable refusal codes that separate "no subscription" from "subscription exists and gives no access", with no detail about any other account (FR30); the fail policy with its two values, refuse by default and last known state within a tolerance (FR31, SEC04); no guard decision waiting on a network call (NFR01, D19).
   - Out: change notifications; the error envelope of a host that does not use `@bymax-one/nest-core`, beyond the documented default.
 - **Definition of Done**:
-  - [ ] An end-to-end test protects a route with the decorator and gets access, the "no subscription" refusal and the "gives no access" refusal from three accounts.
-  - [ ] A request with no resolvable account is refused as unauthenticated.
-  - [ ] With the store unreadable or the snapshot missing, the guard refuses under the default policy; under the last-known-state policy it allows a snapshot younger than the tolerance and refuses an older one, at the boundary exactly (AC07).
-  - [ ] No guard decision waits for a source call: with a fresh snapshot the source is not called, and with a stale one the decision is returned before the background refresh resolves.
-  - [ ] A refusal body contains only the error code and message of the catalogue.
+  - [x] An end-to-end test protects a route with the decorator and gets access, the "no subscription" refusal and the "gives no access" refusal from three accounts.
+  - [x] A request with no resolvable account is refused as unauthenticated.
+  - [x] With the store unreadable or the snapshot missing, the guard refuses under the default policy; under the last-known-state policy it allows a snapshot younger than the tolerance and refuses an older one, at the boundary exactly (AC07).
+  - [x] No guard decision waits for a source call: with a fresh snapshot the source is not called, and with a stale one the decision is returned before the background refresh resolves.
+  - [x] A refusal body contains only the error code and message of the catalogue.
 - **Context / preconditions**: P3 is done.
 - **Rules-of-phase**:
   1. The guard reads the "gives access" flag and never a status name.
@@ -447,6 +447,7 @@ When a phase moves status:
 - P1 ✅ 2026-11-24 — the model, the two ports, the in-memory store, the conformance suite and the fake source merged in #6
 - P2 ✅ 2026-11-25 — the module, its options and their validation, secret containment and the sandbox boot refusal merged in #7
 - P3 ✅ 2026-11-25 — reads, refresh with single flight, staleness, the cache and reconciliation merged in #9
+- P4 ✅ 2026-11-25 — the decorator, the guard, the stable refusal codes and the two fail policies merged in #10 (cba5824)
 
 ---
 

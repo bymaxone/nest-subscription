@@ -1,6 +1,6 @@
 # Phase 5 — Change notifications and observer
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P5 — change-notifications-and-observer
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
