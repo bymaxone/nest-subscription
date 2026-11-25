@@ -53,6 +53,12 @@ export interface ReconcileOptions {
   /** Where the previous run stopped: the `cursor` of its result. Absent starts from the first. */
   readonly cursor?: string | null
   /**
+   * Where the previous run stopped delivering pending changes again: the `pendingCursor` of its
+   * result. Absent starts from the first account. Pass it so that accounts whose hook keeps
+   * failing, which stay pending, do not keep later accounts from being reached.
+   */
+  readonly pendingCursor?: string | null
+  /**
    * Waits for the given number of milliseconds when the rate is spent. Without it a run that
    * spends its rate ends there and returns the cursor to go on from; the library starts no timer.
    */
@@ -72,6 +78,14 @@ export interface ReconcileResult {
    * host decides from the cursor alone whether to call again.
    */
   readonly cursor: string | null
+  /**
+   * Pass this as `pendingCursor` to the next run to go on after the last account whose pending
+   * changes this run delivered again. It is `null` only when the listing of accounts with pending
+   * changes is exhausted, or when the host set no change hook. A run that ends at its batch bound
+   * returns a cursor to go on from. It is independent of `cursor`, which belongs to the refresh of
+   * stale snapshots.
+   */
+  readonly pendingCursor: string | null
 }
 
 /** The settings of a run, with defaults applied and every value checked. */
@@ -80,6 +94,7 @@ interface RunConfig {
   readonly olderThan: string
   readonly batchSize: number
   readonly cursor: string | null
+  readonly pendingCursor: string | null
 }
 
 /** How many accounts were refreshed and how many failed so far in one run. */
@@ -114,7 +129,7 @@ export class Reconciler {
    */
   async run(input: ReconcileOptions): Promise<ReconcileResult> {
     const config = this.#configure(input)
-    await this.#deliverPending(config.batchSize)
+    const pendingCursor = await this.#deliverPending(config.batchSize, config.pendingCursor)
     const limiter = new RateLimiter(
       this.clock,
       input.maxCallsPerSecond ?? DEFAULT_MAX_CALLS_PER_SECOND,
@@ -129,24 +144,25 @@ export class Reconciler {
       // ends between pages and the cursor it returns is exactly where it stopped.
       const slots = input.wait === undefined ? limiter.available() : budget
       const limit = Math.min(PAGE_SIZE, budget, slots)
-      if (limit === 0) return { ...tally, cursor }
+      if (limit === 0) return { ...tally, cursor, pendingCursor }
       const page = await this.store.listStaleKeys(olderThan, limit, cursor)
       await this.#work(page.keys, limiter, input.wait, tally)
       budget -= page.keys.length
       cursor = page.nextCursor
-      if (cursor === null) return { ...tally, cursor }
+      if (cursor === null) return { ...tally, cursor, pendingCursor }
     }
   }
 
   /**
-   * Delivers again the pending changes of up to `batchSize` accounts, a page at a time. An account
-   * whose hook call fails stays pending and is not met again in this run, and one whose key the
-   * library cannot use is skipped.
+   * Delivers again the pending changes of up to `batchSize` accounts, a page at a time, from the
+   * cursor. An account whose hook call fails stays pending and is not met again in this run, and
+   * one whose key the library cannot use is skipped. Returns where to go on, or `null` when the
+   * listing is exhausted or there is no hook.
    */
-  async #deliverPending(batchSize: number): Promise<void> {
-    if (this.dispatcher === null) return
+  async #deliverPending(batchSize: number, from: string | null): Promise<string | null> {
+    if (this.dispatcher === null) return null
     let budget = batchSize
-    let cursor: string | null = null
+    let cursor = from
     while (budget > 0) {
       const page = await this.store.listKeysWithPendingChanges(Math.min(PAGE_SIZE, budget), cursor)
       for (const key of page.keys) {
@@ -155,8 +171,9 @@ export class Reconciler {
       }
       budget -= page.keys.length
       cursor = page.nextCursor
-      if (cursor === null) return
+      if (cursor === null) return null
     }
+    return cursor
   }
 
   /** Applies the defaults and refuses a value out of range. */
@@ -172,7 +189,12 @@ export class Reconciler {
     ) {
       throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.INVALID_INPUT)
     }
-    return { olderThan: threshold.toISOString(), batchSize, cursor: input.cursor ?? null }
+    return {
+      olderThan: threshold.toISOString(),
+      batchSize,
+      cursor: input.cursor ?? null,
+      pendingCursor: input.pendingCursor ?? null
+    }
   }
 
   /**

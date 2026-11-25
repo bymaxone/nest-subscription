@@ -346,14 +346,17 @@ describe('SnapshotRefresher change notifications', () => {
 })
 
 /** A refresher whose observer is the one given, over a fresh source, store and clock. */
-function observed(observer: SubscriptionObserver | null): {
+function observed(
+  observer: SubscriptionObserver | null,
+  hook: (notification: SubscriptionChangeNotification) => unknown = jest.fn()
+): {
   source: FakeSubscriptionSource
   store: InMemorySubscriptionStore
   clock: ManualClock
   refresher: SnapshotRefresher
 } {
   const { source, store, clock } = setup()
-  const dispatcher = dispatcherOver(jest.fn(), store, clock)
+  const dispatcher = dispatcherOver(hook, store, clock)
   const bridge = new ObserverBridge(observer, clock)
   return {
     source,
@@ -434,15 +437,52 @@ describe('SnapshotRefresher observer', () => {
     expect(onSourceError).toHaveBeenCalledTimes(1)
   })
 
-  it('does not let an observer that throws change the refresh', async () => {
-    // Scenario: both observer methods throw; the refresh and its delivery still succeed.
-    const boom = (): never => {
-      throw new Error('observer broke')
+  describe.each([
+    [
+      'throws',
+      (): never => {
+        throw new Error('observer broke')
+      }
+    ],
+    ['rejects', (): Promise<never> => Promise.reject(new Error('observer rejected'))]
+  ])('when the observer %s', (_how, fail) => {
+    const broken: SubscriptionObserver = { onRefresh: fail, onSourceError: fail }
+
+    /** What one refresh leaves: its result, the stored state and what the hook was given. */
+    async function leaves(observer: SubscriptionObserver | null): Promise<unknown> {
+      const hook = jest.fn()
+      const { source, store, refresher } = observed(observer, hook)
+      source.setAccount(ACCOUNT, subscribed(T10))
+      const result = await refresher.refresh(ACCOUNT)
+      await result.delivery
+      return {
+        written: result.written,
+        changes: result.changes,
+        stored: await store.getSnapshot(encodeAccountKey(ACCOUNT)),
+        delivered: hook.mock.calls
+      }
     }
-    const { source, refresher } = observed({ onRefresh: boom, onSourceError: boom })
-    source.setAccount(ACCOUNT, subscribed(T10))
-    const result = await refresher.refresh(ACCOUNT)
-    expect(result.written).toBe(true)
+
+    it('leaves the result, the stored state and the delivery as they are with no observer', async () => {
+      // Scenario: the same refresh with and without a broken observer; everything it leaves is equal.
+      const without = await leaves(null)
+      expect(await leaves(broken)).toStrictEqual(without)
+      expect(without).toMatchObject({ written: true, delivered: [expect.anything()] })
+    })
+
+    it('rejects a failed read with the same error as with no observer', async () => {
+      // Scenario: the source fails; the refresh rejects with the library's error either way.
+      const reject = async (observer: SubscriptionObserver | null): Promise<unknown> => {
+        const { source, refresher } = observed(observer)
+        source.failNextRead(new Error('source down'))
+        return refresher.refresh(ACCOUNT).catch((error: unknown) => error)
+      }
+      const without = await reject(null)
+      const withBroken = await reject(broken)
+      expect(without).toBeInstanceOf(SubscriptionError)
+      expect(withBroken).toBeInstanceOf(SubscriptionError)
+      expect(withBroken).toMatchObject({ code: (without as SubscriptionError).code })
+    })
   })
 
   it('reads the clock no more often with no observer than the refresh itself needs', async () => {

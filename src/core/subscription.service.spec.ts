@@ -426,7 +426,7 @@ describe('SubscriptionService reconcile', () => {
     }
     clock.advance(36 * 3_600_000)
     const result = await service.reconcile({ olderThanMs: 24 * 3_600_000 })
-    expect(result).toEqual({ refreshed: 2, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 2, failed: 0, cursor: null, pendingCursor: null })
     expect(source.totalReads).toBe(2)
   })
 
@@ -444,7 +444,8 @@ describe('SubscriptionService reconcile', () => {
     await expect(service.reconcile()).resolves.toEqual({
       refreshed: 0,
       failed: 0,
-      cursor: null
+      cursor: null,
+      pendingCursor: null
     })
   })
 })

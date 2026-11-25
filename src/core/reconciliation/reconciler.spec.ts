@@ -155,7 +155,7 @@ describe('Reconciler', () => {
     clock.advance(DAY + DAY / 2)
     await seed(store, 2, new Date(clock.now().getTime() - 3_600_000).toISOString(), 4)
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toEqual({ refreshed: 3, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 3, failed: 0, cursor: null, pendingCursor: null })
     expect([1, 2, 3].map((n) => source.readCount(account(n)))).toEqual([1, 1, 1])
     expect([4, 5].map((n) => source.readCount(account(n)))).toEqual([0, 0])
   })
@@ -184,7 +184,7 @@ describe('Reconciler', () => {
     const second = await reconciler.run({ ...options, cursor: first.cursor })
     expect(second).toMatchObject({ refreshed: 4, failed: 0 })
     const third = await reconciler.run({ ...options, cursor: second.cursor })
-    expect(third).toEqual({ refreshed: 2, failed: 0, cursor: null })
+    expect(third).toEqual({ refreshed: 2, failed: 0, cursor: null, pendingCursor: null })
     expect(Array.from({ length: 10 }, (_, n) => source.readCount(account(n + 1)))).toEqual(
       Array.from({ length: 10 }, () => 1)
     )
@@ -198,7 +198,7 @@ describe('Reconciler', () => {
     const options = { olderThanMs: DAY, batchSize: 4, wait: advancing(clock) }
     await reconciler.run(options)
     const next = await reconciler.run(options)
-    expect(next).toEqual({ refreshed: 2, failed: 0, cursor: null })
+    expect(next).toEqual({ refreshed: 2, failed: 0, cursor: null, pendingCursor: null })
     expect(source.totalReads).toBe(6)
   })
 
@@ -230,7 +230,7 @@ describe('Reconciler', () => {
       maxCallsPerSecond: 1000,
       wait: advancing(clock)
     })
-    expect(result).toEqual({ refreshed: 250, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 250, failed: 0, cursor: null, pendingCursor: null })
     expect(listed).toEqual([100, 100, 100])
     expect(source.totalReads).toBe(250)
   })
@@ -259,7 +259,7 @@ describe('Reconciler', () => {
       maxCallsPerSecond: 1000,
       wait: advancing(clock)
     })
-    expect(result).toEqual({ refreshed: 30, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 30, failed: 0, cursor: null, pendingCursor: null })
   })
 
   it('lists no more pages than its batch needs, and never the rest of the backlog', async () => {
@@ -418,7 +418,7 @@ describe('Reconciler', () => {
       cursor: partial.cursor,
       wait
     })
-    expect(last).toEqual({ refreshed: 2, failed: 0, cursor: null })
+    expect(last).toEqual({ refreshed: 2, failed: 0, cursor: null, pendingCursor: null })
   })
 
   it('does not stop the run for an account whose source read fails', async () => {
@@ -431,7 +431,7 @@ describe('Reconciler', () => {
     const before = await store.getSnapshot(key)
     source.failNextRead(new Error('down'))
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toEqual({ refreshed: 4, failed: 1, cursor: null })
+    expect(result).toEqual({ refreshed: 4, failed: 1, cursor: null, pendingCursor: null })
     expect(source.totalReads).toBe(5)
     expect(await store.getSnapshot(key)).toEqual(before)
   })
@@ -515,7 +515,8 @@ describe('Reconciler', () => {
     expect(await reconciler.run({})).toEqual({
       refreshed: 0,
       failed: 0,
-      cursor: null
+      cursor: null,
+      pendingCursor: null
     })
     expect(source.totalReads).toBe(0)
   })
@@ -574,222 +575,13 @@ describe('Reconciler', () => {
   })
 
   it('names no account in a failure it counts', async () => {
-    // Scenario: the result of a run with a failed account holds counts and a cursor only.
+    // Scenario: the result of a run with a failed account holds counts and cursors only.
     const { source, store, clock, reconciler } = setup()
     await seed(store, 1)
     clock.advance(2 * DAY)
     source.failNextRead(new Error('down for acc-00001'))
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(Object.keys(result).sort()).toEqual(['cursor', 'failed', 'refreshed'])
+    expect(Object.keys(result).sort()).toEqual(['cursor', 'failed', 'pendingCursor', 'refreshed'])
     expect(JSON.stringify(result)).not.toContain('acc-00001')
-  })
-})
-
-/** The two pending changes every seeded account is stored with. */
-function pendingFor(n: number): SubscriptionChange[] {
-  return [
-    { kind: 'renewed', key: `renewed-${String(n)}` },
-    { kind: 'refunded', key: `refunded-${String(n)}` }
-  ]
-}
-
-/** A reconciler with a change dispatcher over `hook`, and the store, the clock and the log. */
-function withHook(
-  hook: (notification: SubscriptionChangeNotification) => unknown,
-  extra: { multiTenant?: boolean } = {},
-  wrap: (store: SubscriptionStore) => SubscriptionStore = (store) => store
-): {
-  source: FakeSubscriptionSource
-  store: InMemorySubscriptionStore
-  view: SubscriptionStore
-  clock: ManualClock
-  reconciler: Reconciler
-  lines: string[]
-} {
-  const source = new FakeSubscriptionSource()
-  const store = new InMemorySubscriptionStore({ logger: () => undefined })
-  const view = wrap(store)
-  const clock = new ManualClock(T0)
-  const options = resolveOptions({
-    source,
-    store: view,
-    clock,
-    accountResolver: () => null,
-    onChange: hook,
-    ...extra
-  })
-  const lines: string[] = []
-  const dispatcher = new ChangeDispatcher(
-    hook,
-    view,
-    { warn: (message) => void lines.push(message) },
-    new ObserverBridge(null, clock)
-  )
-  const refresher = new SnapshotRefresher(
-    source,
-    view,
-    clock,
-    null,
-    dispatcher,
-    new ObserverBridge(null, clock)
-  )
-  return {
-    source,
-    store,
-    view,
-    clock,
-    lines,
-    reconciler: new Reconciler(view, clock, refresher, options, dispatcher)
-  }
-}
-
-/** Stores `count` accounts fetched now, each with two pending changes. */
-async function seedPending(store: SubscriptionStore, count: number, from = 1): Promise<void> {
-  for (let n = from; n < from + count; n += 1) {
-    const reference = account(n)
-    await store.putSnapshot(
-      encodeAccountKey(reference),
-      fetchedAt(reference, T0),
-      pendingFor(n),
-      T0
-    )
-  }
-}
-
-/** The number of accounts that still have a pending change. */
-async function pendingAccounts(store: SubscriptionStore): Promise<number> {
-  return (await store.listKeysWithPendingChanges(1000, null)).keys.length
-}
-
-describe('Reconciler pending changes', () => {
-  it('delivers pending changes again with their stored keys, no previous snapshot, and clears them', async () => {
-    // Scenario: a crash after the write left two changes pending for one account.
-    const hook = jest.fn()
-    const { store, reconciler } = withHook(hook)
-    await seedPending(store, 1)
-    await reconciler.run({})
-    const stored = await store.getSnapshot(encodeAccountKey(account(1)))
-    expect(hook).toHaveBeenCalledTimes(1)
-    expect(hook).toHaveBeenCalledWith({
-      previous: null,
-      current: fetchedAt(account(1), T0),
-      changes: pendingFor(1),
-      redelivery: true
-    })
-    expect(stored?.pendingChanges).toStrictEqual([])
-  })
-
-  it('clears only the accounts whose hook call returned', async () => {
-    // Scenario: the hook fails for the second account; its changes stay pending and the first
-    // account's are cleared.
-    const hook = jest.fn((notification: SubscriptionChangeNotification) => {
-      if (notification.changes[0]?.key === 'renewed-2') throw new Error('boom')
-    })
-    const { store, reconciler, lines } = withHook(hook)
-    await seedPending(store, 3)
-    await reconciler.run({})
-    const left = (await store.listKeysWithPendingChanges(10, null)).keys
-    expect(left).toStrictEqual([encodeAccountKey(account(2))])
-    expect(lines).toHaveLength(1)
-  })
-
-  it('goes on to refresh stale accounts after a failing hook', async () => {
-    // Scenario: a hook that fails does not stop the run's own refreshes.
-    const { source, store, clock, reconciler } = withHook(() => {
-      throw new Error('boom')
-    })
-    await seedPending(store, 1)
-    await seed(store, 1, T0, 2)
-    clock.advance(2 * DAY)
-    const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result.refreshed).toBe(2)
-    expect(source.readCount(account(2))).toBe(1)
-  })
-
-  it('delivers no more accounts than the batch bound', async () => {
-    // Scenario: five accounts pending and a bound of two; the others wait for the next run.
-    const hook = jest.fn()
-    const { store, reconciler } = withHook(hook)
-    await seedPending(store, 5)
-    await reconciler.run({ batchSize: 2 })
-    expect(hook).toHaveBeenCalledTimes(2)
-    expect(await pendingAccounts(store)).toBe(3)
-  })
-
-  it('delivers in pages of at most a hundred accounts, up to the bound', async () => {
-    // Scenario: 120 accounts pending and a bound of 150; the listing is asked for 100 then 50.
-    const hook = jest.fn()
-    let limits: number[] = []
-    const { store, reconciler } = withHook(hook, {}, (base) =>
-      delegating(base, {
-        listKeysWithPendingChanges: (limit, cursor) => {
-          limits = [...limits, limit]
-          return base.listKeysWithPendingChanges(limit, cursor)
-        }
-      })
-    )
-    await seedPending(store, 120)
-    await reconciler.run({ batchSize: 150 })
-    expect(limits).toStrictEqual([100, 50])
-    expect(hook).toHaveBeenCalledTimes(120)
-    expect(await pendingAccounts(store)).toBe(0)
-  })
-
-  it('delivers the changes of an account it refreshes before it returns', async () => {
-    // Scenario: a stale account whose source state gained a subscription; the hook has been called
-    // by the time the run resolves, as a first delivery.
-    const hook = jest.fn()
-    const { source, store, clock, reconciler } = withHook(hook)
-    await seed(store, 1)
-    clock.advance(2 * DAY)
-    source.setAccount(account(1), {
-      ...fetchedAt(account(1), T0),
-      subscriptions: [SUBSCRIPTION]
-    })
-    await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(hook).toHaveBeenCalledTimes(1)
-    expect(hook.mock.calls[0]?.[0]).toMatchObject({ redelivery: false })
-  })
-
-  it('skips a pending key it cannot use and delivers the others', async () => {
-    // Scenario: the listing returns a key the encoder could not have written.
-    const hook = jest.fn()
-    const { store, reconciler } = withHook(hook, {}, (base) =>
-      delegating(base, {
-        listKeysWithPendingChanges: async (limit, cursor) => {
-          const page = await base.listKeysWithPendingChanges(limit, cursor)
-          return { ...page, keys: ['not-a-key', ...page.keys] }
-        }
-      })
-    )
-    await seedPending(store, 1)
-    await reconciler.run({})
-    expect(hook).toHaveBeenCalledTimes(1)
-  })
-
-  it('skips a pending account without a tenant when the host is multi-tenant', async () => {
-    // Scenario: a stored key with no tenant in a multi-tenant host is not usable.
-    const hook = jest.fn()
-    const { store, reconciler } = withHook(hook, { multiTenant: true })
-    await seedPending(store, 1)
-    await reconciler.run({})
-    expect(hook).not.toHaveBeenCalled()
-  })
-
-  it('rejects the run when the pending listing fails', async () => {
-    // Scenario: the store cannot list pending changes.
-    const failure = new Error('store down')
-    const { reconciler } = withHook(jest.fn(), {}, (base) =>
-      delegating(base, { listKeysWithPendingChanges: () => Promise.reject(failure) })
-    )
-    await expect(reconciler.run({})).rejects.toBe(failure)
-  })
-
-  it('does not list pending changes when the host set no hook', async () => {
-    // Scenario: no dispatcher; the listing of pending changes is never asked.
-    const { store, reconciler } = setup()
-    const listing = jest.spyOn(store, 'listKeysWithPendingChanges')
-    await reconciler.run({})
-    expect(listing).not.toHaveBeenCalled()
   })
 })

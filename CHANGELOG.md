@@ -141,7 +141,10 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   returned or failed. With no `onChange` no change is computed or stored.
 - `reconcile` delivers pending changes again before it refreshes stale accounts, a page at a
   time and up to `batchSize` accounts, and clears only the changes whose hook
-  call returned.
+  call returned. `ReconcileResult` gains `pendingCursor` and `ReconcileOptions` gains
+  `pendingCursor`: pass the one to the next run so that an account whose hook keeps failing, which
+  stays pending, does not keep later accounts from being reached. It is `null` when the listing of
+  pending accounts is exhausted, and independent of `cursor`, which belongs to stale snapshots.
 - The observer option takes a `SubscriptionObserver`, every method of it optional, one per event
   family. Every payload is a closed record of outcomes, counts and durations
   on the injected clock, with no account, tenant or payload content. A method that throws or

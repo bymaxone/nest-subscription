@@ -298,6 +298,47 @@ const VARIANTS: Record<ChangeKind, readonly [SubscriptionSnapshot | null, Subscr
   ]
 }
 
+/** Every pair of the kind table, as a row of the order test. */
+const PAIRS = ROWS.map((row) => [`a ${row.kind} pair`, row.previous, row.current] as const)
+
+/** Pairs in which several subscriptions change at once, so that their order could matter. */
+const MANY = [
+  [
+    'two subscriptions that both renew',
+    snapshotOf([record({ subscriptionReference: 'a' }), record({ subscriptionReference: 'b' })]),
+    snapshotOf([
+      record({ subscriptionReference: 'a', currentPeriodEnd: '2026-03-01T00:00:00.000Z' }),
+      record({ subscriptionReference: 'b', currentPeriodEnd: '2026-03-01T00:00:00.000Z' })
+    ])
+  ],
+  [
+    'two subscriptions that both change product',
+    snapshotOf([record({ subscriptionReference: 'a' }), record({ subscriptionReference: 'b' })]),
+    snapshotOf([
+      record({ subscriptionReference: 'a', productReference: 'p1' }),
+      record({ subscriptionReference: 'b', productReference: 'p2' })
+    ])
+  ],
+  [
+    'two subscriptions that both start',
+    null,
+    snapshotOf([record({ subscriptionReference: 'a' }), record({ subscriptionReference: 'b' })])
+  ],
+  [
+    'two subscriptions that both move away',
+    snapshotOf([record({ subscriptionReference: 'b' }), record({ subscriptionReference: 'a' })]),
+    snapshotOf([])
+  ],
+  [
+    'two subscriptions that grant one entitlement',
+    snapshotOf([record({ subscriptionReference: 'a' })]),
+    grantingSnapshot([{ subscriptionReference: 'b' }, { subscriptionReference: 'a' }], {
+      a: ['pro'],
+      b: ['pro']
+    })
+  ]
+] as const
+
 describe('diffSnapshots', () => {
   it('gives a change a key of 64 lowercase hexadecimal characters', () => {
     // Scenario: an account and a tenant with recognizable names still give a fixed-width hex key.
@@ -399,16 +440,29 @@ describe('diffSnapshots', () => {
     expect(new Set(keys).size).toBe(2)
   })
 
-  it('gives the same keys whatever the order of the subscriptions', () => {
-    // Scenario: the source lists the same subscriptions in another order.
-    const a = record({ subscriptionReference: 'a', productReference: 'p1' })
-    const b = record({ subscriptionReference: 'b', productReference: 'p2' })
-    const forward = diffSnapshots(null, snapshotOf([a, b]))
-    const reversed = diffSnapshots(null, snapshotOf([b, a]))
-    expect(reversed.map((change) => change.key).sort()).toStrictEqual(
-      forward.map((change) => change.key).sort()
-    )
-  })
+  it.each([...PAIRS, ...MANY])(
+    'gives the same keys for %s whatever the order of the subscriptions in either snapshot',
+    (_name, previous, current) => {
+      // Scenario: the source lists the same subscriptions in another order in both snapshots; the
+      // comparison must find the same changes under the same keys, and must find some.
+      const reversed = (snapshot: SubscriptionSnapshot | null): SubscriptionSnapshot | null =>
+        snapshot === null
+          ? null
+          : { ...snapshot, subscriptions: [...snapshot.subscriptions].reverse() }
+      const keysOf = (before: SubscriptionSnapshot | null, after: SubscriptionSnapshot): string[] =>
+        diffSnapshots(before, after)
+          .map((change) => change.key)
+          .sort()
+      const forward = keysOf(previous, current)
+      expect(forward.length).toBeGreaterThan(0)
+      expect(
+        keysOf(reversed(previous), {
+          ...current,
+          subscriptions: [...current.subscriptions].reverse()
+        })
+      ).toStrictEqual(forward)
+    }
+  )
 
   it('gives a tenant-less account and an account of an empty tenant different keys', () => {
     // Scenario: encodeAccountKey tells them apart, and the change key keeps that difference.
