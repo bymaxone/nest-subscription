@@ -146,7 +146,7 @@ These are the scripts of the scaffold P0 brings from `bymaxone/nest-telemetry`. 
 
 | Document                                                 | Written by                         | Read by                                         |
 | -------------------------------------------------------- | ---------------------------------- | ----------------------------------------------- |
-| `docs/revenuecat-facts.md`                               | tasks 7.1, 7.8, 8.3 and 8.5 to 8.9 | the rest of P7, P8 and the provider watch of P9 |
+| `docs/revenuecat-facts.md`                               | tasks 7.1, 7.8, 8.3 and 8.6 to 8.9 | the rest of P7, P8 and the provider watch of P9 |
 | `docs/raw-body.md`, `docs/reference-store.md`            | task 9.2                           | hosts                                           |
 | `docs/acceptance.md`, `docs/mutation_testing_results.md` | task 9.4                           | the owner, before a release                     |
 | `docs/finance-facts.md`                                  | task 11.1                          | the rest of P11                                 |

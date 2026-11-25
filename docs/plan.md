@@ -45,7 +45,7 @@ This document says in which order the specification is built and when each part 
 | P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo | 0/5      | L    | —            |
 | P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo | 0/8      | L    | —            |
 | P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo | 0/9      | L    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo | 0/5      | M    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo | 0/6      | M    | —            |
 | P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo | 0/5      | L    | —            |
 
 ---
