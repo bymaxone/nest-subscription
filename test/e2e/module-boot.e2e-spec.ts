@@ -5,7 +5,7 @@
  * optional peers absent.
  * @layer e2e
  */
-import { Module } from '@nestjs/common'
+import { Inject, Injectable, Module } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import type { TestingModule } from '@nestjs/testing'
 import {
@@ -61,6 +61,15 @@ function good(): SubscriptionOptionsInput {
   exports: [HOST_SETTINGS]
 })
 class SettingsModule {}
+
+/** A provider of a module that imports nothing, injecting the source token. */
+@Injectable()
+class SiblingConsumer {
+  constructor(@Inject(SUBSCRIPTION_SOURCE) readonly source: unknown) {}
+}
+
+@Module({ providers: [SiblingConsumer] })
+class SiblingModule {}
 
 async function boot(module: ReturnType<typeof SubscriptionModule.forRoot>): Promise<TestingModule> {
   return Test.createTestingModule({ imports: [module] }).compile()
@@ -144,22 +153,33 @@ describe('module boot', () => {
     await app.close()
   })
 
-  it('boots through forRootAsync with an asynchronous factory and a global module', async () => {
-    // Scenario: the factory returns a promise and the module is global, so a sibling module that
-    // imports nothing can inject its tokens.
-    @Module({})
-    class Sibling {}
+  it('gives a provider of a sibling module the configured source when the module is global', async () => {
+    // Scenario: the factory returns a promise and the module is global, so a provider of a module
+    // that imports nothing injects the source token and receives the instance the factory built.
+    const options = good()
     const app = await Test.createTestingModule({
       imports: [
         SubscriptionModule.forRootAsync({
           global: true,
-          useFactory: () => Promise.resolve(good())
+          useFactory: () => Promise.resolve(options)
         }),
-        Sibling
+        SiblingModule
       ]
     }).compile()
-    expect(app.get(SUBSCRIPTION_SOURCE, { strict: false })).toBeInstanceOf(FakeSubscriptionSource)
+    expect(app.get(SiblingConsumer).source).toBe(options.source)
     await app.close()
+  })
+
+  it('refuses to inject the source into a sibling module when the module is not global', async () => {
+    // Scenario: the same sibling cannot resolve the token without the module being global, so the
+    // previous case passes because of `global` and not because tokens leak.
+    const compiling = Test.createTestingModule({
+      imports: [
+        SubscriptionModule.forRootAsync({ useFactory: () => Promise.resolve(good()) }),
+        SiblingModule
+      ]
+    }).compile()
+    await expect(compiling).rejects.toThrow(/SiblingConsumer/)
   })
 
   it('boots with @bymax-one/nest-cache and @bymax-one/nest-core absent from the module graph', async () => {
