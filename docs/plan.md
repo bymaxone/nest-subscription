@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 5 / 10 phases of the first release done (50%) — P0 to P9
-**Active phase**: P5 — change-notifications-and-observer
+**Overall progress**: 🔄 6 / 10 phases of the first release done (60%) — P0 to P9
+**Active phase**: P6 — webhook-receiver
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -34,19 +34,19 @@ This document says in which order the specification is built and when each part 
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                     | Status    | Progress | Size | Last updated |
-| --- | --------------------------------------------------------------------------------------------------------- | --------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done   | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done   | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done   | 5/5      | L    | 2026-11-25   |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done   | 4/4      | M    | 2026-11-25   |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 👀 Review | 5/5      | M    | 2026-11-25   |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo   | 0/5      | L    | —            |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo   | 0/8      | L    | —            |
-| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo   | 0/9      | L    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo   | 0/6      | M    | —            |
-| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo   | 0/5      | L    | —            |
+| ID  | Phase                                                                                                     | Status         | Progress | Size | Last updated |
+| --- | --------------------------------------------------------------------------------------------------------- | -------------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done        | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done        | 5/5      | M    | 2026-11-25   |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done        | 5/5      | L    | 2026-11-25   |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done        | 4/4      | M    | 2026-11-25   |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done        | 5/5      | M    | 2026-11-25   |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 🔄 In Progress | 0/5      | L    | 2026-11-25   |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo        | 0/8      | L    | —            |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo        | 0/9      | L    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo        | 0/6      | M    | —            |
+| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo        | 0/5      | L    | —            |
 
 ---
 
@@ -448,6 +448,7 @@ When a phase moves status:
 - P2 ✅ 2026-11-25 — the module, its options and their validation, secret containment and the sandbox boot refusal merged in #7
 - P3 ✅ 2026-11-25 — reads, refresh with single flight, staleness, the cache and reconciliation merged in #9
 - P4 ✅ 2026-11-25 — the decorator, the guard, the stable refusal codes and the two fail policies merged in #10 (cba5824)
+- P5 ✅ 2026-11-25 — the change list, its stable keys, the host hook with at-least-once delivery and the observer merged in #11 (60d7136)
 
 ---
 
