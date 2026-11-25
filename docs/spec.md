@@ -2,7 +2,7 @@
 
 > **Status:** ✅ Approved by the owner on 2026-11-24
 > **Owner:** Bymax One
-> **Version:** 0.4 · **Last update:** 2026-11-24
+> **Version:** 0.4 · **Last update:** 2026-11-25
 > **Package:** `@bymax-one/nest-subscription`, a public npm library for NestJS 11
 > **Workflow:** `/bymax-workflow:spec` → reviewed specification → `/bymax-workflow:roadmap` (`plan.md`) → `/bymax-workflow:phase-tasks` (`tasks/`)
 > **Sibling precedents:** `bymaxone/nest-telemetry` (tooling, gates, packaging, release), `bymaxone/nest-auth` (module options, repositories, hooks, guards, controllers behind switches), `bymaxone/nest-notification` (provider adapters as optional peers)

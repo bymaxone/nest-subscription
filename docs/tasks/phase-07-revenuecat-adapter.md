@@ -12,7 +12,7 @@ At the start the library works end to end with the fake source, and `src/revenue
 
 At the end RevenueCat is a working source. `revenueCatSource(options)` returns a `SubscriptionSource` that reads a customer's subscriptions and active entitlements from version 2 of the REST API, verifies webhooks by either method RevenueCat offers, filters sandbox purchases by itself, maps statuses, renewal intent and stores into the model, and turns RevenueCat event kinds into the port's notifications. The testing subpath gains builders for signed RevenueCat requests. Non-renewing purchases that grant an entitlement are read like subscriptions (D31). Stop renewal and the management reference belong to P8.
 
-The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run while P3 to P6 are in progress. Task 7.7 needs P6.
+The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run while P3 to P6 are in progress. Task 7.8 needs the service of P3 and the change list of P5. Task 7.7 needs P6 and runs last.
 
 ---
 
@@ -48,8 +48,8 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | 7.4 | Read a customer into a snapshot                           | 📋 ToDo | P0       | L    | 7.2, 7.3   |
 | 7.5 | Verify RevenueCat webhooks                                | 📋 ToDo | P0       | M    | 7.2        |
 | 7.6 | Parse events and handle identity                          | 📋 ToDo | P0       | M    | 7.4, 7.5   |
-| 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6, 7.8   |
 | 7.8 | Read non-renewing purchases and map them into the model   | 📋 ToDo | P0       | L    | 7.3, 7.4   |
+| 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6, 7.8   |
 
 ---
 
@@ -151,7 +151,7 @@ Write the options of the RevenueCat adapter and a small client over the runtime'
 
 #### Acceptance criteria
 
-- [ ] `RevenueCatSourceOptions` carries the project identifier, the API key, the webhook authorization value and signing secret (each optionally as two valid values), the timestamp tolerance, the request timeout and an injectable `fetch`.
+- [ ] `RevenueCatSourceOptions` carries the project identifier, the API key, the webhook authorization value and signing secret (each optionally as two valid values), the timestamp tolerance, the request timeout, an injectable `fetch`, and `baseUrl`, the adapter's own option for the API's base address: it defaults to the address recorded in `docs/revenuecat-facts.md`, must be an absolute URL, is refused over plain HTTP unless the host is a loopback address, and is how a test points the adapter at a local stand-in.
 - [ ] Secrets are held in `Secret`, and the four containment paths expose none of them.
 - [ ] A network error, a timeout, a 5xx and a 429 become `SubscriptionError` with the source-unavailable code; a 404 for a customer becomes "unknown account", which the read turns into the empty snapshot.
 - [ ] No error message, cause or log line contains the API key, the URL's customer identifier or a response body.
@@ -189,7 +189,7 @@ Implement the RevenueCat options and HTTP client in `src/revenuecat/`.
 
 DELIVERABLES
 
-1. `revenuecat.options.ts`: the option type, its validation and its resolved form with secrets wrapped.
+1. `revenuecat.options.ts`: the option type, its validation and its resolved form with secrets wrapped, including `baseUrl` with its default and its validation (the default is a fact read from RevenueCat and cited; the option itself is this library's design).
 
 2. `revenuecat-http.ts`: `RevenueCatHttp` with a `get` and a `post` taking a path and returning parsed JSON as `unknown`, an `AbortSignal` timeout, and the error mapping. The customer identifier is percent-encoded into the path.
 
@@ -585,13 +585,13 @@ Add the signed request builders to the testing subpath, and run the acceptance c
 - [ ] A sandbox purchase grants nothing under the default configuration, with the stand-in reporting the entitlement as active the way RevenueCat does by default (AC06).
 - [ ] A wrong signature, a wrong authorization header, a stale timestamp and an altered body are refused through the controller and change nothing (AC02).
 - [ ] A recorded fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the real receiver and the service, and a consumable grants nothing (D31).
-- [ ] The suite's only HTTP is the local stand-in; the sentinel sweep finds no secret and no identifier in logs or observer payloads.
+- [ ] The suite's only HTTP is the local stand-in, reached through the adapter's `baseUrl` option; the sentinel sweep finds no secret and no identifier in logs or observer payloads.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
 - ✚ `src/testing/revenuecat-requests.ts`, `src/testing/revenuecat-requests.spec.ts`
-- ✚ `test/e2e/fixtures/revenuecat-stand-in.ts`
+- ✎ `test/e2e/fixtures/revenuecat-stand-in.ts` (created by task 7.8)
 - ✚ `test/e2e/revenuecat.e2e-spec.ts`
 - ✎ `src/testing/index.ts`, `test/e2e/secret-containment.e2e-spec.ts`, `test/e2e/no-identifiers.e2e-spec.ts`
 
@@ -603,7 +603,7 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.7 of 8 (LAST to run: it closes the phase after 7.8)
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.7 of 8 (LAST of this phase)
 
 PRECONDITIONS
 - P1 is ✅ Done: the model, `SubscriptionSource`, `SubscriptionError` and the testing doubles exist. P2 is ✅ Done: `Secret` exists in `src/internal/`.
@@ -616,7 +616,7 @@ REQUIRED READING (only these — do not load more):
 - `docs/spec.md` §3.13 (FR39), §5.1 (AC01, AC02, AC05, AC06)
 - `docs/plan.md` § "P7 — revenuecat-adapter", Definition of Done
 - `docs/revenuecat-facts.md` (written by task 7.1: the provider facts as re-read, with their URLs)
-- `test/e2e/fixtures/webhook-app.ts`
+- `test/e2e/fixtures/webhook-app.ts`, `test/e2e/fixtures/revenuecat-stand-in.ts`
 
 TASK
 Add the RevenueCat request builders and the adapter's end-to-end suite, and record the phase's evidence.
@@ -625,7 +625,7 @@ DELIVERABLES
 
 1. `revenuecat-requests.ts`: the builder, sharing the signing construction with the adapter through one function so the two cannot diverge, and options to produce each invalid variant.
 
-2. `revenuecat-stand-in.ts`: a local HTTP server that serves the fixtures at the version 2 paths and can be scripted per customer.
+2. `revenuecat-stand-in.ts`, created by task 7.8: extend it with whatever the acceptance cases need that it cannot serve yet (a refund, a sandbox purchase reported as active, a source that fails), and point the adapter at it through `baseUrl`.
 
 3. `revenuecat.e2e-spec.ts`: the acceptance cases above.
 
@@ -676,7 +676,8 @@ Read the one-time and lifetime purchases that RevenueCat reports as granting an 
 - [ ] `readAccount` returns the purchases that grant an entitlement, in the snapshot, with the sandbox filter applied to them as to subscriptions (FR13).
 - [ ] A consumable, and a purchase that grants no entitlement, produces no entry and no entitlement.
 - [ ] A recorded, sanitized fixture of a non-renewing purchase that grants an entitlement and one of a lifetime grant exist under `test/fixtures/revenuecat/`; through the service, the first yields an active entitlement with the instant RevenueCat reports and the second with `until` null.
-- [ ] A refunded non-renewing purchase removes the access it granted on the next read, and the change list reports it through the existing change kinds.
+- [ ] A refunded non-renewing purchase removes the access it granted on the next read, and `diffSnapshots` reports the grant and its removal through the existing change kinds, extended with tests if it did not compare purchases.
+- [ ] `test/e2e/fixtures/revenuecat-stand-in.ts` exists, serves the recorded fixtures at the version 2 paths on a loopback address, and the adapter reads it through its `baseUrl` option in the cases above.
 - [ ] A subscription and a purchase that grant the same entitlement give one active entitlement, with the latest `until`, and null if a lifetime grant is among them.
 - [ ] Table-driven tests cover the resolution over zero, one and several purchases, alone and mixed with subscriptions.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
@@ -685,9 +686,11 @@ Read the one-time and lifetime purchases that RevenueCat reports as granting an 
 
 - `src/shared/` model types, validators and their specs
 - the file where `resolveEntitlements` lives, and its spec
+- `src/core/notifications/diff-snapshots.ts` and its spec, if it must compare purchases, and `src/testing/fake.source.ts` if the fake source must script them
+- ✚ `test/e2e/fixtures/revenuecat-stand-in.ts`: the local HTTP server on a loopback address that serves the recorded fixtures at the version 2 paths and can be scripted per customer
 - `src/revenuecat/` read and mapping files, and their specs
 - `docs/revenuecat-facts.md`, and `docs/spec.md` Appendix A and A.6 if a fact moved
-- `test/fixtures/revenuecat/*.json`, the fixture sanitization check, `test/e2e/fixtures/revenuecat-stand-in.ts`
+- `test/fixtures/revenuecat/*.json` and the fixture sanitization check
 - the API surface baseline, if a public type changed
 
 #### Agent prompt (EN)
@@ -701,15 +704,15 @@ TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + Co
 CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.8 of 8 (MIDDLE of this phase)
 
 PRECONDITIONS
-- P1 and P2 are ✅ Done: the model, `resolveEntitlements` and the fake source exist.
-- Tasks 7.1 to 7.4 are ✅ Done: the facts document, the mapping tables and the customer read exist.
+- P1 and P2 are ✅ Done: the model, `resolveEntitlements` and the fake source exist. P3 is ✅ Done: `SubscriptionService` and the refresher exist. P5 is ✅ Done: `diffSnapshots` exists.
+- Tasks 7.1 to 7.4 are ✅ Done: the facts document, the options with `baseUrl`, the mapping tables and the customer read exist.
 
 REQUIRED READING (only these — do not load more):
 - `AGENTS.md` (whole file: repository rules and code review rules)
 - `docs/tasks/README.md` (shared names, paths, commands and the Definition of Done every task meets)
 - `docs/spec.md` §3.4 (FR01, FR02, FR05), §3.6 (FR10, FR13, FR14), §10.1 (D31), Appendix A
 - `docs/revenuecat-facts.md`
-- the `src/shared/` model files, `resolveEntitlements` and its spec, the `src/revenuecat/` read and mapping files
+- the `src/shared/` model files, `resolveEntitlements` and its spec, `src/core/notifications/diff-snapshots.ts`, the `src/testing/` fake source, the `src/revenuecat/` read and mapping files
 
 TASK
 Make a non-renewing purchase that RevenueCat reports as granting an entitlement grant that entitlement through the service.
@@ -720,7 +723,7 @@ DELIVERABLES
 
 2. The model change, only as far as the current types cannot express FR02's non-renewing purchase, with the tests that fail without it, and `resolveEntitlements` extended with its table-driven tests.
 
-3. The adapter change: the read, the mapping and the sandbox filter for purchases, with fixtures.
+3. The adapter change: the read, the mapping and the sandbox filter for purchases, with fixtures, and the local stand-in server the cases read through `baseUrl`. Extend `diffSnapshots` and the fake source if they cannot express purchases.
 
 4. In the pull request body: the facts read with their URLs, each public type that changed, and the status of each unknown of Appendix A.6 that concerns purchases.
 

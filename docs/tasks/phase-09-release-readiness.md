@@ -42,9 +42,9 @@ At the end the package is publishable: the README follows the family's canonical
 | 9.1 | Write the public README                           | 📋 ToDo | P0       | L    | —             |
 | 9.2 | Write the host guides                             | 📋 ToDo | P0       | M    | 9.1           |
 | 9.3 | Sweep the captured logs of the whole suite        | 📋 ToDo | P0       | M    | 9.1           |
+| 9.6 | Prove AC08 with one suite run against two sources | 📋 ToDo | P0       | M    | —             |
 | 9.4 | Measure the whole package                         | 📋 ToDo | P0       | M    | 9.2, 9.3, 9.6 |
 | 9.5 | Prepare the release candidate                     | 📋 ToDo | P0       | M    | 9.4           |
-| 9.6 | Prove AC08 with one suite run against two sources | 📋 ToDo | P0       | M    | —             |
 
 ---
 
@@ -410,7 +410,7 @@ You are a senior release engineer working on the @bymax-one/nest-subscription pr
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P9 (release-readiness) — Task 9.5 of 6 (MIDDLE of this phase)
+CURRENT PHASE: P9 (release-readiness) — Task 9.5 of 6 (LAST of this phase)
 
 PRECONDITIONS
 - P4, P5, P6, P7 and P8 are ✅ Done: the first release's behaviour is complete and every gate passes.
@@ -478,7 +478,7 @@ Add one end-to-end suite that runs the same routes and the same hook code, uncha
 #### Acceptance criteria
 
 - [ ] One suite file holds every case, and one application factory builds the host: the protected routes, the webhook controller with the raw body and the hook are written once and shared by both runs.
-- [ ] The only difference between the two runs is the module configuration: the fake source in one, `revenueCatSource` with its base URL set to the local stand-in in the other. A test fails if a route or the hook is defined per source.
+- [ ] The only difference between the two runs is the module configuration: the fake source in one, `revenueCatSource` with its `baseUrl` option set to the local stand-in (task 7.2) in the other. A test fails if a route or the hook is defined per source.
 - [ ] Both runs pass the same cases: a granted entitlement admits the request, an account with no subscription is refused, a webhook event changes the snapshot and calls the hook once, the same event delivered again calls it once, and the source down follows the configured fail policy (AC08, AC03, AC07).
 - [ ] The RevenueCat run serves recorded fixtures from `test/fixtures/revenuecat/` through the local stand-in; it opens no connection to a host outside the loopback address and uses no real credential. The credential and the webhook secret are literals made for the test.
 - [ ] The suite is registered so that adding the Finance adapter later is one more entry in the list of sources, with the cases untouched.
@@ -498,7 +498,7 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P9 (release-readiness) — Task 9.6 of 6 (LAST of this phase)
+CURRENT PHASE: P9 (release-readiness) — Task 9.6 of 6 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P4, P5, P6, P7 and P8 are ✅ Done: the guard, the hook, the webhook receiver, the RevenueCat adapter and its stand-in exist and every gate passes.
@@ -518,7 +518,7 @@ DELIVERABLES
 
 1. `test/e2e/fixtures/parity-app.ts`: one function that builds the host application from a module configuration it receives, with the protected routes, the webhook controller with the raw body and the hook. It contains no reference to a source.
 
-2. `test/e2e/source-parity.e2e-spec.ts`: one list of sources, each entry holding only its module configuration and the way it scripts the account (the fake source's script, or the stand-in's fixtures), and one set of cases run for every entry.
+2. `test/e2e/source-parity.e2e-spec.ts`: one list of sources, each entry holding only its module configuration, the way it scripts the account (the fake source's script, or the stand-in's fixtures) and its signed webhook request builder (the fake source's `buildRequest`, or `buildRevenueCatWebhookRequest`), and one set of cases that call the entry and never branch on its name.
 
 3. In the pull request body: the Definition of Done of P9 for AC08, with the test names, and a statement of what the two runs differ in (the module configuration only).
 

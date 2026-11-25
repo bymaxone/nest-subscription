@@ -1,6 +1,6 @@
 # @bymax-one/nest-subscription
 
-Subscription state library for NestJS 11: normalized entitlements across App Store, Google Play and web purchases, with pluggable source adapters (RevenueCat, Bymax Finance), verified webhooks, snapshot caching and route guards. Zero direct dependencies.
+Subscription state library for NestJS 11: normalized entitlements across App Store, Google Play and web purchases, with pluggable source adapters (RevenueCat first, Bymax Finance planned), verified webhooks, snapshot caching and route guards. Zero direct dependencies.
 
 > [!IMPORTANT]
 > This repository is scaffolded. The build, the quality gates and the CI are in place, and the entry points export almost nothing: the library's behaviour is written phase by phase from [`docs/plan.md`](docs/plan.md), against [`docs/spec.md`](docs/spec.md). Nothing is published to npm yet.
@@ -8,7 +8,7 @@ Subscription state library for NestJS 11: normalized entitlements across App Sto
 ## What it will do
 
 - Give a product backend one typed answer about an account's subscription: its level, its state, until when it is valid and where it was bought.
-- Read that answer from a source through an adapter. A backend chooses one: RevenueCat, or Bymax Finance.
+- Read that answer from a source through an adapter. A backend chooses one: RevenueCat now, Bymax Finance when it is released.
 - Receive and verify the source's webhooks, and keep a cached copy of the state current.
 - Protect routes with a guard and a decorator.
 - Tell the host application when a subscription changes, so product rules stay in the product.

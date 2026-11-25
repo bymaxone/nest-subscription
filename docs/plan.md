@@ -67,7 +67,7 @@ P7 → P11 (start, once unblocked)        P8, P9 → P11 (closing)
 ### Parallelization notes
 
 - **P4** and **P5** are independent of each other. Both start when P3 is done.
-- **P7** has two halves. The read, the verification and the mapping tables need only the source port from P1 and the `Secret` holder from P2, so they can be built while P3 to P6 are in progress. Its end-to-end acceptance (AC01, AC05, AC06) drives the webhook receiver, so the phase closes only after P6.
+- **P7** has two halves. The read, the verification and the mapping tables need only the source port from P1 and the `Secret` holder from P2, so they can be built while P3 to P6 are in progress. Its non-renewing purchases (task 7.8) need the service of P3 and the change list of P5, so they are not part of that early work. Its end-to-end acceptance (AC01, AC05, AC06) drives the webhook receiver, so the phase closes only after P6.
 - **P8** needs the service from P3 and the RevenueCat operations from P7.
 - **P9** needs every phase from P4 to P8 closed: it documents and measures the whole first release.
 - **P11** is deferred (D03, D30) and waits on something outside this repository (R01). The first release is published without it and nothing waits for it. When the Finance API exists it starts after P7 and closes after P8 (the management service) and P9 (the suite whose Finance run it adds).
@@ -334,7 +334,7 @@ The specification leaves the file layout to this roadmap. These are the director
   - [ ] A recorded RevenueCat fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the service, with access until null for a lifetime grant, and a consumable grants nothing (D31).
   - [ ] A sandbox purchase grants nothing under the default configuration, with RevenueCat's own default of granting it reproduced in the fixture (AC06).
   - [ ] Unit tests open no socket; the suite's only HTTP is a local stand-in for the RevenueCat API.
-- **Context / preconditions**: The unit work needs P1 and P2. Closing the phase needs P6. The owner provides a RevenueCat sandbox project and its credentials, from which the fixtures are recorded (D18).
+- **Context / preconditions**: The unit work needs P1 and P2. The non-renewing purchases need P3 and P5. Closing the phase needs P6. The owner provides a RevenueCat sandbox project and its credentials, from which the fixtures are recorded (D18).
 - **Rules-of-phase**:
   1. Each fact from Appendix A is re-read on the page listed in specification §12 before the code relies on it, and the three items of Appendix A.6 are resolved or kept explicitly unknown.
   2. The refund marker of version 2 is one of those items: until it is confirmed, the task records how a refund is detected and what the fixture proves.
