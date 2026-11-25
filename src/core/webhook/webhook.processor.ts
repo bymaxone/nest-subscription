@@ -97,7 +97,7 @@ function acceptedTrigger(result: unknown): Trigger | null {
  * cannot remove an identifier the outcome is still a failure and the observer and the log are
  * told. The memory belongs to one process and is bounded: a retry that lands on another instance
  * of the host while the removal is in flight or failed, or after the oldest entry was dropped,
- * finds the identifier recorded and is answered as already seen until the retention purges it.
+ * may find the identifier recorded and be answered as already seen until the retention purges it.
  * An event that names no account is answered as ignored and records nothing.
  */
 @Injectable()
