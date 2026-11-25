@@ -140,8 +140,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   reaction idempotent on the change key. `SubscriptionService.refresh` returns after the hook has
   returned or failed. With no `onChange` no change is computed or stored.
 - `reconcile` delivers pending changes again before it refreshes stale accounts, a page at a
-  time and up to `batchSize` accounts, and clears only the changes whose hook
-  call returned. `ReconcileResult` gains `pendingCursor` and `ReconcileOptions` gains
+  time and up to `batchSize` accounts. `ReconcileResult` gains `pendingCursor` and `ReconcileOptions` gains
   `pendingCursor`: pass the one to the next run so that an account whose hook keeps failing, which
   stays pending, does not keep later accounts from being reached. It is `null` when the listing of
   pending accounts is exhausted, and independent of `cursor`, which belongs to stale snapshots.
