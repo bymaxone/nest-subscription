@@ -470,7 +470,16 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
       ACCOUNT,
       { subscriptions: [{ ...subscription, billingIssueSince: '31 Feb' }] }
     ],
-    ['a list that is not a list', ACCOUNT, { entitlements: 'none' }]
+    ['a list that is not a list', ACCOUNT, { entitlements: 'none' }],
+    [
+      'an access flag that is not a boolean',
+      ACCOUNT,
+      {
+        entitlements: [
+          { name: 'pro', active: 'false', until: null, grantingSubscriptionReference: null }
+        ]
+      }
+    ]
   ]
 
   it.each(rows)(

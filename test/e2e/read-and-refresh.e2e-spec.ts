@@ -292,7 +292,11 @@ describe('read and refresh: the service in a running application', () => {
       refundedAt: null,
       managementReference: null
     } as const
-    source.setAccount(ACCOUNT, { ...snapshotOf(ACCOUNT, T10), subscriptions: [subscription] })
+    source.setAccount(ACCOUNT, {
+      ...snapshotOf(ACCOUNT, T10),
+      sourceCustomer: { id: 'customer-1' },
+      subscriptions: [subscription]
+    })
     await expect(service.refresh(ACCOUNT)).resolves.toBeDefined()
     source.setAccount(ACCOUNT, {
       ...snapshotOf(ACCOUNT, '2026-01-01T00:00:20.000Z'),

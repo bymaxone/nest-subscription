@@ -664,6 +664,42 @@ describe('SubscriptionService with a cache that holds an unreadable snapshot', (
   )
 })
 
+describe('SubscriptionService with a snapshot whose access flag is not a boolean', () => {
+  const stringFlag = (): SubscriptionSnapshot => ({
+    ...snapshotOf(ACCOUNT, false),
+    entitlements: [
+      Object.assign({}, snapshotOf(ACCOUNT, false).entitlements[0], { active: 'false' })
+    ]
+  })
+
+  it('answers false for an entitlement whose stored active flag is the text false', async () => {
+    // Scenario: a host store returns active: 'false'; the text must not grant access.
+    const built = setup()
+    jest
+      .spyOn(built.store, 'getSnapshot')
+      .mockResolvedValue({ snapshot: stringFlag(), pendingChanges: [] })
+    await expect(built.service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+  })
+
+  it('answers the store, not a cached entitlement whose active flag is the text false', async () => {
+    // Scenario: the cache holds active: 'false' and the store holds the real, inactive entitlement.
+    const entries = new Map<string, string>()
+    const cache: SubscriptionCache = {
+      get: (key) => Promise.resolve(entries.get(key) ?? null),
+      set: () => Promise.resolve(),
+      delete: () => Promise.resolve()
+    }
+    const built = setup({ cache })
+    built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, false))
+    await built.service.refresh(ACCOUNT)
+    entries.set(`subscription:snapshot:${encodeAccountKey(ACCOUNT)}`, JSON.stringify(stringFlag()))
+    await expect(built.service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+    const reads = jest.spyOn(built.store, 'getSnapshot')
+    await built.service.getSnapshot(ACCOUNT)
+    expect(reads).toHaveBeenCalled()
+  })
+})
+
 describe('SubscriptionService with a stored snapshot that cannot be read', () => {
   it('answers an empty snapshot and false, and does not reject, when the store holds an unreadable instant', async () => {
     // Scenario: a host store returns a snapshot whose fetch instant is garbled.
