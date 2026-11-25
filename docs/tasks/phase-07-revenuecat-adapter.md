@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -45,7 +45,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | 7.1 | Re-read the RevenueCat facts and record the fixtures      | ✅ Done | P0       | M    | —          |
 | 7.2 | Add the adapter options and the HTTP client               | ✅ Done | P0       | M    | 7.1        |
 | 7.3 | Implement the mapping tables                              | ✅ Done | P0       | M    | 7.1        |
-| 7.4 | Read a customer into a snapshot                           | 📋 ToDo | P0       | L    | 7.2, 7.3   |
+| 7.4 | Read a customer into a snapshot                           | ✅ Done | P0       | L    | 7.2, 7.3   |
 | 7.5 | Verify RevenueCat webhooks                                | 📋 ToDo | P0       | M    | 7.2        |
 | 7.6 | Parse events and handle identity                          | 📋 ToDo | P0       | M    | 7.4, 7.5   |
 | 7.8 | Read non-renewing purchases and map them into the model   | 📋 ToDo | P0       | L    | 7.3, 7.4   |
@@ -307,7 +307,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.4 — Read a customer into a snapshot
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 7.2, 7.3
@@ -318,13 +318,13 @@ Implement the read: fetch a customer's subscriptions and active entitlements fro
 
 #### Acceptance criteria
 
-- [ ] Each fixture of task 7.1 maps to the expected snapshot, field by field, in a table-driven test.
-- [ ] A cancellation keeps the subscription `active` with will renew `no`; a refund of the current period sets refunded-at and gives no access; a scheduled pause leaves access until the period ends.
-- [ ] A sandbox subscription gives no access and grants no entitlement unless sandbox access is enabled, even when RevenueCat reports the entitlement as active (AC06 at unit level).
-- [ ] An unknown customer yields the empty snapshot, not an error.
-- [ ] A response missing a field the adapter needs yields `unknown` status with the source's access flag passed through where present, and otherwise no access.
-- [ ] The snapshot's source-updated-at comes from the source's own freshness field when one exists, and the facts file says which.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Each fixture of task 7.1 maps to the expected snapshot, field by field, in a table-driven test.
+- [x] A cancellation keeps the subscription `active` with will renew `no`; a refund of the current period sets refunded-at and gives no access; a scheduled pause leaves access until the period ends.
+- [x] A sandbox subscription gives no access and grants no entitlement unless sandbox access is enabled, even when RevenueCat reports the entitlement as active (AC06 at unit level).
+- [x] An unknown customer yields the empty snapshot, not an error.
+- [x] A response missing a field the adapter needs yields `unknown` status with the source's access flag passed through where present, and otherwise no access.
+- [x] The snapshot's source-updated-at comes from the source's own freshness field when one exists, and the facts file says which.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -765,3 +765,4 @@ Completion Protocol (after the work is reported done):
 - 7.1 ✅ 2026-11-25 — the provider facts re-read and recorded with their pages, the sandbox and documentation fixtures, and a sanitization check that fails on a planted identifier
 - 7.2 ✅ 2026-11-25 — the adapter options with their validation and a fetch-based client that maps every failure to a fixed library error
 - 7.3 ✅ 2026-11-25 — the status, renewal and store tables as data checked against Appendix A.3, with a billing issue following the source's access flag
+- 7.4 ✅ 2026-11-25 — the read of a customer's subscriptions into a snapshot, with the sandbox filter, paged reads with a bound, and the unknown customer as an empty snapshot
