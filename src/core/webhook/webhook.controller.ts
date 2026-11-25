@@ -53,11 +53,11 @@ function headersOf(request: IncomingRequest): WebhookRequest['headers'] {
  *
  * The application must be created with `rawBody: true` so the bytes the source signed reach the
  * adapter unchanged. NestJS only keeps them for a body its parser reads, so whether they are kept
- * cannot be known before the first request: a request that carries a body and arrives without
- * its bytes, whether a parser produced a value or the headers declare a body no parser read, is
- * answered with a temporary failure and never verified, so the source retries until the host
- * enables the raw body, and the first such request logs one warning (D44). A request with no
- * body at all is handed to the adapter as an empty body, which it refuses like any other
+ * cannot be known before the first request: a request that a body parser parsed and that arrives
+ * without its bytes is answered with a temporary failure and never verified, so the source
+ * retries until the host enables the raw body, and the first such request logs one warning
+ * (D44). Any other request without bytes, such as one with no body or a body of a content type no
+ * parser reads, is handed to the adapter as an empty body, which it refuses like any other
  * malformed request.
  *
  * The controller is written and tested for the Express adapter, the NestJS default. A host on

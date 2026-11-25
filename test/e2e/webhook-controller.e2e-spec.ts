@@ -13,7 +13,7 @@ import {
   InMemorySubscriptionStore
 } from '@bymax-one/nest-subscription/testing'
 
-import { CONTROLLER_ROUTE, START, buildWebhookApp } from './fixtures/webhook-app'
+import { CONTROLLER_ROUTE, START, buildWebhookApp, send, signed } from './fixtures/webhook-app'
 
 const NOTIFICATION: SourceNotification = {
   eventId: 'evt-1',
@@ -127,18 +127,28 @@ describe('webhook controller', () => {
   )
 
   it.each([true, false])(
-    'answers a failure without verifying for a body of a content type no parser reads, with rawBody %s',
+    'refuses a signed body of a content type no parser reads like any failed check, with rawBody %s',
     async (raw) => {
-      // Scenario: the headers declare a body and no parser kept bytes, whatever the application's
-      // raw body setting; the adapter is never asked (D44).
+      // Scenario: the headers declare a body and no parser produced a value or kept bytes. The
+      // adapter gets empty bytes and refuses, so the answer (status, body, headers) is the one of
+      // the other refusals, and no warning blames an application that may be configured.
       const built = await buildWebhookApp({ raw })
       const verify = jest.spyOn(built.source, 'verifyWebhook')
-      const response = await request(built.app.getHttpServer())
-        .post(CONTROLLER_ROUTE)
-        .set('Content-Type', 'text/plain')
-        .send('hello')
-      expect(response.status).toBe(503)
-      expect(verify).toHaveBeenCalledTimes(0)
+      const reference = await send(built, CONTROLLER_ROUTE, {
+        bytes: Buffer.alloc(0),
+        contentType: 'text/plain'
+      })
+      verify.mockClear()
+      const answer = await send(built, CONTROLLER_ROUTE, {
+        ...signed(built),
+        contentType: 'text/plain'
+      })
+      expect(answer.status).toBe(401)
+      expect(answer.body).toStrictEqual(reference.body)
+      expect(answer.headers).toStrictEqual(reference.headers)
+      expect(verify).toHaveBeenCalledTimes(1)
+      expect(verify.mock.calls[0]?.[0].rawBody).toStrictEqual(new Uint8Array())
+      expect(built.capture.lines).toStrictEqual([])
       await built.app.close()
     }
   )

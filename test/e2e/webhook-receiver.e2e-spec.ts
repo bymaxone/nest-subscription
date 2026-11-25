@@ -28,13 +28,12 @@ import {
 } from './fixtures/webhook-app'
 
 const REFUSED = toHttpAnswer({ kind: 'refused' })
-/** Each form, with the status it gives a body of a content type no parser reads (D44). */
-const FORMS: ReadonlyArray<readonly [string, string, number]> = [
-  ['the controller', CONTROLLER_ROUTE, 503],
-  ['the processor on a host route', DIRECT_ROUTE, 401]
+const FORMS: ReadonlyArray<readonly [string, string]> = [
+  ['the controller', CONTROLLER_ROUTE],
+  ['the processor on a host route', DIRECT_ROUTE]
 ]
 
-describe.each(FORMS)('webhook receiver through %s', (_form, route, unreadStatus) => {
+describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
   let app: WebhookApp
 
   beforeEach(async () => {
@@ -79,14 +78,18 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route, unreadStatus)
     expect(app.hook).toHaveBeenCalledTimes(0)
   })
 
-  it('answers a signed body of a content type no parser reads with the status of its form', async () => {
-    // Scenario: the bytes are sent but no parser keeps them. The controller answers a temporary
-    // failure without verifying (D44); the host's own route hands the adapter empty bytes and
-    // gets the refusal. Either way nothing is read, recorded or stored.
+  it('answers a signed body of a content type no parser reads with the one refusal', async () => {
+    // Scenario: the bytes are sent but no parser keeps them; the adapter gets empty bytes and
+    // refuses, so the answer is the refusal of every other failed check, and nothing is read,
+    // recorded or stored.
+    const reference = await send(app, route, { bytes: Buffer.alloc(0) })
     const verify = jest.spyOn(app.source, 'verifyWebhook')
     const answer = await send(app, route, { ...signed(app), contentType: 'text/plain' })
-    expect(answer.status).toBe(unreadStatus)
-    expect(verify).toHaveBeenCalledTimes(unreadStatus === 503 ? 0 : 1)
+    expect(answer.status).toBe(401)
+    expect(answer.body).toStrictEqual(REFUSED.body)
+    expect(answer.headers).toStrictEqual(reference.headers)
+    expect(verify).toHaveBeenCalledTimes(1)
+    expect(verify.mock.calls[0]?.[0].rawBody).toStrictEqual(new Uint8Array())
     expect(app.source.totalReads).toBe(0)
     expect(await app.store.getSnapshot(encodeAccountKey(ACCOUNT))).toBeNull()
   })

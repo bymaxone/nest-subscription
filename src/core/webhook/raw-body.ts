@@ -12,26 +12,19 @@ export interface RawBodyCarrier {
   readonly rawBody?: unknown
   /** What the body parser made of the body; unset when no parser ran. */
   readonly body?: unknown
-  /** The request headers; they say whether a body was sent. */
-  readonly headers: Readonly<Record<string, string | readonly string[] | undefined>>
 }
 
 /**
  * What a request holds of its raw body. `present` carries the bytes. `missing` means the request
- * carries no body at all. `unconfigured` means a body was sent and no bytes were kept: a parser
- * produced a value of any type, or the headers declare a body no parser read. That happens when
- * the application was created without `rawBody: true`, and also for a body of a content type no
- * parser reads.
+ * has no body a parser read, whatever its headers declare: a body of a content type no parser
+ * reads is `missing`, left to the verifier as empty bytes. `unconfigured` means a parser produced
+ * a value and no bytes were kept, which happens when the application was created without
+ * `rawBody: true`.
  */
 export type RawBodyReading =
   | { readonly kind: 'present'; readonly bytes: Uint8Array }
   | { readonly kind: 'missing' }
   | { readonly kind: 'unconfigured' }
-
-/** Whether the headers say a body was sent: a length above zero, or any transfer encoding. */
-function declaresBody(headers: RawBodyCarrier['headers']): boolean {
-  return Number(headers['content-length']) > 0 || headers['transfer-encoding'] !== undefined
-}
 
 /**
  * Reads the raw body of a request. Fastify keeps it in the same property under the same
@@ -46,6 +39,5 @@ export function readRawBody(request: RawBodyCarrier): RawBodyReading {
   if (Buffer.isBuffer(rawBody)) return { kind: 'present', bytes: rawBody }
   // Express 5's body parser leaves `req.body` undefined for a request it did not parse, so a
   // value of any type, an empty object included, means a parser ran and kept no bytes.
-  const sent = request.body !== undefined || declaresBody(request.headers)
-  return sent ? { kind: 'unconfigured' } : { kind: 'missing' }
+  return request.body === undefined ? { kind: 'missing' } : { kind: 'unconfigured' }
 }
