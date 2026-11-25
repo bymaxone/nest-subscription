@@ -4,7 +4,7 @@
  * payload and no error text can reach a log through it.
  * @layer core
  */
-import { hashAccountKey } from '@bymax-one/nest-subscription/internal'
+import { SubscriptionError, hashAccountKey } from '@bymax-one/nest-subscription/internal'
 import type { SubscriptionErrorCode } from '@bymax-one/nest-subscription/shared'
 
 /**
@@ -16,6 +16,11 @@ export interface SubscriptionLogger {
   warn(message: string): void
 }
 
+/** The catalogue code of an error, or `null` for one that is not the library's. */
+export function errorCodeOf(error: unknown): SubscriptionErrorCode | null {
+  return error instanceof SubscriptionError ? error.code : null
+}
+
 /** The things the library logs. Each has one fixed sentence. */
 export type LogEvent =
   | 'background_refresh_failed'
@@ -24,6 +29,7 @@ export type LogEvent =
   | 'change_read_failed'
   | 'webhook_forget_failed'
   | 'event_purge_failed'
+  | 'webhook_raw_body_missing'
 
 /** The fixed sentence of an event. */
 function sentenceOf(event: LogEvent): string {
@@ -40,6 +46,8 @@ function sentenceOf(event: LogEvent): string {
       return 'A failed webhook event could not be forgotten; its retries are answered as already seen'
     case 'event_purge_failed':
       return 'Processed webhook event identifiers could not be purged'
+    case 'webhook_raw_body_missing':
+      return 'A webhook request arrived without its raw body; create the application with rawBody: true'
   }
 }
 

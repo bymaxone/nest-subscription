@@ -20,14 +20,11 @@ import {
   type SubscriptionStore,
   type WebhookRequest
 } from '@bymax-one/nest-subscription/internal'
-import {
-  SUBSCRIPTION_ERROR_CODES,
-  type SubscriptionErrorCode
-} from '@bymax-one/nest-subscription/shared'
+import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import { WEBHOOK_WAIT, withDeadline, type DeadlineWait } from './deadline'
 import type { WebhookOutcome } from './webhook-outcome'
-import { logEvent } from '../logging/subscription-logger'
+import { errorCodeOf, logEvent } from '../logging/subscription-logger'
 import { ObserverBridge } from '../observer/observer-bridge'
 import type { ResolvedSubscriptionOptions } from '../options/subscription-options.types'
 import { SnapshotRefresher } from '../refresh/snapshot-refresher'
@@ -47,11 +44,6 @@ export interface WebhookContext {
 interface Settled {
   readonly outcome: WebhookOutcome
   readonly retained: boolean
-}
-
-/** The catalogue code of an error, or `null` for one that is not the library's. */
-function codeOf(error: unknown): SubscriptionErrorCode | null {
-  return error instanceof SubscriptionError ? error.code : null
 }
 
 /** Whether a value is a non-empty string that is not blank. */
@@ -208,7 +200,7 @@ export class WebhookProcessor {
       await this.store.forgetEvent(this.source.name, eventId)
       return true
     } catch (error) {
-      logEvent(this.options.logger, 'webhook_forget_failed', codeOf(error), null)
+      logEvent(this.options.logger, 'webhook_forget_failed', errorCodeOf(error), null)
       return false
     }
   }

@@ -1,6 +1,6 @@
 # Phase 6 — Webhook receiver
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P6 — webhook-receiver
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -45,7 +45,7 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 | 6.1 | Define the outcomes and their HTTP answers | ✅ Done | P0       | S    | —          |
 | 6.2 | Implement the processor                    | ✅ Done | P0       | L    | 6.1        |
 | 6.3 | Enforce the response deadline              | ✅ Done | P0       | M    | 6.2        |
-| 6.4 | Add the controller behind a switch         | 📋 ToDo | P0       | M    | 6.2        |
+| 6.4 | Add the controller behind a switch         | ✅ Done | P0       | M    | 6.2        |
 | 6.5 | Prove the receiver end to end              | 📋 ToDo | P0       | M    | 6.3, 6.4   |
 
 ---
@@ -304,7 +304,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 6.4 — Add the controller behind a switch
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 6.2
@@ -315,11 +315,11 @@ Offer the receiver as a controller the host mounts with one option, off by defau
 
 #### Acceptance criteria
 
-- [ ] With the switch off, no route is registered. With it on, a POST route exists at the configured path.
-- [ ] With the switch on and no raw body available, the application refuses to start, with a configuration error that says what to enable and names no value.
-- [ ] The controller passes the exact bytes received to the processor, and returns `toHttpAnswer` of its outcome.
-- [ ] The controller applies no guard of the library, and its doc comment says the route must stay outside the host's authentication guard and inside its rate limiting.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] With the switch off, no route is registered. With it on, a POST route exists at the configured path.
+- [x] With the switch on and no raw body available, the application refuses to start, with a configuration error that says what to enable and names no value.
+- [x] The controller passes the exact bytes received to the processor, and returns `toHttpAnswer` of its outcome.
+- [x] The controller applies no guard of the library, and its doc comment says the route must stay outside the host's authentication guard and inside its rate limiting.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -479,3 +479,4 @@ Completion Protocol (after the work is reported done):
 - 6.1 ✅ 2026-11-25 — the five outcomes as a closed union and the one HTTP answer of each, with one frozen refusal for every cause
 - 6.2 ✅ 2026-11-25 — the processor: verification over the raw bytes through the adapter, de-duplication by event identifier with D16, a read of every named account, the retention purge in reconciliation, and D41 recorded
 - 6.3 ✅ 2026-11-25 — the response deadline: the work raced against an injectable wait, the only timer cleared when the race is decided, a timed-out event freed for its retry, and a 60 000 ms ceiling at boot
+- 6.4 ✅ 2026-11-25 — the controller behind a switch that is off by default, the raw-body reading, a route chosen by the host with no default, and a first-request answer for an application without the raw body

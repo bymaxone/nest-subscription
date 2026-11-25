@@ -7,7 +7,9 @@
 import { hashAccountKey } from '@bymax-one/nest-subscription/internal'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
-import { logEvent, type LogEvent } from './subscription-logger'
+import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
+
+import { errorCodeOf, logEvent, type LogEvent } from './subscription-logger'
 
 const EVENTS: readonly LogEvent[] = [
   'background_refresh_failed',
@@ -16,7 +18,11 @@ const EVENTS: readonly LogEvent[] = [
   'change_read_failed'
 ]
 /** The events that concern no account. */
-const ACCOUNTLESS: readonly LogEvent[] = ['webhook_forget_failed', 'event_purge_failed']
+const ACCOUNTLESS: readonly LogEvent[] = [
+  'webhook_forget_failed',
+  'event_purge_failed',
+  'webhook_raw_body_missing'
+]
 const KEY = 'a24:sentinel-account-key'
 
 describe('logEvent', () => {
@@ -93,5 +99,23 @@ describe('logEvent', () => {
         KEY
       )
     ).not.toThrow()
+  })
+})
+
+describe('errorCodeOf', () => {
+  it("gives the code of the library's own error", () => {
+    // Scenario: a SubscriptionError carries its catalogue code.
+    expect(errorCodeOf(new SubscriptionError(SUBSCRIPTION_ERROR_CODES.NO_ACCESS))).toBe(
+      SUBSCRIPTION_ERROR_CODES.NO_ACCESS
+    )
+  })
+
+  it.each([
+    ['an Error', new Error('x')],
+    ['a string', 'x'],
+    ['null', null]
+  ])('gives null for %s', (_name, error) => {
+    // Scenario: anything that is not the library's error has no code.
+    expect(errorCodeOf(error)).toBeNull()
   })
 })

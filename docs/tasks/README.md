@@ -12,7 +12,7 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 > Mirrors the phase dashboard of [`docs/plan.md`](../plan.md). Both are updated together.
 
-**Phases done**: 6 / 11 · **Tasks done**: 36 / 66
+**Phases done**: 6 / 11 · **Tasks done**: 37 / 66
 
 | ID  | Task file                                                                                        | Status         | Progress | Last updated |
 | --- | ------------------------------------------------------------------------------------------------ | -------------- | -------- | ------------ |
@@ -22,7 +22,7 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 | P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | ✅ Done        | 5/5      | 2026-11-25   |
 | P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | ✅ Done        | 4/4      | 2026-11-25   |
 | P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | ✅ Done        | 5/5      | 2026-11-25   |
-| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 🔄 In Progress | 3/5      | 2026-11-25   |
+| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 🔄 In Progress | 4/5      | 2026-11-25   |
 | P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | 📋 ToDo        | 0/8      | —            |
 | P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 📋 ToDo        | 0/9      | —            |
 | P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo        | 0/6      | —            |

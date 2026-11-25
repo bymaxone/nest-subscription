@@ -172,6 +172,12 @@ export interface SubscriptionModuleAsyncOptions extends Pick<ModuleMetadata, 'im
   ) => SubscriptionOptionsInput | Promise<SubscriptionOptionsInput>
   /** Whether the module is global. Defaults to `false`. */
   readonly global?: boolean
+  /**
+   * The route of the webhook controller. NestJS registers routes before a factory runs, so the
+   * route is given here and not in the factory's result. Its presence mounts the controller; a
+   * factory that sets `webhookController: false` beside it is refused at boot.
+   */
+  readonly webhookPath?: string
 }
 
 /** The form the library reads: every default applied, frozen, and nothing else carried. */

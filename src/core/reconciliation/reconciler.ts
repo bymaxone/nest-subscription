@@ -21,7 +21,7 @@ import {
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import { RateLimiter, type Wait } from './rate-limiter'
-import { logEvent } from '../logging/subscription-logger'
+import { errorCodeOf, logEvent } from '../logging/subscription-logger'
 import { ChangeDispatcher } from '../notifications/change-dispatcher'
 import type { ResolvedSubscriptionOptions } from '../options/subscription-options.types'
 import { SnapshotRefresher } from '../refresh/snapshot-refresher'
@@ -166,12 +166,7 @@ export class Reconciler {
     try {
       await this.store.deleteEventsOlderThan(before.toISOString())
     } catch (error) {
-      logEvent(
-        this.options.logger,
-        'event_purge_failed',
-        error instanceof SubscriptionError ? error.code : null,
-        null
-      )
+      logEvent(this.options.logger, 'event_purge_failed', errorCodeOf(error), null)
     }
   }
 

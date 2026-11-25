@@ -30,14 +30,19 @@ import type {
   SubscriptionCache,
   SubscriptionModuleOptions
 } from './options/subscription-options.types'
+import { isWebhookRoute } from './options/validate-options'
 import { Reconciler } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
 import { WEBHOOK_WAIT, timerWait } from './webhook/deadline'
+import { webhookControllerAt } from './webhook/webhook.controller'
 import { WebhookProcessor } from './webhook/webhook.processor'
 
 /** The path `forRootAsync` names when its factory rejects; the factory's own error is dropped. */
 const FACTORY_PATH = 'useFactory'
+
+/** The option path named when the route of the controller is invalid. */
+const ROUTE_PATH = 'webhookPath'
 
 /** A provider that hands out one field of the resolved options under its own token. */
 function derived(
@@ -76,6 +81,36 @@ async function runFactory(
       optionPaths: [FACTORY_PATH]
     })
   }
+}
+
+/**
+ * The route `forRootAsync` was given, or `undefined` for none.
+ *
+ * @throws {SubscriptionError} naming `webhookPath` when the route is not a valid one, so the
+ * mistake stops the application where the module is built.
+ */
+function staticRoute(path: string | undefined): string | undefined {
+  if (path !== undefined && !isWebhookRoute(path)) {
+    throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID, {
+      optionPaths: [ROUTE_PATH]
+    })
+  }
+  return path
+}
+
+/**
+ * The factory's result with the controller switched on at the route `forRootAsync` was given.
+ * Without a route the result is left as it is, and the options refuse a switch with no route. A
+ * result that holds `webhookController: false` beside a route contradicts it and is refused.
+ */
+function withRoute(candidate: unknown, route: string | undefined): unknown {
+  if (route === undefined || typeof candidate !== 'object' || candidate === null) return candidate
+  if (Reflect.get(candidate, 'webhookController') === false) {
+    throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.CONFIG_INVALID, {
+      optionPaths: ['webhookController']
+    })
+  }
+  return { ...candidate, webhookController: true, webhookPath: route }
 }
 
 /**
@@ -145,12 +180,15 @@ const WEBHOOK_WAIT_PROVIDER: FactoryProvider = {
 function assemble(
   global: boolean | undefined,
   imports: DynamicModule['imports'],
-  providers: FactoryProvider[]
+  providers: FactoryProvider[],
+  webhookPath: string | undefined
 ): DynamicModule {
   return {
     module: SubscriptionModule,
     global: global ?? false,
     imports: imports ?? [],
+    // The route exists only when the host switched the controller on and chose a route for it.
+    controllers: webhookPath === undefined ? [] : [webhookControllerAt(webhookPath)],
     providers: [
       ...providers,
       SNAPSHOT_CACHE_PROVIDER,
@@ -198,11 +236,16 @@ export class SubscriptionModule {
     if (options.observer !== undefined) {
       optional.push(derived(SUBSCRIPTION_OBSERVER, (o) => o.observer))
     }
-    return assemble(options.global, options.imports, [
-      optionsProvider,
-      ...baseProviders(),
-      ...optional
-    ])
+    const route =
+      options.webhookController === true && isWebhookRoute(options.webhookPath)
+        ? options.webhookPath
+        : undefined
+    return assemble(
+      options.global,
+      options.imports,
+      [optionsProvider, ...baseProviders(), ...optional],
+      route
+    )
   }
 
   /**
@@ -214,10 +257,11 @@ export class SubscriptionModule {
    * @returns The dynamic module.
    */
   static forRootAsync(options: SubscriptionModuleAsyncOptions): DynamicModule {
+    const route = staticRoute(options.webhookPath)
     const optionsProvider: FactoryProvider = {
       provide: SUBSCRIPTION_OPTIONS,
       useFactory: async (...args: unknown[]): Promise<ResolvedSubscriptionOptions> =>
-        resolveOptions(await runFactory(options.useFactory, args)),
+        resolveOptions(withRoute(await runFactory(options.useFactory, args), route)),
       inject: [...(options.inject ?? [])]
     }
     const providers = [
@@ -226,6 +270,6 @@ export class SubscriptionModule {
       derived(SUBSCRIPTION_CACHE, (o) => o.cache),
       derived(SUBSCRIPTION_OBSERVER, (o) => o.observer)
     ]
-    return assemble(options.global, options.imports, providers)
+    return assemble(options.global, options.imports, providers, route)
   }
 }

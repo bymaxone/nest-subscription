@@ -1,11 +1,11 @@
 /**
  * @fileoverview Unit tests for the receiver's response deadline.
  *
- * Layer: unit.
  * Goal: a read slower than the deadline is answered as a failure before the deadline by the
  * injected clock, is not abandoned, frees the event for the retry, and leaves no timer pending.
  * Mocks: the fake source with a read held by hand; a deadline wait that moves the manual clock and
  * resolves when the test says; Jest fake timers for the default wait.
+ * @layer core
  */
 import {
   encodeAccountKey,

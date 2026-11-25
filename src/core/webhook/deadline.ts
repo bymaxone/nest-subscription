@@ -40,14 +40,14 @@ export const timerWait: DeadlineWait = (milliseconds, signal) =>
  *
  * @param work The work to wait for.
  * @param milliseconds How long to wait for it.
- * @param wait How to wait; defaults to a timer.
+ * @param wait How to wait; the module passes {@link timerWait}.
  * @returns The work's value, or that the time ran out. It rejects when the work does, if the work
  * settles first.
  */
 export async function withDeadline<T>(
   work: Promise<T>,
   milliseconds: number,
-  wait: DeadlineWait = timerWait
+  wait: DeadlineWait
 ): Promise<DeadlineResult<T>> {
   const controller = new AbortController()
   const timeout = wait(milliseconds, controller.signal).then((): DeadlineResult<T> => ({

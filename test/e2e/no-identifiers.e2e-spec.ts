@@ -150,16 +150,16 @@ describe('no identifiers', () => {
     await built.app.close()
   })
 
-  it('delivers the webhook outcome payload with an outcome and a duration and nothing else', () => {
+  it('delivers the webhook outcome payload with an outcome, a duration and whether the identifier was retained, and nothing else', () => {
     // Scenario: the receiver reports a webhook through the bridge; the payload is closed.
     const capture = createCapture()
     const clock = new ManualClock('2026-01-01T00:00:00.000Z')
     const bridge = new ObserverBridge(capture.observer, clock)
     const startedAt = bridge.mark()
     clock.advance(15)
-    bridge.webhook('duplicate', startedAt)
+    bridge.webhook('duplicate', startedAt, false)
     expect(capture.payloads).toStrictEqual([
-      { method: 'onWebhook', payload: { outcome: 'duplicate', durationMs: 15 } }
+      { method: 'onWebhook', payload: { outcome: 'duplicate', durationMs: 15, retained: false } }
     ])
   })
 
@@ -167,7 +167,7 @@ describe('no identifiers', () => {
     // Scenario: an observer with no `onWebhook`; the report is a no-op and reads no clock.
     const clock = new ManualClock('2026-01-01T00:00:00.000Z')
     const now = jest.spyOn(clock, 'now')
-    new ObserverBridge({}, clock).webhook('processed', 0)
+    new ObserverBridge({}, clock).webhook('processed', 0, false)
     expect(now).not.toHaveBeenCalled()
   })
 

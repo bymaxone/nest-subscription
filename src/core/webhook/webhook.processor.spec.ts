@@ -1,12 +1,12 @@
 /**
  * @fileoverview Unit tests for the webhook processor.
  *
- * Layer: unit.
  * Goal: a verified notification only triggers a read of the source, a failed check is one refusal
  * whatever its cause, an event is processed once, a failed event is processed again on retry, and
  * nothing of the request reaches a log or the observer.
  * Mocks: the fake source and the in-memory store; hand-resolved promises order concurrent calls;
  * the deadline's wait is replaced by one a test resolves.
+ * @layer core
  */
 import {
   SubscriptionError,

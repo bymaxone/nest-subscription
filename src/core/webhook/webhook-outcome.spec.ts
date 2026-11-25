@@ -1,10 +1,10 @@
 /**
  * @fileoverview Unit tests for the webhook outcomes and their HTTP answers.
  *
- * Layer: unit.
  * Goal: each outcome maps to the status the source's contract expects, and no answer can hold
  * payload content or an identifier.
  * Mocks: none.
+ * @layer core
  */
 import { toHttpAnswer, type WebhookOutcome } from './webhook-outcome'
 

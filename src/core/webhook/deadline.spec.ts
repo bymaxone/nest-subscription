@@ -1,10 +1,10 @@
 /**
  * @fileoverview Unit tests for the response deadline.
  *
- * Layer: unit.
  * Goal: the race returns the work's value or the timeout, tells the wait to stop in both cases,
  * lets a slow work settle after the timeout, and leaves no timer pending after the answer.
  * Mocks: Jest fake timers for the default wait; hand-resolved promises for the injected wait.
+ * @layer core
  */
 import { timerWait, withDeadline, type DeadlineWait } from './deadline'
 
@@ -111,7 +111,7 @@ describe('timerWait', () => {
   it('resolves when its time has passed and leaves no timer behind', async () => {
     // Scenario: the work is held for longer than the deadline, so the timer fires.
     const slow = new Promise<void>(() => undefined)
-    const racing = withDeadline(slow, 1000)
+    const racing = withDeadline(slow, 1000, timerWait)
     expect(jest.getTimerCount()).toBe(1)
     jest.advanceTimersByTime(999)
     expect(jest.getTimerCount()).toBe(1)
@@ -122,14 +122,16 @@ describe('timerWait', () => {
 
   it('clears its timer when the work wins', async () => {
     // Scenario: work that finishes at once; no timer is pending after the answer.
-    const result = await withDeadline(Promise.resolve(1), 60_000)
+    const result = await withDeadline(Promise.resolve(1), 60_000, timerWait)
     expect(result).toStrictEqual({ timedOut: false, value: 1 })
     expect(jest.getTimerCount()).toBe(0)
   })
 
   it('clears its timer when the work fails first', async () => {
     // Scenario: work that rejects; the timer is cleared on that path too.
-    await expect(withDeadline(Promise.reject(new Error('x')), 60_000)).rejects.toThrow('x')
+    await expect(withDeadline(Promise.reject(new Error('x')), 60_000, timerWait)).rejects.toThrow(
+      'x'
+    )
     expect(jest.getTimerCount()).toBe(0)
   })
 
