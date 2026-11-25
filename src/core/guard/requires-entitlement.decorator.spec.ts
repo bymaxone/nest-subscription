@@ -6,6 +6,7 @@
  */
 import type { ExecutionContext } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host'
 import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
@@ -31,8 +32,7 @@ class Bare {
 
 /** An execution context that names a handler and a controller class and nothing else. */
 function contextOf(controller: new () => object, handler: () => void): ExecutionContext {
-  const partial = { getHandler: () => handler, getClass: () => controller }
-  return partial as unknown as ExecutionContext
+  return new ExecutionContextHost([], controller, handler)
 }
 
 describe('RequiresEntitlement', () => {

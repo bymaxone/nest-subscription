@@ -6,6 +6,7 @@
  * @layer e2e
  */
 import { HttpException, type ExecutionContext } from '@nestjs/common'
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host'
 import request from 'supertest'
 import {
   EntitlementGuard,
@@ -475,9 +476,10 @@ describe('guard: cases a request cannot make', () => {
   })
 
   /** An execution context of a given type for a handler. */
-  function contextOf(type: string, handler: () => void, controller: object): ExecutionContext {
-    const partial = { getType: () => type, getHandler: () => handler, getClass: () => controller }
-    return partial as unknown as ExecutionContext
+  function contextOf(type: string, handler: () => void): ExecutionContext {
+    const host = new ExecutionContextHost([], Object, handler)
+    host.setType(type)
+    return host
   }
 
   /** The error a guard call rejects with. */
@@ -498,7 +500,7 @@ describe('guard: cases a request cannot make', () => {
     const built = await boot()
     const handler = (): void => undefined
     Reflect.defineMetadata(REQUIRED_ENTITLEMENT_KEY, 'premium', handler)
-    const refusal = await refusalOf(built.guard, contextOf('rpc', handler, Object))
+    const refusal = await refusalOf(built.guard, contextOf('rpc', handler))
     expect(refusal.getStatus()).toBe(401)
     expect(refusal.getResponse()).toStrictEqual(
       new InternalError(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN).toJSON()
@@ -510,7 +512,7 @@ describe('guard: cases a request cannot make', () => {
     const built = await boot()
     const handler = (): void => undefined
     Reflect.defineMetadata(REQUIRED_ENTITLEMENT_KEY, 7, handler)
-    const refusal = await refusalOf(built.guard, contextOf('http', handler, Object))
+    const refusal = await refusalOf(built.guard, contextOf('http', handler))
     expect(refusal.getStatus()).toBe(503)
   })
 

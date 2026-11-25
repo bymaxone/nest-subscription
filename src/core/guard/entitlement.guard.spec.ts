@@ -7,6 +7,7 @@
  */
 import { HttpException, type ExecutionContext } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host'
 import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
 import {
   SUBSCRIPTION_ERROR_CODES,
@@ -31,9 +32,14 @@ class Controller {
 }
 
 /** An execution context of the given type for one handler of `Controller`. */
-function contextOf(handler: () => void, type: string = 'http'): ExecutionContext {
-  const partial = { getHandler: () => handler, getClass: () => Controller, getType: () => type }
-  return partial as unknown as ExecutionContext
+function contextOf(
+  handler: () => void,
+  type: string = 'http',
+  controller: new () => object = Controller
+): ExecutionContext {
+  const host = new ExecutionContextHost([], controller, handler)
+  host.setType(type)
+  return host
 }
 
 /** A snapshot of `acc-1` holding the given entitlements, fetched now. */
@@ -390,12 +396,7 @@ describe('EntitlementGuard', () => {
       }
       Reflect.defineMetadata(REQUIRED_ENTITLEMENT_KEY, 7, Odd.prototype.handler)
       const { guard, resolver } = rig({ accountId: 'acc-1' }, snapshotWith(premium()))
-      const partial = {
-        getHandler: () => Odd.prototype.handler,
-        getClass: () => Odd,
-        getType: () => 'http'
-      }
-      const result = await outcome(guard, partial as unknown as ExecutionContext)
+      const result = await outcome(guard, contextOf(Odd.prototype.handler, 'http', Odd))
       expectRefusal(result, 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
       expect(resolver).not.toHaveBeenCalled()
     })
