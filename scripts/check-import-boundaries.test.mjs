@@ -12,7 +12,19 @@ import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..')
-const eslint = new ESLint({ cwd: rootDir })
+
+// With `CI=true` the type-aware parser infers a single run and builds its program from the files on
+// disk, so the text handed to `lintText` is never what gets linted. Every case here lints text that
+// differs from the file it stands in for, so the inference is turned off.
+const eslint = new ESLint({
+  cwd: rootDir,
+  overrideConfig: [
+    {
+      files: ['**/*.ts'],
+      languageOptions: { parserOptions: { disallowAutomaticSingleRunInference: true } }
+    }
+  ]
+})
 
 /**
  * The import-restriction reports on `code` linted in the place of the existing file `path`: the
