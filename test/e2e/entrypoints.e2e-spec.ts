@@ -50,12 +50,14 @@ describe('entry points', () => {
         'SubscriptionModule',
         'SubscriptionService',
         'decodeAccountKey',
+        'diffSnapshots',
         'encodeAccountKey',
+        'hashAccountKey',
         'resolveOptions',
         'validateOptions'
       ].sort()
     )
-    expect(Object.values(core)).toHaveLength(18)
+    expect(Object.values(core)).toHaveLength(20)
     expect(Object.keys(internal).sort()).toEqual(
       [
         'SUBSCRIPTION_CACHE',
@@ -68,10 +70,11 @@ describe('entry points', () => {
         'Secret',
         'SubscriptionError',
         'decodeAccountKey',
-        'encodeAccountKey'
+        'encodeAccountKey',
+        'hashAccountKey'
       ].sort()
     )
-    expect(Object.values(internal)).toHaveLength(11)
+    expect(Object.values(internal)).toHaveLength(12)
     expect(core.SubscriptionError).toBe(shared.SubscriptionError)
     expect(internal.SubscriptionError).toBe(shared.SubscriptionError)
   })
@@ -89,10 +92,12 @@ describe('entry points', () => {
       'FakeSubscriptionSource',
       'InMemorySubscriptionStore',
       'ManualClock',
+      'assertNoSentinel',
+      'createCapture',
       'createFailingStore',
       'storeConformanceCases'
     ])
-    expect(Object.values(testing)).toHaveLength(5)
+    expect(Object.values(testing)).toHaveLength(7)
   })
 
   it('raises one error class whichever entry point it is reached from', () => {

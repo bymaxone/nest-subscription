@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 4 / 10 phases of the first release done (40%) — P0 to P9
-**Active phase**: P4 — guard-and-fail-policy
+**Overall progress**: 🔄 5 / 10 phases of the first release done (50%) — P0 to P9
+**Active phase**: P5 — change-notifications-and-observer
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -40,8 +40,8 @@ This document says in which order the specification is built and when each part 
 | P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done   | 7/7      | L    | 2026-11-24   |
 | P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
 | P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done   | 5/5      | L    | 2026-11-25   |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | 👀 Review | 4/4      | M    | 2026-11-25   |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 📋 ToDo   | 0/5      | M    | —            |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done   | 4/4      | M    | 2026-11-25   |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 👀 Review | 5/5      | M    | 2026-11-25   |
 | P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo   | 0/5      | L    | —            |
 | P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo   | 0/8      | L    | —            |
 | P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo   | 0/9      | L    | —            |
@@ -251,11 +251,11 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the decorator naming an entitlement and the guard that enforces it; the account resolver the host supplies, and the unauthenticated refusal when it yields no account (FR29); the stable refusal codes that separate "no subscription" from "subscription exists and gives no access", with no detail about any other account (FR30); the fail policy with its two values, refuse by default and last known state within a tolerance (FR31, SEC04); no guard decision waiting on a network call (NFR01, D19).
   - Out: change notifications; the error envelope of a host that does not use `@bymax-one/nest-core`, beyond the documented default.
 - **Definition of Done**:
-  - [ ] An end-to-end test protects a route with the decorator and gets access, the "no subscription" refusal and the "gives no access" refusal from three accounts.
-  - [ ] A request with no resolvable account is refused as unauthenticated.
-  - [ ] With the store unreadable or the snapshot missing, the guard refuses under the default policy; under the last-known-state policy it allows a snapshot younger than the tolerance and refuses an older one, at the boundary exactly (AC07).
-  - [ ] No guard decision waits for a source call: with a fresh snapshot the source is not called, and with a stale one the decision is returned before the background refresh resolves.
-  - [ ] A refusal body contains only the error code and message of the catalogue.
+  - [x] An end-to-end test protects a route with the decorator and gets access, the "no subscription" refusal and the "gives no access" refusal from three accounts.
+  - [x] A request with no resolvable account is refused as unauthenticated.
+  - [x] With the store unreadable or the snapshot missing, the guard refuses under the default policy; under the last-known-state policy it allows a snapshot younger than the tolerance and refuses an older one, at the boundary exactly (AC07).
+  - [x] No guard decision waits for a source call: with a fresh snapshot the source is not called, and with a stale one the decision is returned before the background refresh resolves.
+  - [x] A refusal body contains only the error code and message of the catalogue.
 - **Context / preconditions**: P3 is done.
 - **Rules-of-phase**:
   1. The guard reads the "gives access" flag and never a status name.
@@ -276,12 +276,12 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the comparison of the previous and the new snapshot into the typed change list of FR32, including `overlap_detected` (FR05) and `transferred`; the hook call after the store write, with the previous snapshot, the new one and the list, and without the previous snapshot on a redelivery (FR32, D20); at-least-once delivery through changes stored with the snapshot as not delivered, cleared after the hook returns and delivered again by reconciliation (FR33, D17); the stable key per change, and containment of a hook that throws (FR33); the optional observer with counters and timings for webhooks by outcome, refreshes, source errors, cache hits and guard decisions (FR34); account identifiers absent from observer payloads and logs, or present only as a short hash (SEC06).
   - Out: a queue, a timer or a retry loop of the library's own; the webhook receiver that will later be one of the callers.
 - **Definition of Done**:
-  - [ ] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces none for two equal snapshots.
-  - [ ] The same change computed twice carries the same key; two consecutive renewals carry different keys.
-  - [ ] A hook that throws leaves the stored snapshot in place and its changes marked as not delivered, and the failure reaches the log and the observer.
-  - [ ] A crash simulated between the write and the hook is followed by a reconciliation run that delivers the same change keys.
-  - [ ] The hook is never invoked before the store write has succeeded.
-  - [ ] Every observer payload in the suite is asserted free of account identifiers and payload content.
+  - [x] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces none for two equal snapshots.
+  - [x] The same change computed twice carries the same key; two consecutive renewals carry different keys.
+  - [x] A hook that throws leaves the stored snapshot in place and its changes marked as not delivered, and the failure reaches the log and the observer.
+  - [x] A crash simulated between the write and the hook is followed by a reconciliation run that delivers the same change keys.
+  - [x] The hook is never invoked before the store write has succeeded.
+  - [x] Every observer payload in the suite is asserted free of account identifiers and payload content.
 - **Context / preconditions**: P3 is done. P4 is independent and may be in progress.
 - **Rules-of-phase**:
   1. The change list is a pure function of two snapshots. It never reads a webhook payload.
@@ -447,6 +447,7 @@ When a phase moves status:
 - P1 ✅ 2026-11-24 — the model, the two ports, the in-memory store, the conformance suite and the fake source merged in #6
 - P2 ✅ 2026-11-25 — the module, its options and their validation, secret containment and the sandbox boot refusal merged in #7
 - P3 ✅ 2026-11-25 — reads, refresh with single flight, staleness, the cache and reconciliation merged in #9
+- P4 ✅ 2026-11-25 — the decorator, the guard, the stable refusal codes and the two fail policies merged in #10 (cba5824)
 
 ---
 

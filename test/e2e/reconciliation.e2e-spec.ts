@@ -88,7 +88,7 @@ describe('reconciliation', () => {
       fetchedAt
     )
     const result = await service.reconcile({ olderThanMs: DAY, wait })
-    expect(result).toEqual({ refreshed: 3, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 3, failed: 0, cursor: null, pendingCursor: null })
     expect(source.readCount(fresh)).toBe(0)
     expect(source.totalReads).toBe(3)
     await app.close()
@@ -112,7 +112,7 @@ describe('reconciliation', () => {
       cursor: second.cursor,
       wait
     })
-    expect(third).toEqual({ refreshed: 1, failed: 0, cursor: null })
+    expect(third).toEqual({ refreshed: 1, failed: 0, cursor: null, pendingCursor: null })
     expect(source.totalReads).toBe(5)
     await app.close()
   })
@@ -126,7 +126,7 @@ describe('reconciliation', () => {
       maxCallsPerSecond: 1000,
       wait
     })
-    expect(result).toEqual({ refreshed: 150, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 150, failed: 0, cursor: null, pendingCursor: null })
     expect(source.totalReads).toBe(150)
     await app.close()
   })
@@ -163,7 +163,7 @@ describe('reconciliation', () => {
     const { app, service, source, wait } = await boot(3)
     source.failNextRead(new Error('down'))
     const result = await service.reconcile({ olderThanMs: DAY, wait })
-    expect(result).toEqual({ refreshed: 2, failed: 1, cursor: null })
+    expect(result).toEqual({ refreshed: 2, failed: 1, cursor: null, pendingCursor: null })
     await app.close()
   })
 
@@ -220,7 +220,8 @@ describe('reconciliation', () => {
     await expect(service.reconcile()).resolves.toEqual({
       refreshed: 1,
       failed: 0,
-      cursor: null
+      cursor: null,
+      pendingCursor: null
     })
     expect(source.totalReads).toBe(1)
     await app.close()

@@ -1,6 +1,6 @@
 # Phase 5 — Change notifications and observer
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P5 — change-notifications-and-observer
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -38,11 +38,11 @@ At the end every stored change is compared with the previous snapshot into a typ
 
 | ID  | Task                                                      | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 5.1 | Compare two snapshots into the typed change list          | 📋 ToDo | P0       | L    | —          |
-| 5.2 | Give each change a stable key                             | 📋 ToDo | P0       | S    | 5.1        |
-| 5.3 | Call the host hook after the write                        | 📋 ToDo | P0       | M    | 5.2        |
-| 5.4 | Add the observer                                          | 📋 ToDo | P1       | M    | 5.3        |
-| 5.5 | Prove that logs and observer payloads carry no identifier | 📋 ToDo | P0       | S    | 5.4        |
+| 5.1 | Compare two snapshots into the typed change list          | ✅ Done | P0       | L    | —          |
+| 5.2 | Give each change a stable key                             | ✅ Done | P0       | S    | 5.1        |
+| 5.3 | Call the host hook after the write                        | ✅ Done | P0       | M    | 5.2        |
+| 5.4 | Add the observer                                          | ✅ Done | P1       | M    | 5.3        |
+| 5.5 | Prove that logs and observer payloads carry no identifier | ✅ Done | P0       | S    | 5.4        |
 
 ---
 
@@ -50,7 +50,7 @@ At the end every stored change is compared with the previous snapshot into a typ
 
 ### Task 5.1 — Compare two snapshots into the typed change list
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: —
@@ -61,11 +61,11 @@ Write the pure function that turns a previous and a new snapshot into the list o
 
 #### Acceptance criteria
 
-- [ ] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces an empty list for two equal snapshots.
-- [ ] The rules are pinned: `started` (no subscription before, one now); `renewed` (same subscription, later period, still active); `trial_converted` (`trialing` to `active`); `will_not_renew` and `will_renew_again` (will renew flips to and from `no`); `entered_grace`, `put_on_hold`, `recovered`; `paused`, `resumed`; `product_changed` (product reference differs); `expired`; `refunded` (refunded-at appears); `transferred` (the source customer reference changes or the subscriptions move away); `overlap_detected` (more than one subscription gives access to one entitlement, and did not before).
-- [ ] One comparison can yield several kinds, in a fixed documented order.
-- [ ] A change of fetched-at alone yields nothing.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A table-driven test produces each change kind of FR32 from a pair of snapshots, and produces an empty list for two equal snapshots.
+- [x] The rules are pinned: `started` (no subscription before, one now); `renewed` (same subscription, later period, still active); `trial_converted` (`trialing` to `active`); `will_not_renew` and `will_renew_again` (will renew flips to and from `no`); `entered_grace`, `put_on_hold`, `recovered`; `paused`, `resumed`; `product_changed` (product reference differs); `expired`; `refunded` (refunded-at appears); `transferred` (the source customer reference changes or the subscriptions move away); `overlap_detected` (more than one subscription gives access to one entitlement, and did not before).
+- [x] One comparison can yield several kinds, in a fixed documented order.
+- [x] A change of fetched-at alone yields nothing.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -134,7 +134,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 5.2 — Give each change a stable key
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 5.1
@@ -145,11 +145,11 @@ Derive, for each change, a key that is the same whenever the same change is comp
 
 #### Acceptance criteria
 
-- [ ] The same change computed twice, from snapshots fetched at different instants, carries the same key.
-- [ ] Two consecutive renewals of one subscription carry different keys (the period is part of the key).
-- [ ] The same kind of change on two subscriptions, on two accounts and on two tenants carries different keys.
-- [ ] The key contains no raw account identifier.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The same change computed twice, from snapshots fetched at different instants, carries the same key.
+- [x] Two consecutive renewals of one subscription carry different keys (the period is part of the key).
+- [x] The same kind of change on two subscriptions, on two accounts and on two tenants carries different keys.
+- [x] The key contains no raw account identifier.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -214,7 +214,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 5.3 — Call the host hook after the write
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 5.2
@@ -225,16 +225,16 @@ Store the changes with the snapshot as not delivered, call the host hook after t
 
 #### Acceptance criteria
 
-- [ ] The refresher computes the change list before the write and passes it to `putSnapshot`, so the snapshot and its undelivered changes are stored in one write.
-- [ ] After a refresh that wrote a changed snapshot, the hook receives the previous snapshot, the new one and the change list, and the delivered change keys are cleared from the store.
-- [ ] A crash simulated between the write and the hook leaves the changes pending, and the next reconciliation run delivers them: the hook is called with the same change keys.
-- [ ] Reconciliation delivers pending changes in bounded pages, and clears only the keys whose hook call returned.
-- [ ] The hook is never invoked when the write did not happen, and never before the write resolved.
-- [ ] A hook that throws or rejects leaves the stored snapshot in place and the changes pending; the failure is logged with its error code and reported to the observer hook point.
-- [ ] A refresh that changes nothing calls no hook.
-- [ ] A redelivery is marked as one and gives the hook the new snapshot and the changes, with no previous snapshot (D20), pinned by a test.
-- [ ] The caller of `refresh` can choose not to wait for the hook, which is what the webhook receiver will need.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The refresher computes the change list before the write and passes it to `putSnapshot`, so the snapshot and its undelivered changes are stored in one write.
+- [x] After a refresh that wrote a changed snapshot, the hook receives the previous snapshot, the new one and the change list, and the delivered change keys are cleared from the store.
+- [x] A crash simulated between the write and the hook leaves the changes pending, and the next reconciliation run delivers them: the hook is called with the same change keys.
+- [x] Reconciliation delivers pending changes in bounded pages, and clears only the keys whose hook call returned.
+- [x] The hook is never invoked when the write did not happen, and never before the write resolved.
+- [x] A hook that throws or rejects leaves the stored snapshot in place and the changes pending; the failure is logged with its error code and reported to the observer hook point.
+- [x] A refresh that changes nothing calls no hook.
+- [x] A redelivery is marked as one and gives the hook the new snapshot and the changes, with no previous snapshot (D20), pinned by a test.
+- [x] The caller of `refresh` can choose not to wait for the hook, which is what the webhook receiver will need.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -309,7 +309,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 5.4 — Add the observer
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: M
 - **Depends on**: 5.3
@@ -320,12 +320,12 @@ Define the optional observer and emit counters and timings from the points that 
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionObserver` is an interface of optional methods, one per event family, each receiving a small typed payload.
-- [ ] With no observer configured, no observer code runs and no payload object is allocated on the read path.
-- [ ] An observer method that throws never affects the operation it observes.
-- [ ] Refresh outcomes, source errors, cache hits and misses, and hook failures are emitted with a duration where one applies.
-- [ ] Webhook outcomes have their payload type defined here, to be emitted by P6.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionObserver` is an interface of optional methods, one per event family, each receiving a small typed payload.
+- [x] With no observer configured, no observer code runs and no payload object is allocated on the read path.
+- [x] An observer method that throws never affects the operation it observes.
+- [x] Refresh outcomes, source errors, cache hits and misses, and hook failures are emitted with a duration where one applies.
+- [x] Webhook outcomes have their payload type defined here, to be emitted by P6.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -393,7 +393,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 5.5 — Prove that logs and observer payloads carry no identifier
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 5.4
@@ -404,11 +404,11 @@ Add the short-hash helper for correlation and the assertions that no account ide
 
 #### Acceptance criteria
 
-- [ ] A helper produces a short, salted, one-way hash of an account key for correlation in logs.
-- [ ] An end-to-end test runs refresh, read, reconcile and a throwing hook with sentinel account and tenant identifiers, captures every log line and every observer payload, and finds no sentinel.
-- [ ] The assertion helper is exported from the testing subpath, so P6, P7 and P9 reuse it.
-- [ ] Every Definition of Done item of P5 in `docs/plan.md` has a named test.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A helper produces a short, salted, one-way hash of an account key for correlation in logs.
+- [x] An end-to-end test runs refresh, read, reconcile and a throwing hook with sentinel account and tenant identifiers, captures every log line and every observer payload, and finds no sentinel.
+- [x] The assertion helper is exported from the testing subpath, so P6, P7 and P9 reuse it.
+- [x] Every Definition of Done item of P5 in `docs/plan.md` has a named test.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -481,3 +481,9 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 <!-- entries are added as tasks complete -->
+
+- 5.1 ✅ 2026-11-25 — the pure comparison of two snapshots into the typed change candidates, one rule group per concern
+- 5.2 ✅ 2026-11-25 — the stable change key, hashed field by field from snapshot data, attached to every change by diffSnapshots
+- 5.3 ✅ 2026-11-25 — changes stored with the snapshot as pending, the host hook called after the write, redelivery from reconciliation without the previous snapshot
+- 5.4 ✅ 2026-11-25 — the optional observer with closed payload types and a bridge that costs nothing without one, wired into refreshes, source errors, the cache, the guard and delivery
+- 5.5 ✅ 2026-11-25 — the salted account hash, the capturing logger and observer with the sentinel sweep, and the end-to-end proof that no identifier reaches a log or an observer

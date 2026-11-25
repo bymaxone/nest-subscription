@@ -608,7 +608,13 @@ describe('guard: cases a request cannot make', () => {
     const snapshot = {
       ...createEmptySnapshot({ accountId: 'acc-held', source: 'fake', fetchedAt: START }),
       entitlements: [
-        { name: 'premium', active: true, until: 'not-a-date', grantingSubscriptionReference: 's' }
+        {
+          name: 'premium',
+          active: true,
+          until: 'not-a-date',
+          grantingSubscriptionReference: 's',
+          grantingSubscriptionReferences: ['s']
+        }
       ]
     }
     expect(decideAccess(snapshot, 'premium', new Date(START))).toBe('no_access')

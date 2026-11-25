@@ -26,13 +26,12 @@ import {
 
 import { resolveOptions } from './options/resolve-options'
 import { SnapshotCache } from './cache/snapshot-cache'
-import type {
-  SubscriptionCache,
-  SubscriptionObserverOption
-} from './options/subscription-options.types'
+import type { SubscriptionObserver } from './observer/observer.types'
+import type { SubscriptionCache } from './options/subscription-options.types'
 import { Reconciler } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
+import { ObserverBridge } from './observer/observer-bridge'
 
 const ACCOUNT: AccountReference = { accountId: 'acc-1' }
 const T0 = '2026-01-01T00:00:00.000Z'
@@ -79,7 +78,7 @@ function snapshotOf(account: AccountReference, givesAccess: boolean): Subscripti
 interface SetupOptions {
   readonly multiTenant?: boolean
   readonly maxSnapshotAgeMs?: number
-  readonly observer?: SubscriptionObserverOption
+  readonly observer?: SubscriptionObserver
   readonly cache?: SubscriptionCache
 }
 
@@ -96,8 +95,17 @@ function setup(extra: SetupOptions = {}): {
   const clock = new ManualClock(T0)
   const options = resolveOptions({ source, store, clock, accountResolver: () => null, ...extra })
   const snapshotCache =
-    extra.cache === undefined ? null : new SnapshotCache(extra.cache, 30_000, clock)
-  const refresher = new SnapshotRefresher(source, store, clock, snapshotCache)
+    extra.cache === undefined
+      ? null
+      : new SnapshotCache(extra.cache, 30_000, clock, new ObserverBridge(null, clock))
+  const refresher = new SnapshotRefresher(
+    source,
+    store,
+    clock,
+    snapshotCache,
+    null,
+    new ObserverBridge(null, clock)
+  )
   return {
     source,
     store,
@@ -110,7 +118,8 @@ function setup(extra: SetupOptions = {}): {
       options,
       refresher,
       snapshotCache,
-      new Reconciler(store, clock, refresher, options)
+      new Reconciler(store, clock, refresher, options, null),
+      new ObserverBridge(options.observer, clock)
     )
   }
 }
@@ -218,7 +227,13 @@ describe('SubscriptionService reads', () => {
     async (_name, until, expected) => {
       // Scenario: the active flag is true; only the until instant against the injected now differs.
       const { store, service } = setup()
-      const entitlement = { name: 'pro', active: true, until, grantingSubscriptionReference: null }
+      const entitlement = {
+        name: 'pro',
+        active: true,
+        until,
+        grantingSubscriptionReference: null,
+        grantingSubscriptionReferences: []
+      }
       await store.putSnapshot(
         encodeAccountKey(ACCOUNT),
         { ...snapshotOf(ACCOUNT, true), entitlements: [entitlement] },
@@ -236,7 +251,8 @@ describe('SubscriptionService reads', () => {
       name: 'pro',
       active: true,
       until: '2026-01-01T00:00:10.000Z',
-      grantingSubscriptionReference: null
+      grantingSubscriptionReference: null,
+      grantingSubscriptionReferences: []
     }
     await store.putSnapshot(
       encodeAccountKey(ACCOUNT),
@@ -257,7 +273,8 @@ describe('SubscriptionService reads', () => {
       name: 'pro',
       active: true,
       until: 'not-a-date',
-      grantingSubscriptionReference: null
+      grantingSubscriptionReference: null,
+      grantingSubscriptionReferences: []
     }
     await store.putSnapshot(
       encodeAccountKey(ACCOUNT),
@@ -409,7 +426,7 @@ describe('SubscriptionService reconcile', () => {
     }
     clock.advance(36 * 3_600_000)
     const result = await service.reconcile({ olderThanMs: 24 * 3_600_000 })
-    expect(result).toEqual({ refreshed: 2, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 2, failed: 0, cursor: null, pendingCursor: null })
     expect(source.totalReads).toBe(2)
   })
 
@@ -427,7 +444,8 @@ describe('SubscriptionService reconcile', () => {
     await expect(service.reconcile()).resolves.toEqual({
       refreshed: 0,
       failed: 0,
-      cursor: null
+      cursor: null,
+      pendingCursor: null
     })
   })
 })

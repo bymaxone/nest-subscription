@@ -58,8 +58,18 @@ export interface EntitlementState {
   readonly active: boolean
   /** Until when it is active; `null` when it has no end. */
   readonly until: string | null
-  /** The `subscriptionReference` of the subscription that grants it; `null` when none does. */
+  /**
+   * The `subscriptionReference` of the decisive subscription: the one that grants it, gives access
+   * and ends last. `null` when no subscription that grants it gives access. When it is not `null`
+   * it is a member of `grantingSubscriptionReferences`.
+   */
   readonly grantingSubscriptionReference: string | null
+  /**
+   * The `subscriptionReference` of every subscription (or non-renewing purchase) that grants this
+   * entitlement and gives access, sorted ascending with no duplicates; empty when none does. More
+   * than one member means the entitlement overlaps.
+   */
+  readonly grantingSubscriptionReferences: readonly string[]
 }
 
 /** The whole normalized state of one account. */

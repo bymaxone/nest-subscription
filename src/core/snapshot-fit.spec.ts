@@ -21,7 +21,13 @@ function full(): SubscriptionSnapshot {
     accountId: 'acc-1',
     tenantId: 'one',
     entitlements: [
-      { name: 'pro', active: true, until: T0, grantingSubscriptionReference: 'sub-1' }
+      {
+        name: 'pro',
+        active: true,
+        until: T0,
+        grantingSubscriptionReference: 'sub-1',
+        grantingSubscriptionReferences: ['sub-1']
+      }
     ],
     subscriptions: [
       {
@@ -79,6 +85,13 @@ const WRONG: ReadonlyArray<readonly [string, unknown]> = [
   ['entitlements.0.active', 1],
   ['entitlements.0.until', 1],
   ['entitlements.0.grantingSubscriptionReference', 1],
+  ['entitlements.0.grantingSubscriptionReferences', undefined],
+  ['entitlements.0.grantingSubscriptionReferences', 'sub-1'],
+  ['entitlements.0.grantingSubscriptionReferences', [1]],
+  ['entitlements.0.grantingSubscriptionReferences', ['sub-2', 'sub-1']],
+  ['entitlements.0.grantingSubscriptionReferences', ['sub-1', 'sub-1']],
+  ['entitlements.0.grantingSubscriptionReferences', []],
+  ['entitlements.0.grantingSubscriptionReferences', ['sub-0']],
   ['subscriptions.0.subscriptionReference', 1],
   ['subscriptions.0.status', 'bogus'],
   ['subscriptions.0.givesAccess', 'true'],
@@ -128,6 +141,16 @@ describe('isSnapshotFor', () => {
     expect(isSnapshotFor(withField(path, wrong), TENANTED)).toBe(false)
   })
 
+  it.each([
+    ['two grantors, sorted, with the decisive one among them', ['sub-1', 'sub-2']],
+    ['one grantor that is the decisive one', ['sub-1']]
+  ])('accepts an entitlement with %s', (_name, grantors) => {
+    // Scenario: the list is sorted, unique and holds the decisive subscription.
+    expect(
+      isSnapshotFor(withField('entitlements.0.grantingSubscriptionReferences', grantors), TENANTED)
+    ).toBe(true)
+  })
+
   it('accepts the snapshot with every field present', () => {
     // Scenario: the control for the table; the fixture itself fits.
     expect(isSnapshotFor(full(), TENANTED)).toBe(true)
@@ -141,7 +164,13 @@ describe('isSnapshotFor', () => {
         sourceCustomer: null,
         sourceUpdatedAt: null,
         entitlements: [
-          { name: 'pro', active: false, until: null, grantingSubscriptionReference: null }
+          {
+            name: 'pro',
+            active: false,
+            until: null,
+            grantingSubscriptionReference: null,
+            grantingSubscriptionReferences: []
+          }
         ],
         subscriptions: [
           {

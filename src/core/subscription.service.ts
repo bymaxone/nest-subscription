@@ -4,7 +4,7 @@
  * waits for the source.
  * @layer core
  */
-import { Inject, Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 
 import {
   SUBSCRIPTION_CLOCK,
@@ -26,6 +26,8 @@ import {
 
 import { SnapshotCache } from './cache/snapshot-cache'
 import { entitlementHeld } from './entitlement-held'
+import { logEvent } from './logging/subscription-logger'
+import { ObserverBridge } from './observer/observer-bridge'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
 import {
   Reconciler,
@@ -44,8 +46,6 @@ import { hasTenant } from './tenant'
  */
 @Injectable()
 export class SubscriptionService {
-  readonly #logger = new Logger(SubscriptionService.name)
-
   constructor(
     @Inject(SUBSCRIPTION_SOURCE) private readonly source: SubscriptionSource,
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
@@ -53,7 +53,8 @@ export class SubscriptionService {
     @Inject(SUBSCRIPTION_OPTIONS) private readonly options: ResolvedSubscriptionOptions,
     @Inject(SnapshotRefresher) private readonly refresher: SnapshotRefresher,
     @Inject(SnapshotCache) private readonly cache: SnapshotCache | null,
-    @Inject(Reconciler) private readonly reconciler: Reconciler
+    @Inject(Reconciler) private readonly reconciler: Reconciler,
+    @Inject(ObserverBridge) private readonly observer: ObserverBridge
   ) {}
 
   /**
@@ -92,7 +93,9 @@ export class SubscriptionService {
 
   /**
    * Reads the account from the source now and returns the snapshot the store holds afterwards.
-   * Concurrent refreshes of one account share one source call.
+   * Concurrent refreshes of one account share one source call. When the host set a change hook and
+   * the refresh stored changes, the call returns after the hook has returned or failed; a failing
+   * hook never fails the refresh.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be
    * read, with the stored snapshot untouched; with `SUBSCRIPTION_INVALID_INPUT` as
@@ -100,7 +103,8 @@ export class SubscriptionService {
    */
   async refresh(account: AccountReference): Promise<AgedSnapshot> {
     this.#keyOf(account)
-    const { current } = await this.refresher.refresh(account)
+    const { current, delivery } = await this.refresher.refresh(account)
+    await delivery
     return this.#view(current, this.clock.now())
   }
 
@@ -159,23 +163,17 @@ export class SubscriptionService {
 
   /** Starts a refresh without waiting for it; whatever it ends with is handled here. */
   #refreshInBackground(account: AccountReference): void {
-    this.refresher.refresh(account).catch((error: unknown) => this.#reportFailure(error))
+    const key = encodeAccountKey(account)
+    this.refresher.refresh(account).catch((error: unknown) => this.#reportFailure(error, key))
   }
 
   /**
-   * Logs a failed background refresh by its code alone and tells the observer. Neither the account
-   * nor the error's text is passed on, and nothing raised while reporting leaves this method.
+   * Logs a failed background refresh by its code and a short hash of the account, and tells the
+   * observer by its code alone. Neither the account nor the error's text is passed on, and neither a broken logger nor a broken observer can raise.
    */
-  #reportFailure(error: unknown): void {
+  #reportFailure(error: unknown, key: string): void {
     const code = error instanceof SubscriptionError ? error.code : null
-    try {
-      this.#logger.warn(`Background refresh of a stale snapshot failed: ${code ?? 'unclassified'}.`)
-      // `Promise.resolve` adopts a returned promise or thenable, so its rejection is handled here.
-      void Promise.resolve(this.options.observer?.onBackgroundRefreshFailure?.({ code })).catch(
-        () => undefined
-      )
-    } catch {
-      // A broken logger or observer must not turn a handled failure into an unhandled one.
-    }
+    logEvent(this.options.logger, 'background_refresh_failed', code, key)
+    this.observer.backgroundRefreshFailure(code)
   }
 }

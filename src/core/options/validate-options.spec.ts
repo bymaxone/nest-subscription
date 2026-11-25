@@ -170,6 +170,11 @@ const ROWS: readonly Row[] = [
   },
   { path: 'observer', good: { observer: {} }, bad: [SENTINEL, null, 3] },
   {
+    path: 'logger',
+    good: { logger: { warn: () => 1 } },
+    bad: [SENTINEL, null, {}, { warn: SENTINEL }]
+  },
+  {
     path: 'clock',
     good: { clock: { now: () => new Date(0) } },
     bad: [SENTINEL, null, {}, { now: SENTINEL }]

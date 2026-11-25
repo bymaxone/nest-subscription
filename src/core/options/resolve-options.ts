@@ -4,6 +4,8 @@
  * own object is never written to.
  * @layer core
  */
+import { Logger } from '@nestjs/common'
+
 import {
   DEFAULT_ALLOW_SANDBOX,
   DEFAULT_CACHE_TTL_MS,
@@ -18,6 +20,9 @@ import type {
 } from './subscription-options.types'
 import { systemClock } from '../system-clock'
 import { validateOptions } from './validate-options'
+
+/** The context a default logger line is written under. */
+const LOGGER_CONTEXT = 'NestSubscription'
 
 /**
  * Validates the options, applies every default and returns the frozen options. The host's
@@ -53,6 +58,7 @@ function build(input: SubscriptionOptionsInput): ResolvedSubscriptionOptions {
     isProduction: input.isProduction ?? false,
     cache: input.cache ?? null,
     observer: input.observer ?? null,
+    logger: input.logger ?? new Logger(LOGGER_CONTEXT),
     eventRetentionMs: input.eventRetentionMs ?? null,
     webhookController: input.webhookController ?? DEFAULT_WEBHOOK_CONTROLLER,
     webhookPath: input.webhookPath ?? null,

@@ -14,6 +14,8 @@ import {
 import {
   SUBSCRIPTION_ERROR_CODES,
   createEmptySnapshot,
+  type SubscriptionChange,
+  type SubscriptionRecord,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 import {
@@ -22,12 +24,32 @@ import {
   ManualClock
 } from '@bymax-one/nest-subscription/testing'
 
+import { ChangeDispatcher } from '../notifications/change-dispatcher'
+import { ObserverBridge } from '../observer/observer-bridge'
 import { resolveOptions } from '../options/resolve-options'
+import type { SubscriptionChangeNotification } from '../options/subscription-options.types'
 import { SnapshotRefresher } from '../refresh/snapshot-refresher'
 import { Reconciler } from './reconciler'
 
 const T0 = '2026-01-01T00:00:00.000Z'
 const DAY = 86_400_000
+const SUBSCRIPTION: SubscriptionRecord = {
+  subscriptionReference: 'sub-1',
+  status: 'active',
+  givesAccess: true,
+  willRenew: 'yes',
+  origin: 'app_store',
+  environment: 'production',
+  productReference: 'pro_monthly',
+  billingInterval: 'P1M',
+  currentPeriodStart: T0,
+  currentPeriodEnd: '2026-02-01T00:00:00.000Z',
+  accessUntil: '2026-02-01T00:00:00.000Z',
+  billingIssueSince: null,
+  cancelledAt: null,
+  refundedAt: null,
+  managementReference: null
+}
 
 /** A snapshot of an account fetched at the given instant. */
 function fetchedAt(
@@ -63,7 +85,14 @@ function setup(extra: { multiTenant?: boolean; maxSnapshotAgeMs?: number } = {})
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(T0)
   const options = resolveOptions({ source, store, clock, accountResolver: () => null, ...extra })
-  const refresher = new SnapshotRefresher(source, store, clock, null)
+  const refresher = new SnapshotRefresher(
+    source,
+    store,
+    clock,
+    null,
+    null,
+    new ObserverBridge(null, clock)
+  )
   const reads: number[] = []
   const original = source.readAccount.bind(source)
   jest.spyOn(source, 'readAccount').mockImplementation((reference) => {
@@ -74,7 +103,7 @@ function setup(extra: { multiTenant?: boolean; maxSnapshotAgeMs?: number } = {})
     source,
     store,
     clock,
-    reconciler: new Reconciler(store, clock, refresher, options),
+    reconciler: new Reconciler(store, clock, refresher, options, null),
     reads
   }
 }
@@ -126,7 +155,7 @@ describe('Reconciler', () => {
     clock.advance(DAY + DAY / 2)
     await seed(store, 2, new Date(clock.now().getTime() - 3_600_000).toISOString(), 4)
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toEqual({ refreshed: 3, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 3, failed: 0, cursor: null, pendingCursor: null })
     expect([1, 2, 3].map((n) => source.readCount(account(n)))).toEqual([1, 1, 1])
     expect([4, 5].map((n) => source.readCount(account(n)))).toEqual([0, 0])
   })
@@ -155,7 +184,7 @@ describe('Reconciler', () => {
     const second = await reconciler.run({ ...options, cursor: first.cursor })
     expect(second).toMatchObject({ refreshed: 4, failed: 0 })
     const third = await reconciler.run({ ...options, cursor: second.cursor })
-    expect(third).toEqual({ refreshed: 2, failed: 0, cursor: null })
+    expect(third).toEqual({ refreshed: 2, failed: 0, cursor: null, pendingCursor: null })
     expect(Array.from({ length: 10 }, (_, n) => source.readCount(account(n + 1)))).toEqual(
       Array.from({ length: 10 }, () => 1)
     )
@@ -169,7 +198,7 @@ describe('Reconciler', () => {
     const options = { olderThanMs: DAY, batchSize: 4, wait: advancing(clock) }
     await reconciler.run(options)
     const next = await reconciler.run(options)
-    expect(next).toEqual({ refreshed: 2, failed: 0, cursor: null })
+    expect(next).toEqual({ refreshed: 2, failed: 0, cursor: null, pendingCursor: null })
     expect(source.totalReads).toBe(6)
   })
 
@@ -186,15 +215,22 @@ describe('Reconciler', () => {
         return store.listStaleKeys(olderThan, limit, cursor)
       }
     })
-    const refresher = new SnapshotRefresher(source, store, clock, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: spying, clock, accountResolver: () => null })
-    const result = await new Reconciler(spying, clock, refresher, options).run({
+    const result = await new Reconciler(spying, clock, refresher, options, null).run({
       olderThanMs: DAY,
       batchSize: 1000,
       maxCallsPerSecond: 1000,
       wait: advancing(clock)
     })
-    expect(result).toEqual({ refreshed: 250, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 250, failed: 0, cursor: null, pendingCursor: null })
     expect(listed).toEqual([100, 100, 100])
     expect(source.totalReads).toBe(250)
   })
@@ -208,15 +244,22 @@ describe('Reconciler', () => {
       listStaleKeys: (olderThan, limit, cursor) =>
         store.listStaleKeys(olderThan, Math.max(1, limit - 7), cursor)
     })
-    const refresher = new SnapshotRefresher(source, store, clock, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: short, clock, accountResolver: () => null })
-    const result = await new Reconciler(short, clock, refresher, options).run({
+    const result = await new Reconciler(short, clock, refresher, options, null).run({
       olderThanMs: DAY,
       batchSize: 30,
       maxCallsPerSecond: 1000,
       wait: advancing(clock)
     })
-    expect(result).toEqual({ refreshed: 30, failed: 0, cursor: null })
+    expect(result).toEqual({ refreshed: 30, failed: 0, cursor: null, pendingCursor: null })
   })
 
   it('lists no more pages than its batch needs, and never the rest of the backlog', async () => {
@@ -232,9 +275,16 @@ describe('Reconciler', () => {
         return store.listStaleKeys(olderThan, limit, cursor)
       }
     })
-    const refresher = new SnapshotRefresher(source, store, clock, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: spying, clock, accountResolver: () => null })
-    const result = await new Reconciler(spying, clock, refresher, options).run({
+    const result = await new Reconciler(spying, clock, refresher, options, null).run({
       olderThanMs: DAY,
       batchSize: 1,
       wait: advancing(clock)
@@ -294,9 +344,16 @@ describe('Reconciler', () => {
         return store.listStaleKeys(olderThan, limit, cursor)
       }
     })
-    const refresher = new SnapshotRefresher(source, store, clock, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: spying, clock, accountResolver: () => null })
-    const result = await new Reconciler(spying, clock, refresher, options).run({
+    const result = await new Reconciler(spying, clock, refresher, options, null).run({
       olderThanMs: DAY,
       maxCallsPerSecond: 4
     })
@@ -361,7 +418,7 @@ describe('Reconciler', () => {
       cursor: partial.cursor,
       wait
     })
-    expect(last).toEqual({ refreshed: 2, failed: 0, cursor: null })
+    expect(last).toEqual({ refreshed: 2, failed: 0, cursor: null, pendingCursor: null })
   })
 
   it('does not stop the run for an account whose source read fails', async () => {
@@ -374,7 +431,7 @@ describe('Reconciler', () => {
     const before = await store.getSnapshot(key)
     source.failNextRead(new Error('down'))
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(result).toEqual({ refreshed: 4, failed: 1, cursor: null })
+    expect(result).toEqual({ refreshed: 4, failed: 1, cursor: null, pendingCursor: null })
     expect(source.totalReads).toBe(5)
     expect(await store.getSnapshot(key)).toEqual(before)
   })
@@ -458,7 +515,8 @@ describe('Reconciler', () => {
     expect(await reconciler.run({})).toEqual({
       refreshed: 0,
       failed: 0,
-      cursor: null
+      cursor: null,
+      pendingCursor: null
     })
     expect(source.totalReads).toBe(0)
   })
@@ -468,9 +526,18 @@ describe('Reconciler', () => {
     const { source, store, clock } = setup()
     const failure = new Error('store down')
     const broken = delegating(store, { listStaleKeys: () => Promise.reject(failure) })
-    const refresher = new SnapshotRefresher(source, store, clock, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const options = resolveOptions({ source, store: broken, clock, accountResolver: () => null })
-    await expect(new Reconciler(broken, clock, refresher, options).run({})).rejects.toBe(failure)
+    await expect(new Reconciler(broken, clock, refresher, options, null).run({})).rejects.toBe(
+      failure
+    )
   })
 
   it.each([
@@ -508,13 +575,13 @@ describe('Reconciler', () => {
   })
 
   it('names no account in a failure it counts', async () => {
-    // Scenario: the result of a run with a failed account holds counts and a cursor only.
+    // Scenario: the result of a run with a failed account holds counts and cursors only.
     const { source, store, clock, reconciler } = setup()
     await seed(store, 1)
     clock.advance(2 * DAY)
     source.failNextRead(new Error('down for acc-00001'))
     const result = await reconciler.run({ olderThanMs: DAY, wait: advancing(clock) })
-    expect(Object.keys(result).sort()).toEqual(['cursor', 'failed', 'refreshed'])
+    expect(Object.keys(result).sort()).toEqual(['cursor', 'failed', 'pendingCursor', 'refreshed'])
     expect(JSON.stringify(result)).not.toContain('acc-00001')
   })
 })

@@ -300,6 +300,28 @@ const pendingCases: readonly StoreConformanceCase[] = [
     }
   },
   {
+    name: 'keeps listing every remaining pending key when the keys already listed are cleared',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      for (const letter of LETTERS) await seed(store, letter, T1, [C1])
+      const first = await store.listKeysWithPendingChanges(3, null)
+      for (const key of first.keys) await store.clearPendingChanges(key, [C1.key])
+      const rest: string[] = []
+      let cursor = first.nextCursor
+      for (const _page of PAGE_BUDGET) {
+        if (cursor === null) break
+        const page = await store.listKeysWithPendingChanges(3, cursor)
+        rest.push(...page.keys)
+        cursor = page.nextCursor
+      }
+      assert.equal(cursor, null, NEVER_ENDS)
+      assert.deepEqual(
+        rest.sort(),
+        LETTER_KEYS.filter((key) => !first.keys.includes(key))
+      )
+    }
+  },
+  {
     name: 'stops listing a key once its pending changes are cleared',
     run: async (createStore): Promise<void> => {
       const store = await createStore()

@@ -10,20 +10,25 @@ import type {
   SubscriptionSource,
   SubscriptionStore
 } from '@bymax-one/nest-subscription/internal'
-import type {
-  SubscriptionChange,
-  SubscriptionErrorCode,
-  SubscriptionSnapshot
-} from '@bymax-one/nest-subscription/shared'
+import type { SubscriptionChange, SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 
 import type { AccountResolver } from '../guard/account-resolver.types'
+import type { SubscriptionLogger } from '../logging/subscription-logger'
+import type { SubscriptionObserver } from '../observer/observer.types'
 
 /** What the guard does when it cannot show a snapshot current: refuse, or trust the last one. */
 export type SubscriptionFailPolicy = 'refuse' | 'last_known_state'
 
-/** What the host's hook receives after a snapshot changed and was stored. */
+/**
+ * What the host's hook receives after a snapshot changed and was stored. Delivery is at least
+ * once: the same change can reach the hook more than once, always with the same key, so the
+ * host's reaction must be idempotent on `changes[].key`.
+ */
 export interface SubscriptionChangeNotification {
-  /** The snapshot before the change; `null` on a redelivery, which carries no previous state. */
+  /**
+   * The snapshot before the change. It is `null` on a redelivery, which carries no previous state,
+   * and on the first delivery for an account that had no stored snapshot.
+   */
   readonly previous: SubscriptionSnapshot | null
   /** The snapshot after the change. */
   readonly current: SubscriptionSnapshot
@@ -49,25 +54,6 @@ export interface SubscriptionCache {
   delete(key: string): Promise<void>
 }
 
-/** What the observer is told when a background refresh of a stale snapshot fails. */
-export interface BackgroundRefreshFailure {
-  /**
-   * The code of the library error that ended the refresh, or `null` when the refresh ended with
-   * an error that is not the library's, such as one a host's store raised. It never names the
-   * account, and the error's text is not passed on.
-   */
-  readonly code: SubscriptionErrorCode | null
-}
-
-/** The optional observer the host provides to receive counters, timings and failures. */
-export interface SubscriptionObserverOption {
-  /**
-   * Called when a refresh started in the background by a read of a stale snapshot fails. It may
-   * return a promise; the library does not wait for it and ignores its rejection.
-   */
-  readonly onBackgroundRefreshFailure?: (failure: BackgroundRefreshFailure) => void | Promise<void>
-}
-
 /**
  * The options a host passes, with the store as an instance. This is what an asynchronous factory
  * returns and what `resolveOptions` reads.
@@ -79,7 +65,18 @@ export interface SubscriptionOptionsInput {
   readonly store: SubscriptionStore
   /** Tells the guard which account a request belongs to. */
   readonly accountResolver: AccountResolver
-  /** Told about every stored change. */
+  /**
+   * Told about every stored change, after the store write has succeeded and never before it.
+   * Delivery is at least once. The changes are stored with the snapshot as not delivered and
+   * cleared only after the hook returns, so a hook that throws or rejects leaves the stored
+   * snapshot in place and its changes pending, and the next reconciliation run calls it again
+   * with the same change keys and `redelivery: true`; a crash between the write and the call, or
+   * a failure to clear after a successful call, has the same effect. A redelivery carries the
+   * current snapshot and the pending changes and no previous snapshot. A hook that throws is
+   * contained: the failure is logged by its error code and reported to the observer, and never
+   * reaches the operation that stored the change. Make the reaction idempotent on the change key.
+   * Without a hook no change is stored.
+   */
   readonly onChange?: SubscriptionChangeHook
   /**
    * What the guard does when it cannot show the snapshot current: the store cannot be read, or the
@@ -119,7 +116,12 @@ export interface SubscriptionOptionsInput {
   /** The optional cache in front of the store. */
   readonly cache?: SubscriptionCache
   /** The optional observer. */
-  readonly observer?: SubscriptionObserverOption
+  readonly observer?: SubscriptionObserver
+  /**
+   * Where the library writes its warnings. Defaults to a NestJS `Logger`. A line holds a fixed
+   * sentence and an error code, and never an account, a tenant or a payload.
+   */
+  readonly logger?: SubscriptionLogger
   /** How long processed event identifiers are kept, in milliseconds. */
   readonly eventRetentionMs?: number
   /** Whether the library mounts its webhook controller. Defaults to `false`. */
@@ -181,7 +183,9 @@ export interface ResolvedSubscriptionOptions {
   /** The cache, or `null` when the host set none. */
   readonly cache: SubscriptionCache | null
   /** The observer, or `null` when the host set none. */
-  readonly observer: SubscriptionObserverOption | null
+  readonly observer: SubscriptionObserver | null
+  /** Where the library writes its warnings. */
+  readonly logger: SubscriptionLogger
   /** How long processed event identifiers are kept, or `null` when the host set none. */
   readonly eventRetentionMs: number | null
   /** Whether the webhook controller is mounted. */

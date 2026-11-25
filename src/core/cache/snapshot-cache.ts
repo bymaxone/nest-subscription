@@ -11,6 +11,7 @@ import {
 } from '@bymax-one/nest-subscription/internal'
 import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 
+import type { ObserverBridge } from '../observer/observer-bridge'
 import type { SubscriptionCache } from '../options/subscription-options.types'
 import { isSnapshotFor } from '../snapshot-fit'
 
@@ -54,11 +55,13 @@ export class SnapshotCache {
    * @param cache The cache the host provided.
    * @param ttlMs How long an entry lives, in milliseconds.
    * @param clock The time source that measures how long a failed delete keeps an account off the cache.
+   * @param observer Told whether a lookup hit or missed; a no-op when the host set no observer.
    */
   constructor(
     private readonly cache: SubscriptionCache,
     private readonly ttlMs: number,
-    private readonly clock: Clock
+    private readonly clock: Clock,
+    private readonly observer: ObserverBridge
   ) {}
 
   /** The number of reads that have not finished. */
@@ -97,7 +100,11 @@ export class SnapshotCache {
     const ticket = this.#open(accountKey)
     try {
       const cached = await this.#get(key, account)
-      if (cached !== null && !ticket.invalidated) return cached
+      if (cached !== null && !ticket.invalidated) {
+        this.observer.cacheLookup('hit')
+        return cached
+      }
+      this.observer.cacheLookup('miss')
       const loaded = await load()
       if (loaded !== null && !ticket.invalidated) {
         ticket.filling = true

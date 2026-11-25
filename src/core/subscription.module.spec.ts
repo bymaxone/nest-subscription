@@ -16,13 +16,16 @@ import {
 } from '@bymax-one/nest-subscription/internal'
 import {
   FakeSubscriptionSource,
-  InMemorySubscriptionStore
+  InMemorySubscriptionStore,
+  ManualClock
 } from '@bymax-one/nest-subscription/testing'
 
 import type { SubscriptionOptionsInput } from './options/subscription-options.types'
 import { createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
 import { resolveOptions } from './options/resolve-options'
 import { SnapshotCache } from './cache/snapshot-cache'
+import { ChangeDispatcher } from './notifications/change-dispatcher'
+import { ObserverBridge } from './observer/observer-bridge'
 import { Reconciler } from './reconciliation/reconciler'
 import { EntitlementGuard } from './guard/entitlement.guard'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
@@ -74,7 +77,8 @@ describe('SubscriptionModule.forRoot', () => {
       SUBSCRIPTION_STORE,
       SUBSCRIPTION_CLOCK,
       SubscriptionService,
-      EntitlementGuard
+      EntitlementGuard,
+      ObserverBridge
     ])
     expect(module.module).toBe(SubscriptionModule)
   })
@@ -109,13 +113,48 @@ describe('SubscriptionModule.forRoot', () => {
     ) as FactoryProvider
     expect(found.inject).toEqual([
       { token: SUBSCRIPTION_CACHE, optional: true },
-      SUBSCRIPTION_OPTIONS
+      SUBSCRIPTION_OPTIONS,
+      ObserverBridge
     ])
     const host = { get: jest.fn(), set: jest.fn(), delete: jest.fn() }
     const resolved = resolveOptions({ ...input(), cacheTtlMs: 4321 })
-    expect(found.useFactory(host, resolved)).toBeInstanceOf(SnapshotCache)
-    expect(found.useFactory(null, resolved)).toBeNull()
-    expect(found.useFactory(undefined, resolved)).toBeNull()
+    const bridge = new ObserverBridge(null, resolved.clock)
+    expect(found.useFactory(host, resolved, bridge)).toBeInstanceOf(SnapshotCache)
+    expect(found.useFactory(null, resolved, bridge)).toBeNull()
+    expect(found.useFactory(undefined, resolved, bridge)).toBeNull()
+  })
+
+  it('builds a change dispatcher only when the host set a hook', () => {
+    // Scenario: the provider's factory is run with options that have a hook and with options that
+    // have none; only the first gets a dispatcher, so a host with no hook runs no delivery code.
+    const module = SubscriptionModule.forRoot(input())
+    const found = (module.providers ?? []).find(
+      (candidate) =>
+        typeof candidate === 'object' &&
+        'provide' in candidate &&
+        candidate.provide === ChangeDispatcher
+    ) as FactoryProvider
+    const bridge = new ObserverBridge(null, new ManualClock('2026-01-01T00:00:00.000Z'))
+    expect(found.inject).toEqual([SUBSCRIPTION_OPTIONS, ObserverBridge])
+    expect(
+      found.useFactory(resolveOptions({ ...input(), onChange: jest.fn() }), bridge)
+    ).toBeInstanceOf(ChangeDispatcher)
+    expect(found.useFactory(resolveOptions(input()), bridge)).toBeNull()
+  })
+
+  it('builds an observer bridge over the configured observer and clock', () => {
+    // Scenario: the provider's factory is run with an observer; the bridge reports to it.
+    const module = SubscriptionModule.forRoot(input())
+    const found = (module.providers ?? []).find(
+      (candidate) =>
+        typeof candidate === 'object' &&
+        'provide' in candidate &&
+        candidate.provide === ObserverBridge
+    ) as FactoryProvider
+    const onCacheLookup = jest.fn()
+    const bridge = found.useFactory(resolveOptions({ ...input(), observer: { onCacheLookup } }))
+    bridge.cacheLookup('hit')
+    expect(onCacheLookup).toHaveBeenCalledWith({ outcome: 'hit' })
   })
 
   it('gives the snapshot cache the lifetime the host set', async () => {
@@ -129,7 +168,8 @@ describe('SubscriptionModule.forRoot', () => {
     ) as FactoryProvider
     const set = jest.fn(() => Promise.resolve())
     const host = { get: () => Promise.resolve(null), set, delete: jest.fn() }
-    const cache = found.useFactory(host, resolveOptions({ ...input(), cacheTtlMs: 4321 }))
+    const resolved = resolveOptions({ ...input(), cacheTtlMs: 4321 })
+    const cache = found.useFactory(host, resolved, new ObserverBridge(null, resolved.clock))
     await cache.read({ accountId: 'a' }, () =>
       Promise.resolve(
         createEmptySnapshot({ accountId: 'a', source: 's', fetchedAt: '2026-01-01T00:00:00.000Z' })
@@ -280,7 +320,7 @@ describe('SubscriptionModule.forRootAsync', () => {
       SUBSCRIPTION_CACHE,
       SUBSCRIPTION_OBSERVER
     ])
-    expect(module.exports).toHaveLength(8)
+    expect(module.exports).toHaveLength(9)
   })
 
   it('hands the injected values to the factory and resolves what it returns', async () => {

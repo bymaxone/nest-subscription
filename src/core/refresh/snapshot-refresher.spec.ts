@@ -15,6 +15,7 @@ import {
 import {
   SUBSCRIPTION_ERROR_CODES,
   createEmptySnapshot,
+  type SubscriptionRecord,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 import {
@@ -24,7 +25,13 @@ import {
 } from '@bymax-one/nest-subscription/testing'
 
 import { SnapshotCache } from '../cache/snapshot-cache'
-import type { SubscriptionCache } from '../options/subscription-options.types'
+import { ChangeDispatcher } from '../notifications/change-dispatcher'
+import { ObserverBridge } from '../observer/observer-bridge'
+import type { SubscriptionObserver } from '../observer/observer.types'
+import type {
+  SubscriptionCache,
+  SubscriptionChangeNotification
+} from '../options/subscription-options.types'
 import { SnapshotRefresher } from './snapshot-refresher'
 
 const ACCOUNT: AccountReference = { accountId: 'acc-1' }
@@ -65,7 +72,19 @@ function setup(): {
   const source = new FakeSubscriptionSource()
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(T0)
-  return { source, store, clock, refresher: new SnapshotRefresher(source, store, clock, null) }
+  return {
+    source,
+    store,
+    clock,
+    refresher: new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
+  }
 }
 
 /** The store with some methods replaced; the others reach it unchanged. */
@@ -187,7 +206,14 @@ describe('SnapshotRefresher', () => {
     const { source, store, clock } = setup()
     const putSnapshot = jest.fn(store.putSnapshot.bind(store))
     const counting = delegating(store, { putSnapshot })
-    const refresher = new SnapshotRefresher(source, counting, clock, null)
+    const refresher = new SnapshotRefresher(
+      source,
+      counting,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20, 'newer'))
     const first = await refresher.refresh(ACCOUNT)
     clock.advance(1000)
@@ -227,8 +253,22 @@ describe('SnapshotRefresher', () => {
     // Scenario: two refreshers share a store, as two processes would. The first read starts, is
     // held and returns older data; the second starts later, finishes first with newer data.
     const { source, store, clock } = setup()
-    const slow = new SnapshotRefresher(source, store, clock, null)
-    const fast = new SnapshotRefresher(source, store, clock, null)
+    const slow = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
+    const fast = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10, 'older'))
     const release = source.delayNextRead()
     const slowRefresh = slow.refresh(ACCOUNT)
@@ -255,7 +295,14 @@ describe('SnapshotRefresher', () => {
         return store.putSnapshot(key, snapshot, changes, at)
       }
     })
-    const result = await new SnapshotRefresher(source, racing, clock, null).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(
+      source,
+      racing,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    ).refresh(ACCOUNT)
     expect(result.written).toBe(false)
     expect(result.previous).toBeNull()
     expect(result.current.sourceCustomer?.id).toBe('winner')
@@ -270,7 +317,14 @@ describe('SnapshotRefresher', () => {
       getSnapshot: (): Promise<StoredSnapshot | null> => Promise.resolve(null),
       putSnapshot: () => Promise.resolve(false)
     })
-    const result = await new SnapshotRefresher(source, refusing, clock, null).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(
+      source,
+      refusing,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    ).refresh(ACCOUNT)
     expect(result.written).toBe(false)
     expect(result.current.sourceCustomer?.id).toBe('fetched')
   })
@@ -345,9 +399,16 @@ describe('SnapshotRefresher', () => {
     const { source, store, clock } = setup()
     const failure = new Error('store down')
     const broken = delegating(store, { getSnapshot: () => Promise.reject(failure) })
-    await expect(new SnapshotRefresher(source, broken, clock, null).refresh(ACCOUNT)).rejects.toBe(
-      failure
-    )
+    await expect(
+      new SnapshotRefresher(
+        source,
+        broken,
+        clock,
+        null,
+        null,
+        new ObserverBridge(null, clock)
+      ).refresh(ACCOUNT)
+    ).rejects.toBe(failure)
   })
 })
 
@@ -378,7 +439,9 @@ describe('SnapshotRefresher with a cache', () => {
       source,
       store,
       clock,
-      new SnapshotCache(cache, 30_000, clock)
+      new SnapshotCache(cache, 30_000, clock, new ObserverBridge(null, clock)),
+      null,
+      new ObserverBridge(null, clock)
     )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     let settled = false
@@ -401,7 +464,9 @@ describe('SnapshotRefresher with a cache', () => {
       source,
       store,
       clock,
-      new SnapshotCache(cache, 30_000, clock)
+      new SnapshotCache(cache, 30_000, clock, new ObserverBridge(null, clock)),
+      null,
+      new ObserverBridge(null, clock)
     )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20))
     await refresher.refresh(ACCOUNT)
@@ -423,7 +488,9 @@ describe('SnapshotRefresher with a cache', () => {
       source,
       store,
       clock,
-      new SnapshotCache(cache, 30_000, clock)
+      new SnapshotCache(cache, 30_000, clock, new ObserverBridge(null, clock)),
+      null,
+      new ObserverBridge(null, clock)
     )
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
     await expect(refresher.refresh(ACCOUNT)).resolves.toMatchObject({ written: true })
@@ -459,7 +526,13 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
       ACCOUNT,
       {
         entitlements: [
-          { name: 'pro', active: true, until: 'not-a-date', grantingSubscriptionReference: null }
+          {
+            name: 'pro',
+            active: true,
+            until: 'not-a-date',
+            grantingSubscriptionReference: null,
+            grantingSubscriptionReferences: []
+          }
         ]
       }
     ],
@@ -476,7 +549,13 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
       ACCOUNT,
       {
         entitlements: [
-          { name: 'pro', active: 'false', until: null, grantingSubscriptionReference: null }
+          {
+            name: 'pro',
+            active: 'false',
+            until: null,
+            grantingSubscriptionReference: null,
+            grantingSubscriptionReferences: []
+          }
         ]
       }
     ]
@@ -542,8 +621,15 @@ describe('SnapshotRefresher with a snapshot that does not fit the account asked 
       }
     }
     const { source, store, clock } = setup()
-    const snapshotCache = new SnapshotCache(cache, 30_000, clock)
-    const refresher = new SnapshotRefresher(source, store, clock, snapshotCache)
+    const snapshotCache = new SnapshotCache(cache, 30_000, clock, new ObserverBridge(null, clock))
+    const refresher = new SnapshotRefresher(
+      source,
+      store,
+      clock,
+      snapshotCache,
+      null,
+      new ObserverBridge(null, clock)
+    )
     const load = async (): Promise<SubscriptionSnapshot | null> => stored(store, TENANTED)
     source.setAccount(TENANTED, { ...snapshotOf(TENANTED, T10), tenantId: 'two' })
     await refresher.refresh(TENANTED).catch(() => undefined)
@@ -567,7 +653,14 @@ describe('SnapshotRefresher with a stored snapshot that cannot be read', () => {
       getSnapshot: () => Promise.resolve({ snapshot: corrupt, pendingChanges: [] })
     })
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20, 'good'))
-    const result = await new SnapshotRefresher(source, reading, clock, null).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(
+      source,
+      reading,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    ).refresh(ACCOUNT)
     expect(result.previous).toBeNull()
     expect(result.written).toBe(true)
     expect(result.current.sourceCustomer?.id).toBe('good')

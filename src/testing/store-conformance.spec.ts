@@ -58,7 +58,9 @@ const CASE = {
   stalePaged: 'lists stale keys in bounded pages by cursor, each key once',
   staleNone: 'lists nothing when no key is stale',
   staleCursorStable:
-    'keeps listing every remaining stale key when the keys already listed stop being stale'
+    'keeps listing every remaining stale key when the keys already listed stop being stale',
+  pendingCursorStable:
+    'keeps listing every remaining pending key when the keys already listed are cleared'
 }
 
 // The cases each broken store fails, by the defect it has. A defect that touches the keys or the
@@ -83,12 +85,13 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   clearingAnUnknownChangeKeyFails: [CASE.clearsNamed, CASE.clearUnknown],
   clearingResetsTheSnapshot: [CASE.clearsNamed],
   clearingCreatesAnEntry: [CASE.clearUnknown],
-  pendingListingNeverEnds: [CASE.pendingPaged, CASE.pendingUnlisted],
-  pendingListingRepeatsAKey: [CASE.pendingPaged],
+  pendingListingNeverEnds: [CASE.pendingPaged, CASE.pendingCursorStable, CASE.pendingUnlisted],
+  pendingListingRepeatsAKey: [CASE.pendingPaged, CASE.pendingCursorStable],
   staleListingRepeatsAKey: [CASE.stalePaged, CASE.staleCursorStable],
-  pendingListingSkipsAKey: [CASE.pendingPaged],
+  pendingListingSkipsAKey: [CASE.pendingPaged, CASE.pendingCursorStable],
   staleListingSkipsAKey: [CASE.stalePaged, CASE.staleCursorStable],
   staleListingUsesAnOffsetCursor: [CASE.staleCursorStable],
+  pendingListingUsesAnOffsetCursor: [CASE.pendingCursorStable],
   staleListingIgnoresTheThreshold: [CASE.staleOnly, CASE.staleByFetch, CASE.staleNone],
   markAlwaysSeen: [
     CASE.eventNew,
@@ -116,6 +119,7 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
     CASE.accountsApart,
     CASE.tenantsApart,
     CASE.pendingPaged,
+    CASE.pendingCursorStable,
     CASE.pendingUnlisted,
     CASE.staleOnly,
     CASE.staleByFetch,
@@ -217,6 +221,26 @@ describe('storeConformanceCases', () => {
     const first = await store.listStaleKeys(later, 3, null)
     expect(first).toEqual({ keys: ['a', 'b', 'c'], nextCursor: '3' })
     expect(await store.listStaleKeys(later, 3, '3')).toEqual({
+      keys: ['d', 'e', 'f'],
+      nextCursor: null
+    })
+  })
+
+  it('pages the pending offset-cursor store by position and ends its listing with no cursor', async () => {
+    // Scenario: six keys with pending changes, three a page; the cursor is an offset.
+    const store =
+      BROKEN_STORES['pendingListingUsesAnOffsetCursor']?.() ?? new InMemorySubscriptionStore()
+    const change = { kind: 'renewed', key: 'c1' } as const
+    for (const key of ['a', 'b', 'c', 'd', 'e', 'f']) {
+      const fetchedAt = '2026-01-01T00:00:00.000Z'
+      const snapshot = createEmptySnapshot({ accountId: key, source: 's', fetchedAt })
+      await store.putSnapshot(key, snapshot, [change], fetchedAt)
+    }
+    expect(await store.listKeysWithPendingChanges(3, null)).toEqual({
+      keys: ['a', 'b', 'c'],
+      nextCursor: '3'
+    })
+    expect(await store.listKeysWithPendingChanges(3, '3')).toEqual({
       keys: ['d', 'e', 'f'],
       nextCursor: null
     })

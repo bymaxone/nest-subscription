@@ -55,7 +55,7 @@ export function fromResolver(error: unknown): unknown {
  */
 export class GuardRefusal extends HttpException {
   /** @param code The catalogue code the refusal carries; its status is fixed. */
-  constructor(code: GuardRefusalCode) {
+  constructor(readonly code: GuardRefusalCode) {
     super(new SubscriptionError(code).toJSON(), statusOf(code))
   }
 }

@@ -77,6 +77,8 @@ const TESTING_EXPORTS = [
   'FakeSubscriptionSource',
   'InMemorySubscriptionStore',
   'ManualClock',
+  'assertNoSentinel',
+  'createCapture',
   'createFailingStore',
   'storeConformanceCases'
 ]
@@ -98,7 +100,9 @@ const ROOT_EXPORTS = [
   'SubscriptionModule',
   'SubscriptionService',
   'decodeAccountKey',
+  'diffSnapshots',
   'encodeAccountKey',
+  'hashAccountKey',
   'resolveOptions',
   'validateOptions'
 ]

@@ -11,6 +11,7 @@ import { ManualClock } from '@bymax-one/nest-subscription/testing'
 
 import type { SubscriptionCache } from '../options/subscription-options.types'
 import { SnapshotCache } from './snapshot-cache'
+import { ObserverBridge } from '../observer/observer-bridge'
 
 const ACCOUNT: AccountReference = { accountId: 'acc-1' }
 const TTL_MS = 30_000
@@ -147,7 +148,12 @@ describe('SnapshotCache interleavings', () => {
       // Scenario: the read misses and loads the old value; its set is held by the host cache; the
       // account is invalidated and the invalidation completes; the held set then lands.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const set = host.holdNextSet()
       const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       await flush()
@@ -166,7 +172,12 @@ describe('SnapshotCache interleavings', () => {
       // goes to the store and returns the new snapshot, with no lookup and no new fill; afterwards
       // the cache is used again.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const set = host.holdNextSet()
       const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       await flush()
@@ -196,7 +207,12 @@ describe('SnapshotCache interleavings', () => {
       // Scenario: a fill is held with no invalidation; a second read looks in the cache. Then a
       // read still loading is invalidated; a read after it also looks in the cache.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       host.holdNextSet()
       await cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       const before = host.gets()
@@ -221,7 +237,12 @@ describe('SnapshotCache interleavings', () => {
       // Scenario: a fill of one account is overtaken; a read of another account is served from its
       // own entry.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const other: AccountReference = { accountId: 'acc-2' }
       await cache.read(other, () => Promise.resolve(snapshotOf(other, 'two')))
       await flush()
@@ -239,7 +260,11 @@ describe('SnapshotCache interleavings', () => {
       function setup(): { host: ControlledCache; cache: SnapshotCache; clock: ManualClock } {
         const host = controlled()
         const clock = new ManualClock()
-        return { host, cache: new SnapshotCache(host, TTL_MS, clock), clock }
+        return {
+          host,
+          cache: new SnapshotCache(host, TTL_MS, clock, new ObserverBridge(null, clock)),
+          clock
+        }
       }
 
       /** Reads with a store that answers the new snapshot; returns the id it answered. */
@@ -355,7 +380,12 @@ describe('SnapshotCache interleavings', () => {
       // Scenario: the host cache's set is held and never released; the read and an invalidation
       // both resolve.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       host.holdNextSet()
       const result = await cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       expect(result?.sourceCustomer?.id).toBe('old')
@@ -365,7 +395,12 @@ describe('SnapshotCache interleavings', () => {
     it('leaves nothing and fails nothing when the set that was in flight at an invalidation rejects', async () => {
       // Scenario: the held set fails after the account was invalidated.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const set = host.holdNextSet()
       const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       await flush()
@@ -381,7 +416,12 @@ describe('SnapshotCache interleavings', () => {
       // Scenario: every delete rejects; the held set lands after the invalidation; the fill's own
       // delete is tried (two deletes in all) and no call fails.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const set = host.holdNextSet()
       const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       await flush()
@@ -397,7 +437,12 @@ describe('SnapshotCache interleavings', () => {
       // Scenario: fill A (old) is held; the account is invalidated; read B fills the new value;
       // A lands last. The next read answers the new value.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const first = host.holdNextSet()
       const readA = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       await flush()
@@ -413,7 +458,12 @@ describe('SnapshotCache interleavings', () => {
     it('cleans up after every fill that was in flight at an invalidation', async () => {
       // Scenario: two fills of one account are held; one invalidation; both land.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const first = host.holdNextSet()
       const second = host.holdNextSet()
       const readA = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
@@ -431,7 +481,12 @@ describe('SnapshotCache interleavings', () => {
     it('answers the store, not the old entry, to a read whose cache lookup began before an invalidation, and fills nothing', async () => {
       // Scenario: the lookup is held and returns the old entry after the invalidation.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const lookup = host.holdNextGet()
       const reading = cache.read(ACCOUNT, () => Promise.resolve(NEW()))
       await flush()
@@ -447,7 +502,12 @@ describe('SnapshotCache interleavings', () => {
     it('keeps the fill of an account it was not asked to invalidate', async () => {
       // Scenario: a held fill of one account lands after another account was invalidated.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const set = host.holdNextSet()
       const reading = cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       await flush()
@@ -461,7 +521,12 @@ describe('SnapshotCache interleavings', () => {
     it('keeps the account tracked while a fill is still being written, and forgets it when it settles', async () => {
       // Scenario: the read has answered; its set is held; then it lands.
       const host = controlled()
-      const cache = new SnapshotCache(host, TTL_MS, new ManualClock())
+      const cache = new SnapshotCache(
+        host,
+        TTL_MS,
+        new ManualClock(),
+        new ObserverBridge(null, new ManualClock())
+      )
       const set = host.holdNextSet()
       await cache.read(ACCOUNT, () => Promise.resolve(OLD()))
       expect(cache.pendingAccounts).toBe(1)

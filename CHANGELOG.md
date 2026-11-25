@@ -117,6 +117,44 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   `FailingStoreMethod`: wraps any `SubscriptionStore` and, once `fail()` is called, rejects the
   methods named (every method when none is named) until `recover()`, so a host can test its own
   outage handling. Until then it delegates unchanged.
+- `diffSnapshots(previous, current)`, exported from the root: the pure comparison of two snapshots
+  into the typed list of changes of `CHANGE_KINDS`, each with a stable key. It reads the two
+  snapshots and nothing else, never a webhook payload. The list is ordered by kind as `CHANGE_KINDS` is, then by the order of
+  the subscriptions; a change of `fetchedAt` alone gives an empty list. `overlap_detected` is reported per entitlement, when it
+  has two or more grantors where it had at most one.
+- `EntitlementState.grantingSubscriptionReferences`: every subscription that grants the entitlement
+  and gives access, sorted with no duplicate and empty when none does, beside the decisive
+  `grantingSubscriptionReference`, which is one of them. A snapshot without it is refused as
+  unreadable. Apply to a derived backend: add the field to any `EntitlementState` you build.
+- The change key is a hexadecimal digest derived from the account, the subscription, the kind
+  and the fact that tells the change from the next (for a renewal, the period end), each field
+  hashed on its own before they are joined. It holds no identifier and does not depend on the fetch
+  instant.
+- The change hook (`onChange`) is called after the store write has succeeded and never before it,
+  with the previous snapshot, the new one and the changes. Delivery is at least once: the changes
+  are stored with the snapshot in the same write as not delivered and cleared only after the hook
+  returned, so a hook that throws or rejects leaves the stored snapshot in place and its changes
+  pending, and `SubscriptionService.reconcile` calls it again with the same change keys, marked
+  `redelivery: true` and with a `null` previous snapshot. The failure is logged by its error code
+  and reported to the observer. The same change can reach the hook more than once; make the
+  reaction idempotent on the change key. `SubscriptionService.refresh` returns after the hook has
+  returned or failed. With no `onChange` no change is computed or stored.
+- `reconcile` delivers pending changes again before it refreshes stale accounts, a page at a
+  time and up to `batchSize` accounts. `ReconcileResult` gains `pendingCursor` and `ReconcileOptions` gains
+  `pendingCursor`: pass the one to the next run so that an account whose hook keeps failing, which
+  stays pending, does not keep later accounts from being reached. It is `null` when the listing of
+  pending accounts is exhausted, and independent of `cursor`, which belongs to stale snapshots.
+- The observer option takes a `SubscriptionObserver`, every method of it optional, one per event
+  family. Every payload is a closed record of outcomes, counts and durations
+  on the injected clock, with no account, tenant or payload content. A method that throws or
+  rejects never affects the operation it observes, and with no observer nothing is built or timed.
+  The option type `SubscriptionObserverOption` is replaced by `SubscriptionObserver`.
+- The `logger` option: where the library writes its warnings, a NestJS `Logger` by default. A line is
+  a fixed sentence, a short salted hash of the account and an error code, never the account, the
+  tenant, a payload or an error's text. `hashAccountKey(key, salt?)`, exported from the root, makes
+  that hash; it is for correlation in logs and is not an access control.
+- `createCapture` and `assertNoSentinel` in the `testing` subpath: a logger and an observer that
+  record everything, and the assertion that no recorded line or payload holds a given sentinel.
 
 ### Changed
 
@@ -132,5 +170,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   smaller pages than the limit now passes; a store that returns more, repeats or skips a key still
   fails.
 - The store port states that a `listStaleKeys` cursor stays valid when keys listed before it stop
-  qualifying, so a caller may refresh the keys of a page before it asks for the next. The
-  conformance suite gains a case for it, and a store that pages by offset now fails that case.
+  qualifying, so a caller may refresh the keys of a page before it asks for the next, and that a
+  `listKeysWithPendingChanges` cursor stays valid when the changes of keys listed before it are
+  cleared. The conformance suite gains a case for each, and a store that pages by offset now fails
+  them.

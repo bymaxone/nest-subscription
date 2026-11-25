@@ -37,9 +37,16 @@ function state(
   name: string,
   active: boolean,
   until: string | null,
-  reference: string | null
+  reference: string | null,
+  grantors: readonly string[] = reference === null ? [] : [reference]
 ): EntitlementState {
-  return { name, active, until, grantingSubscriptionReference: reference }
+  return {
+    name,
+    active,
+    until,
+    grantingSubscriptionReference: reference,
+    grantingSubscriptionReferences: grantors
+  }
 }
 
 interface Row {
@@ -82,7 +89,7 @@ const rows: readonly Row[] = [
       ['s1', ['pro']],
       ['s2', ['pro']]
     ]),
-    entitlements: [state('pro', true, MAR, 's2')],
+    entitlements: [state('pro', true, MAR, 's2', ['s1', 's2'])],
     overlapping: ['pro']
   },
   {
@@ -92,7 +99,7 @@ const rows: readonly Row[] = [
       ['s1', ['pro']],
       ['s2', ['pro']]
     ]),
-    entitlements: [state('pro', true, MAR, 's1')],
+    entitlements: [state('pro', true, MAR, 's1', ['s1', 's2'])],
     overlapping: ['pro']
   },
   {
@@ -102,7 +109,7 @@ const rows: readonly Row[] = [
       ['s1', ['pro']],
       ['s2', ['pro']]
     ]),
-    entitlements: [state('pro', true, FEB, 's1')],
+    entitlements: [state('pro', true, FEB, 's1', ['s1', 's2'])],
     overlapping: ['pro']
   },
   {
@@ -112,7 +119,7 @@ const rows: readonly Row[] = [
       ['s1', ['pro']],
       ['s2', ['pro']]
     ]),
-    entitlements: [state('pro', true, null, 's2')],
+    entitlements: [state('pro', true, null, 's2', ['s1', 's2'])],
     overlapping: ['pro']
   },
   {
@@ -122,7 +129,7 @@ const rows: readonly Row[] = [
       ['s1', ['pro']],
       ['s2', ['pro']]
     ]),
-    entitlements: [state('pro', true, null, 's1')],
+    entitlements: [state('pro', true, null, 's1', ['s1', 's2'])],
     overlapping: ['pro']
   },
   {
@@ -132,7 +139,7 @@ const rows: readonly Row[] = [
       ['s1', ['pro']],
       ['s2', ['pro']]
     ]),
-    entitlements: [state('pro', true, null, 's1')],
+    entitlements: [state('pro', true, null, 's1', ['s1', 's2'])],
     overlapping: ['pro']
   },
   {
@@ -203,8 +210,39 @@ const rows: readonly Row[] = [
       ['s1', ['pro', 'beta']],
       ['s2', ['pro']]
     ]),
-    entitlements: [state('pro', true, FEB, 's1'), state('beta', true, FEB, 's1')],
+    entitlements: [state('pro', true, FEB, 's1', ['s1', 's2']), state('beta', true, FEB, 's1')],
     overlapping: ['pro']
+  },
+  {
+    rule: 'the grantors are listed sorted and once, whatever the order of the subscriptions',
+    subscriptions: [sub('s2', { accessUntil: MAR }), sub('s1', { accessUntil: FEB })],
+    grants: new Map([
+      ['s2', ['pro', 'pro']],
+      ['s1', ['pro']]
+    ]),
+    entitlements: [state('pro', true, MAR, 's2', ['s1', 's2'])],
+    overlapping: ['pro']
+  },
+  {
+    rule: 'two grantors of one entitlement and one of another list each its own grantors',
+    subscriptions: [sub('s1'), sub('s2'), sub('s3')],
+    grants: new Map([
+      ['s1', ['pro']],
+      ['s2', ['pro']],
+      ['s3', ['addon']]
+    ]),
+    entitlements: [state('pro', true, FEB, 's1', ['s1', 's2']), state('addon', true, FEB, 's3')],
+    overlapping: ['pro']
+  },
+  {
+    rule: 'a grantor that gives no access is not among the grantors',
+    subscriptions: [sub('s1'), sub('s2', { givesAccess: false })],
+    grants: new Map([
+      ['s1', ['pro']],
+      ['s2', ['pro']]
+    ]),
+    entitlements: [state('pro', true, FEB, 's1', ['s1'])],
+    overlapping: []
   },
   {
     rule: 'a subscription with no grant entry grants nothing',

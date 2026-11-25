@@ -4,6 +4,7 @@
  */
 import { SubscriptionError } from '@bymax-one/nest-subscription/shared'
 
+import { hashAccountKey } from './account-hash'
 import { decodeAccountKey, encodeAccountKey } from './account-key'
 import * as entry from './index'
 import * as tokens from './tokens'
@@ -23,11 +24,13 @@ describe('internal entry point', () => {
       'Secret',
       'SubscriptionError',
       'decodeAccountKey',
-      'encodeAccountKey'
+      'encodeAccountKey',
+      'hashAccountKey'
     ])
     expect(entry.SubscriptionError).toBe(SubscriptionError)
     expect(entry.encodeAccountKey).toBe(encodeAccountKey)
     expect(entry.decodeAccountKey).toBe(decodeAccountKey)
+    expect(entry.hashAccountKey).toBe(hashAccountKey)
     for (const [name, token] of Object.entries(tokens)) {
       expect(entry[name as keyof typeof entry]).toBe(token)
     }

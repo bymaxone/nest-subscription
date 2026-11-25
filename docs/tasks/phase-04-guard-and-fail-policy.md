@@ -1,6 +1,6 @@
 # Phase 4 — Guard and fail policy
 
-> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 4 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: ✅ Done &nbsp;·&nbsp; **Progress**: 4 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P4 — guard-and-fail-policy
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -390,3 +390,5 @@ Completion Protocol (after the work is reported done):
 - 4.2 ✅ 2026-11-25 — the pure decideAccess and the EntitlementGuard with its stable refusal codes
 - 4.3 ✅ 2026-11-25 — the two-valued fail policy, pure and applied by the guard around its snapshot read
 - 4.4 ✅ 2026-11-25 — the guard end to end on real routes, createFailingStore and its end-to-end suites
+
+Phase 4 merged as #10 (cba5824), 2026-11-25.

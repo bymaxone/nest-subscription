@@ -36,7 +36,8 @@ function stateOf(name: string, granting: readonly SubscriptionRecord[]): Entitle
       name,
       active: false,
       until: dated.length === 0 ? null : latest(dated).accessUntil,
-      grantingSubscriptionReference: null
+      grantingSubscriptionReference: null,
+      grantingSubscriptionReferences: []
     }
   }
   const decisive = latest(giving)
@@ -44,7 +45,10 @@ function stateOf(name: string, granting: readonly SubscriptionRecord[]): Entitle
     name,
     active: true,
     until: decisive.accessUntil,
-    grantingSubscriptionReference: decisive.subscriptionReference
+    grantingSubscriptionReference: decisive.subscriptionReference,
+    grantingSubscriptionReferences: [
+      ...new Set(giving.map((subscription) => subscription.subscriptionReference))
+    ].sort()
   }
 }
 
@@ -73,7 +77,8 @@ function groupByName(
  * that give access, and a lifetime grant (`null`) outranks any date. An entitlement no
  * subscription gives access to is inactive and reports the latest end among its grantors, or
  * `null` when none has one. The names that more than one subscription gives access to are
- * returned as overlapping, so the host can be told.
+ * returned as overlapping, so the host can be told. Each entitlement also lists every subscription
+ * that grants it and gives access, sorted and without duplicates.
  *
  * `grants` maps a `subscriptionReference` to the entitlement names that subscription grants; a
  * subscription with no entry grants nothing. The function is pure: it reads no clock and changes
