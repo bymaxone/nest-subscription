@@ -78,22 +78,16 @@ export interface WebhookEvent {
   readonly durationMs: number
   /**
    * Whether the identifier of a failed event stayed recorded because the store could not forget
-   * it. A retry that reaches the same process is still processed, because the processor remembers
-   * the event; one that reaches another instance of the host is answered as already seen until
-   * the retention purges the identifier. Always `false` for an outcome other than `failed`. The removal is started before a failed answer is returned and is
-   * not waited for, so the event of a failed outcome is reported when the removal settles, after
-   * the answer; its `durationMs` is still the time to the answer.
+   * it. It describes the removal this delivery started: a failed answer given while an earlier
+   * removal is still in flight starts none and reports `false`. A retry that reaches the same
+   * process is answered as a failure and starts the removal again; one that reaches another
+   * instance of the host is answered as already seen until the retention purges the identifier.
+   * Always `false` for an outcome other than `failed`. The removal is started before a failed
+   * answer is returned and is not waited for, so the event of a failed outcome that started a
+   * removal is reported when the removal settles, after the answer; its `durationMs` is still the
+   * time to the answer.
    */
   readonly retained: boolean
-}
-
-/** What the observer is told when the identifier of a processed event could not be recorded again. */
-export interface EventRecordFailure {
-  /**
-   * The code of the library error the store raised, or `null` for one that is not the library's.
-   * It never names the event, and the error's text is not passed on.
-   */
-  readonly code: SubscriptionErrorCode | null
 }
 
 /** What the observer is told when a background refresh of a stale snapshot fails. */
@@ -125,11 +119,6 @@ export interface SubscriptionObserver {
   readonly onChangeDelivery?: (event: ChangeDeliveryEvent) => void | Promise<void>
   /** The receiver handled a webhook request. */
   readonly onWebhook?: (event: WebhookEvent) => void | Promise<void>
-  /**
-   * The identifier of a processed webhook event could not be recorded again after a removal
-   * erased it, so a later delivery of the event is processed again.
-   */
-  readonly onEventRecordFailure?: (failure: EventRecordFailure) => void | Promise<void>
   /** A refresh started in the background by a read of a stale snapshot failed. */
   readonly onBackgroundRefreshFailure?: (failure: BackgroundRefreshFailure) => void | Promise<void>
 }

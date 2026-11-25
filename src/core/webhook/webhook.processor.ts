@@ -83,28 +83,26 @@ function acceptedTrigger(result: unknown): Trigger | null {
  * outcomes, and every outcome is reported to the observer.
  *
  * The identifier of an event is recorded when its processing starts and removed when it ends as
- * a failure, so the source's retry is processed. The removal is started before the failed answer
- * is returned and is never awaited, so a store that is slow or down cannot hold the answer past
- * the deadline. The observer hears of a failed event when its removal settles. When the store
- * cannot remove the identifier, the outcome is still a failure and the observer and the log are
- * told; the identifier then stays recorded until the retention purges it. An event that names no
- * account is answered as ignored and records nothing.
+ * a failure, so the source's retry is processed (D16). The removal is started before the failed
+ * answer is returned and is never awaited, so a store that is slow or down cannot hold the answer
+ * past the deadline, and the observer hears of a failed event when its removal settles.
  *
- * While the removal of a failed event's identifier is pending, and after it failed, a retry of
- * that event must still be processed. So the processor remembers in memory the events whose
- * removal is pending or failed, up to `UNRELEASED_EVENTS_BOUND` of them, oldest first out,
- * and processes a delivery of one of them as new without recording it again. A removal that is
- * still pending can erase the identifier of a retry that was processed meanwhile, so once every
- * removal started for an event has settled, the identifier of a processed event is recorded
- * again; if that fails, the failure is logged and reported and a later delivery is processed
- * again. No answer waits for a removal or for that recording. The memory belongs to one process:
- * a retry that lands on another instance of the host while the removal is pending or failed, or
- * after the oldest entry was dropped, finds the identifier recorded and is answered as already
- * seen.
+ * An event is never processed while the removal of its identifier is unsettled. The processor
+ * remembers in memory the failed events whose removal is in flight or failed, up to
+ * `UNRELEASED_EVENTS_BOUND` of them, oldest first out. A delivery of an event whose removal is in
+ * flight is answered as a failure at once, with no store call and no read, and the source
+ * retries later. A delivery of an event whose last removal failed starts the removal again and
+ * is answered as a failure. Once a removal succeeded the event is forgotten, so the next delivery
+ * is recorded and processed. The processor never records an identifier again. When the store
+ * cannot remove an identifier the outcome is still a failure and the observer and the log are
+ * told. The memory belongs to one process and is bounded: a retry that lands on another instance
+ * of the host while the removal is in flight or failed, or after the oldest entry was dropped,
+ * finds the identifier recorded and is answered as already seen until the retention purges it.
+ * An event that names no account is answered as ignored and records nothing.
  */
 @Injectable()
 export class WebhookProcessor {
-  /** The failed events whose removal is pending or failed. */
+  /** The failed events whose removal is in flight or failed. */
   readonly #unreleased = new UnreleasedEvents()
 
   constructor(
@@ -173,9 +171,14 @@ export class WebhookProcessor {
     const accountIds = [...new Set(trigger.accountIds)]
     if (accountIds.length === 0) return { outcome: { kind: 'ignored' } }
     const key = JSON.stringify([this.source.name, trigger.eventId])
-    // A remembered event is not recorded again: its identifier is still recorded, or is recorded
-    // again once the removals started for it have settled.
-    const recorded = this.#unreleased.has(key) ? undefined : await this.#record(trigger.eventId)
+    // An event whose removal is unsettled is never processed: its identifier is still recorded,
+    // or a removal in flight may erase it. A failed removal is started again.
+    const memory = this.#unreleased.memoryOf(key)
+    if (memory === 'removing') return { outcome: { kind: 'failed' } }
+    if (memory === 'failed') {
+      return { outcome: { kind: 'failed' }, removal: this.#release(key, trigger.eventId) }
+    }
+    const recorded = await this.#record(trigger.eventId)
     if (recorded === 'unavailable') return { outcome: { kind: 'failed' } }
     if (recorded === 'seen') return { outcome: { kind: 'duplicate' } }
     const references = accountIds.map((accountId): AccountReference => ({
@@ -183,7 +186,6 @@ export class WebhookProcessor {
       accountId
     }))
     if (await this.#refreshAll(references)) {
-      this.#unreleased.processed(key)
       return { outcome: { kind: 'processed', accounts: references.length } }
     }
     return { outcome: { kind: 'failed' }, removal: this.#release(key, trigger.eventId) }
@@ -225,33 +227,15 @@ export class WebhookProcessor {
 
   /**
    * Remembers a failed event and starts the removal of its identifier. The store is called before
-   * this returns. Settles to whether the store removed the identifier, as soon as it settles; what
-   * the settlement means for the event is decided by `#settle`, detached.
-   * Never rejects.
+   * this returns. Settles to whether the store removed the identifier, as soon as it settles, and
+   * never rejects.
    */
   #release(key: string, eventId: string): Promise<boolean> {
-    this.#unreleased.failed(key)
+    const removal = this.#unreleased.begin(key)
     return this.#forget(eventId).then((removed) => {
-      void this.#settle(key, eventId, removed)
+      this.#unreleased.settled(key, removal, removed)
       return removed
     })
-  }
-
-  /**
-   * Settles a removal. When it was the last one in flight for an event that was processed
-   * meanwhile and whose identifier a removal erased, the identifier is recorded again. A failure
-   * to record it is logged by code and reported to the observer, once, without the identifier,
-   * and the event is then processed again by a later delivery.
-   */
-  async #settle(key: string, eventId: string, removed: boolean): Promise<void> {
-    if (this.#unreleased.settled(key, removed) !== 'rerecord') return
-    try {
-      await this.store.markEventProcessed(this.source.name, eventId, this.clock.now().toISOString())
-    } catch (error) {
-      logEvent(this.options.logger, 'webhook_rerecord_failed', errorCodeOf(error), null)
-      this.observer.eventRecordFailure(errorCodeOf(error))
-    }
-    this.#unreleased.rerecorded(key)
   }
 
   /**

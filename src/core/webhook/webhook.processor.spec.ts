@@ -575,7 +575,8 @@ describe('WebhookProcessor de-duplication', () => {
 
   it('still answers failed, and tells the observer, when the identifier cannot be forgotten', async () => {
     // Scenario: the source is down and so is forgetEvent; the outcome is failed, the identifier
-    // stays recorded, the observer says so and the log holds a fixed sentence with a code.
+    // stays recorded, the observer says so and the log holds a fixed sentence with a code. The
+    // retry starts the removal again and is answered as a failure, so each says so once.
     const h = harness({
       store: (base) =>
         delegating(base, {
@@ -588,12 +589,14 @@ describe('WebhookProcessor de-duplication', () => {
     const first = await h.processor.process(request)
     const retry = await h.processor.process(request)
     expect(first).toStrictEqual({ kind: 'failed' })
-    expect(retry).toStrictEqual({ kind: 'processed', accounts: 1 })
+    await flush()
+    expect(retry).toStrictEqual({ kind: 'failed' })
     expect(h.capture.payloads.filter((entry) => entry.method === 'onWebhook')).toStrictEqual([
       { method: 'onWebhook', payload: { outcome: 'failed', durationMs: 0, retained: true } },
-      { method: 'onWebhook', payload: { outcome: 'processed', durationMs: 0, retained: false } }
+      { method: 'onWebhook', payload: { outcome: 'failed', durationMs: 0, retained: true } }
     ])
     expect(h.capture.lines).toStrictEqual([
+      'A failed webhook event could not be forgotten; its identifier stays recorded: SUBSCRIPTION_SOURCE_UNAVAILABLE.',
       'A failed webhook event could not be forgotten; its identifier stays recorded: SUBSCRIPTION_SOURCE_UNAVAILABLE.'
     ])
   })

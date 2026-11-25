@@ -29,7 +29,6 @@ export type LogEvent =
   | 'change_read_failed'
   | 'webhook_forget_failed'
   | 'event_purge_failed'
-  | 'webhook_rerecord_failed'
   | 'webhook_raw_body_missing'
 
 /** The fixed sentence of an event. */
@@ -47,8 +46,6 @@ function sentenceOf(event: LogEvent): string {
       return 'A failed webhook event could not be forgotten; its identifier stays recorded'
     case 'event_purge_failed':
       return 'Processed webhook event identifiers could not be purged'
-    case 'webhook_rerecord_failed':
-      return 'A processed webhook event could not be recorded again; a later delivery of it is processed again'
     case 'webhook_raw_body_missing':
       return 'A webhook request arrived without its raw body; create the application with rawBody: true'
   }

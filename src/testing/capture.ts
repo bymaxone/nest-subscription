@@ -45,7 +45,6 @@ export function createCapture(): Capture {
       onGuardDecision: record('onGuardDecision'),
       onChangeDelivery: record('onChangeDelivery'),
       onWebhook: record('onWebhook'),
-      onEventRecordFailure: record('onEventRecordFailure'),
       onBackgroundRefreshFailure: record('onBackgroundRefreshFailure')
     },
     lines,

@@ -110,10 +110,49 @@ describe.each([
     await app.app.close()
   })
 
-  it('processes the retry of a failure whose identifier could not be forgotten, in the same process', async () => {
-    // Scenario: the source is down and the store cannot forget; the processor remembers the event,
-    // so the retry is processed, the observer reports the identifier as retained and the log holds
-    // one fixed sentence.
+  it('answers a retry as a failure while the removal is pending and processes it once it succeeded', async () => {
+    // Scenario: the source is down and the removal is held; the retry during it gets a 503 and
+    // reads nothing; when the removal succeeded the next retry is read and answered 200 (D16).
+    const app = await buildWebhookApp()
+    const settles = holdRemovals(app.store)
+    app.source.failNextRead(new Error('source down'))
+    const first = await send(app, route, signed(app))
+    const during = await send(app, route, signed(app))
+    expect(app.source.readCount(ACCOUNT)).toBe(1)
+    await settles[0]?.(true)
+    const after = await send(app, route, signed(app))
+    expect([first.status, during.status, after.status]).toStrictEqual([503, 503, 200])
+    expect(after.body).toStrictEqual({ outcome: 'processed', accounts: 1 })
+    expect(app.source.readCount(ACCOUNT)).toBe(2)
+    await app.app.close()
+  })
+
+  it('starts the removal again for a retry after it failed and processes once it succeeded', async () => {
+    // Scenario: the removal fails, which the log and the observer hear once; the retry starts it
+    // again and gets a 503; when that one succeeded the next retry is processed.
+    const app = await buildWebhookApp()
+    const settles = holdRemovals(app.store)
+    app.source.failNextRead(new Error('source down'))
+    await send(app, route, signed(app))
+    await settles[0]?.(false)
+    const restart = await send(app, route, signed(app))
+    expect(settles).toHaveLength(2)
+    await settles[1]?.(true)
+    const after = await send(app, route, signed(app))
+    expect([restart.status, after.status]).toStrictEqual([503, 200])
+    expect(app.capture.lines).toHaveLength(1)
+    expect(
+      app.capture.payloads
+        .filter((entry) => entry.method === 'onWebhook')
+        .map((entry) => (entry.payload as { retained: boolean }).retained)
+    ).toStrictEqual([true, false, false])
+    await app.app.close()
+  })
+
+  it('logs a failed removal by the code of the error and answers the retry as a failure', async () => {
+    // Scenario: the store cannot forget and raises the library's own error; the log holds one fixed
+    // sentence with its code, the observer reports the identifier as retained, and the retry gets
+    // a 503 because the removal is started again.
     let failing: FailingStore | undefined
     const app = await buildWebhookApp({
       wrapStore: (store) => (failing = createFailingStore(store))
@@ -125,59 +164,9 @@ describe.each([
     app.source.failNextRead(new Error('source down'))
     const first = await send(app, route, signed(app))
     const retry = await send(app, route, signed(app))
-    expect([first.status, retry.status]).toStrictEqual([503, 200])
-    expect(retry.body).toStrictEqual({ outcome: 'processed', accounts: 1 })
-    expect(
-      app.capture.payloads
-        .filter((entry) => entry.method === 'onWebhook')
-        .map((entry) => entry.payload)
-    ).toStrictEqual([
-      expect.objectContaining({ outcome: 'failed', retained: true }),
-      expect.objectContaining({ outcome: 'processed', retained: false })
-    ])
-    expect(app.capture.lines).toHaveLength(1)
-    await app.app.close()
-  })
-
-  it('processes the retry of a failure while the removal of its identifier is still pending', async () => {
-    // Scenario: the source is down and the store never returns from the removal; the source's
-    // retry is processed and answered 200, not answered as already seen (D16).
-    const app = await buildWebhookApp()
-    jest.spyOn(app.store, 'forgetEvent').mockReturnValue(new Promise(() => undefined))
-    app.source.failNextRead(new Error('source down'))
-    const first = await send(app, route, signed(app))
-    const retry = await send(app, route, signed(app))
-    expect([first.status, retry.status]).toStrictEqual([503, 200])
-    expect(retry.body).toStrictEqual({ outcome: 'processed', accounts: 1 })
-    expect(app.source.readCount(ACCOUNT)).toBe(2)
-    await app.app.close()
-  })
-
-  it('answers a duplicate after a removal that erased the identifier settled after a processed retry', async () => {
-    // Scenario: the source is down and the removal is held; the retry is processed and answered
-    // 200; the removal then erases the identifier; the processor records it again, so the next
-    // delivery is a duplicate and the source is not read again.
-    const app = await buildWebhookApp()
-    const real = app.store.forgetEvent.bind(app.store)
-    let settle = async (): Promise<void> => undefined
-    jest.spyOn(app.store, 'forgetEvent').mockImplementation(
-      (sourceName, eventId) =>
-        new Promise<void>((resolve) => {
-          settle = async () => {
-            await real(sourceName, eventId)
-            resolve()
-          }
-        })
-    )
-    app.source.failNextRead(new Error('source down'))
-    const first = await send(app, route, signed(app))
-    const retry = await send(app, route, signed(app))
-    await settle()
-    for (let turn = 0; turn < 40; turn += 1) await Promise.resolve()
-    const next = await send(app, route, signed(app))
-    expect([first.status, retry.status, next.status]).toStrictEqual([503, 200, 200])
-    expect(next.body).toStrictEqual({ outcome: 'duplicate' })
-    expect(app.source.readCount(ACCOUNT)).toBe(2)
+    expect([first.status, retry.status]).toStrictEqual([503, 503])
+    expect(app.capture.lines[0]).toMatch(/: SUBSCRIPTION_SOURCE_UNAVAILABLE\.$/)
+    expect(app.capture.payloads.filter((entry) => entry.method === 'onWebhook')).toHaveLength(2)
     await app.app.close()
   })
 
@@ -192,10 +181,10 @@ describe.each([
 })
 
 describe('webhook receiver memory of failed events', () => {
-  it('drops the oldest failed event past the bound and answers its retry as the store says', async () => {
+  it('drops the oldest failed event past the bound and answers its retry as already seen', async () => {
     // Scenario: more events than the bound fail and their removal fails too; the processor keeps
-    // the newest ones, so the oldest event's retry is answered as already seen and a recent
-    // one's is processed.
+    // the newest ones, so the oldest event's retry is answered as already seen (the documented
+    // limit of the bound) and a recent one's is answered as a failure.
     let failing: FailingStore | undefined
     const app = await buildWebhookApp({
       wrapStore: (store) => (failing = createFailingStore(store))
@@ -212,7 +201,7 @@ describe('webhook receiver memory of failed events', () => {
     }
     const oldest = await processor.process(app.source.buildRequest(event(1)))
     const recent = await processor.process(app.source.buildRequest(event(2)))
-    expect([oldest.kind, recent.kind]).toStrictEqual(['duplicate', 'processed'])
+    expect([oldest.kind, recent.kind]).toStrictEqual(['duplicate', 'failed'])
     await app.app.close()
   })
 })
@@ -239,71 +228,6 @@ function holdRemovals(
   )
   return settles
 }
-
-describe('webhook receiver removals that settle after a retry', () => {
-  it.each([
-    ['a removal that fails after the retry', [false]],
-    [
-      'two removals, one succeeding before the retry and one failing after it',
-      [true, 'retry', false]
-    ],
-    [
-      'two removals, one failing before the retry and one succeeding after it',
-      [false, 'retry', true]
-    ]
-  ] as const)('ends with the identifier recorded for %s', async (_name, steps) => {
-    // Scenario: the event fails once or twice, a retry is processed while a removal is pending,
-    // and the removals settle in the given order; the next delivery is a duplicate and the
-    // source is not read for it.
-    const app = await buildWebhookApp()
-    const settles = holdRemovals(app.store)
-    const processor = app.moduleRef.get(WebhookProcessor)
-    const request = app.source.buildRequest(NOTIFICATION)
-    const failures = steps.filter((step) => typeof step === 'boolean').length
-    for (let n = 0; n < failures; n += 1) {
-      app.source.failNextRead(new Error('source down'))
-      await processor.process(request)
-    }
-    if (!steps.some((step) => typeof step === 'string')) await processor.process(request)
-    let removal = 0
-    for (const step of steps) {
-      if (typeof step === 'string') await processor.process(request)
-      else await settles[removal++]?.(step)
-    }
-    const reads = app.source.totalReads
-    expect(await processor.process(request)).toStrictEqual({ kind: 'duplicate' })
-    expect(app.source.totalReads).toBe(reads)
-    await app.app.close()
-  })
-
-  it('reports a failure to record the identifier again once, and lets another retry overtake it', async () => {
-    // Scenario: the recording after the removal is held and then fails; a retry processed while
-    // it is held is answered at once, and the failure is logged and reported once.
-    const app = await buildWebhookApp()
-    const settles = holdRemovals(app.store)
-    const processor = app.moduleRef.get(WebhookProcessor)
-    const request = app.source.buildRequest(NOTIFICATION)
-    app.source.failNextRead(new Error('source down'))
-    await processor.process(request)
-    await processor.process(request)
-    const mark = jest.spyOn(app.store, 'markEventProcessed')
-    let fail = (): void => undefined
-    mark.mockReturnValueOnce(
-      new Promise<boolean>((_resolve, reject) => {
-        fail = () => reject(new Error('store down'))
-      })
-    )
-    await settles[0]?.(true)
-    expect(await processor.process(request)).toStrictEqual({ kind: 'processed', accounts: 1 })
-    fail()
-    for (let turn = 0; turn < 40; turn += 1) await Promise.resolve()
-    expect(app.capture.lines).toHaveLength(1)
-    expect(
-      app.capture.payloads.filter((entry) => entry.method === 'onEventRecordFailure')
-    ).toHaveLength(1)
-    await app.app.close()
-  })
-})
 
 describe('webhook receiver removal of an event dropped from the memory', () => {
   it('settles the removal of an event that was dropped past the bound without effect', async () => {

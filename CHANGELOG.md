@@ -165,15 +165,16 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   is never applied. An event identifier is recorded when processing starts and removed when the
   event fails, so the source's retry is processed; the removal is started before the failed answer
   and never waited for, so a slow store cannot hold the answer past the deadline, and the observer
-  hears of a failed event when the removal settles. The processor remembers in memory,
-  the failed events whose removal is pending or failed, and processes a retry of one of them as
-  new instead of answering it as already seen. That memory belongs to one process: a retry that
-  lands on another instance of the host while the removal is pending or failed finds the identifier
-  recorded and is answered as already seen until the retention purges it. When every
-  removal started for a remembered event has settled and the event was processed meanwhile, its
-  identifier is recorded again if a removal erased it; if that fails the failure is logged by code
-  and reported to the new `onEventRecordFailure` observer hook, and a later delivery of the event
-  is processed again. No answer waits for a removal or for that recording. A read that does not finish inside
+  hears of a failed event when the removal settles. An event is never processed while the removal
+  of its identifier is unsettled: the processor remembers in memory, up to 1 000 events, the failed
+  events whose removal is in flight or failed; a delivery of one whose removal is in flight is
+  answered as a failure at once, with no store call and no read, and one whose last removal failed
+  starts the removal again and is answered as a failure, so the source retries until a removal
+  succeeded and the next delivery is recorded and processed. The identifier is never recorded
+  again. That memory belongs to one process and is bounded: a retry that lands on another instance
+  of the host while the removal is in flight or failed, or after the oldest entry was dropped, finds
+  the identifier recorded and is answered as already seen until the retention purges it. A read
+  that does not finish inside
   `webhookDeadlineMs` (default 30 000, at most 60 000) ends the call as a failure and is left to
   finish and be stored; the host's change hook is not part of the deadline. In a multi-tenant host
   the tenant is passed to `process` from the host's own authenticated route.

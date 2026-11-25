@@ -148,7 +148,7 @@ Write the processor: verify through the adapter, de-duplicate by event identifie
 - [x] An unknown event kind is accepted and triggers a refresh; a notification that names no account returns the ignored outcome without a read.
 - [x] A notification naming several accounts refreshes each of them.
 - [x] A source read that fails returns the failed outcome and the event identifier is removed through `forgetEvent`, so a retry of that event is processed (D16).
-- [x] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded; the processor remembers the event in memory, so a retry that reaches the same process is still processed, and one that reaches another instance is answered as already seen.
+- [x] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded; the processor remembers the event in memory, so a retry that reaches the same process starts the removal again and is answered as a failure, and one that reaches another instance, or after the memory dropped the event, is answered as already seen. An event is never processed while its removal is unsettled.
 - [x] A sandbox notification is processed like any other; whether sandbox state grants access is decided where the snapshot is read from the source, not here.
 - [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 

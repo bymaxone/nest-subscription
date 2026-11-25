@@ -21,7 +21,6 @@ const EVENTS: readonly LogEvent[] = [
 const ACCOUNTLESS: readonly LogEvent[] = [
   'webhook_forget_failed',
   'event_purge_failed',
-  'webhook_rerecord_failed',
   'webhook_raw_body_missing'
 ]
 const KEY = 'a24:sentinel-account-key'
