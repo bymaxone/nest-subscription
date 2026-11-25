@@ -11,7 +11,7 @@
 - **Specification**: [`docs/spec.md`](spec.md)
 - **Roadmap file**: [`docs/plan.md`](plan.md)
 - **Tasks index**: [`docs/tasks/README.md`](tasks/README.md)
-- **Phases**: 11 phases (P0 to P9 and P11) / 60 tasks (phase files `docs/tasks/phase-NN-*.md`)
+- **Phases**: 11 phases (P0 to P9 and P11) / 66 tasks (phase files `docs/tasks/phase-NN-*.md`)
 - **One phase is one pull request**, branch `feat/pN-<phase-slug>` (`chore/p0-scaffold-and-governance` for P0, `docs/...` is never used by the chain).
 
 ## Chain boundary

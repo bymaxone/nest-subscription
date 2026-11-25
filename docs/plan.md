@@ -34,19 +34,19 @@ This document says in which order the specification is built and when each part 
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                   | Status  | Progress | Size | Last updated |
-| --- | ------------------------------------------------------------------------------------------------------- | ------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules             | ✅ Done | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source | ✅ Done | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment               | ✅ Done | 5/5      | M    | 2026-11-25   |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation   | 📋 ToDo | 0/5      | L    | —            |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies           | 📋 ToDo | 0/4      | M    | —            |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer               | 📋 ToDo | 0/5      | M    | —            |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline             | 📋 ToDo | 0/5      | L    | —            |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter and the mapping tables                | 📋 ToDo | 0/7      | L    | —            |
-| P8  | management-operations — capabilities, stop renewal and the management reference                         | 📋 ToDo | 0/4      | M    | —            |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                   | 📋 ToDo | 0/5      | M    | —            |
-| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)          | 📋 ToDo | 0/5      | L    | —            |
+| ID  | Phase                                                                                                     | Status  | Progress | Size | Last updated |
+| --- | --------------------------------------------------------------------------------------------------------- | ------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done | 5/5      | M    | 2026-11-25   |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | 📋 ToDo | 0/5      | L    | —            |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | 📋 ToDo | 0/4      | M    | —            |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 📋 ToDo | 0/5      | M    | —            |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo | 0/5      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo | 0/8      | L    | —            |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo | 0/9      | L    | —            |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo | 0/5      | M    | —            |
+| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo | 0/5      | L    | —            |
 
 ---
 
@@ -78,19 +78,19 @@ P7 → P11 (start, once unblocked)        P8, P9 → P11 (closing)
 
 Every requirement of the specification has a phase that owns it; where one is split, the parentheses name the part each phase owns. A phase is not done while one of its rows lacks a test.
 
-| Phase | Functional                                                                               | Non-functional and security                                           | Acceptance                                                             |
-| ----- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| P0    | —                                                                                        | Specification §5.2, §8 and §11                                        | —                                                                      |
-| P1    | FR01, FR02, FR03, FR04, FR05, FR06, FR07, FR08, FR09, FR22, FR39 (store and fake source) | SEC08 (key construction)                                              | —                                                                      |
-| P2    | —                                                                                        | NFR05, SEC05, SEC07 (options and boot refusal), SEC09 (options shape) | AC09 (library objects)                                                 |
-| P3    | FR23, FR24, FR25, FR26, FR27, FR28                                                       | NFR03, NFR04, SEC08 (enforced on every read and write)                | —                                                                      |
-| P4    | FR29, FR30, FR31                                                                         | NFR01, SEC04                                                          | AC07                                                                   |
-| P5    | FR32, FR33, FR34                                                                         | SEC06 (observer payloads)                                             | —                                                                      |
-| P6    | FR16, FR17, FR18, FR19, FR20, FR21                                                       | NFR02, SEC01, SEC02, SEC03, SEC06 (no raw payload stored or logged)   | AC02 (receiver), AC03, AC04                                            |
-| P7    | FR10, FR11, FR12, FR13, FR14, FR39 (RevenueCat request builders)                         | SEC07 (sandbox filter), SEC09 (rotation for RevenueCat)               | AC01, AC02 (RevenueCat methods), AC05, AC06, AC10 (Appendix A)         |
-| P8    | FR35, FR36, FR37, FR38                                                                   | SEC10                                                                 | —                                                                      |
-| P9    | —                                                                                        | Specification §5.2 measured on the whole package                      | AC08 (fake source and RevenueCat), AC09 (captured logs, whole package) |
-| P11   | FR15, FR39 (Finance request builders)                                                    | SEC09 (rotation for Finance)                                          | AC08 (Finance), AC10 (Appendix B)                                      |
+| Phase | Functional                                                                                           | Non-functional and security                                           | Acceptance                                                             |
+| ----- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| P0    | —                                                                                                    | Specification §5.2, §8 and §11                                        | —                                                                      |
+| P1    | FR01, FR02, FR03, FR04, FR05, FR06, FR07, FR08, FR09, FR22, FR39 (store and fake source)             | SEC08 (key construction)                                              | —                                                                      |
+| P2    | —                                                                                                    | NFR05, SEC05, SEC07 (options and boot refusal), SEC09 (options shape) | AC09 (library objects)                                                 |
+| P3    | FR23, FR24, FR25, FR26, FR27, FR28                                                                   | NFR03, NFR04, SEC08 (enforced on every read and write)                | —                                                                      |
+| P4    | FR29, FR30, FR31                                                                                     | NFR01, SEC04                                                          | AC07                                                                   |
+| P5    | FR32, FR33, FR34                                                                                     | SEC06 (observer payloads)                                             | —                                                                      |
+| P6    | FR16, FR17, FR18, FR19, FR20, FR21                                                                   | NFR02, SEC01, SEC02, SEC03, SEC06 (no raw payload stored or logged)   | AC02 (receiver), AC03, AC04                                            |
+| P7    | FR10, FR11, FR12, FR13, FR14, FR39 (RevenueCat request builders), non-renewing purchases (FR02, D31) | SEC07 (sandbox filter), SEC09 (rotation for RevenueCat)               | AC01, AC02 (RevenueCat methods), AC05, AC06, AC10 (Appendix A)         |
+| P8    | FR35, FR36 (stop renewal, resume, change product, extend, refund; D32), FR37, FR38                   | SEC10                                                                 | —                                                                      |
+| P9    | —                                                                                                    | Specification §5.2 measured on the whole package                      | AC08 (fake source and RevenueCat), AC09 (captured logs, whole package) |
+| P11   | FR15, FR39 (Finance request builders)                                                                | SEC09 (rotation for Finance)                                          | AC08 (Finance), AC10 (Appendix B)                                      |
 
 ---
 
@@ -325,12 +325,13 @@ The specification leaves the file layout to this roadmap. These are the director
 
 - **Goal**: Make RevenueCat a working source: read it, verify its webhooks and map its states, with every rule traceable to Appendix A.
 - **Scope**:
-  - In: the read of a customer's subscriptions and active entitlements from version 2 of the REST API (FR10, D06); the App User ID as account identifier, events for anonymous or unknown identifiers recorded and reported, and the refresh of both accounts on an alias or a transfer (FR11); both verification methods, with the boot report when only the static header is used (FR12); the sandbox filter applied by the adapter itself (FR13, SEC07); the status, renewal and store mappings and the three notable rules (FR14, Appendix A.3); the event kinds of Appendix A.2 mapped to the port's change kinds, with every other kind passing as unknown; secret rotation as RevenueCat allows it (SEC09); the signed request builders for RevenueCat in the testing subpath (FR39); recorded payload fixtures with identifiers and secrets replaced.
-  - Out: stop renewal and the management reference (P8); version 1 of the API except what P8 needs; non-renewing purchases (specification §3.3).
+  - In: the read of a customer's subscriptions and active entitlements from version 2 of the REST API (FR10, D06); the App User ID as account identifier, events for anonymous or unknown identifiers recorded and reported, and the refresh of both accounts on an alias or a transfer (FR11); both verification methods, with the boot report when only the static header is used (FR12); the non-renewing purchases that grant an entitlement, read from the API and mapped into the model, which is extended where it cannot express them (FR02, FR05, D31); the sandbox filter applied by the adapter itself (FR13, SEC07); the status, renewal and store mappings and the three notable rules (FR14, Appendix A.3); the event kinds of Appendix A.2 mapped to the port's change kinds, with every other kind passing as unknown; secret rotation as RevenueCat allows it (SEC09); the signed request builders for RevenueCat in the testing subpath (FR39); recorded payload fixtures with identifiers and secrets replaced.
+  - Out: the management operations and the management reference (P8); version 1 of the API except what P8 needs; consumables, which grant nothing (D31, specification §3.2).
 - **Definition of Done**:
   - [ ] A table-driven test generated from Appendix A.3 maps every listed status, renewal status and store, and maps an unlisted value to `unknown` or `other` (AC10 for Appendix A).
   - [ ] A wrong signature, a wrong authorization header, a stale timestamp and a body altered after signing are each refused, and the comparison is constant-time by construction (AC02 for RevenueCat).
   - [ ] End to end, a recorded purchase notification yields an active entitlement through the service (AC01), and a refund of the current period removes access on the next refresh and emits `refunded` (AC05).
+  - [ ] A recorded RevenueCat fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the service, with access until null for a lifetime grant, and a consumable grants nothing (D31).
   - [ ] A sandbox purchase grants nothing under the default configuration, with RevenueCat's own default of granting it reproduced in the fixture (AC06).
   - [ ] Unit tests open no socket; the suite's only HTTP is a local stand-in for the RevenueCat API.
 - **Context / preconditions**: The unit work needs P1 and P2. Closing the phase needs P6. The owner provides a RevenueCat sandbox project and its credentials, from which the fixtures are recorded (D18).
@@ -340,7 +341,7 @@ The specification leaves the file layout to this roadmap. These are the director
   3. A scheduled pause is not a pause, a cancellation is not an expiry, and a billing issue follows the source's access flag.
   4. A recorded fixture never contains a real identifier, token or signature secret.
 - **References**:
-  - Spec §3.6, §8.2 (SEC07, SEC09), §9 (R02, R03), §12, Appendix A
+  - Spec §3.4 (FR02, FR05), §3.6, §8.2 (SEC07, SEC09), §9 (R02, R03), §10.1 (D31), §12, Appendix A
 - **Estimated size**: L
 - **Tasks**: [`docs/tasks/phase-07-revenuecat-adapter.md`](tasks/phase-07-revenuecat-adapter.md)
 
@@ -348,12 +349,13 @@ The specification leaves the file layout to this roadmap. These are the director
 
 ### P8 — management-operations
 
-- **Goal**: Let a host stop a renewal where a server can, and send the person to the right place where it cannot, without ever claiming more than happened.
+- **Goal**: Let a host stop a renewal, resume, change product, extend or refund where a server can, and send the person to the right place where it cannot, without ever claiming more than happened.
 - **Scope**:
-  - In: the capability query per subscription, answered by the adapter according to the origin (FR35); stop renewal through the service, followed by a refresh, with the snapshot read back from the source as the result (FR36, FR38); the "not possible from a server" result that carries the management reference instead of an error (FR36); the management reference on its own (FR37); the check that the subscription belongs to the authenticated account (SEC10); for RevenueCat, Google Play through version 1 of the API and RevenueCat's own web billing through version 2, with App Store and Stripe answered as not possible (Appendix A.4, D06, D13).
-  - Out: resume, change product, extend and refund (specification §3.3); any controller for these operations, which the host writes.
+  - In: the capability query per subscription, answered by the adapter according to the origin (FR35); stop renewal, resume, change product, extend and refund through the service, each followed by a refresh, with the snapshot read back from the source as the result (FR36, FR38, D32); the "not possible from a server" result that carries the management reference instead of an error (FR36); the management reference on its own (FR37); the check that the subscription belongs to the authenticated account (SEC10); for RevenueCat, each operation for the origins where RevenueCat documents it as possible from a server, through the version of its API that offers it, and the others answered as not possible with the management reference (Appendix A.4, D06, D13, D32).
+  - Out: any controller for these operations, which the host writes.
 - **Definition of Done**:
-  - [ ] The capability answer for each origin matches the RevenueCat column of the FR36 table, in a table-driven test.
+  - [ ] The capability answer for every operation and every origin matches Appendix A.4 as recorded from RevenueCat's documentation, in a table-driven test.
+  - [ ] For every operation (stop renewal, resume, change product, extend, refund), the result is the snapshot read back from the source, in one test per operation, and an accepted request that the read-back contradicts is reported as not done.
   - [ ] Stop renewal on a Google Play subscription calls the source once and returns the snapshot read back afterwards, with will renew `no`.
   - [ ] Stop renewal on an App Store subscription returns the "must be done by the person" result with the management reference, and calls nothing.
   - [ ] An operation on a subscription of another account, or of another tenant, is refused and reaches no source.
@@ -362,10 +364,10 @@ The specification leaves the file layout to this roadmap. These are the director
 - **Rules-of-phase**:
   1. The result type has no "assumed done" value: success is defined by the read-back.
   2. The subscription is looked up inside the caller's own snapshot, never by an identifier taken on trust.
-  3. Version 1 of the RevenueCat API is used for the one Google Play operation and nothing else.
+  3. Which origin allows which operation is taken from RevenueCat's documentation, re-read and cited before each operation is coded, and recorded in Appendix A.4; none is assumed. Version 1 of the API is used only for an operation that exists only there.
 - **References**:
-  - Spec §3.12, §8.2 (SEC10), §10.1 (D06, D13), Appendix A.4
-- **Estimated size**: M
+  - Spec §3.12, §8.2 (SEC10), §10.1 (D06, D13, D32), Appendix A.4
+- **Estimated size**: L
 - **Tasks**: [`docs/tasks/phase-08-management-operations.md`](tasks/phase-08-management-operations.md)
 
 ---

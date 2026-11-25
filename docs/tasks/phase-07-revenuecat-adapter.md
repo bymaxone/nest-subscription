@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 7 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -10,7 +10,7 @@
 
 At the start the library works end to end with the fake source, and `src/revenuecat/` is an empty entry point.
 
-At the end RevenueCat is a working source. `revenueCatSource(options)` returns a `SubscriptionSource` that reads a customer's subscriptions and active entitlements from version 2 of the REST API, verifies webhooks by either method RevenueCat offers, filters sandbox purchases by itself, maps statuses, renewal intent and stores into the model, and turns RevenueCat event kinds into the port's notifications. The testing subpath gains builders for signed RevenueCat requests. Stop renewal and the management reference belong to P8.
+At the end RevenueCat is a working source. `revenueCatSource(options)` returns a `SubscriptionSource` that reads a customer's subscriptions and active entitlements from version 2 of the REST API, verifies webhooks by either method RevenueCat offers, filters sandbox purchases by itself, maps statuses, renewal intent and stores into the model, and turns RevenueCat event kinds into the port's notifications. The testing subpath gains builders for signed RevenueCat requests. Non-renewing purchases that grant an entitlement are read like subscriptions (D31). Stop renewal and the management reference belong to P8.
 
 The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run while P3 to P6 are in progress. Task 7.7 needs P6.
 
@@ -48,7 +48,8 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 | 7.4 | Read a customer into a snapshot                           | 📋 ToDo | P0       | L    | 7.2, 7.3   |
 | 7.5 | Verify RevenueCat webhooks                                | 📋 ToDo | P0       | M    | 7.2        |
 | 7.6 | Parse events and handle identity                          | 📋 ToDo | P0       | M    | 7.4, 7.5   |
-| 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6        |
+| 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6, 7.8   |
+| 7.8 | Read non-renewing purchases and map them into the model   | 📋 ToDo | P0       | L    | 7.3, 7.4   |
 
 ---
 
@@ -89,7 +90,7 @@ You are a senior integration engineer engineer working on the @bymax-one/nest-su
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.1 of 7 (FIRST of this phase)
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.1 of 8 (FIRST of this phase)
 
 PRECONDITIONS
 - P1 is ✅ Done: the model, `SubscriptionSource`, `SubscriptionError` and the testing doubles exist. P2 is ✅ Done: `Secret` exists in `src/internal/`.
@@ -129,8 +130,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-07-revenuecat-adapter.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/8 tasks`)
+5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/8`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.1 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -170,7 +171,7 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.2 of 7 (MIDDLE of this phase)
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.2 of 8 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P1 is ✅ Done: the model, `SubscriptionSource`, `SubscriptionError` and the testing doubles exist. P2 is ✅ Done: `Secret` exists in `src/internal/`.
@@ -212,8 +213,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-07-revenuecat-adapter.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/8 tasks`)
+5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/8`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.2 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -254,7 +255,7 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.3 of 7 (MIDDLE of this phase)
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.3 of 8 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P1 is ✅ Done: the model, `SubscriptionSource`, `SubscriptionError` and the testing doubles exist. P2 is ✅ Done: `Secret` exists in `src/internal/`.
@@ -296,8 +297,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-07-revenuecat-adapter.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/8 tasks`)
+5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/8`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.3 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -338,7 +339,7 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.4 of 7 (MIDDLE of this phase)
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.4 of 8 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P1 is ✅ Done: the model, `SubscriptionSource`, `SubscriptionError` and the testing doubles exist. P2 is ✅ Done: `Secret` exists in `src/internal/`.
@@ -384,8 +385,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-07-revenuecat-adapter.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/8 tasks`)
+5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/8`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.4 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -425,7 +426,7 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.5 of 7 (MIDDLE of this phase)
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.5 of 8 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P1 is ✅ Done: the model, `SubscriptionSource`, `SubscriptionError` and the testing doubles exist. P2 is ✅ Done: `Secret` exists in `src/internal/`.
@@ -468,8 +469,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-07-revenuecat-adapter.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/8 tasks`)
+5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/8`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.5 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -511,7 +512,7 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.6 of 7 (MIDDLE of this phase)
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.6 of 8 (MIDDLE of this phase)
 
 PRECONDITIONS
 - P1 is ✅ Done: the model, `SubscriptionSource`, `SubscriptionError` and the testing doubles exist. P2 is ✅ Done: `Secret` exists in `src/internal/`.
@@ -557,8 +558,8 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-07-revenuecat-adapter.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/8 tasks`)
+5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/8`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.6 ✅ YYYY-MM-DD — <one-line summary>`
 ```
@@ -570,7 +571,7 @@ Completion Protocol (after the work is reported done):
 - **Status**: 📋 ToDo
 - **Priority**: P0
 - **Size**: L
-- **Depends on**: 7.6
+- **Depends on**: 7.6, 7.8
 
 #### Description
 
@@ -583,6 +584,7 @@ Add the signed request builders to the testing subpath, and run the acceptance c
 - [ ] A refund of the current period removes access on the next refresh and emits `refunded` (AC05).
 - [ ] A sandbox purchase grants nothing under the default configuration, with the stand-in reporting the entitlement as active the way RevenueCat does by default (AC06).
 - [ ] A wrong signature, a wrong authorization header, a stale timestamp and an altered body are refused through the controller and change nothing (AC02).
+- [ ] A recorded fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the real receiver and the service, and a consumable grants nothing (D31).
 - [ ] The suite's only HTTP is the local stand-in; the sentinel sweep finds no secret and no identifier in logs or observer payloads.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
@@ -601,12 +603,12 @@ You are a senior TypeScript and NestJS library engineer working on the @bymax-on
 PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
 TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
 
-CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.7 of 7 (LAST of this phase)
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.7 of 8 (LAST to run: it closes the phase after 7.8)
 
 PRECONDITIONS
 - P1 is ✅ Done: the model, `SubscriptionSource`, `SubscriptionError` and the testing doubles exist. P2 is ✅ Done: `Secret` exists in `src/internal/`.
 - P6 is ✅ Done: `WebhookProcessor` and the optional controller exist and are driven end to end by the fake source.
-- Tasks 7.1 to 7.6 are ✅ Done.
+- Tasks 7.1 to 7.6 and 7.8 are ✅ Done.
 
 REQUIRED READING (only these — do not load more):
 - `AGENTS.md` (whole file: repository rules and code review rules)
@@ -648,10 +650,105 @@ Completion Protocol (after the work is reported done):
 1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-07-revenuecat-adapter.md`
 2. Tick its acceptance-criteria checkboxes
 3. Update its row in the task index table (status column)
-4. Increment the phase progress counter at the top of that file (`N/7 tasks`)
-5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/7`, last updated), and the tasks-done counter there
+4. Increment the phase progress counter at the top of that file (`N/8 tasks`)
+5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/8`, last updated), and the tasks-done counter there
 6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
 7. Append a completion log entry at the bottom of that file: `- 7.7 ✅ YYYY-MM-DD — <one-line summary>`
+```
+
+---
+
+### Task 7.8 — Read non-renewing purchases and map them into the model
+
+- **Status**: 📋 ToDo
+- **Priority**: P0
+- **Size**: L
+- **Depends on**: 7.3, 7.4
+
+#### Description
+
+Read the one-time and lifetime purchases that RevenueCat reports as granting an entitlement, map them into the model, and extend the shared model and the entitlement resolution if they cannot express them (FR02, FR05, FR10, D31).
+
+#### Acceptance criteria
+
+- [ ] `docs/revenuecat-facts.md` is extended with the endpoint, fields and values that report a non-renewing purchase and the entitlement it grants, read from the RevenueCat customer and purchases pages on the day, with their URLs; the unknowns of Appendix A.6 about purchases are resolved or kept explicitly unknown.
+- [ ] The shared model expresses a non-renewing purchase as FR02 describes (what the source calls it, the entitlement it grants, origin, environment, whether it gives access, when access ends or null for a lifetime grant, and when it was refunded), and `resolveEntitlements` counts it beside subscriptions: an entitlement it grants is active while it gives access, with `until` null for a lifetime grant, and the entitlement names the purchase that grants it. Existing exports keep working; any change to a public type is listed in the pull request.
+- [ ] `readAccount` returns the purchases that grant an entitlement, in the snapshot, with the sandbox filter applied to them as to subscriptions (FR13).
+- [ ] A consumable, and a purchase that grants no entitlement, produces no entry and no entitlement.
+- [ ] A recorded, sanitized fixture of a non-renewing purchase that grants an entitlement and one of a lifetime grant exist under `test/fixtures/revenuecat/`; through the service, the first yields an active entitlement with the instant RevenueCat reports and the second with `until` null.
+- [ ] A refunded non-renewing purchase removes the access it granted on the next read, and the change list reports it through the existing change kinds.
+- [ ] A subscription and a purchase that grant the same entitlement give one active entitlement, with the latest `until`, and null if a lifetime grant is among them.
+- [ ] Table-driven tests cover the resolution over zero, one and several purchases, alone and mixed with subscriptions.
+- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+
+#### Files to create / modify
+
+- `src/shared/` model types, validators and their specs
+- the file where `resolveEntitlements` lives, and its spec
+- `src/revenuecat/` read and mapping files, and their specs
+- `docs/revenuecat-facts.md`, and `docs/spec.md` Appendix A and A.6 if a fact moved
+- `test/fixtures/revenuecat/*.json`, the fixture sanitization check, `test/e2e/fixtures/revenuecat-stand-in.ts`
+- the API surface baseline, if a public type changed
+
+#### Agent prompt (EN)
+
+```
+You are a senior TypeScript and NestJS library engineer working on the @bymax-one/nest-subscription project.
+
+PROJECT: @bymax-one/nest-subscription — a public npm library for NestJS that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter, and exposes it through a service, a guard and typed change notifications.
+TypeScript (strict), NestJS 11, Node.js 26+, pnpm, Jest, Stryker, tsup (ESM + CommonJS). Zero direct dependencies.
+
+CURRENT PHASE: P7 (revenuecat-adapter) — Task 7.8 of 8 (MIDDLE of this phase)
+
+PRECONDITIONS
+- P1 and P2 are ✅ Done: the model, `resolveEntitlements` and the fake source exist.
+- Tasks 7.1 to 7.4 are ✅ Done: the facts document, the mapping tables and the customer read exist.
+
+REQUIRED READING (only these — do not load more):
+- `AGENTS.md` (whole file: repository rules and code review rules)
+- `docs/tasks/README.md` (shared names, paths, commands and the Definition of Done every task meets)
+- `docs/spec.md` §3.4 (FR01, FR02, FR05), §3.6 (FR10, FR13, FR14), §10.1 (D31), Appendix A
+- `docs/revenuecat-facts.md`
+- the `src/shared/` model files, `resolveEntitlements` and its spec, the `src/revenuecat/` read and mapping files
+
+TASK
+Make a non-renewing purchase that RevenueCat reports as granting an entitlement grant that entitlement through the service.
+
+DELIVERABLES
+
+1. The re-read: before any code, re-read the RevenueCat customer and purchases pages (the version 2 customer and purchase endpoints and the data model, as listed in `docs/spec.md` §12), write down what they say today and cite each URL and the date in `docs/revenuecat-facts.md`. Do not rely on memory or on a previous reading.
+
+2. The model change, only as far as the current types cannot express FR02's non-renewing purchase, with the tests that fail without it, and `resolveEntitlements` extended with its table-driven tests.
+
+3. The adapter change: the read, the mapping and the sandbox filter for purchases, with fixtures.
+
+4. In the pull request body: the facts read with their URLs, each public type that changed, and the status of each unknown of Appendix A.6 that concerns purchases.
+
+Constraints:
+- Every endpoint, field and value comes from `docs/revenuecat-facts.md` or the page it cites, never from memory. If the pages and the specification disagree, change the specification first and say so.
+- Consumables and virtual currency grant nothing and are not held (D31).
+- A recorded fixture never contains a real identifier, token or signature secret.
+- Do not change the meaning of an existing field. Names are chosen from the code, not from the specification.
+- Test first: write the failing test, watch it fail, then implement. Every requirement this task cites gets a test that fails without the implementation.
+- TypeScript strict, no `any`. No suppression of any kind (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `istanbul ignore`, Stryker disable without a recorded reason).
+- Every new source file opens with a header stating its purpose and layer; every export has a doc comment. Functions stay within 50 lines, files within 800.
+- English everywhere. Comments state constraints that still hold, never a phase, a task or a review round. No attribution to an AI tool in any file, commit or pull request.
+- Zero direct dependencies. Do not add a package to `dependencies`; a new dev or peer dependency needs a stated reason in the pull request.
+- Use the names and paths fixed in `docs/tasks/README.md`. If one has to change, change it there in the same pull request.
+- Do not commit, push, publish or tag unless the person running this prompt asks for it.
+
+Verification:
+- `pnpm test src/shared src/core src/revenuecat` — expected: pass at 100%
+- `pnpm mutation --mutate "src/shared/**/*.ts,src/revenuecat/**/*.ts"` — expected: score 100
+
+Completion Protocol (after the work is reported done):
+1. Update this task's status emoji to ✅ Done in `docs/tasks/phase-07-revenuecat-adapter.md`
+2. Tick its acceptance-criteria checkboxes
+3. Update its row in the task index table (status column)
+4. Increment the phase progress counter at the top of that file (`N/8 tasks`)
+5. Update the P7 row in the phase dashboard of `docs/plan.md` and its mirror row in the phase index of `docs/tasks/README.md` (status, progress `N/8`, last updated), and the tasks-done counter there
+6. Recompute the overall progress line in `docs/plan.md` when the phase itself changes status
+7. Append a completion log entry at the bottom of that file: `- 7.8 ✅ YYYY-MM-DD — <one-line summary>`
 ```
 
 ---
