@@ -15,6 +15,7 @@ import {
   toHttpAnswer
 } from '@bymax-one/nest-subscription'
 import type {
+  SourceNotification,
   SubscriptionOptionsInput,
   WebhookRequest,
   WebhookVerification
@@ -27,7 +28,7 @@ import {
   type FailingStore
 } from '@bymax-one/nest-subscription/testing'
 
-import { WebhookProcessor } from '../../src/core/webhook/webhook.processor'
+import { UNRELEASED_EVENTS_BOUND, WebhookProcessor } from '../../src/core/webhook/webhook.processor'
 import {
   ACCOUNT,
   CONTROLLER_ROUTE,
@@ -108,9 +109,10 @@ describe.each([
     await app.app.close()
   })
 
-  it('keeps answering already seen after a failure whose identifier could not be forgotten', async () => {
-    // Scenario: the source is down and the store cannot forget; the retry is answered as seen, the
-    // observer reports the identifier as retained and the log holds one fixed sentence.
+  it('processes the retry of a failure whose identifier could not be forgotten, in the same process', async () => {
+    // Scenario: the source is down and the store cannot forget; the processor remembers the event,
+    // so the retry is processed, the observer reports the identifier as retained and the log holds
+    // one fixed sentence.
     let failing: FailingStore | undefined
     const app = await buildWebhookApp({
       wrapStore: (store) => (failing = createFailingStore(store))
@@ -123,16 +125,30 @@ describe.each([
     const first = await send(app, route, signed(app))
     const retry = await send(app, route, signed(app))
     expect([first.status, retry.status]).toStrictEqual([503, 200])
-    expect(retry.body).toStrictEqual({ outcome: 'duplicate' })
+    expect(retry.body).toStrictEqual({ outcome: 'processed', accounts: 1 })
     expect(
       app.capture.payloads
         .filter((entry) => entry.method === 'onWebhook')
         .map((entry) => entry.payload)
     ).toStrictEqual([
       expect.objectContaining({ outcome: 'failed', retained: true }),
-      expect.objectContaining({ outcome: 'duplicate', retained: false })
+      expect.objectContaining({ outcome: 'processed', retained: false })
     ])
     expect(app.capture.lines).toHaveLength(1)
+    await app.app.close()
+  })
+
+  it('processes the retry of a failure while the removal of its identifier is still pending', async () => {
+    // Scenario: the source is down and the store never returns from the removal; the source's
+    // retry is processed and answered 200, not answered as already seen (D16).
+    const app = await buildWebhookApp()
+    jest.spyOn(app.store, 'forgetEvent').mockReturnValue(new Promise(() => undefined))
+    app.source.failNextRead(new Error('source down'))
+    const first = await send(app, route, signed(app))
+    const retry = await send(app, route, signed(app))
+    expect([first.status, retry.status]).toStrictEqual([503, 200])
+    expect(retry.body).toStrictEqual({ outcome: 'processed', accounts: 1 })
+    expect(app.source.readCount(ACCOUNT)).toBe(2)
     await app.app.close()
   })
 
@@ -142,6 +158,32 @@ describe.each([
     const first = await send(app, route, signed(app))
     const second = await send(app, route, signed(app))
     expect([first.status, second.status]).toStrictEqual([503, 503])
+    await app.app.close()
+  })
+})
+
+describe('webhook receiver memory of failed events', () => {
+  it('drops the oldest failed event past the bound and answers its retry as the store says', async () => {
+    // Scenario: more events than the bound fail and their removal fails too; the processor keeps
+    // the newest ones, so the oldest event's retry is answered as already seen and a recent
+    // one's is processed.
+    let failing: FailingStore | undefined
+    const app = await buildWebhookApp({
+      wrapStore: (store) => (failing = createFailingStore(store))
+    })
+    failing?.fail(['forgetEvent'])
+    const processor = app.moduleRef.get(WebhookProcessor)
+    const event = (n: number): SourceNotification => ({
+      ...NOTIFICATION,
+      eventId: `evt-${String(n)}`
+    })
+    for (let n = 1; n <= UNRELEASED_EVENTS_BOUND + 1; n += 1) {
+      app.source.failNextRead(new Error('source down'))
+      await processor.process(app.source.buildRequest(event(n)))
+    }
+    const oldest = await processor.process(app.source.buildRequest(event(1)))
+    const recent = await processor.process(app.source.buildRequest(event(2)))
+    expect([oldest.kind, recent.kind]).toStrictEqual(['duplicate', 'processed'])
     await app.app.close()
   })
 })

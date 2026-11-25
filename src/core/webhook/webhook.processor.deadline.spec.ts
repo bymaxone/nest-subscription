@@ -128,6 +128,7 @@ describe('WebhookProcessor deadline', () => {
     const outcome = await answer
     expect(outcome).toStrictEqual({ kind: 'failed' })
     expect(waits).toStrictEqual([DEADLINE_MS])
+    await flush()
     expect(capture.payloads.filter((entry) => entry.method === 'onWebhook')).toStrictEqual([
       {
         method: 'onWebhook',

@@ -588,13 +588,13 @@ describe('WebhookProcessor de-duplication', () => {
     const first = await h.processor.process(request)
     const retry = await h.processor.process(request)
     expect(first).toStrictEqual({ kind: 'failed' })
-    expect(retry).toStrictEqual({ kind: 'duplicate' })
+    expect(retry).toStrictEqual({ kind: 'processed', accounts: 1 })
     expect(h.capture.payloads.filter((entry) => entry.method === 'onWebhook')).toStrictEqual([
       { method: 'onWebhook', payload: { outcome: 'failed', durationMs: 0, retained: true } },
-      { method: 'onWebhook', payload: { outcome: 'duplicate', durationMs: 0, retained: false } }
+      { method: 'onWebhook', payload: { outcome: 'processed', durationMs: 0, retained: false } }
     ])
     expect(h.capture.lines).toStrictEqual([
-      'A failed webhook event could not be forgotten; its retries are answered as already seen: SUBSCRIPTION_SOURCE_UNAVAILABLE.'
+      'A failed webhook event could not be forgotten; its identifier stays recorded: SUBSCRIPTION_SOURCE_UNAVAILABLE.'
     ])
   })
 

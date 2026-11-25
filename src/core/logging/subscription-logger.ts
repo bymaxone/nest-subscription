@@ -43,7 +43,7 @@ function sentenceOf(event: LogEvent): string {
     case 'change_read_failed':
       return 'The pending changes of an account could not be read for delivery'
     case 'webhook_forget_failed':
-      return 'A failed webhook event could not be forgotten; its retries are answered as already seen'
+      return 'A failed webhook event could not be forgotten; its identifier stays recorded'
     case 'event_purge_failed':
       return 'Processed webhook event identifiers could not be purged'
     case 'webhook_raw_body_missing':

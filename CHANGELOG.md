@@ -165,7 +165,11 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   is never applied. An event identifier is recorded when processing starts and removed when the
   event fails, so the source's retry is processed; the removal is started before the failed answer
   and never waited for, so a slow store cannot hold the answer past the deadline, and the observer
-  hears of a failed event when the removal settles. A read that does not finish inside
+  hears of a failed event when the removal settles. The processor remembers in memory, up to 1 000 events,
+  the failed events whose removal is pending or failed, and processes a retry of one of them as
+  new instead of answering it as already seen. That memory belongs to one process: a retry that
+  lands on another instance of the host while the removal is pending or failed finds the identifier
+  recorded and is answered as already seen until the retention purges it. A read that does not finish inside
   `webhookDeadlineMs` (default 30 000, at most 60 000) ends the call as a failure and is left to
   finish and be stored; the host's change hook is not part of the deadline. In a multi-tenant host
   the tenant is passed to `process` from the host's own authenticated route.
@@ -180,7 +184,8 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 
 - The observer's webhook outcome type is renamed `WebhookOutcomeKind`, and `WebhookEvent` gains
   `retained`, which is `true` when the store could not remove the identifier of a failed event and
-  is reported when that removal settles, after the answer. Apply to a derived backend: replace
+  is reported when that removal settles, after the answer; a retry that reaches the same process is
+  processed anyway. Apply to a derived backend: replace
   the type name in any import and ignore the new field if it is not needed.
 - `AccountResolverOption` and `ResolvedAccountOption` are renamed `AccountResolver` and
   `ResolvedAccount`. Apply to a derived backend: replace the two names in any import; the shapes

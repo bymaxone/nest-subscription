@@ -54,6 +54,12 @@ function isFilled(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
+/**
+ * How many failed events whose identifier may still be recorded the processor remembers: the
+ * oldest is forgotten past this bound, so the memory never grows with the traffic.
+ */
+export const UNRELEASED_EVENTS_BOUND = 1000
+
 /** What the receiver uses of a verified notification: nothing of its payload but these two. */
 interface Trigger {
   /** The identifier of the event, which the retries of one delivery share. */
@@ -86,12 +92,22 @@ function acceptedTrigger(result: unknown): Trigger | null {
  * is returned and is never awaited, so a store that is slow or down cannot hold the answer past
  * the deadline. The observer hears of a failed event when its removal settles. When the store
  * cannot remove the identifier, the outcome is still a failure and the observer and the log are
- * told; the identifier then stays recorded and the source's retries of that event are answered as
- * already seen until the retention purges it. An event that names no account is answered as
- * ignored and records nothing.
+ * told; the identifier then stays recorded until the retention purges it. An event that names no
+ * account is answered as ignored and records nothing.
+ *
+ * While the removal of a failed event's identifier is pending, and after it failed, a retry of
+ * that event must still be processed. So the processor remembers in memory the events whose
+ * removal is pending or failed, up to {@link UNRELEASED_EVENTS_BOUND} of them, oldest first out,
+ * and processes a delivery of one of them as new without recording it again. The memory belongs
+ * to one process: a retry that lands on another instance of the host while the removal is
+ * pending or failed, or after the oldest entry was dropped, finds the identifier recorded and is
+ * answered as already seen.
  */
 @Injectable()
 export class WebhookProcessor {
+  /** The failed events whose removal is pending or failed, each with the latest removal's token. */
+  readonly #unreleased = new Map<string, symbol>()
+
   constructor(
     @Inject(SUBSCRIPTION_SOURCE) private readonly source: SubscriptionSource,
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
@@ -157,7 +173,9 @@ export class WebhookProcessor {
   async #handle(trigger: Trigger, tenantId: string | undefined): Promise<Settled> {
     const accountIds = [...new Set(trigger.accountIds)]
     if (accountIds.length === 0) return { outcome: { kind: 'ignored' } }
-    const recorded = await this.#record(trigger.eventId)
+    const key = JSON.stringify([this.source.name, trigger.eventId])
+    // A remembered event is still recorded in the store, so it is not recorded again.
+    const recorded = this.#unreleased.has(key) ? undefined : await this.#record(trigger.eventId)
     if (recorded === 'unavailable') return { outcome: { kind: 'failed' } }
     if (recorded === 'seen') return { outcome: { kind: 'duplicate' } }
     const references = accountIds.map((accountId): AccountReference => ({
@@ -165,9 +183,11 @@ export class WebhookProcessor {
       accountId
     }))
     if (await this.#refreshAll(references)) {
+      // Whatever removal is still pending is left to finish; the identifier stays recorded.
+      this.#unreleased.delete(key)
       return { outcome: { kind: 'processed', accounts: references.length } }
     }
-    return { outcome: { kind: 'failed' }, removal: this.#forget(trigger.eventId) }
+    return { outcome: { kind: 'failed' }, removal: this.#release(key, trigger.eventId) }
   }
 
   /**
@@ -202,6 +222,26 @@ export class WebhookProcessor {
     } catch {
       return false
     }
+  }
+
+  /**
+   * Remembers a failed event until its identifier is removed, and starts the removal. The store
+   * is called before this returns. A removal that succeeds forgets the event unless a later
+   * removal of it was started; one that fails keeps it. Settles to whether the store removed the
+   * identifier, and never rejects.
+   */
+  #release(key: string, eventId: string): Promise<boolean> {
+    const removal = Symbol('removal')
+    this.#unreleased.delete(key)
+    this.#unreleased.set(key, removal)
+    for (const oldest of this.#unreleased.keys()) {
+      if (this.#unreleased.size <= UNRELEASED_EVENTS_BOUND) break
+      this.#unreleased.delete(oldest)
+    }
+    return this.#forget(eventId).then((removed) => {
+      if (removed && this.#unreleased.get(key) === removal) this.#unreleased.delete(key)
+      return removed
+    })
   }
 
   /**
