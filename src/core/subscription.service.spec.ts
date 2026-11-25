@@ -25,7 +25,11 @@ import {
 } from '@bymax-one/nest-subscription/testing'
 
 import { resolveOptions } from './options/resolve-options'
-import type { SubscriptionObserverOption } from './options/subscription-options.types'
+import { SnapshotCache } from './cache/snapshot-cache'
+import type {
+  SubscriptionCache,
+  SubscriptionObserverOption
+} from './options/subscription-options.types'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
 
@@ -75,6 +79,7 @@ interface SetupOptions {
   readonly multiTenant?: boolean
   readonly maxSnapshotAgeMs?: number
   readonly observer?: SubscriptionObserverOption
+  readonly cache?: SubscriptionCache
 }
 
 /** The service over a fresh source, store and clock. */
@@ -89,13 +94,14 @@ function setup(extra: SetupOptions = {}): {
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(T0)
   const options = resolveOptions({ source, store, clock, accountResolver: () => null, ...extra })
-  const refresher = new SnapshotRefresher(source, store, clock)
+  const snapshotCache = extra.cache === undefined ? null : new SnapshotCache(extra.cache)
+  const refresher = new SnapshotRefresher(source, store, clock, snapshotCache)
   return {
     source,
     store,
     clock,
     refresher,
-    service: new SubscriptionService(source, store, clock, options, refresher)
+    service: new SubscriptionService(source, store, clock, options, refresher, snapshotCache)
   }
 }
 
@@ -464,5 +470,102 @@ describe('SubscriptionService background refresh', () => {
     const { refresher, service } = await aged(DAY + 1)
     jest.spyOn(refresher, 'refresh').mockReturnValue(new Promise(() => undefined))
     await expect(service.getSnapshot(ACCOUNT)).resolves.toMatchObject({ ageMs: DAY + 1 })
+  })
+})
+
+/** A map-backed host cache that counts its calls. */
+function hostCache(): SubscriptionCache & { gets: number; sets: number; deletes: number } {
+  const entries = new Map<string, string>()
+  const cache = {
+    gets: 0,
+    sets: 0,
+    deletes: 0,
+    get: (key: string): Promise<string | null> => {
+      cache.gets += 1
+      return Promise.resolve(entries.get(key) ?? null)
+    },
+    set: (key: string, value: string): Promise<void> => {
+      cache.sets += 1
+      entries.set(key, value)
+      return Promise.resolve()
+    },
+    delete: (key: string): Promise<void> => {
+      cache.deletes += 1
+      entries.delete(key)
+      return Promise.resolve()
+    }
+  }
+  return cache
+}
+
+describe('SubscriptionService with a cache', () => {
+  /** Counts the reads that reach the store. */
+  function countingStore(built: ReturnType<typeof setup>): jest.SpyInstance {
+    return jest.spyOn(built.store, 'getSnapshot')
+  }
+
+  it('answers a second read of one account without reaching the store', async () => {
+    // Scenario: the first read fills the cache; the second is answered from it.
+    const cache = hostCache()
+    const built = setup({ cache })
+    built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
+    await built.service.refresh(ACCOUNT)
+    const reads = countingStore(built)
+    await built.service.getSnapshot(ACCOUNT)
+    await built.service.hasEntitlement(ACCOUNT, 'pro')
+    expect(reads).toHaveBeenCalledTimes(1)
+    expect(cache.sets).toBe(1)
+  })
+
+  it('shows a change on the next read after a refresh, not the cached value', async () => {
+    // Scenario: a cached snapshot with the entitlement, then a refresh that removes it.
+    const built = setup({ cache: hostCache() })
+    built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
+    await built.service.refresh(ACCOUNT)
+    await expect(built.service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+    built.clock.advance(1000)
+    built.source.setAccount(ACCOUNT, {
+      ...snapshotOf(ACCOUNT, false),
+      sourceUpdatedAt: '2026-01-01T00:00:05.000Z'
+    })
+    await built.service.refresh(ACCOUNT)
+    await expect(built.service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
+  })
+
+  it('shows the result of a background refresh on the next read', async () => {
+    // Scenario: the cache holds a stale snapshot; the background refresh lands and empties it.
+    const built = setup({ cache: hostCache(), maxSnapshotAgeMs: 1000 })
+    built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
+    await built.service.refresh(ACCOUNT)
+    await built.service.getSnapshot(ACCOUNT)
+    built.clock.advance(2000)
+    expect((await built.service.getSnapshot(ACCOUNT)).ageMs).toBe(2000)
+    await flush()
+    expect((await built.service.getSnapshot(ACCOUNT)).ageMs).toBe(0)
+  })
+
+  it('answers reads and refreshes when every call to the host cache fails', async () => {
+    // Scenario: the host cache rejects get, set and delete.
+    const failing: SubscriptionCache = {
+      get: () => Promise.reject(new Error('down')),
+      set: () => Promise.reject(new Error('down')),
+      delete: () => Promise.reject(new Error('down'))
+    }
+    const built = setup({ cache: failing })
+    built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
+    await expect(built.service.refresh(ACCOUNT)).resolves.toBeDefined()
+    await expect(built.service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+    await expect(built.service.getSnapshot(ACCOUNT)).resolves.toBeDefined()
+  })
+
+  it('reaches the store on every read when no cache was configured', async () => {
+    // Scenario: with no cache the read goes to the store every time and no cache object exists.
+    const built = setup()
+    built.source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
+    await built.service.refresh(ACCOUNT)
+    const reads = countingStore(built)
+    await built.service.getSnapshot(ACCOUNT)
+    await built.service.getSnapshot(ACCOUNT)
+    expect(reads).toHaveBeenCalledTimes(2)
   })
 })

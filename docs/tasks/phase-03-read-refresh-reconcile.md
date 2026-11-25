@@ -1,6 +1,6 @@
 # Phase 3 — Read, refresh and reconcile
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P3 — read-refresh-reconcile
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -41,7 +41,7 @@ At the end `SubscriptionService` answers the two questions a host asks (what is 
 | 3.1 | Implement the refresher with single flight and ordered writes | ✅ Done | P0       | L    | —          |
 | 3.2 | Implement the service reads                                   | ✅ Done | P0       | M    | 3.1        |
 | 3.3 | Refresh a stale snapshot in the background                    | ✅ Done | P0       | M    | 3.2        |
-| 3.4 | Read through the optional cache                               | 📋 ToDo | P1       | M    | 3.2        |
+| 3.4 | Read through the optional cache                               | ✅ Done | P1       | M    | 3.2        |
 | 3.5 | Implement reconciliation                                      | 📋 ToDo | P0       | M    | 3.1, 3.2   |
 
 ---
@@ -299,7 +299,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 3.4 — Read through the optional cache
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P1
 - **Size**: M
 - **Depends on**: 3.2
@@ -310,12 +310,12 @@ When the host provides a cache, read through it in front of the store with a sho
 
 #### Acceptance criteria
 
-- [ ] With a cache configured, a second read of the same account does not reach the store.
-- [ ] After any write of that account's snapshot, the next read returns the new value.
-- [ ] A cache that throws on `get`, `set` or `delete` degrades to the store and never fails a read or a write.
-- [ ] With no cache configured, every test of the phase still passes and no cache code runs on the read path.
-- [ ] Cache keys go through `encodeAccountKey` with a fixed prefix, and two tenants never share an entry.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] With a cache configured, a second read of the same account does not reach the store.
+- [x] After any write of that account's snapshot, the next read returns the new value.
+- [x] A cache that throws on `get`, `set` or `delete` degrades to the store and never fails a read or a write.
+- [x] With no cache configured, every test of the phase still passes and no cache code runs on the read path.
+- [x] Cache keys go through `encodeAccountKey` with a fixed prefix, and two tenants never share an entry.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -476,5 +476,7 @@ Completion Protocol (after the work is reported done):
 - 3.2 ✅ 2026-11-25 — the service reads from the store with the age, the on-demand refresh and the tenant in every key
 
 - 3.3 ✅ 2026-11-25 — a stale read returns the stored snapshot at once and refreshes it in the background, with failures logged by code and reported to the observer
+
+- 3.4 ✅ 2026-11-25 — the optional read-through cache with invalidation on every write and containment of every cache failure
 
 <!-- entries are added as tasks complete -->

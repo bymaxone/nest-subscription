@@ -24,6 +24,7 @@ import {
 } from '@bymax-one/nest-subscription/shared'
 
 import { SingleFlight } from './single-flight'
+import { SnapshotCache } from '../cache/snapshot-cache'
 
 /** What one refresh did. */
 export interface RefreshResult {
@@ -51,7 +52,8 @@ export class SnapshotRefresher {
   constructor(
     @Inject(SUBSCRIPTION_SOURCE) private readonly source: SubscriptionSource,
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
-    @Inject(SUBSCRIPTION_CLOCK) private readonly clock: Clock
+    @Inject(SUBSCRIPTION_CLOCK) private readonly clock: Clock,
+    @Inject(SnapshotCache) private readonly cache: SnapshotCache | null
   ) {}
 
   /** The number of accounts being refreshed now. */
@@ -82,6 +84,7 @@ export class SnapshotRefresher {
       return { previous, current: previous, written: false }
     }
     if (await this.store.putSnapshot(key, snapshot, [], orderedAt)) {
+      await this.cache?.invalidate(account)
       return { previous, current: snapshot, written: true }
     }
     const kept = (await this.store.getSnapshot(key))?.snapshot ?? snapshot

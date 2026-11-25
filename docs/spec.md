@@ -455,6 +455,12 @@ proposal below is what the code does until the owner answers.
   decides, and an unset retention means identifiers are not purged by the library. The webhook
   phase (P6) decides it from the provider's documented retry policy.
 
+- **Q04. How does the host set the lifetime of a cache entry?** FR23 says "a short lifetime" and
+  names no option. Proposal: the lifetime is 30 seconds, fixed by the default of `SnapshotCache`'s
+  constructor, and no module option exists until the owner asks for one; the likely name is
+  `cacheTtlMs`, with the 30-second default. Every write invalidates the entry, so the lifetime only
+  bounds how long a missed invalidation (a cache that failed to delete) can show an old value.
+
 ---
 
 ## 11. First implementation phase must also deliver

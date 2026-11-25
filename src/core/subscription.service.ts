@@ -24,6 +24,7 @@ import {
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
+import { SnapshotCache } from './cache/snapshot-cache'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { ageOf, isStale } from './refresh/staleness'
@@ -47,7 +48,8 @@ export class SubscriptionService {
     @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
     @Inject(SUBSCRIPTION_CLOCK) private readonly clock: Clock,
     @Inject(SUBSCRIPTION_OPTIONS) private readonly options: ResolvedSubscriptionOptions,
-    @Inject(SnapshotRefresher) private readonly refresher: SnapshotRefresher
+    @Inject(SnapshotRefresher) private readonly refresher: SnapshotRefresher,
+    @Inject(SnapshotCache) private readonly cache: SnapshotCache | null
   ) {}
 
   /**
@@ -61,7 +63,7 @@ export class SubscriptionService {
    */
   async getSnapshot(account: AccountReference): Promise<AgedSnapshot> {
     const key = this.#keyOf(account)
-    const stored = (await this.store.getSnapshot(key))?.snapshot
+    const stored = await this.#stored(account, key)
     const now = this.clock.now()
     if (stored === undefined) return this.#view(this.#emptyFor(account), now)
     if (isStale(stored, now, this.options.maxSnapshotAgeMs)) this.#refreshInBackground(account)
@@ -91,6 +93,14 @@ export class SubscriptionService {
     this.#keyOf(account)
     const { current } = await this.refresher.refresh(account)
     return this.#view(current, this.clock.now())
+  }
+
+  /** The stored snapshot, through the cache when the host configured one; `undefined` when none. */
+  async #stored(account: AccountReference, key: string): Promise<SubscriptionSnapshot | undefined> {
+    const load = async (): Promise<SubscriptionSnapshot | null> =>
+      (await this.store.getSnapshot(key))?.snapshot ?? null
+    const snapshot = this.cache === null ? await load() : await this.cache.read(account, load)
+    return snapshot ?? undefined
   }
 
   /** The key of an account, after the tenant rule of this configuration is applied. */

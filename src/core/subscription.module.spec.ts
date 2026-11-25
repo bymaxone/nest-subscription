@@ -20,6 +20,7 @@ import {
 } from '@bymax-one/nest-subscription/testing'
 
 import type { SubscriptionOptionsInput } from './options/subscription-options.types'
+import { SnapshotCache } from './cache/snapshot-cache'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionModule } from './subscription.module'
 import { SubscriptionService } from './subscription.service'
@@ -38,7 +39,13 @@ function input(): SubscriptionOptionsInput {
 /** The token providers of a module; the library's own classes are listed apart. */
 function providersOf(module: { providers?: unknown }): FactoryProvider[] {
   const all: unknown[] = Array.isArray(module.providers) ? module.providers : []
-  return all.filter((candidate): candidate is FactoryProvider => typeof candidate === 'object')
+  return all.filter(
+    (candidate): candidate is FactoryProvider =>
+      typeof candidate === 'object' &&
+      candidate !== null &&
+      'provide' in candidate &&
+      typeof candidate.provide === 'symbol'
+  )
 }
 
 function provider(module: { providers?: unknown }, token: symbol): FactoryProvider {
@@ -75,6 +82,22 @@ describe('SubscriptionModule.forRoot', () => {
     expect(module.providers).toContain(SubscriptionService)
     expect(module.exports).toContain(SubscriptionService)
     expect(module.exports).not.toContain(SnapshotRefresher)
+  })
+
+  it('builds the snapshot cache over the host cache, and as null when there is none', () => {
+    // Scenario: the provider's factory is run with a cache, with null and with nothing.
+    const module = SubscriptionModule.forRoot(input())
+    const found = (module.providers ?? []).find(
+      (candidate) =>
+        typeof candidate === 'object' &&
+        'provide' in candidate &&
+        candidate.provide === SnapshotCache
+    ) as FactoryProvider
+    expect(found.inject).toEqual([{ token: SUBSCRIPTION_CACHE, optional: true }])
+    const host = { get: jest.fn(), set: jest.fn(), delete: jest.fn() }
+    expect(found.useFactory(host)).toBeInstanceOf(SnapshotCache)
+    expect(found.useFactory(null)).toBeNull()
+    expect(found.useFactory(undefined)).toBeNull()
   })
 
   it('provides the cache and the observer only when they are configured', () => {

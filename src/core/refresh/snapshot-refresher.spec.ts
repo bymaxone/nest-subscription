@@ -23,6 +23,8 @@ import {
   ManualClock
 } from '@bymax-one/nest-subscription/testing'
 
+import { SnapshotCache } from '../cache/snapshot-cache'
+import type { SubscriptionCache } from '../options/subscription-options.types'
 import { SnapshotRefresher } from './snapshot-refresher'
 
 const ACCOUNT: AccountReference = { accountId: 'acc-1' }
@@ -63,7 +65,7 @@ function setup(): {
   const source = new FakeSubscriptionSource()
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(T0)
-  return { source, store, clock, refresher: new SnapshotRefresher(source, store, clock) }
+  return { source, store, clock, refresher: new SnapshotRefresher(source, store, clock, null) }
 }
 
 /** The store with some methods replaced; the others reach it unchanged. */
@@ -185,7 +187,7 @@ describe('SnapshotRefresher', () => {
     const { source, store, clock } = setup()
     const putSnapshot = jest.fn(store.putSnapshot.bind(store))
     const counting = delegating(store, { putSnapshot })
-    const refresher = new SnapshotRefresher(source, counting, clock)
+    const refresher = new SnapshotRefresher(source, counting, clock, null)
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20, 'newer'))
     const first = await refresher.refresh(ACCOUNT)
     clock.advance(1000)
@@ -225,8 +227,8 @@ describe('SnapshotRefresher', () => {
     // Scenario: two refreshers share a store, as two processes would. The first read starts, is
     // held and returns older data; the second starts later, finishes first with newer data.
     const { source, store, clock } = setup()
-    const slow = new SnapshotRefresher(source, store, clock)
-    const fast = new SnapshotRefresher(source, store, clock)
+    const slow = new SnapshotRefresher(source, store, clock, null)
+    const fast = new SnapshotRefresher(source, store, clock, null)
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10, 'older'))
     const release = source.delayNextRead()
     const slowRefresh = slow.refresh(ACCOUNT)
@@ -253,7 +255,7 @@ describe('SnapshotRefresher', () => {
         return store.putSnapshot(key, snapshot, changes, at)
       }
     })
-    const result = await new SnapshotRefresher(source, racing, clock).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(source, racing, clock, null).refresh(ACCOUNT)
     expect(result.written).toBe(false)
     expect(result.previous).toBeNull()
     expect(result.current.sourceCustomer?.id).toBe('winner')
@@ -268,7 +270,7 @@ describe('SnapshotRefresher', () => {
       getSnapshot: (): Promise<StoredSnapshot | null> => Promise.resolve(null),
       putSnapshot: () => Promise.resolve(false)
     })
-    const result = await new SnapshotRefresher(source, refusing, clock).refresh(ACCOUNT)
+    const result = await new SnapshotRefresher(source, refusing, clock, null).refresh(ACCOUNT)
     expect(result.written).toBe(false)
     expect(result.current.sourceCustomer?.id).toBe('fetched')
   })
@@ -343,8 +345,72 @@ describe('SnapshotRefresher', () => {
     const { source, store, clock } = setup()
     const failure = new Error('store down')
     const broken = delegating(store, { getSnapshot: () => Promise.reject(failure) })
-    await expect(new SnapshotRefresher(source, broken, clock).refresh(ACCOUNT)).rejects.toBe(
+    await expect(new SnapshotRefresher(source, broken, clock, null).refresh(ACCOUNT)).rejects.toBe(
       failure
     )
+  })
+})
+
+/** A host cache whose delete can be held. */
+function hostCache(held?: Promise<void>): SubscriptionCache & { readonly deleted: string[] } {
+  const deleted: string[] = []
+  return {
+    deleted,
+    get: () => Promise.resolve(null),
+    set: () => Promise.resolve(),
+    delete: async (key) => {
+      await held
+      deleted.push(key)
+    }
+  }
+}
+
+describe('SnapshotRefresher with a cache', () => {
+  it('invalidates the account after a write and before the caller is answered', async () => {
+    // Scenario: the cache's delete is held; the refresh is still pending until it is released.
+    let release!: () => void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const cache = hostCache(held)
+    const { source, store, clock } = setup()
+    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache))
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
+    let settled = false
+    const refreshing = refresher.refresh(ACCOUNT).then((result) => {
+      settled = true
+      return result
+    })
+    await flush()
+    expect(settled).toBe(false)
+    release()
+    await refreshing
+    expect(cache.deleted).toEqual([`subscription:snapshot:${encodeAccountKey(ACCOUNT)}`])
+  })
+
+  it('does not invalidate when the source reports an older state and nothing is written', async () => {
+    // Scenario: a newer state is stored; the older one is refused before the write.
+    const cache = hostCache()
+    const { source, store, clock } = setup()
+    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache))
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20))
+    await refresher.refresh(ACCOUNT)
+    cache.deleted.length = 0
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
+    await refresher.refresh(ACCOUNT)
+    expect(cache.deleted).toEqual([])
+  })
+
+  it('does not fail the refresh when the cache cannot delete', async () => {
+    // Scenario: the host cache rejects the delete; the write stands and the refresh succeeds.
+    const cache: SubscriptionCache = {
+      get: () => Promise.resolve(null),
+      set: () => Promise.resolve(),
+      delete: () => Promise.reject(new Error('cache down'))
+    }
+    const { source, store, clock } = setup()
+    const refresher = new SnapshotRefresher(source, store, clock, new SnapshotCache(cache))
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
+    await expect(refresher.refresh(ACCOUNT)).resolves.toMatchObject({ written: true })
   })
 })
