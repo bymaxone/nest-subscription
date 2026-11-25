@@ -18,7 +18,7 @@ import type {
 
 import type { AccountResolver } from '../guard/account-resolver.types'
 
-/** What the fail policy does when a snapshot is missing or the store cannot be read. */
+/** What the guard does when it cannot show a snapshot current: refuse, or trust the last one. */
 export type SubscriptionFailPolicy = 'refuse' | 'last_known_state'
 
 /** What the host's hook receives after a snapshot changed and was stored. */
@@ -81,11 +81,24 @@ export interface SubscriptionOptionsInput {
   readonly accountResolver: AccountResolver
   /** Told about every stored change. */
   readonly onChange?: SubscriptionChangeHook
-  /** What to do when a snapshot is missing or the store is down. Defaults to `refuse`. */
+  /**
+   * What the guard does when it cannot show the snapshot current: the store cannot be read, or the
+   * stored snapshot is older than `maxSnapshotAgeMs` and the guard, which never waits for the
+   * source, has not seen it refreshed. Defaults to `refuse`, which denies access. A store that
+   * answers with no record is not a failure: the account has no subscription and the guard
+   * refuses it as such under both values.
+   *
+   * `last_known_state` trusts such a snapshot while it is strictly younger than
+   * `lastKnownStateToleranceMs`. That extends access during an outage, including to an account
+   * whose subscription was refunded or cancelled during it, until the snapshot is refreshed or
+   * ages past the tolerance. Choose it only where that exposure is acceptable.
+   */
   readonly failPolicy?: SubscriptionFailPolicy
   /**
    * How old a stored snapshot may be and still be trusted under `last_known_state`, in
-   * milliseconds. Defaults to 24 hours.
+   * milliseconds; a snapshot aged exactly this is not trusted. It applies to a snapshot older than
+   * `maxSnapshotAgeMs`: a younger one is current and needs no tolerance, so a tolerance below
+   * `maxSnapshotAgeMs` changes nothing. Defaults to 24 hours.
    */
   readonly lastKnownStateToleranceMs?: number
   /** The age after which a snapshot is refreshed on its next read, in milliseconds. */
@@ -149,7 +162,7 @@ export interface ResolvedSubscriptionOptions {
   readonly accountResolver: AccountResolver
   /** The change hook, or `null` when the host set none. */
   readonly onChange: SubscriptionChangeHook | null
-  /** What to do when a snapshot is missing or the store is down. */
+  /** What the guard does when it cannot show a snapshot current. */
   readonly failPolicy: SubscriptionFailPolicy
   /** The tolerance of `last_known_state`, in milliseconds. */
   readonly lastKnownStateToleranceMs: number

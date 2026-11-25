@@ -462,6 +462,17 @@ proposal below is what the code does until the owner answers.
   Proposal: the guard answers HTTP 401 with `SUBSCRIPTION_ACCOUNT_UNKNOWN`, so the status carries
   "unauthenticated" and the body stays inside the catalogue; the owner may instead add a dedicated
   code, which is a public change to the closed set.
+- **Q05. What does the guard do with a stored snapshot older than the maximum age?** FR31 and AC07
+  separate the two policies by what happens when the snapshot "cannot be refreshed", and NFR01
+  forbids the guard to wait for the refresh to find out. Proposal: a snapshot older than
+  `maxSnapshotAgeMs` counts as one that cannot be shown current. The guard starts the background
+  refresh through the service, does not wait, and applies the policy at once: `refuse` denies
+  (HTTP 503 `SUBSCRIPTION_SOURCE_UNAVAILABLE`), `last_known_state` trusts it while it is strictly
+  younger than the tolerance (a snapshot aged exactly the tolerance is refused) and then decides on
+  its entitlements as usual. A later request sees the refreshed snapshot. The cost under `refuse`
+  is that the first guarded request after a snapshot goes stale is denied even when the source is
+  healthy; the alternative, deciding on a stale snapshot as stored under both values, would make
+  the two policies identical while the source is down.
 
 ---
 

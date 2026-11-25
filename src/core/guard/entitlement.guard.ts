@@ -16,10 +16,12 @@ import {
 } from '@bymax-one/nest-subscription/shared'
 
 import type { ResolvedSubscriptionOptions } from '../options/subscription-options.types'
+import { isStale } from '../refresh/staleness'
 import { SubscriptionService } from '../subscription.service'
 import { hasTenant } from '../tenant'
 import type { ResolvedAccount } from './account-resolver.types'
 import { decideAccess } from './decide-access'
+import { applyFailPolicy } from './fail-policy'
 import { GuardRefusal } from './guard-refusal'
 import { readRequiredEntitlement } from './requires-entitlement.decorator'
 
@@ -97,8 +99,35 @@ export class EntitlementGuard implements CanActivate {
       throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
     }
     const account = await this.#account(context)
-    const snapshot = await this.snapshots.getSnapshot(account)
-    return this.#verdict(snapshot, required)
+    const now = this.options.clock.now()
+    const read = await this.#read(account)
+    const usable = read !== null && !isStale(read, now, this.options.maxSnapshotAgeMs)
+    return this.#verdict(usable ? read : this.#underFailure(read, now), required, now)
+  }
+
+  /** The snapshot the service answers with; `null` when the store could not be read. */
+  async #read(account: AccountReference): Promise<SubscriptionSnapshot | null> {
+    try {
+      return await this.snapshots.getSnapshot(account)
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * The snapshot to decide on when the store could not be read or the stored snapshot is older
+   * than the maximum age, which the guard does not wait for the source to refresh. Only the
+   * fail policy can hand one back; otherwise the request is refused.
+   */
+  #underFailure(snapshot: SubscriptionSnapshot | null, now: Date): SubscriptionSnapshot {
+    const outcome = applyFailPolicy({
+      policy: this.options.failPolicy,
+      toleranceMs: this.options.lastKnownStateToleranceMs,
+      snapshot,
+      now
+    })
+    if (!outcome.allow) throw new GuardRefusal(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    return outcome.snapshot
   }
 
   /** The account the host's resolver names, or a refusal as unauthenticated. */
@@ -115,8 +144,8 @@ export class EntitlementGuard implements CanActivate {
   }
 
   /** `true` for an allowed decision; a refusal with the matching code otherwise. */
-  #verdict(snapshot: SubscriptionSnapshot, required: string): true {
-    const decision = decideAccess(snapshot, required, this.options.clock.now())
+  #verdict(snapshot: SubscriptionSnapshot, required: string, now: Date): true {
+    const decision = decideAccess(snapshot, required, now)
     if (decision === 'allow') return true
     throw new GuardRefusal(
       decision === 'no_subscription'

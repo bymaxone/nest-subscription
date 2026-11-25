@@ -12,7 +12,7 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 > Mirrors the phase dashboard of [`docs/plan.md`](../plan.md). Both are updated together.
 
-**Phases done**: 4 / 11 · **Tasks done**: 26 / 66
+**Phases done**: 4 / 11 · **Tasks done**: 27 / 66
 
 | ID  | Task file                                                                                        | Status         | Progress | Last updated |
 | --- | ------------------------------------------------------------------------------------------------ | -------------- | -------- | ------------ |
@@ -20,7 +20,7 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 | P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | ✅ Done        | 7/7      | 2026-11-24   |
 | P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | ✅ Done        | 5/5      | 2026-11-25   |
 | P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | ✅ Done        | 5/5      | 2026-11-25   |
-| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 🔄 In Progress | 2/4      | 2026-11-25   |
+| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | 🔄 In Progress | 3/4      | 2026-11-25   |
 | P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | 📋 ToDo        | 0/5      | —            |
 | P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | 📋 ToDo        | 0/5      | —            |
 | P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | 📋 ToDo        | 0/8      | —            |

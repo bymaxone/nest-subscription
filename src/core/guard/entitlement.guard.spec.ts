@@ -241,6 +241,110 @@ describe('EntitlementGuard', () => {
     })
   })
 
+  describe('the fail policy', () => {
+    const HOUR_MS = 3_600_000
+    /** Options with a one-hour maximum age and a three-hour tolerance. */
+    const windows = { maxSnapshotAgeMs: HOUR_MS, lastKnownStateToleranceMs: 3 * HOUR_MS }
+
+    it.each(['refuse', 'last_known_state'] as const)(
+      'refuses as source unavailable under %s when the store cannot be read',
+      async (failPolicy) => {
+        // Scenario: the service rejects because the store threw and no cache answered; with no
+        // snapshot at all neither policy has anything to trust.
+        const { guard } = rig({ accountId: 'acc-1' }, new Error('store down'), {
+          ...windows,
+          failPolicy
+        })
+        expectRefusal(await outcome(guard), 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+      }
+    )
+
+    it.each(['refuse', 'last_known_state'] as const)(
+      'refuses as entitlement required under %s when the store answers with no record',
+      async (failPolicy) => {
+        // Scenario: the store is readable and holds nothing for the account; the service reads
+        // that as the empty snapshot, which is "no subscription", not a failure of the store.
+        const { guard } = rig({ accountId: 'acc-1' }, snapshotWith(), { ...windows, failPolicy })
+        expectRefusal(await outcome(guard), 403, SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED)
+      }
+    )
+
+    it('trusts a snapshot aged exactly the maximum age: it is not stale', async () => {
+      // Scenario: the snapshot is as old as the maximum age allows; staleness starts after it, so
+      // the ordinary decision applies and the policy is not consulted.
+      const { guard, clock } = rig({ accountId: 'acc-1' }, snapshotWith(premium()), windows)
+      clock.advance(HOUR_MS)
+      expect(await outcome(guard)).toBe(true)
+    })
+
+    it('refuses a stale snapshot under refuse even though it holds the entitlement', async () => {
+      // Scenario: one millisecond past the maximum age the snapshot cannot be shown current; the
+      // default policy refuses although the stored state says "held".
+      const { guard, clock } = rig({ accountId: 'acc-1' }, snapshotWith(premium()), windows)
+      clock.advance(HOUR_MS + 1)
+      expectRefusal(await outcome(guard), 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    })
+
+    it.each([
+      ['one millisecond younger than the tolerance', 3 * HOUR_MS - 1, true],
+      ['exactly the tolerance', 3 * HOUR_MS, false],
+      ['one millisecond older than the tolerance', 3 * HOUR_MS + 1, false]
+    ])('under last_known_state a stale snapshot %s is trusted: %s', async (_title, ageMs, ok) => {
+      // Scenario: past the maximum age and judged by the tolerance, strictly younger than it.
+      const { guard, clock } = rig({ accountId: 'acc-1' }, snapshotWith(premium()), {
+        ...windows,
+        failPolicy: 'last_known_state'
+      })
+      clock.advance(ageMs)
+      const result = await outcome(guard)
+      if (ok) expect(result).toBe(true)
+      else expectRefusal(result, 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    })
+
+    it('still decides on the entitlement for a trusted stale snapshot', async () => {
+      // Scenario: the stale snapshot is within the tolerance but its entitlement is not held; the
+      // policy lets the snapshot be read, it does not turn a refusal into access.
+      const { guard, clock } = rig({ accountId: 'acc-1' }, snapshotWith(premium(false)), {
+        ...windows,
+        failPolicy: 'last_known_state'
+      })
+      clock.advance(2 * HOUR_MS)
+      expectRefusal(await outcome(guard), 403, SUBSCRIPTION_ERROR_CODES.NO_ACCESS)
+    })
+
+    it('applies the end instant of the entitlement to a trusted stale snapshot', async () => {
+      // Scenario: within the tolerance but past the entitlement's own end; the end still counts.
+      const until = '2026-01-01T01:30:00.000Z'
+      const { guard, clock } = rig({ accountId: 'acc-1' }, snapshotWith(premium(true, until)), {
+        ...windows,
+        failPolicy: 'last_known_state'
+      })
+      clock.advance(2 * HOUR_MS)
+      expectRefusal(await outcome(guard), 403, SUBSCRIPTION_ERROR_CODES.NO_ACCESS)
+    })
+
+    it('refuses a stale snapshot for a policy value that is not one of the two', async () => {
+      // Scenario: a corrupted option value never trusts anything.
+      const { guard, clock } = rig({ accountId: 'acc-1' }, snapshotWith(premium()), {
+        ...windows,
+        failPolicy: 'allow' as GuardOptions['failPolicy']
+      })
+      clock.advance(2 * HOUR_MS)
+      expectRefusal(await outcome(guard), 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    })
+
+    it.each(['refuse', 'last_known_state'] as const)(
+      'refuses under %s a snapshot whose fetch instant cannot be read',
+      async (failPolicy) => {
+        // Scenario: the service hands back a snapshot whose age cannot be computed; the guard
+        // cannot judge it and refuses instead of letting the error escape or allowing.
+        const broken = { ...snapshotWith(premium()), fetchedAt: 'not-a-date' }
+        const { guard } = rig({ accountId: 'acc-1' }, broken, { ...windows, failPolicy })
+        expectRefusal(await outcome(guard), 503, SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+      }
+    )
+  })
+
   describe('an unexpected failure', () => {
     it.each([
       [

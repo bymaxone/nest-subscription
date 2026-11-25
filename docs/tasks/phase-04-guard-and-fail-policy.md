@@ -1,6 +1,6 @@
 # Phase 4 — Guard and fail policy
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 4 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P4 — guard-and-fail-policy
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -41,7 +41,7 @@ At the end one decorator names the entitlement a route needs and a guard enforce
 | --- | --------------------------------------------------- | ------- | -------- | ---- | ---------- |
 | 4.1 | Add the decorator and the account resolver contract | ✅ Done | P0       | S    | —          |
 | 4.2 | Implement the guard decision and its refusal codes  | ✅ Done | P0       | M    | 4.1        |
-| 4.3 | Implement the fail policy                           | 📋 ToDo | P0       | M    | 4.2        |
+| 4.3 | Implement the fail policy                           | ✅ Done | P0       | M    | 4.2        |
 | 4.4 | Prove the guard end to end                          | 📋 ToDo | P0       | M    | 4.3        |
 
 ---
@@ -213,7 +213,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 4.3 — Implement the fail policy
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 4.2
@@ -224,12 +224,12 @@ Decide what the guard does when the snapshot is missing or the store cannot be r
 
 #### Acceptance criteria
 
-- [ ] Under the default policy, an unreadable store and a missing snapshot both refuse.
-- [ ] Under the last-known-state policy, a snapshot younger than the tolerance is trusted when it cannot be refreshed, and an older one refuses; a snapshot aged exactly the tolerance is pinned by a test.
-- [ ] Under the last-known-state policy with the store itself unreadable, the guard refuses unless the snapshot is available from the configured cache and is within the tolerance.
-- [ ] An unexpected error anywhere in the guard refuses, with the "source unavailable" code and HTTP 503.
-- [ ] The policy is one option with exactly two values, and no other code path grants access under failure.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Under the default policy, an unreadable store and a missing snapshot both refuse.
+- [x] Under the last-known-state policy, a snapshot younger than the tolerance is trusted when it cannot be refreshed, and an older one refuses; a snapshot aged exactly the tolerance is pinned by a test.
+- [x] Under the last-known-state policy with the store itself unreadable, the guard refuses unless the snapshot is available from the configured cache and is within the tolerance.
+- [x] An unexpected error anywhere in the guard refuses, with the "source unavailable" code and HTTP 503.
+- [x] The policy is one option with exactly two values, and no other code path grants access under failure.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -388,3 +388,4 @@ Completion Protocol (after the work is reported done):
 
 - 4.1 ✅ 2026-11-25 — the RequiresEntitlement decorator and the AccountResolver contract
 - 4.2 ✅ 2026-11-25 — the pure decideAccess and the EntitlementGuard with its stable refusal codes
+- 4.3 ✅ 2026-11-25 — the two-valued fail policy, pure and applied by the guard around its snapshot read

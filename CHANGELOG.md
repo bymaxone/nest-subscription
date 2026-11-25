@@ -99,6 +99,14 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   403 `SUBSCRIPTION_NO_ACCESS`. Any unexpected failure refuses with HTTP 503
   `SUBSCRIPTION_SOURCE_UNAVAILABLE`. A refusal body is `{ code, message }` and nothing else. The
   guard works for HTTP contexts; a decorated route in another context is refused.
+- The fail policy of the guard, with `failPolicy` (`refuse` by default, or `last_known_state`) and
+  `lastKnownStateToleranceMs`. When the store cannot be read, or the stored snapshot is older than
+  `maxSnapshotAgeMs` (the guard never waits for its refresh), `refuse` denies with HTTP 503
+  `SUBSCRIPTION_SOURCE_UNAVAILABLE` and `last_known_state` trusts a snapshot strictly younger than
+  the tolerance and denies one aged exactly the tolerance or more. A store that answers with no
+  record is the empty snapshot and is refused as no subscription under both values. The option's
+  documentation states that `last_known_state` extends access during an outage, including for an
+  account that was refunded during it.
 
 ### Changed
 

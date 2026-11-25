@@ -40,7 +40,7 @@ This document says in which order the specification is built and when each part 
 | P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done        | 7/7      | L    | 2026-11-24   |
 | P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done        | 5/5      | M    | 2026-11-25   |
 | P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done        | 5/5      | L    | 2026-11-25   |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | 🔄 In Progress | 2/4      | M    | 2026-11-25   |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | 🔄 In Progress | 3/4      | M    | 2026-11-25   |
 | P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | 📋 ToDo        | 0/5      | M    | —            |
 | P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 📋 ToDo        | 0/5      | L    | —            |
 | P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo        | 0/8      | L    | —            |
