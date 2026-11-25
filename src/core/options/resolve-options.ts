@@ -9,10 +9,12 @@ import { Logger } from '@nestjs/common'
 import {
   DEFAULT_ALLOW_SANDBOX,
   DEFAULT_CACHE_TTL_MS,
+  DEFAULT_EVENT_RETENTION_MS,
   DEFAULT_FAIL_POLICY,
   DEFAULT_LAST_KNOWN_STATE_TOLERANCE_MS,
   DEFAULT_MAX_SNAPSHOT_AGE_MS,
-  DEFAULT_WEBHOOK_CONTROLLER
+  DEFAULT_WEBHOOK_CONTROLLER,
+  DEFAULT_WEBHOOK_DEADLINE_MS
 } from './defaults'
 import type {
   ResolvedSubscriptionOptions,
@@ -59,7 +61,8 @@ function build(input: SubscriptionOptionsInput): ResolvedSubscriptionOptions {
     cache: input.cache ?? null,
     observer: input.observer ?? null,
     logger: input.logger ?? new Logger(LOGGER_CONTEXT),
-    eventRetentionMs: input.eventRetentionMs ?? null,
+    eventRetentionMs: input.eventRetentionMs ?? DEFAULT_EVENT_RETENTION_MS,
+    webhookDeadlineMs: input.webhookDeadlineMs ?? DEFAULT_WEBHOOK_DEADLINE_MS,
     webhookController: input.webhookController ?? DEFAULT_WEBHOOK_CONTROLLER,
     webhookPath: input.webhookPath ?? null,
     multiTenant: input.multiTenant ?? false,

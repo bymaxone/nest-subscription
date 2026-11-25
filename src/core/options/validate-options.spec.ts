@@ -140,7 +140,21 @@ const ROWS: readonly Row[] = [
   {
     path: 'eventRetentionMs',
     good: { eventRetentionMs: 1 },
-    bad: [SENTINEL, null, -1, 0, Number.NaN, Number.POSITIVE_INFINITY]
+    bad: [
+      SENTINEL,
+      null,
+      -1,
+      0,
+      1.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.MAX_SAFE_INTEGER + 1
+    ]
+  },
+  {
+    path: 'webhookDeadlineMs',
+    good: { webhookDeadlineMs: 60_000 },
+    bad: [SENTINEL, null, -1, 0, 60_001, Number.NaN, Number.POSITIVE_INFINITY]
   },
   { path: 'allowSandbox', good: { allowSandbox: true }, bad: [SENTINEL, null, 1, 'true'] },
   {
@@ -149,7 +163,11 @@ const ROWS: readonly Row[] = [
     bad: [SENTINEL, null, 1]
   },
   { path: 'isProduction', good: { isProduction: true }, bad: [SENTINEL, null, 0] },
-  { path: 'webhookController', good: { webhookController: true }, bad: [SENTINEL, null, 'on'] },
+  {
+    path: 'webhookController',
+    good: { webhookController: true, webhookPath: 'hooks/billing' },
+    bad: [SENTINEL, null, 'on']
+  },
   { path: 'multiTenant', good: { multiTenant: true }, bad: [SENTINEL, null, 'yes'] },
   {
     path: 'webhookPath',
@@ -312,6 +330,37 @@ describe('validateOptions', () => {
       ['with neither set', {}]
     ])('accepts sandbox access %s without the confirming option', (_name, extra) => {
       // Scenario: only the combination of sandbox access and production needs the confirmation.
+      expect(() => validateOptions({ ...valid(), ...extra })).not.toThrow()
+    })
+  })
+
+  describe('the controller switch', () => {
+    it.each([
+      ['no route', {}],
+      ['a route that is not valid', { webhookPath: 'a b' }]
+    ])('refuses the controller with %s and names webhookPath', (_name, extra) => {
+      // Scenario: there is no default route, so the controller needs one the host chose.
+      const error = problems({ ...valid(), webhookController: true, ...extra })
+      expect(error.optionPaths).toEqual(['webhookPath'])
+    })
+
+    it('refuses the controller in a multi-tenant host and names webhookController', () => {
+      // Scenario: the controller has no authenticated tenant to give (SEC08).
+      const error = problems({
+        ...valid(),
+        webhookController: true,
+        webhookPath: 'hooks/billing',
+        multiTenant: true
+      })
+      expect(error.optionPaths).toEqual(['webhookController'])
+    })
+
+    it.each([
+      ['a route with the switch off', { webhookPath: 'hooks/billing' }],
+      ['multi-tenant with the switch off', { multiTenant: true }],
+      ['the switch off with no route', { webhookController: false }]
+    ])('accepts %s', (_name, extra) => {
+      // Scenario: only the combination of the switch with a missing route or tenancy is refused.
       expect(() => validateOptions({ ...valid(), ...extra })).not.toThrow()
     })
   })

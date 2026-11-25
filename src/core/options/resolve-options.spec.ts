@@ -64,7 +64,8 @@ describe('resolveOptions', () => {
       isProduction: false,
       cache: null,
       observer: null,
-      eventRetentionMs: null,
+      eventRetentionMs: 604_800_000,
+      webhookDeadlineMs: 30_000,
       webhookController: false,
       webhookPath: null,
       multiTenant: false
@@ -78,7 +79,6 @@ describe('resolveOptions', () => {
     const cache = { get: jest.fn(), set: jest.fn(), delete: jest.fn() }
     const observer = {}
     const logger = { warn: jest.fn() }
-    const clock = { now: () => new Date(0) }
     const input: SubscriptionOptionsInput = {
       ...minimal(),
       onChange,
@@ -95,8 +95,7 @@ describe('resolveOptions', () => {
       eventRetentionMs: 3000,
       webhookController: true,
       webhookPath: 'hooks/billing',
-      multiTenant: true,
-      clock
+      clock: { now: () => new Date(0) }
     }
     const resolved = resolveOptions(input)
     expect(resolved).toMatchObject({
@@ -117,9 +116,14 @@ describe('resolveOptions', () => {
       eventRetentionMs: 3000,
       webhookController: true,
       webhookPath: 'hooks/billing',
-      multiTenant: true,
-      clock
+      clock: input.clock
     })
+  })
+
+  it('carries the multi-tenant switch and the webhook deadline', () => {
+    // Scenario: both are set to a value that differs from its default.
+    const resolved = resolveOptions({ ...minimal(), multiTenant: true, webhookDeadlineMs: 4000 })
+    expect(resolved).toMatchObject({ multiTenant: true, webhookDeadlineMs: 4000 })
   })
 
   it('defaults the logger to a NestJS Logger that has a warn method', () => {

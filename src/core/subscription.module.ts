@@ -33,6 +33,8 @@ import type {
 import { Reconciler } from './reconciliation/reconciler'
 import { SnapshotRefresher } from './refresh/snapshot-refresher'
 import { SubscriptionService } from './subscription.service'
+import { WEBHOOK_WAIT, timerWait } from './webhook/deadline'
+import { WebhookProcessor } from './webhook/webhook.processor'
 
 /** The path `forRootAsync` names when its factory rejects; the factory's own error is dropped. */
 const FACTORY_PATH = 'useFactory'
@@ -84,7 +86,8 @@ const OWN_CLASSES: readonly Type[] = [
   SnapshotRefresher,
   Reconciler,
   SubscriptionService,
-  EntitlementGuard
+  EntitlementGuard,
+  WebhookProcessor
 ]
 
 /**
@@ -128,6 +131,12 @@ const CHANGE_DISPATCHER_PROVIDER: FactoryProvider = {
   inject: [SUBSCRIPTION_OPTIONS, ObserverBridge]
 }
 
+/** The wait the receiver's deadline races against: a timer, cleared as soon as the race is decided. */
+const WEBHOOK_WAIT_PROVIDER: FactoryProvider = {
+  provide: WEBHOOK_WAIT,
+  useFactory: () => timerWait
+}
+
 /**
  * Puts the pieces together as a dynamic module; every token provider it lists is exported, and
  * so are the service, the guard and the observer bridge the guard injects. The refresher is
@@ -147,12 +156,15 @@ function assemble(
       SNAPSHOT_CACHE_PROVIDER,
       OBSERVER_BRIDGE_PROVIDER,
       CHANGE_DISPATCHER_PROVIDER,
+      WEBHOOK_WAIT_PROVIDER,
       ...OWN_CLASSES
     ],
     exports: [
       ...providers.map((provider) => provider.provide),
       SubscriptionService,
       EntitlementGuard,
+      // A host that owns its routing calls the processor from its own route.
+      WebhookProcessor,
       // The guard is built in the module of the route that uses it, so what it injects is exported.
       ObserverBridge
     ]

@@ -8,6 +8,7 @@
 import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
+import { MAX_WEBHOOK_DEADLINE_MS } from './defaults'
 import type { SubscriptionOptionsInput } from './subscription-options.types'
 
 /** The options as the host passed them: nothing is assumed about any field. */
@@ -40,6 +41,11 @@ const FAIL_POLICIES: readonly unknown[] = ['refuse', 'last_known_state']
 /** A route: optional leading slash, then segments of unreserved characters. */
 const ROUTE = /^\/?[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/
 
+/** Whether a value is a route the controller can be mounted on. */
+export function isWebhookRoute(value: unknown): value is string {
+  return typeof value === 'string' && ROUTE.test(value)
+}
+
 function isObject(value: unknown): value is object {
   return typeof value === 'object' && value !== null
 }
@@ -70,6 +76,11 @@ function isPositiveDuration(value: unknown): boolean {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
 
+/** A positive finite number of milliseconds the source does not outlast. */
+function isDeadline(value: unknown): boolean {
+  return typeof value === 'number' && isPositiveDuration(value) && value <= MAX_WEBHOOK_DEADLINE_MS
+}
+
 /** A rule for an option that must be present and satisfy `accepts`. */
 function required(path: string, accepts: (value: unknown) => boolean): Rule {
   return (options) => (accepts(read(options, path)) ? undefined : path)
@@ -94,6 +105,18 @@ const sandboxRule: Rule = (options) => {
   return refused ? 'confirmSandboxInProduction' : undefined
 }
 
+/** The controller needs a route of its own: the library has no default path (D41). */
+const controllerRouteRule: Rule = (options) =>
+  read(options, 'webhookController') === true && !isWebhookRoute(read(options, 'webhookPath'))
+    ? 'webhookPath'
+    : undefined
+
+/** The controller sits outside authentication, so it has no tenant to give (SEC08). */
+const controllerTenantRule: Rule = (options) =>
+  read(options, 'webhookController') === true && read(options, 'multiTenant') === true
+    ? 'webhookController'
+    : undefined
+
 /** Every rule, in the order the offending options are reported. */
 const RULES: readonly Rule[] = [
   required('source', isSource),
@@ -104,14 +127,17 @@ const RULES: readonly Rule[] = [
   optional('lastKnownStateToleranceMs', isPositiveDuration),
   optional('maxSnapshotAgeMs', isPositiveDuration),
   optional('cacheTtlMs', isPositiveSafeInteger),
-  optional('eventRetentionMs', isPositiveDuration),
+  optional('eventRetentionMs', isPositiveSafeInteger),
+  optional('webhookDeadlineMs', isDeadline),
   optional('allowSandbox', isBoolean),
   optional('confirmSandboxInProduction', isBoolean),
   optional('isProduction', isBoolean),
   sandboxRule,
   optional('webhookController', isBoolean),
-  optional('webhookPath', (value) => typeof value === 'string' && ROUTE.test(value)),
+  optional('webhookPath', isWebhookRoute),
+  controllerRouteRule,
   optional('multiTenant', isBoolean),
+  controllerTenantRule,
   optional('cache', (value) => hasMethods(value, CACHE_METHODS)),
   optional('observer', isObject),
   optional('logger', (value) => hasMethods(value, ['warn'])),

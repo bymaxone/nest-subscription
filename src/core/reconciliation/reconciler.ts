@@ -1,5 +1,6 @@
 /**
- * @fileoverview Reconciliation: delivers the changes still marked as not delivered, then refreshes
+ * @fileoverview Reconciliation: purges the processed webhook event identifiers older than the
+ * retention, delivers the changes still marked as not delivered, then refreshes
  * the accounts whose snapshot is older than a threshold, each in a bounded batch and the second
  * under a rate limit, for the host to call from its own scheduler. It starts no timer and no job;
  * a run does its work when called and returns.
@@ -20,6 +21,7 @@ import {
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import { RateLimiter, type Wait } from './rate-limiter'
+import { logEvent } from '../logging/subscription-logger'
 import { ChangeDispatcher } from '../notifications/change-dispatcher'
 import type { ResolvedSubscriptionOptions } from '../options/subscription-options.types'
 import { SnapshotRefresher } from '../refresh/snapshot-refresher'
@@ -117,7 +119,9 @@ export class Reconciler {
   ) {}
 
   /**
-   * Runs one reconciliation. First it delivers again, up to the batch bound, the changes that are
+   * Runs one reconciliation. First it purges the identifiers of processed webhook events older
+   * than the retention (a failure of the purge is logged by its code and does not end the run;
+   * this is the only place the library purges them, and it starts no timer). Then it delivers again, up to the batch bound, the changes that are
    * still marked as not delivered, as redeliveries with the same keys and no previous snapshot; a
    * change whose hook call fails stays marked for the next run, and the run goes on. Then it lists
    * the accounts fetched before the threshold, refreshes them in order up to the batch bound and
@@ -131,6 +135,7 @@ export class Reconciler {
    */
   async run(input: ReconcileOptions): Promise<ReconcileResult> {
     const config = this.#configure(input)
+    await this.#purgeEvents()
     const pendingCursor = await this.#deliverPending(config.batchSize, config.pendingCursor)
     const { limiter } = config
     const tally: Tally = { refreshed: 0, failed: 0 }
@@ -148,6 +153,25 @@ export class Reconciler {
       budget -= page.keys.length
       cursor = page.nextCursor
       if (cursor === null) return { ...tally, cursor, pendingCursor }
+    }
+  }
+
+  /**
+   * Removes the event identifiers recorded before the retention. A retention so long that its
+   * instant is not representable leaves nothing older, so there is nothing to purge.
+   */
+  async #purgeEvents(): Promise<void> {
+    const before = new Date(this.clock.now().getTime() - this.options.eventRetentionMs)
+    if (Number.isNaN(before.getTime())) return
+    try {
+      await this.store.deleteEventsOlderThan(before.toISOString())
+    } catch (error) {
+      logEvent(
+        this.options.logger,
+        'event_purge_failed',
+        error instanceof SubscriptionError ? error.code : null,
+        null
+      )
     }
   }
 

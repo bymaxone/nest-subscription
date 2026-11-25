@@ -1,6 +1,6 @@
 # Phase 6 — Webhook receiver
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P6 — webhook-receiver
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -43,7 +43,7 @@ How a failed event is de-duplicated is decided (D16): its identifier is removed,
 | ID  | Task                                       | Status  | Priority | Size | Depends on |
 | --- | ------------------------------------------ | ------- | -------- | ---- | ---------- |
 | 6.1 | Define the outcomes and their HTTP answers | ✅ Done | P0       | S    | —          |
-| 6.2 | Implement the processor                    | 📋 ToDo | P0       | L    | 6.1        |
+| 6.2 | Implement the processor                    | ✅ Done | P0       | L    | 6.1        |
 | 6.3 | Enforce the response deadline              | 📋 ToDo | P0       | M    | 6.2        |
 | 6.4 | Add the controller behind a switch         | 📋 ToDo | P0       | M    | 6.2        |
 | 6.5 | Prove the receiver end to end              | 📋 ToDo | P0       | M    | 6.3, 6.4   |
@@ -131,7 +131,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 6.2 — Implement the processor
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 6.1
@@ -142,15 +142,15 @@ Write the processor: verify through the adapter, de-duplicate by event identifie
 
 #### Acceptance criteria
 
-- [ ] A verified notification results in a stored snapshot read from the source; a test puts a contradicting state in the payload and proves it is ignored.
-- [ ] A request that fails verification returns the refused outcome, and the store, the source read counter and the hook are untouched.
-- [ ] The same event delivered five times, sequentially and concurrently, causes one source read and one host notification (AC03).
-- [ ] An unknown event kind is accepted and triggers a refresh; a kind the adapter marks as changing nothing returns the ignored outcome without a read.
-- [ ] A notification naming several accounts refreshes each of them.
-- [ ] A source read that fails returns the failed outcome and the event identifier is removed through `forgetEvent`, so a retry of that event is processed (D16).
-- [ ] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded, so the source's retries of that event are answered as already seen. The task's doc comment states this limit.
-- [ ] A sandbox notification is processed like any other; whether sandbox state grants access is decided where the snapshot is read from the source, not here.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A verified notification results in a stored snapshot read from the source; a test puts a contradicting state in the payload and proves it is ignored.
+- [x] A request that fails verification returns the refused outcome, and the store, the source read counter and the hook are untouched.
+- [x] The same event delivered five times, sequentially and concurrently, causes one source read and one host notification (AC03).
+- [x] An unknown event kind is accepted and triggers a refresh; a kind the adapter marks as changing nothing returns the ignored outcome without a read.
+- [x] A notification naming several accounts refreshes each of them.
+- [x] A source read that fails returns the failed outcome and the event identifier is removed through `forgetEvent`, so a retry of that event is processed (D16).
+- [x] When `forgetEvent` itself fails, the outcome is still failed and the error is reported to the observer. The identifier then stays recorded, so the source's retries of that event are answered as already seen. The task's doc comment states this limit.
+- [x] A sandbox notification is processed like any other; whether sandbox state grants access is decided where the snapshot is read from the source, not here.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -477,3 +477,4 @@ Completion Protocol (after the work is reported done):
 <!-- entries are added as tasks complete -->
 
 - 6.1 ✅ 2026-11-25 — the five outcomes as a closed union and the one HTTP answer of each, with one frozen refusal for every cause
+- 6.2 ✅ 2026-11-25 — the processor: verification over the raw bytes through the adapter, de-duplication by event identifier with D16, a read of every named account, the retention purge in reconciliation, and D41 recorded

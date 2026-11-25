@@ -23,3 +23,19 @@ export const DEFAULT_ALLOW_SANDBOX = false
 
 /** Whether the webhook controller is mounted when none is set: it is not (D10, FR17). */
 export const DEFAULT_WEBHOOK_CONTROLLER = false
+
+/**
+ * How long processed event identifiers are kept when none is set: 7 days (D41). RevenueCat retries
+ * a failed delivery up to five times over about 80 minutes and allows a manual resend with no
+ * stated limit, so 7 days covers both with a wide margin.
+ */
+export const DEFAULT_EVENT_RETENTION_MS = 7 * 24 * HOUR_MS
+
+/**
+ * The longest a webhook deadline may be: 60 seconds, after which RevenueCat disconnects and treats
+ * the delivery as failed (webhooks documentation, read 2026-11-25).
+ */
+export const MAX_WEBHOOK_DEADLINE_MS = 60_000
+
+/** How long the receiver works on a notification when none is set: half the source's limit. */
+export const DEFAULT_WEBHOOK_DEADLINE_MS = 30_000
