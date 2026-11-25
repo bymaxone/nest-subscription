@@ -4,11 +4,11 @@
  * holds is swept for them. The sweep lives in `fixtures/sentinel-sweep.ts` so that each later provider is added to it.
  * @layer e2e
  */
+import { inspect } from 'node:util'
+
 import { Secret, SubscriptionError, resolveOptions } from '@bymax-one/nest-subscription'
-import {
-  FakeSubscriptionSource,
-  InMemorySubscriptionStore
-} from '@bymax-one/nest-subscription/testing'
+import { InMemorySubscriptionStore } from '@bymax-one/nest-subscription/testing'
+import { credentialedSource } from './fixtures/credentialed-source'
 import {
   expectNoSentinel,
   outputsOf,
@@ -18,18 +18,20 @@ import {
 
 function sentinelOptions(): Parameters<typeof resolveOptions>[0] {
   return {
-    source: new FakeSubscriptionSource(),
+    source: credentialedSource(),
     store: new InMemorySubscriptionStore(),
-    accountResolver: () => null,
-    webhookSecret: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL }
+    accountResolver: () => null
   }
 }
 
 describe('secret containment', () => {
   it('shows no secret on any path of the resolved options', () => {
-    // Scenario: the resolved options hold two valid webhook secrets.
+    // Scenario: the resolved options hold a source whose credential is a rotation pair in a Secret.
+    // The sweep reaches the Secret (its placeholder is printed) and finds no value.
     const resolved = resolveOptions(sentinelOptions())
     expectNoSentinel(outputsOf(resolved))
+    expect(JSON.stringify(resolved)).toContain('[Secret]')
+    expect(inspect(resolved, { depth: null })).toContain('[Secret]')
   })
 
   it('shows no secret on any path of the Secret holder itself', () => {
@@ -39,11 +41,11 @@ describe('secret containment', () => {
 
   it('still returns both secrets to a deliberate read, and accepts either for verification', () => {
     // Scenario: during a rotation a request carrying either value verifies (SEC09).
-    const secret = resolveOptions(sentinelOptions()).webhookSecret
-    expect(secret?.candidates()).toEqual([WEBHOOK_SENTINEL, ROTATED_SENTINEL])
-    expect(secret?.matches(WEBHOOK_SENTINEL)).toBe(true)
-    expect(secret?.matches(ROTATED_SENTINEL)).toBe(true)
-    expect(secret?.matches('another-value')).toBe(false)
+    const secret = credentialedSource().credential
+    expect(secret.candidates()).toEqual([WEBHOOK_SENTINEL, ROTATED_SENTINEL])
+    expect(secret.matches(WEBHOOK_SENTINEL)).toBe(true)
+    expect(secret.matches(ROTATED_SENTINEL)).toBe(true)
+    expect(secret.matches('another-value')).toBe(false)
   })
 
   it('reads back the single value it was given and refuses to hold an unusable one', () => {
@@ -51,6 +53,9 @@ describe('secret containment', () => {
     // empty previous value, which would otherwise accept an empty presentation.
     expect(new Secret(WEBHOOK_SENTINEL).reveal()).toBe(WEBHOOK_SENTINEL)
     expect(Secret.from(WEBHOOK_SENTINEL).candidates()).toEqual([WEBHOOK_SENTINEL])
+    expect(
+      Secret.from({ current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL }).candidates()
+    ).toEqual([WEBHOOK_SENTINEL, ROTATED_SENTINEL])
     expect(() => new Secret('')).toThrow(SubscriptionError)
     expect(() => new Secret(WEBHOOK_SENTINEL, '')).toThrow(SubscriptionError)
     expect(new Secret(WEBHOOK_SENTINEL).matches(ROTATED_SENTINEL)).toBe(false)

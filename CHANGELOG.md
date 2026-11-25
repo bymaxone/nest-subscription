@@ -42,8 +42,8 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   optional `optionPaths` list, appended to its message, for configuration errors.
 - `Secret` and `SecretInput`, exported from the root: the holder of every credential and webhook
   secret, which keeps its values out of serialization, spread, enumeration and `util.inspect`, holds
-  two valid values during a rotation and compares in constant time. The module options accept an
-  optional `webhookSecret`, which the resolved options hold in a non-enumerable accessor.
+  two valid values during a rotation and compares in constant time. Each adapter's factory holds
+  its own credentials and webhook secrets in it; the module options hold none.
 - `SubscriptionModule.forRoot` and `forRootAsync`, exported from the root. The options are
   validated once at boot; the module provides `SUBSCRIPTION_OPTIONS`, `SUBSCRIPTION_SOURCE`,
   `SUBSCRIPTION_STORE` and `SUBSCRIPTION_CLOCK`, and `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER`

@@ -407,60 +407,46 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ### 10.1 Taken by the owner
 
-| Id  | Decision                                                                                                                                                                                                               | Date       |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| D01 | Subscription state is a library, not code in the backend template or in each product                                                                                                                                   | 2026-11-24 |
-| D02 | The library serves a host that uses RevenueCat and, independently, a host that uses Bymax Finance with no RevenueCat                                                                                                   | 2026-11-24 |
-| D03 | The Bymax Finance adapter is specified now and built when the Finance API exists                                                                                                                                       | 2026-11-24 |
-| D04 | The package is `@bymax-one/nest-subscription`, public, in the repository `bymaxone/nest-subscription`                                                                                                                  | 2026-11-24 |
-| D05 | The repository, its documents and everything on GitHub are in English                                                                                                                                                  | 2026-11-24 |
-| D06 | The RevenueCat adapter reads from version 2 of the REST API and uses version 1 only for the Google Play stop-renewal operation                                                                                         | 2026-11-24 |
-| D07 | For Bymax Finance, the host maps plan identifiers to entitlement names in the module options, so product code uses the same names with either adapter                                                                  | 2026-11-24 |
-| D08 | Subpaths: the root, `shared`, `revenuecat`, `finance` and `testing`                                                                                                                                                    | 2026-11-24 |
-| D09 | The library requires Node.js 26 or newer                                                                                                                                                                               | 2026-11-24 |
-| D10 | The first release ships both the webhook controller, off by default, and the processor                                                                                                                                 | 2026-11-24 |
-| D11 | The library ships the store port, an in-memory store for tests and a conformance suite; a store for a relational table is documented, not shipped                                                                      | 2026-11-24 |
-| D12 | The default staleness limit and the default tolerance for a last known state are both 24 hours                                                                                                                         | 2026-11-24 |
-| D13 | The first release includes the stop-renewal operation                                                                                                                                                                  | 2026-11-24 |
-| D14 | The example repository is `nest-subscription-example`                                                                                                                                                                  | 2026-11-24 |
-| D15 | The Finance adapter stores the pair of host account identifier and Finance customer identifier at first contact, and uses a lookup by external reference once Finance offers one                                       | 2026-11-24 |
-| D16 | A webhook event identifier is recorded when processing starts and removed when the event ends in the failed outcome, so the source's retry is processed                                                                | 2026-11-24 |
-| D17 | Changes are stored with the snapshot as not delivered, cleared after the host hook returns, and delivered again by reconciliation while they stay marked. This is how delivery is at least once across a process crash | 2026-11-24 |
-| D18 | The RevenueCat adapter's test fixtures are recorded from a RevenueCat sandbox project, with identifiers and secrets replaced                                                                                           | 2026-11-24 |
-| D19 | A guard decision never waits for the source. A guarded request with a stale snapshot still starts the background refresh of FR25                                                                                       | 2026-11-24 |
-| D20 | The host hook receives the previous snapshot on the first delivery of a change. A redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot                              | 2026-11-24 |
-| D21 | There is one error class, `SubscriptionError`, defined in the `shared` subpath and re-exported by the root, so a host catches one class whichever part of the library raised it                                        | 2026-11-24 |
-| D22 | A malformed argument from the caller raises its own code, `SUBSCRIPTION_INVALID_INPUT`, so a host can tell a programming error from an unknown account or a configuration error                                        | 2026-11-24 |
-| D23 | A subscription record carries a subscription reference, and the source customer reference of a snapshot is null when the source has no record of the account                                                           | 2026-11-24 |
-| D24 | `reflect-metadata` and `rxjs` are required peers beside the NestJS packages, because NestJS does not load without them. The optional peers are the integrations, `@bymax-one/nest-cache` and `@bymax-one/nest-core`    | 2026-11-24 |
+| Id  | Decision                                                                                                                                                                                                                                                                                  | Date       |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D01 | Subscription state is a library, not code in the backend template or in each product                                                                                                                                                                                                      | 2026-11-24 |
+| D02 | The library serves a host that uses RevenueCat and, independently, a host that uses Bymax Finance with no RevenueCat                                                                                                                                                                      | 2026-11-24 |
+| D03 | The Bymax Finance adapter is specified now and built when the Finance API exists                                                                                                                                                                                                          | 2026-11-24 |
+| D04 | The package is `@bymax-one/nest-subscription`, public, in the repository `bymaxone/nest-subscription`                                                                                                                                                                                     | 2026-11-24 |
+| D05 | The repository, its documents and everything on GitHub are in English                                                                                                                                                                                                                     | 2026-11-24 |
+| D06 | The RevenueCat adapter reads from version 2 of the REST API and uses version 1 only for the Google Play stop-renewal operation                                                                                                                                                            | 2026-11-24 |
+| D07 | For Bymax Finance, the host maps plan identifiers to entitlement names in the module options, so product code uses the same names with either adapter                                                                                                                                     | 2026-11-24 |
+| D08 | Subpaths: the root, `shared`, `revenuecat`, `finance` and `testing`                                                                                                                                                                                                                       | 2026-11-24 |
+| D09 | The library requires Node.js 26 or newer                                                                                                                                                                                                                                                  | 2026-11-24 |
+| D10 | The first release ships both the webhook controller, off by default, and the processor                                                                                                                                                                                                    | 2026-11-24 |
+| D11 | The library ships the store port, an in-memory store for tests and a conformance suite; a store for a relational table is documented, not shipped                                                                                                                                         | 2026-11-24 |
+| D12 | The default staleness limit and the default tolerance for a last known state are both 24 hours                                                                                                                                                                                            | 2026-11-24 |
+| D13 | The first release includes the stop-renewal operation                                                                                                                                                                                                                                     | 2026-11-24 |
+| D14 | The example repository is `nest-subscription-example`                                                                                                                                                                                                                                     | 2026-11-24 |
+| D15 | The Finance adapter stores the pair of host account identifier and Finance customer identifier at first contact, and uses a lookup by external reference once Finance offers one                                                                                                          | 2026-11-24 |
+| D16 | A webhook event identifier is recorded when processing starts and removed when the event ends in the failed outcome, so the source's retry is processed                                                                                                                                   | 2026-11-24 |
+| D17 | Changes are stored with the snapshot as not delivered, cleared after the host hook returns, and delivered again by reconciliation while they stay marked. This is how delivery is at least once across a process crash                                                                    | 2026-11-24 |
+| D18 | The RevenueCat adapter's test fixtures are recorded from a RevenueCat sandbox project, with identifiers and secrets replaced                                                                                                                                                              | 2026-11-24 |
+| D19 | A guard decision never waits for the source. A guarded request with a stale snapshot still starts the background refresh of FR25                                                                                                                                                          | 2026-11-24 |
+| D20 | The host hook receives the previous snapshot on the first delivery of a change. A redelivery is marked as one and carries the new snapshot and the changes, without the previous snapshot                                                                                                 | 2026-11-24 |
+| D21 | There is one error class, `SubscriptionError`, defined in the `shared` subpath and re-exported by the root, so a host catches one class whichever part of the library raised it                                                                                                           | 2026-11-24 |
+| D22 | A malformed argument from the caller raises its own code, `SUBSCRIPTION_INVALID_INPUT`, so a host can tell a programming error from an unknown account or a configuration error                                                                                                           | 2026-11-24 |
+| D23 | A subscription record carries a subscription reference, and the source customer reference of a snapshot is null when the source has no record of the account                                                                                                                              | 2026-11-24 |
+| D24 | `reflect-metadata` and `rxjs` are required peers beside the NestJS packages, because NestJS does not load without them. The optional peers are the integrations, `@bymax-one/nest-cache` and `@bymax-one/nest-core`                                                                       | 2026-11-24 |
+| D25 | The configuration error names the offending options: `SubscriptionError` takes an optional list of option paths, keeps it on `optionPaths` and appends it to the fixed message. The paths are literals the library writes; no supplied value reaches the error, and it carries no `cause` | 2026-11-25 |
+| D26 | The module options hold no credential and no webhook secret. Each adapter's factory takes its own credentials and webhook secrets, two values during a rotation, and holds them in `Secret`. Verification is the adapter's job and `verifyWebhook(request)` takes no secret               | 2026-11-25 |
+| D27 | `forRoot` takes the store as an instance or as an injection token provided by a module listed in its `imports`; the `forRootAsync` factory returns the instance, which the host obtains through `inject`                                                                                  | 2026-11-25 |
+| D28 | `forRootAsync` always provides the cache and observer tokens, holding `null` when the factory sets none, because providers cannot depend on a factory result; `forRoot` provides each only when configured                                                                                | 2026-11-25 |
 
 ### 10.2 Open
 
-A new question is added here with a proposal and is never answered on the owner's behalf. Each
+A new question is added here with a proposal and is never answered on the owner's behalf. The
 proposal below is what the code does until the owner answers.
 
-- **Q01. How does the configuration error name the offending options?** `SubscriptionError` has a
-  fixed message per code (D21), and §6.3 asks for one message that names every offending option.
-  Proposal: the error takes an optional list of option paths, keeps it on `optionPaths` and appends
-  it to the fixed message (`Offending options: a, b.`). The paths are literals the library writes;
-  no supplied value reaches the error, and the error carries no `cause`.
-- **Q02. Which module option holds a webhook secret, and in which shape?** §8.2 (SEC05, SEC09)
-  needs the option shape to hold two valid webhook secrets, while the adapters own the verification
-  and their own credentials. Proposal: the module options carry no credential of their own beyond
-  the optional `webhookSecret` (a string, or `{ current, previous }` during rotation, or a `Secret`),
-  which is wrapped in `Secret` at the one place the resolved options are built; an adapter's own
-  credentials are wrapped by the adapter's factory.
 - **Q03. What are the default event retention and the default webhook path?** Neither FR19 nor D10
   fixes one. Proposal: both stay unset (`null` in the resolved options) until the webhook phase
-  decides, and an unset retention means identifiers are not purged by the library.
-- **Q04. In `forRootAsync`, how is a store given by token resolved?** A token cannot be known when
-  the module is built. Proposal: `forRoot` accepts the store as an instance or a token; the
-  `forRootAsync` factory returns the instance, which the host obtains through `inject`. A store
-  token must be provided by a module the host lists in the `imports` option of `forRoot`.
-- **Q05. Are the cache and observer tokens absent or `null` when `forRootAsync` configures none?**
-  Providers cannot depend on the result of a factory. Proposal: `forRoot` provides each token only
-  when its option is set; `forRootAsync` always provides both, holding `null` when unset, and a
-  consumer treats `null` as absent.
+  decides, and an unset retention means identifiers are not purged by the library. The webhook
+  phase (P6) decides it from the provider's documented retry policy.
 
 ---
 

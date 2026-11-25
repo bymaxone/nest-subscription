@@ -15,7 +15,6 @@ import {
   SUBSCRIPTION_OPTIONS,
   SUBSCRIPTION_SOURCE,
   SUBSCRIPTION_STORE,
-  Secret,
   SubscriptionError,
   SubscriptionModule
 } from '@bymax-one/nest-subscription'
@@ -29,6 +28,7 @@ import {
   InMemorySubscriptionStore
 } from '@bymax-one/nest-subscription/testing'
 
+import { credentialedSource } from './fixtures/credentialed-source'
 import {
   expectNoSentinel,
   outputsOf,
@@ -198,11 +198,7 @@ const INVALID: readonly (readonly [string, Record<string, unknown>])[] = [
   ['cache', { cache: { get: () => 1 } }],
   ['observer', { observer: SENTINEL }],
   ['clock', { clock: { now: SENTINEL } }],
-  ['clock', { clock: SENTINEL }],
-  ['webhookSecret', { webhookSecret: '' }],
-  ['webhookSecret', { webhookSecret: { current: 5, previous: SENTINEL } }],
-  ['webhookSecret', { webhookSecret: { current: SENTINEL, previous: 5 } }],
-  ['webhookSecret', { webhookSecret: 5 }]
+  ['clock', { clock: SENTINEL }]
 ]
 
 describe('module boot refuses a wrong configuration', () => {
@@ -278,10 +274,12 @@ describe('module boot refuses a wrong configuration', () => {
 
 describe('secret containment across the module', () => {
   it('shows no secret on any path of the resolved options or of any provider', async () => {
-    // Scenario: both forms boot with two sentinel webhook secrets; every token is swept.
+    // Scenario: both forms boot with a source that holds a rotation pair in a Secret; every token
+    // is swept, and the sweep of the source and of the options reaches the Secret (its placeholder
+    // is printed), so finding no sentinel is not vacuous.
     const withSecret: SubscriptionOptionsInput = {
       ...good(),
-      webhookSecret: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      source: credentialedSource(),
       cache: { get: jest.fn(), set: jest.fn(), delete: jest.fn() },
       observer: {}
     }
@@ -302,19 +300,23 @@ describe('secret containment across the module', () => {
       ]) {
         expectNoSentinel(outputsOf(app.get<object>(token)))
       }
-      const secret = app.get<ResolvedSubscriptionOptions>(SUBSCRIPTION_OPTIONS).webhookSecret
-      expect(secret).toBeInstanceOf(Secret)
-      expect(secret?.candidates()).toEqual([WEBHOOK_SENTINEL, ROTATED_SENTINEL])
+      for (const token of [SUBSCRIPTION_OPTIONS, SUBSCRIPTION_SOURCE]) {
+        expect(JSON.stringify(app.get<object>(token))).toContain('[Secret]')
+      }
+      const source = app.get<ReturnType<typeof credentialedSource>>(SUBSCRIPTION_SOURCE)
+      expect(source.credential.candidates()).toEqual([WEBHOOK_SENTINEL, ROTATED_SENTINEL])
       await app.close()
     }
   })
 
   it('does not change the options object the host passed', async () => {
-    // Scenario: the host's object keeps its own secret and its descriptors across a boot.
-    const options = { ...good(), webhookSecret: WEBHOOK_SENTINEL }
+    // Scenario: the host's object and its source keep their descriptors across a boot.
+    const options = { ...good(), source: credentialedSource() }
     const descriptors = Object.getOwnPropertyDescriptors(options)
+    const sourceDescriptors = Object.getOwnPropertyDescriptors(options.source)
     const app = await boot(SubscriptionModule.forRoot(options))
     expect(Object.getOwnPropertyDescriptors(options)).toEqual(descriptors)
+    expect(Object.getOwnPropertyDescriptors(options.source)).toEqual(sourceDescriptors)
     await app.close()
   })
 })

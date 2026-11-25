@@ -7,8 +7,6 @@ import type { ExecutionContext, InjectionToken, ModuleMetadata } from '@nestjs/c
 
 import type {
   Clock,
-  Secret,
-  SecretInput,
   SubscriptionSource,
   SubscriptionStore
 } from '@bymax-one/nest-subscription/internal'
@@ -106,11 +104,6 @@ export interface SubscriptionOptionsInput {
   readonly multiTenant?: boolean
   /** The time source. Defaults to the system clock; a test passes its own. */
   readonly clock?: Clock
-  /**
-   * The webhook secret: one value, a `{ current, previous }` pair while a rotation is in progress,
-   * or a `Secret`. The resolved options hold it in a `Secret`.
-   */
-  readonly webhookSecret?: SecretInput
 }
 
 /** The options of `SubscriptionModule.forRoot`: the input, with the store also as a token. */
@@ -171,9 +164,4 @@ export interface ResolvedSubscriptionOptions {
   readonly multiTenant: boolean
   /** The time source. */
   readonly clock: Clock
-  /**
-   * The webhook secret, or `null` when the host set none. It is a non-enumerable accessor, so
-   * spread, `Object.keys`, serialization and `util.inspect` never reach the value.
-   */
-  readonly webhookSecret: Secret | null
 }

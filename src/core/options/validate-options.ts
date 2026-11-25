@@ -5,7 +5,7 @@
  * secret or otherwise, can reach it.
  * @layer core
  */
-import { Secret, SubscriptionError } from '@bymax-one/nest-subscription/internal'
+import { SubscriptionError } from '@bymax-one/nest-subscription/internal'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import type { SubscriptionOptionsInput } from './subscription-options.types'
@@ -62,20 +62,6 @@ function isSource(value: unknown): boolean {
   )
 }
 
-function isUsableSecretValue(value: unknown): boolean {
-  return typeof value === 'string' && value.length > 0
-}
-
-function isSecretInput(value: unknown): boolean {
-  if (isUsableSecretValue(value) || value instanceof Secret) return true
-  if (!isObject(value)) return false
-  const previous = Reflect.get(value, 'previous')
-  return (
-    isUsableSecretValue(Reflect.get(value, 'current')) &&
-    (previous === undefined || isUsableSecretValue(previous))
-  )
-}
-
 function isPositiveDuration(value: unknown): boolean {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
@@ -123,8 +109,7 @@ const RULES: readonly Rule[] = [
   optional('multiTenant', isBoolean),
   optional('cache', (value) => hasMethods(value, CACHE_METHODS)),
   optional('observer', isObject),
-  optional('clock', (value) => hasMethods(value, ['now'])),
-  optional('webhookSecret', isSecretInput)
+  optional('clock', (value) => hasMethods(value, ['now']))
 ]
 
 /**

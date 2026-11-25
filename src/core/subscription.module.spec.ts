@@ -163,7 +163,7 @@ describe('SubscriptionModule.forRoot', () => {
 
   it('does not change the options object the host passed', () => {
     // Scenario: the host's object and its store are untouched after the factory ran.
-    const options = Object.freeze({ ...input(), webhookSecret: SENTINEL })
+    const options = Object.freeze({ ...input(), webhookPath: SENTINEL })
     const before = { ...options }
     provider(SubscriptionModule.forRoot(options), SUBSCRIPTION_OPTIONS).useFactory()
     expect({ ...options }).toEqual(before)
@@ -238,11 +238,11 @@ describe('SubscriptionModule.forRootAsync', () => {
         ({
           ...input(),
           store: undefined,
-          webhookSecret: { current: 5, previous: SENTINEL }
+          webhookPath: `${SENTINEL}?`
         }) as never
     })
     const failure = provider(module, SUBSCRIPTION_OPTIONS).useFactory()
-    await expect(failure).rejects.toThrow('Offending options: store, webhookSecret.')
+    await expect(failure).rejects.toThrow('Offending options: store, webhookPath.')
     await expect(failure).rejects.not.toThrow(SENTINEL)
   })
 

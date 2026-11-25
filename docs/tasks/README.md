@@ -156,7 +156,7 @@ These are the scripts of the scaffold P0 brings from `bymaxone/nest-telemetry`. 
 
 - **Access comes from the source's flag.** No code derives access from a status name (FR02, R02).
 - **A webhook payload never writes state.** It only triggers a read of the source (FR16, SEC01).
-- **A secret never sits in an enumerable property.** A class that owns one uses a `#private` field; a resolved options object exposes it through a non-enumerable getter. Tests cover `JSON.stringify`, spread, `util.inspect` and `util.inspect` with `showHidden` (SEC05).
+- **A secret never sits in an enumerable property.** A class that owns one uses a `#private` field; the module options hold no secret and each adapter factory holds its credentials in a `Secret` (D26). Tests cover `JSON.stringify`, spread, `util.inspect` and `util.inspect` with `showHidden` (SEC05).
 - **A key built from more than one field keeps its boundaries** (`AGENTS.md` §3). Tenant and account go through `encodeAccountKey`, nowhere else.
 - **Time comes from the injected `Clock`.** No test waits on a real timer.
 - **Unit tests open no socket.** HTTP to a provider is replaced by a local stand-in in the end-to-end suite and by a stubbed `fetch` in unit tests.
