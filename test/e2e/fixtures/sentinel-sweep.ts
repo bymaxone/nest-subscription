@@ -5,7 +5,9 @@
  */
 import { inspect } from 'node:util'
 
+/** The current secret of a sweep; no output of `outputsOf` may contain it. */
 export const WEBHOOK_SENTINEL = 'sentinel-webhook-secret-c0ffee01'
+/** The previous secret during a rotation; no output of `outputsOf` may contain it either. */
 export const ROTATED_SENTINEL = 'sentinel-rotated-secret-bada5501'
 
 /** Applies every path that could expose a value to `subject` and returns what each one printed. */
