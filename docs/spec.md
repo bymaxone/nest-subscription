@@ -452,22 +452,15 @@ The library keeps no other state. It stores no payment data, no price paid and n
 | D39 | An HTTP exception with a status from 400 to 599 thrown or rejected by the host's resolver leaves the guard unchanged, so the host controls its own refusal; any other error of the resolver, and an error from anywhere else in the guard path, refuses with HTTP 503 `SUBSCRIPTION_SOURCE_UNAVAILABLE` and the catalogue body                                                                                                                                                                                                                                                                                                                                                                                                                              | 2026-11-25 |
 | D40 | Every entitlement records every subscription or non-renewing purchase that grants it and gives access, as `grantingSubscriptionReferences` (sorted ascending, no duplicates, empty when none), beside the decisive `grantingSubscriptionReference`, which is a member of the list when it is not null. `overlap_detected` is reported per entitlement, when the previous snapshot had at most one grantor and the next has two or more. The earlier approximation, any two subscriptions that give access, was rejected because it reports subscriptions that grant different entitlements as overlapping                                                                                                                                                   | 2026-11-25 |
 | D41 | The default retention of processed event identifiers is 7 days (604 800 000 ms), which the host can set with `eventRetentionMs`; identifiers older than it are purged through the store's `deleteEventsOlderThan` by each reconciliation run, never by a timer of the library. There is no default webhook path: enabling the controller without `webhookPath` fails at boot with the configuration error naming `webhookPath`, and the integrator chooses the whole path. Reason: RevenueCat retries a failed delivery up to 5 times over about 80 minutes and allows a manual resend from its dashboard with no stated time limit, so 7 days covers both with a wide margin (page read 2026-11-25: https://www.revenuecat.com/docs/integrations/webhooks) | 2026-11-25 |
+| D42 | The built-in webhook controller serves single-tenant hosts only: enabling `webhookController` together with `multiTenant` is refused at boot naming `webhookController`. A multi-tenant host mounts its own route behind its tenant routing and calls `WebhookProcessor.process(request, { tenantId })`, so nothing guesses a tenant. Reason: the controller sits outside the host's authentication and SEC08 forbids a tenant from a request body. Rejected: a `:tenantId` path segment, because the tenant would then come from a URL anyone can call, protected only by the signature                                                                                                                                                                    | 2026-11-25 |
+| D43 | `forRootAsync` takes the controller's route as a static `webhookPath` beside the factory, because NestJS registers routes before an asynchronous factory runs. Its presence mounts the controller, and a factory that sets `webhookController: false` beside it, or `webhookController: true` without it, fails at boot naming the option. Rejected: no controller with `forRootAsync`                                                                                                                                                                                                                                                                                                                                                                      | 2026-11-25 |
 
 ### 10.2 Open
 
 A new question is added here with a proposal and is never answered on the owner's behalf. The
 proposal below is what the code does until the owner answers.
 
-- **Q04. Which tenant does the webhook controller serve in a multi-tenant host?** The controller sits
-  outside the host's authentication, so it has no authenticated tenant, and SEC08 forbids taking one
-  from a request body. Proposal: enabling `webhookController` together with `multiTenant` is refused
-  at boot naming `webhookController`; a multi-tenant host mounts its own route behind its tenant
-  routing and passes the tenant to `WebhookProcessor.process`.
-- **Q05. How does `forRootAsync` learn the controller's route?** NestJS registers routes before an
-  asynchronous factory runs, so the route cannot come from the factory's result. Proposal:
-  `forRootAsync` takes a static `webhookPath`; its presence mounts the controller, and a factory that
-  sets `webhookController: false` beside it, or `webhookController: true` without it, is refused at
-  boot naming the option.
+None.
 
 ---
 
