@@ -1,6 +1,6 @@
 # Phase 8 — Management operations
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P8 — management-operations
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
