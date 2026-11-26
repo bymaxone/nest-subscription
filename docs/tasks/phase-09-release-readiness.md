@@ -1,6 +1,6 @@
 # Phase 9 — Release readiness
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P9 — release-readiness
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -40,7 +40,7 @@ At the end the package is publishable: the README follows the family's canonical
 | ID  | Task                                              | Status  | Priority | Size | Depends on    |
 | --- | ------------------------------------------------- | ------- | -------- | ---- | ------------- |
 | 9.1 | Write the public README                           | ✅ Done | P0       | L    | —             |
-| 9.2 | Write the host guides                             | 📋 ToDo | P0       | M    | 9.1           |
+| 9.2 | Write the host guides                             | ✅ Done | P0       | M    | 9.1           |
 | 9.3 | Sweep the captured logs of the whole suite        | ✅ Done | P0       | M    | 9.1           |
 | 9.6 | Prove AC08 with one suite run against two sources | ✅ Done | P0       | M    | —             |
 | 9.4 | Measure the whole package                         | 📋 ToDo | P0       | M    | 9.2, 9.3, 9.6 |
@@ -135,7 +135,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.2 — Write the host guides
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.1
@@ -146,10 +146,10 @@ Write the two guides the specification promises to a host: how to obtain the raw
 
 #### Acceptance criteria
 
-- [ ] `docs/raw-body.md` shows how to enable the raw body for the webhook route with the Express adapter, what breaks without it, and what a Fastify host does.
-- [ ] `docs/reference-store.md` gives the two records of specification §7 as a table definition, the uniqueness and ordering the library relies on, and each port method as a query, for PostgreSQL.
-- [ ] The reference store's code, kept as a test fixture, passes `storeConformanceCases`; if a database is not available in CI, the guide says how it was run and the fixture is exercised against a database by the host that adopts it.
-- [ ] Both guides are linked from the README and from `docs/README.md`.
+- [x] `docs/raw-body.md` shows how to enable the raw body for the webhook route with the Express adapter, what breaks without it, and what a Fastify host does.
+- [x] `docs/reference-store.md` gives the two records of specification §7 as a table definition, the uniqueness and ordering the library relies on, and each port method as a query, for PostgreSQL.
+- [x] The reference store's code, kept as a test fixture, passes `storeConformanceCases`; if a database is not available in CI, the guide says how it was run and the fixture is exercised against a database by the host that adopts it.
+- [x] Both guides are linked from the README and from `docs/README.md`.
 
 #### Files to create / modify
 
@@ -556,3 +556,4 @@ Completion Protocol (after the work is reported done):
 - 9.6 ✅ 2026-11-26 — one suite runs the same application and cases against the fake source and the RevenueCat adapter over a local stand-in (AC08)
 - 9.3 ✅ 2026-11-26 — a per-file sweep and a global teardown search every log line, observer payload, response body and library error of the whole end-to-end run for the sentinels the specs declare
 - 9.1 ✅ 2026-11-26 — the public README in the family's sequence, every snippet compiled against the built package, the error table checked against the catalogue
+- 9.2 ✅ 2026-11-26 — the raw-body guide and the PostgreSQL reference store, whose fixture passes all 28 conformance cases against PostgreSQL 17
