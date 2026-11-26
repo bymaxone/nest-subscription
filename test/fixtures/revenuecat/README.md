@@ -44,7 +44,7 @@ values of the state named by the file.
 | `in-billing-retry.json`              | `in_billing_retry`, no access                                                                                                                                   |
 | `paused.json`                        | `paused`, no access, no period end                                                                                                                              |
 | `expired.json`                       | `expired`, no access                                                                                                                                            |
-| `refunded-subscription.json`         | no access and `ends_at` earlier than `current_period_ends_at`. The page states no refund marker for a subscription; see the open question Q1 of `docs/spec.md`  |
+| `refunded-subscription.json`         | no access and `ends_at` earlier than `current_period_ends_at`. The page states no refund marker for a subscription; see decision D46 of `docs/spec.md`          |
 | `sandbox-subscription.json`          | `environment: sandbox` with `gives_access: true`, which is what RevenueCat does under its default setting                                                       |
 | `unknown-status.json`                | `incomplete` and `requires_price_increase_consent`, values outside the table                                                                                    |
 | `lifetime-purchase.json`             | a purchase that grants an entitlement; the entitlement has `expires_at: null`                                                                                   |
