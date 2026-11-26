@@ -72,7 +72,8 @@ describe('revenueCatSource', () => {
   })
 
   it('answers the management calls as not possible from a server, with the management reference', async () => {
-    // Scenario: until a later phase, no operation is supported; the person acts, and is told where.
+    // Scenario: the source advertises no server-side operation, and the answer carries the
+    // management reference for the person to act on.
     const source = sourceWith()
     const snapshot = await source.readAccount({ accountId: 'c' })
     const subscription = snapshot.subscriptions[0]

@@ -317,6 +317,27 @@ describe('purchases with fields of the wrong type or missing', () => {
     expect(await outcome()).toMatchObject({ nonRenewingPurchases: [{ givesAccess: false }] })
   })
 
+  it('gives no access to a production purchase whose entitlement a sandbox grantor without an identifier names', async () => {
+    // Scenario: the active list names no grantor; the sandbox purchase's entitlement has a name only.
+    const sandboxPurchase = purchase({
+      id: 'p2',
+      environment: 'sandbox',
+      entitlements: list([{ lookup_key: 'premium' }])
+    })
+    stand.respondWith(
+      lists({
+        purchases: list([purchase(), sandboxPurchase]),
+        active_entitlements: list([{ entitlement_id: 'entl_1', expires_at: null }])
+      })
+    )
+    expect(await outcome()).toMatchObject({
+      nonRenewingPurchases: [
+        { purchaseReference: 'p1', givesAccess: false },
+        { givesAccess: false }
+      ]
+    })
+  })
+
   it('treats a nested list that is not a list as a missing one', async () => {
     // Scenario: the nested field is text; the per-purchase endpoint is the authority.
     stand.respondWith((request) => {
@@ -331,7 +352,7 @@ describe('purchases with fields of the wrong type or missing', () => {
 
 describe('the HTTP client and the options', () => {
   it('sends a POST with a JSON body and the key, and a GET with no query', async () => {
-    // Scenario: the one call the adapter does not make yet but the client supports.
+    // Scenario: a POST, which the client supports and the adapter does not use.
     stand.respondWith((request) =>
       request.method === 'POST'
         ? { status: 200, body: { done: true } }

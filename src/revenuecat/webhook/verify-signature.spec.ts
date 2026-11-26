@@ -59,7 +59,7 @@ describe('verifySignature', () => {
   })
 
   it('accepts an upper-case digest and a key it does not know', () => {
-    // Scenario: hexadecimal is case-insensitive and a later scheme may add a key beside v1.
+    // Scenario: hexadecimal is case-insensitive and a key beside v1 is ignored.
     const digest = digestOf(SECRET, String(T), BODY).toUpperCase()
     expect(check(`t=${String(T)},v1=${digest},v0=anything`)).toBe(true)
   })

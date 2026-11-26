@@ -8,8 +8,10 @@
 import type { NonRenewingPurchaseRecord } from '@bymax-one/nest-subscription/shared'
 
 import { encodeSegment } from '../revenuecat-http'
+import { contestedBy, NOTHING_CONTESTED, type Contested } from './contested'
 import { listAll } from './list-all'
 import { mapPurchase } from './map-purchase'
+import { environmentOf } from './map-subscription'
 import { parseEntitlements, type ParsedEntitlement } from './parse-customer'
 import {
   parseActiveEntitlements,
@@ -70,24 +72,45 @@ async function readActive(
 }
 
 /**
+ * What the sandbox grants of the customer contest: nothing when sandbox access is allowed, and
+ * otherwise every entitlement a sandbox subscription or a sandbox purchase names.
+ */
+function contestedOf(
+  context: RevenueCatReadContext,
+  granting: readonly GrantingPurchase[],
+  sandboxSubscriptions: readonly ParsedEntitlement[]
+): Contested {
+  if (context.allowSandbox) return NOTHING_CONTESTED
+  const sandboxPurchases = granting
+    .filter(({ parsed }) => environmentOf(parsed.environment) === 'sandbox')
+    .flatMap(({ entitlements }) => entitlements)
+  return contestedBy([...sandboxSubscriptions, ...sandboxPurchases])
+}
+
+/**
  * The non-renewing purchases of a customer that grant an entitlement, sandbox included: the
- * filter that removes sandbox access is applied by the caller.
+ * filter that removes sandbox access is applied by the caller. While sandbox access is not allowed
+ * an entitlement a sandbox subscription or purchase also grants gives a production purchase no
+ * access.
  *
  * @param context The client and the settings of the adapter.
  * @param accountId The customer's App User ID.
  * @param fetchedAt The instant of the read.
+ * @param sandboxSubscriptions The entitlements the customer's sandbox subscriptions grant.
  * @throws SubscriptionError with the source-unavailable code when a list cannot be read to its end
  *   or an item cannot be named; and whatever the client throws.
  */
 export async function readPurchases(
   context: RevenueCatReadContext,
   accountId: string,
-  fetchedAt: string
+  fetchedAt: string,
+  sandboxSubscriptions: readonly ParsedEntitlement[]
 ): Promise<readonly NonRenewingPurchaseRecord[]> {
   const granting = await readGranting(context, accountId)
   const active = await readActive(context, accountId, granting)
+  const contested = contestedOf(context, granting, sandboxSubscriptions)
   return granting.flatMap(({ parsed, entitlements }) => {
-    const record = mapPurchase(parsed, entitlements, active, fetchedAt)
+    const record = mapPurchase(parsed, entitlements, active, contested, fetchedAt)
     return record === null ? [] : [record]
   })
 }

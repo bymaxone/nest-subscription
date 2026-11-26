@@ -181,7 +181,7 @@ describe('isSnapshotFor', () => {
   })
 
   it('accepts a snapshot with no list of purchases, which reads as none, and one with an empty list', () => {
-    // Scenario: a snapshot written before the source held purchases, and one of an account with none.
+    // Scenario: a snapshot with no list of purchases, and one of an account with none.
     const { nonRenewingPurchases: _held, ...without } = full()
     expect(isSnapshotFor(without, TENANTED)).toBe(true)
     expect(isSnapshotFor({ ...full(), nonRenewingPurchases: [] }, TENANTED)).toBe(true)

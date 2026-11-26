@@ -2,12 +2,14 @@
  * @fileoverview Maps one RevenueCat one-time purchase into a `NonRenewingPurchaseRecord` (D31).
  * A purchase has no access flag and no expiry of its own, so the source's own statement stands in:
  * it gives access while its status is `owned` and an entitlement it grants is in the customer's
- * active-entitlements list, and it ends when that entitlement ends, with no end when the list
- * gives none. A purchase that grants no entitlement, as a consumable does not, is not held.
+ * active-entitlements list that no sandbox subscription or purchase of the customer also grants,
+ * and it ends when that entitlement ends, with no end when the list gives none. A purchase that
+ * grants no entitlement, as a consumable does not, is not held.
  * @layer revenuecat
  */
 import type { NonRenewingPurchaseRecord } from '@bymax-one/nest-subscription/shared'
 
+import { isContested, type Contested } from './contested'
 import { environmentOf, toInstant } from './map-subscription'
 import type { ParsedEntitlement } from './parse-customer'
 import type { ActiveEntitlements, ParsedPurchase } from './parse-purchases'
@@ -34,13 +36,17 @@ interface LiveEntitlement {
   readonly end: number | null
 }
 
-/** The entitlements of the purchase that the source lists as active now, with each one's end. */
+/**
+ * The entitlements of the purchase that the source lists as active now, with each one's end. One
+ * that a sandbox grantor also grants is left out: the list cannot say which grantor keeps it active.
+ */
 function liveOf(
   entitlements: readonly ParsedEntitlement[],
-  active: ActiveEntitlements
+  active: ActiveEntitlements,
+  contested: Contested
 ): LiveEntitlement[] {
   return entitlements.flatMap((entitlement) =>
-    entitlement.id !== null && active.has(entitlement.id)
+    entitlement.id !== null && active.has(entitlement.id) && !isContested(contested, entitlement)
       ? [{ entitlement, end: active.get(entitlement.id) ?? null }]
       : []
   )
@@ -52,6 +58,8 @@ function liveOf(
  * @param parsed The purchase as narrowed from the response.
  * @param entitlements The entitlements it grants, complete.
  * @param active The customer's active entitlements, by the entitlement's `id`.
+ * @param contested The entitlements that sandbox activity also grants, empty when sandbox access
+ *   is allowed.
  * @param fetchedAt The instant of the read, which stands in for a purchase instant the source did
  *   not send.
  */
@@ -59,10 +67,11 @@ export function mapPurchase(
   parsed: ParsedPurchase,
   entitlements: readonly ParsedEntitlement[],
   active: ActiveEntitlements,
+  contested: Contested,
   fetchedAt: string
 ): NonRenewingPurchaseRecord | null {
   if (entitlements.length === 0) return null
-  const live = liveOf(entitlements, active)
+  const live = liveOf(entitlements, active, contested)
   const givesAccess = parsed.status === 'owned' && live.length > 0
   const purchasedAt = toInstant(parsed.purchasedAt) ?? fetchedAt
   return {

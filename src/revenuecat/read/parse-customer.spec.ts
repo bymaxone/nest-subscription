@@ -5,7 +5,7 @@
  */
 import {
   isRecord,
-  parseEntitlementNames,
+  parseEntitlements,
   parseList,
   parseSubscription,
   readBoolean,
@@ -81,18 +81,21 @@ describe('parseList', () => {
   })
 })
 
-describe('parseEntitlementNames', () => {
-  it('reads the lookup key of each item and drops an item without one', () => {
-    // Scenario: the name of an entitlement is its lookup key, not its internal identifier.
+describe('parseEntitlements', () => {
+  it('reads the identifier and the lookup key of each item and drops an item without a key', () => {
+    // Scenario: the name of an entitlement is its lookup key; its identifier is kept apart.
     expect(
-      parseEntitlementNames([
+      parseEntitlements([
         { id: 'e1', lookup_key: 'premium' },
         { id: 'e2' },
         'x',
         { lookup_key: '' },
         { lookup_key: 'extra' }
       ])
-    ).toStrictEqual(['premium', 'extra'])
+    ).toStrictEqual([
+      { id: 'e1', name: 'premium' },
+      { id: null, name: 'extra' }
+    ])
   })
 })
 
@@ -128,7 +131,7 @@ describe('parseSubscription', () => {
       currentPeriodEndsAt: 3,
       endsAt: 4,
       managementUrl: 'https://m',
-      entitlementNames: ['premium'],
+      entitlements: [{ id: null, name: 'premium' }],
       entitlementsIncomplete: false
     })
   })
@@ -138,7 +141,7 @@ describe('parseSubscription', () => {
     const withNext = parseSubscription({ id: 's1', entitlements: { items: [], next_page: 'n' } })
     const absent = parseSubscription({ id: 's1' })
     const malformed = parseSubscription({ id: 's1', entitlements: 'x' })
-    expect([absent?.entitlementNames, malformed?.entitlementNames]).toStrictEqual([[], []])
+    expect([absent?.entitlements, malformed?.entitlements]).toStrictEqual([[], []])
     expect([
       withNext?.entitlementsIncomplete,
       absent?.entitlementsIncomplete,

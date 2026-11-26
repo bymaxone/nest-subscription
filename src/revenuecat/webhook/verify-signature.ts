@@ -31,7 +31,7 @@ const DIGEST = /^[0-9a-fA-F]{64}$/
 
 /**
  * Reads `t=<digits>,v1=<64 hex digits>`. Each key must appear once; a key this version does not
- * know is ignored, so a later scheme can be added beside `v1`. Anything else is not a signature.
+ * know is ignored, so a scheme beside `v1` does not break it. Anything else is not a signature.
  */
 export function parseSignature(header: string): ParsedSignature | null {
   const values = new Map<string, string>()

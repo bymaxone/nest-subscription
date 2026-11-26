@@ -24,7 +24,7 @@ function parsed(overrides: Partial<ParsedSubscription> = {}): ParsedSubscription
     currentPeriodEndsAt: NOW_MS + DAY,
     endsAt: null,
     managementUrl: null,
-    entitlementNames: [],
+    entitlements: [],
     entitlementsIncomplete: false,
     ...overrides
   }

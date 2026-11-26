@@ -64,11 +64,6 @@ export function parseEntitlements(items: readonly unknown[]): readonly ParsedEnt
   })
 }
 
-/** The names of the entitlements of a nested list; an item with no `lookup_key` is dropped. */
-export function parseEntitlementNames(items: readonly unknown[]): readonly string[] {
-  return parseEntitlements(items).map((entitlement) => entitlement.name)
-}
-
 /** A subscription as the adapter reads it. Every field but `id` may be absent. */
 export interface ParsedSubscription {
   /** The subscription's `id`. */
@@ -95,8 +90,8 @@ export interface ParsedSubscription {
   readonly endsAt: number | null
   /** The `management_url`, when there is one. */
   readonly managementUrl: string | null
-  /** The names of the entitlements of the nested list that came with the subscription. */
-  readonly entitlementNames: readonly string[]
+  /** The entitlements of the nested list that came with the subscription. */
+  readonly entitlements: readonly ParsedEntitlement[]
   /**
    * Whether the nested entitlement list is incomplete: it says more follow, or it did not come
    * with the subscription at all.
@@ -127,7 +122,7 @@ export function parseSubscription(value: unknown): ParsedSubscription | null {
     currentPeriodEndsAt: readMillis(value, 'current_period_ends_at'),
     endsAt: readMillis(value, 'ends_at'),
     managementUrl: readString(value, 'management_url'),
-    entitlementNames: nested === null ? [] : parseEntitlementNames(nested.items),
+    entitlements: nested === null ? [] : parseEntitlements(nested.items),
     entitlementsIncomplete: nested === null || nested.hasMore
   }
 }

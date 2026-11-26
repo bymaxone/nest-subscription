@@ -18,22 +18,27 @@ import {
 import { encodeSegment } from '../revenuecat-http'
 import { listAll } from './list-all'
 import { mapSubscription } from './map-subscription'
-import { parseEntitlementNames, parseSubscription, type ParsedSubscription } from './parse-customer'
+import {
+  parseEntitlements,
+  parseSubscription,
+  type ParsedEntitlement,
+  type ParsedSubscription
+} from './parse-customer'
 import { unavailableIfUnknown, unreadable, type RevenueCatReadContext } from './read-context'
 import { readPurchases } from './read-purchases'
 import { applySandboxFilter, filterSandboxPurchases, type GrantedRecords } from './sandbox-filter'
 
 /**
- * The entitlement names a subscription grants. The nested list that came with it is used when it
- * is complete; otherwise the per-subscription endpoint is read to its end.
+ * The entitlements a subscription grants. The nested list that came with it is used when it is
+ * complete; otherwise the per-subscription endpoint is read to its end.
  */
-async function namesOf(
+async function entitlementsOf(
   context: RevenueCatReadContext,
   parsed: ParsedSubscription
-): Promise<readonly string[]> {
-  if (!parsed.entitlementsIncomplete) return parsed.entitlementNames
+): Promise<readonly ParsedEntitlement[]> {
+  if (!parsed.entitlementsIncomplete) return parsed.entitlements
   const path = `/projects/${encodeSegment(context.projectId)}/subscriptions/${encodeSegment(parsed.id)}/entitlements`
-  return parseEntitlementNames(await listAll(context.http, path, 'id'))
+  return parseEntitlements(await listAll(context.http, path, 'id'))
 }
 
 /** Every subscription of the customer, narrowed; an item that cannot be named fails the read. */
@@ -49,19 +54,34 @@ async function readSubscriptions(
   })
 }
 
-/** The records of the customer and the names each grants, before the sandbox filter. */
+/** The records of the customer, the names each grants and what its sandbox subscriptions grant. */
+interface ReadGranted {
+  /** The records and the names each grants, before the sandbox filter. */
+  readonly granted: GrantedRecords
+  /** The entitlements the sandbox subscriptions grant, whatever their access flag. */
+  readonly sandbox: readonly ParsedEntitlement[]
+}
+
+/** The records of the customer and the entitlements each grants, before the sandbox filter. */
 async function readGranted(
   context: RevenueCatReadContext,
   parsed: readonly ParsedSubscription[],
   fetchedAt: string
-): Promise<GrantedRecords> {
+): Promise<ReadGranted> {
   const records: SubscriptionRecord[] = []
   const grants = new Map<string, readonly string[]>()
+  const sandbox: ParsedEntitlement[] = []
   for (const subscription of parsed) {
-    records.push(mapSubscription(subscription, fetchedAt))
-    grants.set(subscription.id, await namesOf(context, subscription))
+    const record = mapSubscription(subscription, fetchedAt)
+    const entitlements = await entitlementsOf(context, subscription)
+    records.push(record)
+    grants.set(
+      subscription.id,
+      entitlements.map((entitlement) => entitlement.name)
+    )
+    if (record.environment === 'sandbox') sandbox.push(...entitlements)
   }
-  return { records, grants }
+  return { granted: { records, grants }, sandbox }
 }
 
 /**
@@ -76,12 +96,10 @@ async function buildSnapshot(
   fetchedAt: string
 ): Promise<SubscriptionSnapshot> {
   try {
-    const granted = applySandboxFilter(
-      await readGranted(context, parsed, fetchedAt),
-      context.allowSandbox
-    )
+    const read = await readGranted(context, parsed, fetchedAt)
+    const granted = applySandboxFilter(read.granted, context.allowSandbox)
     const purchases = filterSandboxPurchases(
-      await readPurchases(context, account.accountId, fetchedAt),
+      await readPurchases(context, account.accountId, fetchedAt, read.sandbox),
       context.allowSandbox
     )
     return {

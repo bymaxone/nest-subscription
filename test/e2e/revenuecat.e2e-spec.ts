@@ -161,6 +161,34 @@ describe('the RevenueCat adapter with non-renewing purchases, through the servic
     })
   })
 
+  it('gives no access for a production purchase whose entitlement a sandbox purchase also grants', async () => {
+    // Scenario: the active list spans both environments and names no grantor; with sandbox access
+    // off the sandbox purchase is no evidence for the production one, so the service denies it.
+    running = await boot()
+    const list = (items: unknown[]): unknown => ({ object: 'list', items, next_page: null })
+    const entitlements = list([{ id: 'entl_1', lookup_key: 'premium' }])
+    const bought = (id: string, environment: string): unknown => ({
+      id,
+      status: 'owned',
+      environment,
+      store: 'app_store',
+      entitlements
+    })
+    running.stand.serve('customer_a', {
+      purchases: list([bought('p_prod', 'production'), bought('p_sbx', 'sandbox')]),
+      activeEntitlements: list([{ entitlement_id: 'entl_1', expires_at: null }])
+    })
+    await running.service.refresh(ACCOUNT)
+    expect(await running.service.hasEntitlement(ACCOUNT, 'premium')).toBe(false)
+    running.stand.serve('customer_a', {
+      purchases: list([bought('p_prod', 'production')]),
+      activeEntitlements: list([{ entitlement_id: 'entl_1', expires_at: null }])
+    })
+    running.clock.advance(60_000)
+    await running.service.refresh(ACCOUNT)
+    expect(await running.service.hasEntitlement(ACCOUNT, 'premium')).toBe(true)
+  })
+
   it('keeps the stored entitlement when a later request of a refresh answers 404', async () => {
     // Scenario: a subscription's entitlement list disappears between two requests of one read: the
     // refresh fails, the stored snapshot still grants access and no change is delivered.

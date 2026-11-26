@@ -110,7 +110,7 @@ export interface SubscriptionSnapshot {
   readonly subscriptions: readonly SubscriptionRecord[]
   /**
    * The non-renewing purchases of the account that grant an entitlement, usually none. A snapshot
-   * written before the source held any has no such list, which reads as none.
+   * with no such list holds none.
    */
   readonly nonRenewingPurchases?: readonly NonRenewingPurchaseRecord[]
   /** The name of the source that produced this snapshot. */
