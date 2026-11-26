@@ -10,9 +10,12 @@ import { createHash } from 'node:crypto'
 import type {
   AccountReference,
   Clock,
+  ExtendRequest,
+  ManagedRecord,
+  ManagementOperation,
+  OperationResult,
   SourceCapabilities,
   SourceNotification,
-  StopRenewalResult,
   SubscriptionSource,
   WebhookRequest,
   WebhookVerification
@@ -97,12 +100,12 @@ export class FakeSubscriptionSource implements SubscriptionSource {
   readonly #states = new PerAccount<SubscriptionSnapshot>()
   readonly #reads = new PerAccount<number>()
   readonly #capabilities = new Map<SubscriptionOrigin, SourceCapabilities>()
-  readonly #stopResults = new Map<SubscriptionOrigin, StopRenewalResult>()
+  readonly #results = new Map<string, OperationResult>()
+  readonly #calls = new Map<ManagementOperation, number>()
   readonly #queued: WebhookRequest[] = []
   readonly #gates: Array<Promise<void>> = []
   readonly #failures: unknown[] = []
   #totalReads = 0
-  #stopRenewalCalls = 0
 
   /** @param options The source name and the clock for the snapshots of unknown accounts. */
   constructor(options: FakeSourceOptions = {}) {
@@ -149,7 +152,17 @@ export class FakeSubscriptionSource implements SubscriptionSource {
 
   /** How many times a renewal stop was asked. */
   get stopRenewalCalls(): number {
-    return this.#stopRenewalCalls
+    return this.operationCalls('stop_renewal')
+  }
+
+  /** How many times an operation was asked of this source, whatever the record. */
+  operationCalls(operation: ManagementOperation): number {
+    return this.#calls.get(operation) ?? 0
+  }
+
+  /** How many operations of any kind were asked of this source. */
+  get totalOperationCalls(): number {
+    return [...this.#calls.values()].reduce((sum, count) => sum + count, 0)
   }
 
   /** Sets what `capabilities` answers for every subscription bought from an origin. */
@@ -157,9 +170,16 @@ export class FakeSubscriptionSource implements SubscriptionSource {
     this.#capabilities.set(origin, capabilities)
   }
 
-  /** Sets what `stopRenewal` answers for every subscription bought from an origin. */
-  setStopRenewalResult(origin: SubscriptionOrigin, result: StopRenewalResult): void {
-    this.#stopResults.set(origin, result)
+  /**
+   * Sets what an operation answers for every record bought from an origin. Until it is set, an
+   * operation answers that the person must act, with the record's own management reference.
+   */
+  setOperationResult(
+    operation: ManagementOperation,
+    origin: SubscriptionOrigin,
+    result: OperationResult
+  ): void {
+    this.#results.set(`${operation}:${origin}`, result)
   }
 
   /** Builds the signed request that `verifyWebhook` accepts for a notification. */
@@ -213,19 +233,49 @@ export class FakeSubscriptionSource implements SubscriptionSource {
     )
   }
 
-  capabilities(subscription: SubscriptionRecord): SourceCapabilities {
-    return this.#capabilities.get(subscription.origin) ?? NO_CAPABILITIES
+  capabilities(_account: AccountReference, target: ManagedRecord): Promise<SourceCapabilities> {
+    return Promise.resolve(this.#capabilities.get(target.record.origin) ?? NO_CAPABILITIES)
   }
 
   stopRenewal(
     _account: AccountReference,
     subscription: SubscriptionRecord
-  ): Promise<StopRenewalResult> {
-    this.#stopRenewalCalls += 1
+  ): Promise<OperationResult> {
+    return this.#answer('stop_renewal', { kind: 'subscription', record: subscription })
+  }
+
+  resume(_account: AccountReference, subscription: SubscriptionRecord): Promise<OperationResult> {
+    return this.#answer('resume', { kind: 'subscription', record: subscription })
+  }
+
+  changeProduct(
+    _account: AccountReference,
+    subscription: SubscriptionRecord,
+    _productReference: string
+  ): Promise<OperationResult> {
+    return this.#answer('change_product', { kind: 'subscription', record: subscription })
+  }
+
+  extend(
+    _account: AccountReference,
+    subscription: SubscriptionRecord,
+    _extension: ExtendRequest
+  ): Promise<OperationResult> {
+    return this.#answer('extend', { kind: 'subscription', record: subscription })
+  }
+
+  refund(_account: AccountReference, target: ManagedRecord): Promise<OperationResult> {
+    return this.#answer('refund', target)
+  }
+
+  /** Counts the call and answers what a test scripted for the record's origin. */
+  #answer(operation: ManagementOperation, target: ManagedRecord): Promise<OperationResult> {
+    this.#calls.set(operation, this.operationCalls(operation) + 1)
     return Promise.resolve(
-      this.#stopResults.get(subscription.origin) ?? {
+      this.#results.get(`${operation}:${target.record.origin}`) ?? {
         outcome: 'customer_action_required',
-        managementReference: subscription.managementReference
+        managementReference:
+          target.kind === 'subscription' ? target.record.managementReference : null
       }
     )
   }

@@ -18,10 +18,13 @@ export {
 export type { Clock } from './clock'
 export type {
   AccountReference,
+  ExtendReason,
+  ExtendRequest,
+  ManagedRecord,
   ManagementOperation,
+  OperationResult,
   SourceCapabilities,
   SourceNotification,
-  StopRenewalResult,
   SubscriptionSource,
   WebhookRequest,
   WebhookVerification

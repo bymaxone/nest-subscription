@@ -24,6 +24,10 @@ Pages:
 - Restore behavior: https://www.revenuecat.com/docs/projects/restore-behavior
 - Sandbox access: https://www.revenuecat.com/docs/projects/sandbox-access
 - API v1, customers: https://www.revenuecat.com/docs/api-v1/customers
+- API v1, transactions: https://www.revenuecat.com/docs/api-v1/transactions
+- API v2, subscription transactions: https://www.revenuecat.com/docs/api-v2/subscription-transactions
+- Managing subscriptions: https://www.revenuecat.com/docs/subscription-guidance/managing-subscriptions
+- Refunds: https://www.revenuecat.com/docs/subscription-guidance/refunds
 
 ## 1. Transport and authentication
 
@@ -260,7 +264,7 @@ Status: confirmed, changed, or not found, against the pages above.
 | A.3 Status mapping                                               | Confirmed: the eight values of the subscription status                                                                                                                                                                                                                  |
 | A.3 Renewal status                                               | Changed: the page lists two more values, `requires_price_increase_consent` and `has_already_renewed`; both map to `unknown` as "the others"                                                                                                                             |
 | A.3 Store mapping                                                | Changed: the page lists `external`, `roku`, `galaxy` and `test_store` besides the stores of the table; they map to `other`, as the table says for every other value, and `paypal` is already in the table                                                               |
-| A.4 What a server can do                                         | Not re-read in this phase; belongs to the management operations                                                                                                                                                                                                         |
+| A.4 What a server can do                                         | Re-read on 2026-11-25; section 10 records each operation and the specification's Appendix A.4 carries the per-origin answers                                                                                                                                            |
 | A.5 Identity                                                     | Confirmed. The limit of 100 characters is a "should not", and `/` is blocked                                                                                                                                                                                            |
 
 Appendix A.6:
@@ -290,3 +294,82 @@ question in the specification where the owner may want another answer.
 - The product reference is empty when `product_id` is null, and the billing interval is empty
   because the object has none.
 - The source-updated-at is `null`: no object read carries a freshness field.
+
+## 10. Management operations
+
+Pages read on 2026-11-25: Managing subscriptions, Refunds, API v2 Subscription, API v2 Purchase,
+API v2 Subscription Transactions, API v2 Customer, API v1 Transactions, API v1 Customers (the URLs
+are listed at the top). Where a page does not state something it is marked **not stated** and the
+adapter answers "not possible from a server" with the management reference.
+
+### 10.1 Endpoints
+
+| Operation                                              | Version | Method and path                                                                                                                                                                                                       | Permission                                      | Body                                                                                                                                                                              | Source                           |
+| ------------------------------------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| Cancel a Web Billing subscription                      | v2      | `POST /projects/{project_id}/subscriptions/{subscription_id}/actions/cancel`                                                                                                                                          | `customer_information:subscriptions:read_write` | none                                                                                                                                                                              | API v2 Subscription              |
+| Extend the current billing period                      | v2      | `POST /projects/{project_id}/subscriptions/{subscription_id}/actions/extend`                                                                                                                                          | `customer_information:subscriptions:read_write` | `extend_by_days` (integer, minimum 1; maximum 90 for Apple), `extend_reason_code` (`undeclared`, `customer_satisfaction`, `other`, `service_issue_or_outage`; required for Apple) | API v2 Subscription              |
+| Refund a Web Billing subscription                      | v2      | `POST /projects/{project_id}/subscriptions/{subscription_id}/actions/refund`                                                                                                                                          | `customer_information:subscriptions:read_write` | none                                                                                                                                                                              | API v2 Subscription              |
+| Refund a Web Billing purchase                          | v2      | `POST /projects/{project_id}/purchases/{purchase_id}/actions/refund`                                                                                                                                                  | `customer_information:purchases:read_write`     | none                                                                                                                                                                              | API v2 Purchase                  |
+| List a subscription's transactions                     | v2      | `GET /projects/{project_id}/subscriptions/{subscription_id}/transactions` with `sort` (`id` or `purchased_at`, default `id`), `direction` (`asc` or `desc`, default `asc`), `limit` (default 20, clamped to 1 to 100) | `customer_information:subscriptions:read`       | none                                                                                                                                                                              | API v2 Subscription Transactions |
+| Refund a Play Store or Galaxy subscription transaction | v2      | `POST /projects/{project_id}/subscriptions/{subscription_id}/transactions/{transaction_id}/actions/refund`                                                                                                            | `customer_information:subscriptions:read_write` | none                                                                                                                                                                              | API v2 Subscription Transactions |
+| Get a subscription                                     | v2      | `GET /projects/{project_id}/subscriptions/{subscription_id}`                                                                                                                                                          | `customer_information:subscriptions:read`       | none                                                                                                                                                                              | API v2 Subscription              |
+| Get a purchase                                         | v2      | `GET /projects/{project_id}/purchases/{purchase_id}`                                                                                                                                                                  | `customer_information:purchases:read`           | none                                                                                                                                                                              | API v2 Purchase                  |
+| Google Play: cancel a subscription                     | v1      | `POST /subscribers/{app_user_id}/subscriptions/{store_transaction_identifier}/cancel`                                                                                                                                 | not stated                                      | none                                                                                                                                                                              | API v1 Transactions              |
+| Google Play: refund and revoke a purchase              | v1      | `POST /subscribers/{app_user_id}/transactions/{store_transaction_identifier}/refund`                                                                                                                                  | not stated                                      | none                                                                                                                                                                              | API v1 Transactions              |
+
+Statements, quoted from the pages:
+
+- Cancel (v2): "The customer will lose access to the associated entitlements at the end of the current
+  period." Web Billing only. Response 200 is the Subscription object; the page lists 400, 404, 409 and 422.
+- Cancel (v1, Google Play): "Cancels a Google subscription. The subscription remains valid until
+  its expiration time, but it will not renew."
+- Extend (v2): "Provide either `extend_by_days` or `extend_until_ms`." Supported for Apple App Store,
+  Google Play and Web Billing; "Not supported for promotional subscriptions." Stripe and Amazon are not
+  listed. `extend_reason_code` is required for Apple and ignored for Google Play and Web Billing; Apple
+  caps an extension at 90 days. The schema of `extend_until_ms` is **not stated**, so the adapter sends
+  `extend_by_days` only. Response 200 is the Subscription object; which of its fields change is **not stated**.
+- Refund of a Web Billing subscription (v2): refunds the most recent payment; "The customer will
+  immediately lose access to the associated entitlements." Refund of a Web Billing purchase (v2):
+  "Refund a Web Billing purchase and revoke access to associated granted entitlements." The page lists 409 and 422.
+- Refund of a Play Store or Galaxy subscription transaction (v2): "Refund and cancel a Play Store or Galaxy
+  subscription's transaction." and "Access to the subscription will be revoked." The Refunds page: "This
+  will immediately revoke access to the Google subscription and issue a refund for the last purchase."
+  The transaction object carries `id`, `purchased_at`, `product_store_identifier`,
+  `expiration_date` and `effective_expiration_date`; `status` and `refunded_at` are **not stated**.
+- Refund of a Google Play one-time purchase: the Refunds page says Google Play non-subscriptions "can
+  be refunded directly through the RevenueCat dashboard or REST API"; the operation that exists is
+  version 1: "Issues a refund for the specified transaction and revokes access. Works for subscription
+  and non-subscription purchases that occurred in the last 365 days." Version 2 has a refund only for
+  Web Billing purchases.
+- App Store: "Apple does not allow developers to manage subscriptions on behalf of users." (cancel);
+  "Apple does not allow developers to issue refunds on behalf of customers." (refund). Amazon: neither
+  cancel nor refund. Stripe: cancel and refund are done in Stripe, not through RevenueCat.
+- Resume (undo a cancellation): no page lists an operation. The Subscription page has seven
+  operations, the v1 transactions page six, none of them a resume. **Not stated** for every origin.
+- Change product: the managing page says the app stores do not let a developer change a
+  subscription for a customer; for Web Billing it describes the customer's portal; the Subscription page mentions "the
+  change product endpoint" in a field description but lists no such operation. No server operation is
+  documented for any origin; **not stated** where a page is silent.
+- Management reference: the subscription's `management_url` (section 3). The Subscription page also lists an authenticated
+  management URL operation, which the page says to treat as a credential and not store; the adapter does not call it.
+
+Not stated, and the adapter's answer:
+
+- Whether the v2 secret key authorizes the version 1 operations. The adapter sends the configured key as
+  the bearer credential to version 1 (specification section 10.2, question 1).
+- Whether the `store_transaction_identifier` of the version 1 paths is the `store_subscription_identifier`
+  of a subscription and the `store_purchase_identifier` of a purchase (question 2). The adapter uses those fields.
+- Which store a `web` origin is: the origin only says web, so the adapter reads the subscription (or purchase)
+  by its identifier, which carries `store`, before it answers for a web record.
+
+### 10.2 Expected state after an operation
+
+The result of every operation is the snapshot read back, compared with what RevenueCat documents:
+
+| Operation      | Expected read-back                                                                                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stop renewal   | `auto_renewal_status` is `will_not_renew` (renewal `no`); access continues until the period ends (the cancel sentences above, and section 3: a cancellation is `will_not_renew`) |
+| Extend         | the current period ends later than before; the amount is **not stated**, so only "later" is checked                                                                              |
+| Refund         | access is revoked immediately (the refund sentences above): the record has a refund instant or no longer gives access; for a purchase, `status: refunded`                        |
+| Resume         | renewal is `yes` again; no operation is documented, so no origin reaches this                                                                                                    |
+| Change product | the record's product is the requested one; no operation is documented, so no origin reaches this                                                                                 |

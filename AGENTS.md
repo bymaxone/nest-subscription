@@ -259,7 +259,7 @@ Each requirement below is stated in `docs/spec.md` §8.2 and is built by the pha
 | SEC07 | Sandbox grants nothing unless enabled, and enabling it in production needs a second option | P2, P7   |
 | SEC08 | Tenant and account go through one key encoder, never string concatenation                  | P1, P3   |
 | SEC09 | Secret rotation without downtime where the source allows two secrets                       | P2, P7   |
-| SEC10 | A management operation acts only on the authenticated account's subscription               | P8       |
+| SEC10 | A management operation acts only on a record of the authenticated account's own snapshot   | P8       |
 
 What the repository runs today is the scaffold's own protection: the lint rule set, the no-socket gate for unit tests, the dependency scan in CI, and the commit rule that rejects AI attribution.
 

@@ -7,7 +7,7 @@
 import type {
   AccountReference,
   SourceCapabilities,
-  StopRenewalResult,
+  OperationResult,
   SubscriptionRecord,
   SubscriptionSnapshot,
   SubscriptionSource,
@@ -69,12 +69,12 @@ class HostSource implements SubscriptionSource {
     )
   }
 
-  capabilities(): SourceCapabilities {
-    return { operations: ['stop_renewal'], managementReference: null }
+  capabilities(): Promise<SourceCapabilities> {
+    return Promise.resolve({ operations: ['stop_renewal'], managementReference: null })
   }
 
-  stopRenewal(account: AccountReference): Promise<StopRenewalResult> {
-    return this.readAccount(account).then((snapshot) => ({ outcome: 'stopped', snapshot }))
+  stopRenewal(): Promise<OperationResult> {
+    return Promise.resolve({ outcome: 'accepted' })
   }
 }
 
@@ -98,9 +98,13 @@ describe('a source written against root exports only', () => {
   })
 
   it('declares capabilities and stops a renewal through the port', async () => {
-    // Scenario: the capabilities name the operation, and the stop returns the state read back.
-    expect(source.capabilities(RECORD).operations).toEqual(['stop_renewal'])
-    const stopped = await source.stopRenewal({ accountId: 'acc_1' }, RECORD)
-    expect(stopped.outcome).toBe('stopped')
+    // Scenario: the capabilities name the operation, and the stop says the request was accepted.
+    const capabilities = await source.capabilities(
+      { accountId: 'acc_1' },
+      { kind: 'subscription', record: RECORD }
+    )
+    expect(capabilities.operations).toEqual(['stop_renewal'])
+    const accepted = await source.stopRenewal({ accountId: 'acc_1' }, RECORD)
+    expect(accepted.outcome).toBe('accepted')
   })
 })

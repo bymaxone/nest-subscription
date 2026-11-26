@@ -250,7 +250,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 **FR35. Capabilities first.** Before offering an action the host asks what is possible for a given subscription, for each operation of FR36. The answer comes from the adapter and depends on the origin.
 
-**FR36. Operations.** The library offers stop renewal, resume, change product, extend and refund (D32). For each, where the source allows a server to do it, the library asks the source to do it, then refreshes. Where it does not, the result is not an error: it says the person must do it themselves and gives the management reference. Which origin allows which operation is stated per origin, as RevenueCat documents it (Appendix A.4). The table below is the verified part, for stop renewal; the rest is filled from RevenueCat's documentation when each operation is built, and nothing is assumed before then.
+**FR36. Operations.** The library offers stop renewal, resume, change product, extend and refund (D32). For each, where the source allows a server to do it, the library asks the source to do it, then refreshes. Where it does not, the result is not an error: it says the person must do it themselves and gives the management reference. Which origin allows which operation is stated per origin, as RevenueCat documents it (Appendix A.4). The table below is stop renewal; Appendix A.4 holds every operation per origin, from RevenueCat's documentation read on 2026-11-25.
 
 Stop renewal, per origin:
 
@@ -376,18 +376,18 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ### 8.2 Security requirements
 
-| Id    | Requirement                                                                                                                                                                                       |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SEC01 | No access is ever granted from a webhook payload. Access comes only from a read of the source, or from a stored snapshot that came from one                                                       |
-| SEC02 | Signature verification runs over the raw request bytes, before parsing, with a timestamp tolerance and a constant-time comparison                                                                 |
-| SEC03 | A refused webhook answers without telling which check failed. It covers every check the library makes; an answer the framework's body parser gives before the controller runs (D45) is outside it |
-| SEC04 | The default on a missing snapshot, an unreadable store or an unreachable source is to refuse. Trusting a last known state is an explicit option with a bounded tolerance                          |
-| SEC05 | Credentials and webhook secrets are held so that serialization, spread and inspection of a library object never expose them. They never appear in an error or a log                               |
-| SEC06 | The library stores and logs no payment data and no raw payload. Account identifiers are absent from logs and observer payloads, or present only as a short hash                                   |
-| SEC07 | Sandbox purchases grant nothing unless the host enabled it explicitly, and enabling it in a production environment is refused at boot unless a second, separate option confirms it                |
-| SEC08 | One account can never read or change another's snapshot. In a multi-tenant host the tenant is part of every key and comes from the authenticated request, never from a request body               |
-| SEC09 | Secret rotation is supported without downtime where the source allows two valid secrets, and documented as a restart where it does not                                                            |
-| SEC10 | A management operation acts only on a subscription that belongs to the authenticated account                                                                                                      |
+| Id    | Requirement                                                                                                                                                                                                                                              |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SEC01 | No access is ever granted from a webhook payload. Access comes only from a read of the source, or from a stored snapshot that came from one                                                                                                              |
+| SEC02 | Signature verification runs over the raw request bytes, before parsing, with a timestamp tolerance and a constant-time comparison                                                                                                                        |
+| SEC03 | A refused webhook answers without telling which check failed. It covers every check the library makes; an answer the framework's body parser gives before the controller runs (D45) is outside it                                                        |
+| SEC04 | The default on a missing snapshot, an unreadable store or an unreachable source is to refuse. Trusting a last known state is an explicit option with a bounded tolerance                                                                                 |
+| SEC05 | Credentials and webhook secrets are held so that serialization, spread and inspection of a library object never expose them. They never appear in an error or a log                                                                                      |
+| SEC06 | The library stores and logs no payment data and no raw payload. Account identifiers are absent from logs and observer payloads, or present only as a short hash                                                                                          |
+| SEC07 | Sandbox purchases grant nothing unless the host enabled it explicitly, and enabling it in a production environment is refused at boot unless a second, separate option confirms it                                                                       |
+| SEC08 | One account can never read or change another's snapshot. In a multi-tenant host the tenant is part of every key and comes from the authenticated request, never from a request body                                                                      |
+| SEC09 | Secret rotation is supported without downtime where the source allows two valid secrets, and documented as a restart where it does not                                                                                                                   |
+| SEC10 | A management operation acts only on a subscription or a non-renewing purchase found, by `findOwnRecord`, inside the authenticated account's own snapshot, and on no other record. A record of another account or tenant is refused and reaches no source |
 
 ---
 
@@ -466,7 +466,9 @@ The library keeps no other state. It stores no payment data, no price paid and n
 A new question is added here with a proposal and is never answered on the owner's behalf. The
 proposal below is what the code does until the owner answers.
 
-None.
+1. **Does the version 2 secret key authorize the version 1 operations (Google Play cancel and one-time purchase refund)?** The pages say version 2 rejects a version 1 key and say nothing about the reverse. Proposal: the adapter sends the configured key to version 1; a refusal is a failed operation (source unavailable) and never a result claiming success.
+2. **Is the `store_transaction_identifier` of the version 1 paths the `store_subscription_identifier` of a subscription and the `store_purchase_identifier` of a purchase?** The pages name the path parameter and do not define it. Proposal: the adapter uses those two fields.
+3. **How does a refunded Google Play subscription read after a refund?** The transaction object has no stated refund field. Proposal: the refund is confirmed when the read-back shows a refund instant, or no access where there was access before.
 
 ---
 
@@ -551,14 +553,15 @@ Store maps to origin: `app_store` and `mac_app_store` to `app_store`; `play_stor
 
 ### A.4 What a server can do
 
-Only stop renewal is verified. Resume, change product, extend and refund are recorded here per origin when each is built, from the RevenueCat page read that day.
+Read on 2026-11-25 (pages and sentences in [`docs/revenuecat-facts.md`](revenuecat-facts.md) section 10). "No" means a server cannot do it, or the pages do not state that it can: the result is "the person must do it" with the management reference. A non-renewing purchase has only the refund column.
 
-| Origin                       | Stop renewal from a server                                                                            |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Google Play                  | Yes, through the version 1 API. Access continues until the period ends                                |
-| App Store                    | No. RevenueCat states that Apple does not allow developers to manage subscriptions on behalf of users |
-| RevenueCat web billing       | Yes, through the version 2 API                                                                        |
-| Stripe tracked by RevenueCat | Not through RevenueCat; through Stripe                                                                |
+| Origin                               | Stop renewal                                                   | Resume          | Change product              | Extend                                                | Refund                                                                                       |
+| ------------------------------------ | -------------------------------------------------------------- | --------------- | --------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Google Play                          | Yes, through the version 1 API. Access continues to period end | No (not stated) | No (not a server operation) | Yes, version 2 (`extend_by_days`)                     | Yes: a subscription through its latest transaction (version 2); a purchase through version 1 |
+| App Store                            | No. Apple does not allow developers to manage subscriptions    | No (not stated) | No (stores do not allow it) | Yes, version 2; reason code required, at most 90 days | No. Apple does not allow developers to issue refunds                                         |
+| RevenueCat web billing               | Yes, through the version 2 API                                 | No (not stated) | No (not stated)             | Yes, version 2                                        | Yes, version 2, for a subscription and for a purchase                                        |
+| Stripe tracked by RevenueCat         | Not through RevenueCat; through Stripe                         | No (not stated) | No (not stated)             | No (not listed)                                       | No; through Stripe                                                                           |
+| Other web stores, promotional, other | No (not stated)                                                | No (not stated) | No (not stated)             | No (not listed; not supported for promotional)        | No (not stated)                                                                              |
 
 ### A.5 Identity
 

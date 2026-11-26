@@ -27,6 +27,9 @@ import {
 import { SnapshotCache } from './cache/snapshot-cache'
 import { entitlementHeld } from './entitlement-held'
 import { logEvent } from './logging/subscription-logger'
+import type { StopRenewalOutcome, SubscriptionCapabilities } from './management/management.types'
+import { describeCapabilities, type ManagementContext } from './management/perform-operation'
+import { stopRenewal } from './management/stop-renewal'
 import { ObserverBridge } from './observer/observer-bridge'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
 import {
@@ -120,6 +123,62 @@ export class SubscriptionService {
    */
   reconcile(options: ReconcileOptions = {}): Promise<ReconcileResult> {
     return this.reconciler.run(options)
+  }
+
+  /**
+   * What can be done with one subscription or non-renewing purchase of the account, for each
+   * management operation. The record is found in the account's own stored snapshot, and the answer
+   * comes from the adapter each time and depends on the origin.
+   *
+   * @throws {SubscriptionError} with `SUBSCRIPTION_ACCOUNT_UNKNOWN` for a reference the account
+   * does not hold (no source is reached), with `SUBSCRIPTION_INVALID_INPUT` as
+   * {@link SubscriptionService.getSnapshot} does, and with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when
+   * the adapter fails.
+   */
+  async getCapabilities(
+    account: AccountReference,
+    recordRef: string
+  ): Promise<SubscriptionCapabilities> {
+    this.#keyOf(account)
+    return describeCapabilities(this.#management(), account, recordRef)
+  }
+
+  /**
+   * Where the person manages one record of the account, or `null` when the source provides no
+   * place.
+   *
+   * @throws {SubscriptionError} as {@link SubscriptionService.getCapabilities} does.
+   */
+  async getManagementReference(
+    account: AccountReference,
+    recordRef: string
+  ): Promise<string | null> {
+    return (await this.getCapabilities(account, recordRef)).managementReference
+  }
+
+  /**
+   * Asks the source to stop the renewal of a subscription of the account, then refreshes. The
+   * result is the snapshot read back: `stopped` when it shows a subscription that will not renew,
+   * `not_stopped` when the source accepted and the read-back still shows otherwise. Where a server
+   * cannot do it the result is `person_must_act` with the management reference, and nothing was
+   * asked of the source. The source is called at most once and never retried.
+   *
+   * @throws {SubscriptionError} as {@link SubscriptionService.getCapabilities} does; the stored
+   * snapshot is untouched when the source fails.
+   */
+  async stopRenewal(account: AccountReference, recordRef: string): Promise<StopRenewalOutcome> {
+    this.#keyOf(account)
+    return stopRenewal(this.#management(), account, recordRef)
+  }
+
+  /** What the management operations need from this service. */
+  #management(): ManagementContext {
+    return {
+      source: this.source,
+      store: this.store,
+      refresher: this.refresher,
+      view: (snapshot) => this.#view(snapshot, this.clock.now())
+    }
   }
 
   /** The stored snapshot, through the cache when the host configured one; `undefined` when none. */

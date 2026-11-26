@@ -8,8 +8,9 @@
  */
 import type {
   AccountReference,
+  ManagedRecord,
+  OperationResult,
   SourceCapabilities,
-  StopRenewalResult,
   SubscriptionSource,
   WebhookRequest,
   WebhookVerification
@@ -71,14 +72,17 @@ class RevenueCatSource implements SubscriptionSource {
     return Promise.resolve({ accepted: true, notification })
   }
 
-  capabilities(subscription: SubscriptionRecord): SourceCapabilities {
-    return { operations: [], managementReference: subscription.managementReference }
+  capabilities(_account: AccountReference, target: ManagedRecord): Promise<SourceCapabilities> {
+    return Promise.resolve({
+      operations: [],
+      managementReference: target.kind === 'subscription' ? target.record.managementReference : null
+    })
   }
 
   stopRenewal(
     _account: AccountReference,
     subscription: SubscriptionRecord
-  ): Promise<StopRenewalResult> {
+  ): Promise<OperationResult> {
     return Promise.resolve({
       outcome: 'customer_action_required',
       managementReference: subscription.managementReference

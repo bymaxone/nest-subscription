@@ -1,6 +1,6 @@
 # Phase 8 — Management operations
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 0 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P8 — management-operations
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,8 +39,8 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 
 | ID  | Task                                                              | Status  | Priority | Size | Depends on              |
 | --- | ----------------------------------------------------------------- | ------- | -------- | ---- | ----------------------- |
-| 8.1 | Model capabilities and the service API                            | 📋 ToDo | P0       | M    | —                       |
-| 8.2 | Implement stop renewal with an honest result                      | 📋 ToDo | P0       | M    | 8.1                     |
+| 8.1 | Model capabilities and the service API                            | ✅ Done | P0       | M    | —                       |
+| 8.2 | Implement stop renewal with an honest result                      | ✅ Done | P0       | M    | 8.1                     |
 | 8.3 | Implement the RevenueCat operations                               | 📋 ToDo | P0       | M    | 8.2                     |
 | 8.5 | Generalize capabilities and the operation flow to every operation | 📋 ToDo | P0       | M    | 8.3                     |
 | 8.6 | Implement resume                                                  | 📋 ToDo | P0       | M    | 8.5                     |
@@ -55,7 +55,7 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 
 ### Task 8.1 — Model capabilities and the service API
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -66,11 +66,11 @@ Define what a host can ask about and do to a subscription, and add the capabilit
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionService.getCapabilities(account, recordRef)` returns, for that subscription or non-renewing purchase, whether stop renewal is possible from a server and the management reference when the source provides one.
-- [ ] The answer comes from the adapter's `capabilities` and depends on the origin.
-- [ ] `getManagementReference(account, recordRef)` returns the reference or `null`.
-- [ ] A reference that is neither a subscription nor a non-renewing purchase in the account's own snapshot is refused with the "unknown account" family of codes and reaches no source.
-- [ ] With the fake source, a test scripts capabilities per origin and reads them back through the service.
+- [x] `SubscriptionService.getCapabilities(account, recordRef)` returns, for that subscription or non-renewing purchase, whether stop renewal is possible from a server and the management reference when the source provides one.
+- [x] The answer comes from the adapter's `capabilities` and depends on the origin.
+- [x] `getManagementReference(account, recordRef)` returns the reference or `null`.
+- [x] A reference that is neither a subscription nor a non-renewing purchase in the account's own snapshot is refused with the "unknown account" family of codes and reaches no source.
+- [x] With the fake source, a test scripts capabilities per origin and reads them back through the service.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
@@ -140,7 +140,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.2 — Implement stop renewal with an honest result
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.1
@@ -151,12 +151,12 @@ Add stop renewal to the service: check ownership, ask the source, refresh, and r
 
 #### Acceptance criteria
 
-- [ ] Where the adapter says a server can do it, the service calls the source once, refreshes the account, and returns the refreshed snapshot with the outcome the source reported.
-- [ ] Where it cannot, the service calls nothing at the source and returns the "must be done by the person" result with the management reference.
-- [ ] When the source accepts the request and the read-back still shows a renewing subscription, the result says so; it does not report success.
-- [ ] A subscription of another account or of another tenant is refused and no source call is made.
-- [ ] A source failure surfaces as the source-unavailable code, and the stored snapshot is unchanged.
-- [ ] The refresh after the operation goes through `SnapshotRefresher`, so the host hook receives `will_not_renew` through the normal path.
+- [x] Where the adapter says a server can do it, the service calls the source once, refreshes the account, and returns the refreshed snapshot with the outcome the source reported.
+- [x] Where it cannot, the service calls nothing at the source and returns the "must be done by the person" result with the management reference.
+- [x] When the source accepts the request and the read-back still shows a renewing subscription, the result says so; it does not report success.
+- [x] A subscription of another account or of another tenant is refused and no source call is made.
+- [x] A source failure surfaces as the source-unavailable code, and the stored snapshot is unchanged.
+- [x] The refresh after the operation goes through `SnapshotRefresher`, so the host hook receives `will_not_renew` through the normal path.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
@@ -831,4 +831,5 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
-<!-- entries are added as tasks complete -->
+- 8.1 ✅ 2026-11-26 — capability query, management reference and the single ownership check (findOwnRecord)
+- 8.2 ✅ 2026-11-26 — stop renewal on the shared flow with the snapshot read back as the result

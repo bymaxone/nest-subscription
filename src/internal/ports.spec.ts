@@ -7,8 +7,9 @@ import type { SubscriptionRecord, SubscriptionSnapshot } from '@bymax-one/nest-s
 import type { Clock } from './clock'
 import type {
   AccountReference,
+  ManagedRecord,
+  OperationResult,
   SourceCapabilities,
-  StopRenewalResult,
   SubscriptionSource,
   WebhookVerification
 } from './source.port'
@@ -48,8 +49,9 @@ const source: SubscriptionSource = {
   readAccount: (account: AccountReference): Promise<SubscriptionSnapshot> =>
     Promise.resolve({ ...snapshot, accountId: account.accountId }),
   verifyWebhook: (): Promise<WebhookVerification> => Promise.resolve({ accepted: false }),
-  capabilities: (): SourceCapabilities => ({ operations: [], managementReference: null }),
-  stopRenewal: (): Promise<StopRenewalResult> =>
+  capabilities: (): Promise<SourceCapabilities> =>
+    Promise.resolve({ operations: [], managementReference: null }),
+  stopRenewal: (): Promise<OperationResult> =>
     Promise.resolve({ outcome: 'customer_action_required', managementReference: null })
 }
 
@@ -75,7 +77,11 @@ describe('ports', () => {
     expect(await source.verifyWebhook({ rawBody: new Uint8Array(), headers: {} })).toEqual({
       accepted: false
     })
-    expect(source.capabilities(record)).toEqual({ operations: [], managementReference: null })
+    const target: ManagedRecord = { kind: 'subscription', record }
+    expect(await source.capabilities({ accountId: 'x' }, target)).toEqual({
+      operations: [],
+      managementReference: null
+    })
     expect(await source.stopRenewal({ accountId: 'x' }, record)).toEqual({
       outcome: 'customer_action_required',
       managementReference: null

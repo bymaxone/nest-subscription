@@ -4,7 +4,11 @@
  * @layer testing
  */
 import { createHash } from 'node:crypto'
-import type { SourceNotification, SubscriptionSource } from '@bymax-one/nest-subscription'
+import type {
+  ManagedRecord,
+  SourceNotification,
+  SubscriptionSource
+} from '@bymax-one/nest-subscription'
 import {
   createEmptySnapshot,
   type SubscriptionRecord,
@@ -262,41 +266,79 @@ describe('FakeSubscriptionSource webhooks', () => {
 })
 
 describe('FakeSubscriptionSource management', () => {
-  it('declares no capabilities until a test scripts them, per origin', () => {
-    // Scenario: the origin of the subscription picks the answer.
+  const account = { accountId: 'a' }
+  const target: ManagedRecord = { kind: 'subscription', record }
+  const purchase: ManagedRecord = {
+    kind: 'purchase',
+    record: {
+      purchaseReference: 'p1',
+      entitlementNames: ['pro'],
+      givesAccess: true,
+      origin: 'play_store',
+      environment: 'production',
+      productReference: 'lifetime',
+      purchasedAt: '2026-01-01T00:00:00.000Z',
+      accessUntil: null,
+      refundedAt: null
+    }
+  }
+
+  it('declares no capabilities until a test scripts them, per origin', async () => {
+    // Scenario: the origin of the record picks the answer, for a subscription and a purchase.
     const source = new FakeSubscriptionSource({ clock })
-    expect(source.capabilities(record)).toEqual({ operations: [], managementReference: null })
+    expect(await source.capabilities(account, target)).toEqual({
+      operations: [],
+      managementReference: null
+    })
     source.setCapabilities('play_store', {
       operations: ['stop_renewal'],
       managementReference: 'https://manage.example/s1'
     })
-    expect(source.capabilities(record).operations).toEqual(['stop_renewal'])
-    expect(source.capabilities({ ...record, origin: 'app_store' }).operations).toEqual([])
+    expect((await source.capabilities(account, target)).operations).toEqual(['stop_renewal'])
+    expect((await source.capabilities(account, purchase)).operations).toEqual(['stop_renewal'])
+    expect(
+      (
+        await source.capabilities(account, {
+          kind: 'subscription',
+          record: { ...record, origin: 'app_store' }
+        })
+      ).operations
+    ).toEqual([])
   })
 
   it('answers that the person must act, with the management reference, by default', async () => {
-    // Scenario: nothing scripted; the call is counted.
+    // Scenario: nothing scripted; each of the five operations is counted on its own.
     const source = new FakeSubscriptionSource({ clock })
     expect(source.stopRenewalCalls).toBe(0)
-    expect(await source.stopRenewal({ accountId: 'a' }, record)).toEqual({
+    const expected = {
       outcome: 'customer_action_required',
       managementReference: 'https://manage.example/s1'
+    }
+    expect(await source.stopRenewal(account, record)).toEqual(expected)
+    expect(await source.resume(account, record)).toEqual(expected)
+    expect(await source.changeProduct(account, record, 'pro_annual')).toEqual(expected)
+    expect(await source.extend(account, record, { days: 3 })).toEqual(expected)
+    expect(await source.refund(account, target)).toEqual(expected)
+    expect(await source.refund(account, purchase)).toEqual({
+      outcome: 'customer_action_required',
+      managementReference: null
     })
     expect(source.stopRenewalCalls).toBe(1)
+    expect(source.operationCalls('refund')).toBe(2)
+    expect(source.operationCalls('resume')).toBe(1)
+    expect(source.totalOperationCalls).toBe(6)
   })
 
-  it('answers with the result scripted for the origin', async () => {
-    // Scenario: a stopped renewal for one origin; another origin keeps the default.
+  it('answers with the result scripted for the operation and the origin', async () => {
+    // Scenario: an accepted request for one operation and origin; another origin and another
+    // operation keep the default.
     const source = new FakeSubscriptionSource({ clock })
-    const snapshot = snapshotFor('a')
-    source.setStopRenewalResult('play_store', { outcome: 'stopped', snapshot })
-    expect(await source.stopRenewal({ accountId: 'a' }, record)).toEqual({
-      outcome: 'stopped',
-      snapshot
-    })
-    expect(
-      (await source.stopRenewal({ accountId: 'a' }, { ...record, origin: 'web' })).outcome
-    ).toBe('customer_action_required')
+    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' })
+    expect(await source.stopRenewal(account, record)).toEqual({ outcome: 'accepted' })
+    expect((await source.stopRenewal(account, { ...record, origin: 'web' })).outcome).toBe(
+      'customer_action_required'
+    )
+    expect((await source.resume(account, record)).outcome).toBe('customer_action_required')
   })
 
   it('is usable wherever the source port is expected', async () => {

@@ -438,7 +438,10 @@ describe('the HTTP client and the options', () => {
     const source = adapter()
     const subscribed = (await source.readAccount({ accountId: 'c' })).subscriptions[0]
     if (subscribed === undefined) throw new Error('the fixture has a subscription')
-    expect(source.capabilities(subscribed).operations).toStrictEqual([])
+    expect(
+      (await source.capabilities({ accountId: 'c' }, { kind: 'subscription', record: subscribed }))
+        .operations
+    ).toStrictEqual([])
     expect(await source.stopRenewal({ accountId: 'c' }, subscribed)).toMatchObject({
       outcome: 'customer_action_required'
     })

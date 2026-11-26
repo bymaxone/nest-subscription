@@ -78,7 +78,9 @@ describe('revenueCatSource', () => {
     const snapshot = await source.readAccount({ accountId: 'c' })
     const subscription = snapshot.subscriptions[0]
     if (subscription === undefined) throw new Error('the fixture holds a subscription')
-    expect(source.capabilities(subscription)).toStrictEqual({
+    expect(
+      await source.capabilities({ accountId: 'c' }, { kind: 'subscription', record: subscription })
+    ).toStrictEqual({
       operations: [],
       managementReference: 'https://apps.apple.com/account/subscriptions'
     })
@@ -86,6 +88,26 @@ describe('revenueCatSource', () => {
       outcome: 'customer_action_required',
       managementReference: 'https://apps.apple.com/account/subscriptions'
     })
+  })
+})
+
+describe('revenueCatSource purchases', () => {
+  it('has no management reference for a non-renewing purchase', async () => {
+    // Scenario: a purchase carries no management reference, so none is answered.
+    const purchase = {
+      purchaseReference: 'p1',
+      entitlementNames: ['pro'],
+      givesAccess: true,
+      origin: 'app_store',
+      environment: 'production',
+      productReference: 'lifetime',
+      purchasedAt: '2026-01-01T00:00:00.000Z',
+      accessUntil: null,
+      refundedAt: null
+    } as const
+    expect(
+      await sourceWith().capabilities({ accountId: 'c' }, { kind: 'purchase', record: purchase })
+    ).toStrictEqual({ operations: [], managementReference: null })
   })
 })
 
