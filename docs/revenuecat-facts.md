@@ -155,8 +155,8 @@ Adapter (the design the code follows, from the rows above):
 - A purchase gives access when its status is `owned` and the entitlement it grants is in the
   active-entitlements list, unless sandbox access is not allowed and a sandbox subscription or
   purchase of the customer also grants that entitlement: the list spans both environments and names
-  no grantor, so it is no evidence for the production purchase. Its access-until is that
-  entitlement's `expires_at` (`null` for a lifetime grant). This is the adapter's equivalent of the access flag a purchase lacks; the
+  no grantor, so it is no evidence for the production purchase. Its access-until is the
+  latest `expires_at` of those entitlements (`null` when one has none). This is the adapter's equivalent of the access flag a purchase lacks; the
   documentation does not state it.
 - A consumable, and any purchase whose nested list is empty, grants nothing and is not held (D31).
 - The API states no refund instant for a purchase; the adapter uses the purchase instant as the refund instant so the value is the same on every read.
