@@ -208,11 +208,17 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   for a subscription or a non-renewing purchase of the account, and `stopRenewal`, `resume`,
   `changeProduct`, `extend` and `refund`. A record is found only in the caller's own stored
   snapshot, through one ownership check, and a record of another account or tenant is refused with
-  `SUBSCRIPTION_ACCOUNT_UNKNOWN` before any source is reached. Each operation asks the source once,
-  refreshes through the refresher and returns the snapshot read back, under a closed result that has
-  no "assumed done" value: for example `stopped` and `not_stopped` say whether the read-back shows
-  the effect, and `person_must_act` carries the management reference where a server cannot do it. The source port gains `resume`, `changeProduct`, `extend` and `refund`
-  as optional methods and the types `ManagedRecord`, `ExtendRequest` and `OperationResult`.
+  `SUBSCRIPTION_ACCOUNT_UNKNOWN` before any source is reached. Where a server cannot do an operation
+  the result is `person_must_act` with the management reference, with no read and no write.
+  Otherwise the account is read afresh, the source is asked once about the record of that read, and
+  the account is read back; the result is that read-back, under a closed result that has no
+  "assumed done" value: for example `stopped` and `not_stopped` say whether the read-back shows the
+  effect. When the source accepted and the read-back failed, the result is `unconfirmed`, with no
+  snapshot: the effect is unknown and the operation must not be repeated before a later read shows
+  the record. A write that throws is `SUBSCRIPTION_SOURCE_UNAVAILABLE`, and its effect is unknown
+  too: refresh before repeating it. The source port gains `resume`, `changeProduct`, `extend` and
+  `refund` as optional methods and the types `ManagedRecord`, `ExtendRequest` and
+  `OperationResult`.
 - The RevenueCat adapter answers each operation per origin and store as RevenueCat documents it:
   stop renewal for Google Play (version 1) and RevenueCat web billing (version 2), extend for
   Google Play, the App Store and web billing, refund for Google Play (a subscription through its

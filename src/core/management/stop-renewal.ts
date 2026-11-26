@@ -8,6 +8,7 @@ import type { AccountReference } from '@bymax-one/nest-subscription/internal'
 
 import type { StopRenewalOutcome } from './management.types'
 import {
+  NOT_APPLICABLE,
   named,
   performOperation,
   type ManagementContext,
@@ -17,8 +18,9 @@ import {
 /** The operation: one source call, and a read-back whose renewal intent is `no`. */
 export const STOP_RENEWAL: OperationSpec = {
   operation: 'stop_renewal',
+  applies: (_source, kind) => kind === 'subscription',
   ask: (source, account, target) =>
-    target.kind === 'subscription' ? source.stopRenewal(account, target.record) : undefined,
+    target.kind === 'subscription' ? source.stopRenewal(account, target.record) : NOT_APPLICABLE,
   shows: (_before, after) =>
     after !== undefined && after.kind === 'subscription' && after.record.willRenew === 'no'
 }

@@ -262,7 +262,7 @@ Stop renewal, per origin:
 
 **FR37. Management reference.** Return the place where the person manages the subscription, when the source provides one.
 
-**FR38. Honest results.** An operation reports what happened at the source, not what was asked. After any operation the returned snapshot is the one read back from the source, so the host sees the result and not the request. Every operation acts only on a subscription or purchase of the authenticated account (SEC10).
+**FR38. Honest results.** An operation reports what happened at the source, not what was asked. After any operation the returned snapshot is the one read back from the source, so the host sees the result and not the request. When the source accepted the request and the read-back failed, the result is `unconfirmed`: the effect is unknown and the operation is not repeated before a later read shows the record. A write that throws is a source failure whose effect is also unknown. Every operation acts only on a subscription or purchase of the authenticated account (SEC10).
 
 ### 3.13 Testing support
 

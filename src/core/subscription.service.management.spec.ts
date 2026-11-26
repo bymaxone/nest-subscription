@@ -157,19 +157,21 @@ function stoppedState(): SubscriptionSnapshot {
 
 describe('SubscriptionService.stopRenewal', () => {
   it('calls the source once, refreshes and returns the snapshot read back, with will renew no', async () => {
-    // Scenario: Google Play can stop; the source accepts and its next read shows will renew no.
+    // Scenario: Google Play can stop; once the source accepts, its next read shows will renew no.
+    // The account is read twice: before the write and after it.
     const { source, seed, service, store } = harness()
     source.setCapabilities('play_store', STOP_AND_REFUND)
-    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' })
+    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' }, () =>
+      source.setAccount(ACCOUNT, stoppedState())
+    )
     await seed(ACCOUNT, snapshotOf(ACCOUNT, [subscriptionOf()]))
-    source.setAccount(ACCOUNT, stoppedState())
     const reads = source.readCount(ACCOUNT)
     const result = await service.stopRenewal(ACCOUNT, 'sub-1')
     expect(result.outcome).toBe('stopped')
-    if (result.outcome === 'person_must_act') throw new Error('the source took the request')
+    if (!('snapshot' in result)) throw new Error('the source took the request')
     expect(result.snapshot.subscriptions[0]?.willRenew).toBe('no')
     expect(source.stopRenewalCalls).toBe(1)
-    expect(source.readCount(ACCOUNT)).toBe(reads + 1)
+    expect(source.readCount(ACCOUNT)).toBe(reads + 2)
     expect(
       (await store.getSnapshot(encodeAccountKey(ACCOUNT)))?.snapshot.subscriptions[0]?.willRenew
     ).toBe('no')
@@ -187,18 +189,19 @@ describe('SubscriptionService.stopRenewal', () => {
     )
     const result = await service.stopRenewal(ACCOUNT, 'sub-1')
     expect(result.outcome).toBe('not_stopped')
-    if (result.outcome === 'person_must_act') throw new Error('the source took the request')
+    if (!('snapshot' in result)) throw new Error('the source took the request')
     expect(result.snapshot.subscriptions[0]?.willRenew).toBe('yes')
   })
 
   it('reports not stopped when the read-back no longer holds the subscription or is older than the stored one', async () => {
-    // Scenario: the record is gone from the read; then the source reports an older state than the
-    // store holds, which the store keeps.
+    // Scenario: once the source accepts, the record is gone from the read; then the source
+    // reports an older state than the store holds, which the store keeps.
     const { source, seed, service } = harness()
     source.setCapabilities('play_store', STOP_AND_REFUND)
-    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' })
+    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' }, () =>
+      source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, [], [], '2026-01-06T00:00:00.000Z'))
+    )
     await seed(ACCOUNT, snapshotOf(ACCOUNT, [subscriptionOf()], [], '2026-01-05T00:00:00.000Z'))
-    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, [], [], '2026-01-06T00:00:00.000Z'))
     expect((await service.stopRenewal(ACCOUNT, 'sub-1')).outcome).toBe('not_stopped')
     await seed(ACCOUNT, snapshotOf(ACCOUNT, [subscriptionOf()], [], '2026-01-07T00:00:00.000Z'))
     source.setAccount(ACCOUNT, stoppedState())
@@ -268,12 +271,11 @@ describe('SubscriptionService.stopRenewal', () => {
     expect(source.readCount(caller)).toBe(0)
   })
 
-  it('surfaces a failing source as the source-unavailable code and leaves the stored snapshot as it was', async () => {
-    // Scenario: the call rejects, throws at once, or the read-back fails; each is the same code.
-    const { source, store, seed, service } = harness()
+  it('surfaces a rejecting call, a call that throws at once and a failing fresh read as the source-unavailable code', async () => {
+    // Scenario: each failure before the answer is the same code.
+    const { source, seed, service } = harness()
     source.setCapabilities('play_store', STOP_AND_REFUND)
     await seed(ACCOUNT, snapshotOf(ACCOUNT, [subscriptionOf()]))
-    const before = structuredClone(await store.getSnapshot(encodeAccountKey(ACCOUNT)))
     jest.spyOn(source, 'stopRenewal').mockRejectedValueOnce(new Error('upstream'))
     await expect(service.stopRenewal(ACCOUNT, 'sub-1')).rejects.toMatchObject({
       code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
@@ -289,7 +291,6 @@ describe('SubscriptionService.stopRenewal', () => {
     await expect(service.stopRenewal(ACCOUNT, 'sub-1')).rejects.toMatchObject({
       code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
     })
-    expect(await store.getSnapshot(encodeAccountKey(ACCOUNT))).toStrictEqual(before)
   })
 
   it('refuses a multi-tenant account without a tenant before anything else', async () => {

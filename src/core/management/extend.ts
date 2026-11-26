@@ -14,6 +14,7 @@ import { SUBSCRIPTION_ERROR_CODES, parseInstant } from '@bymax-one/nest-subscrip
 
 import type { ExtendOutcome } from './management.types'
 import {
+  NOT_APPLICABLE,
   named,
   performOperation,
   type ManagementContext,
@@ -40,10 +41,11 @@ function isValid(extension: ExtendRequest): boolean {
 export function extendSpec(extension: ExtendRequest): OperationSpec {
   return {
     operation: 'extend',
+    applies: (source, kind) => kind === 'subscription' && source.extend !== undefined,
     ask: (source, account, target) =>
-      target.kind === 'subscription'
-        ? source.extend?.(account, target.record, extension)
-        : undefined,
+      target.kind === 'subscription' && source.extend !== undefined
+        ? source.extend(account, target.record, extension)
+        : NOT_APPLICABLE,
     shows: (before, after) =>
       before.kind === 'subscription' &&
       after?.kind === 'subscription' &&

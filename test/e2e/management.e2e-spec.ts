@@ -13,7 +13,9 @@ import {
   SubscriptionModule,
   SubscriptionService,
   type AccountReference,
+  type ManagedRecord,
   type ManagementOperation,
+  type SubscriptionSource,
   type SubscriptionChangeNotification
 } from '@bymax-one/nest-subscription'
 import {
@@ -22,6 +24,11 @@ import {
   type SubscriptionRecord,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
+import { changeProductSpec } from '../../src/core/management/change-product'
+import { extendSpec } from '../../src/core/management/extend'
+import { REFUND } from '../../src/core/management/refund'
+import { RESUME } from '../../src/core/management/resume'
+import { STOP_RENEWAL } from '../../src/core/management/stop-renewal'
 import {
   FakeSubscriptionSource,
   InMemorySubscriptionStore,
@@ -84,7 +91,7 @@ function stateOf(
 }
 
 /** An application over a scripted source, with the owner's account already stored. */
-async function boot(): Promise<{
+async function boot(hookThrows = false): Promise<{
   app: TestingModule
   source: FakeSubscriptionSource
   service: SubscriptionService
@@ -102,6 +109,7 @@ async function boot(): Promise<{
         accountResolver: () => null,
         onChange: (notification) => {
           notified.push(notification)
+          if (hookThrows) throw new Error('the host hook failed')
         }
       })
     ]
@@ -125,7 +133,7 @@ describe('management: stop renewal', () => {
     source.setAccount(OWNER, stateOf(OWNER, { ...SUBSCRIPTION, willRenew: 'no' }, T1))
     const result = await service.stopRenewal(OWNER, 'sub-1')
     expect(result.outcome).toBe('stopped')
-    if (result.outcome === 'person_must_act') throw new Error('the source took the request')
+    if (!('snapshot' in result)) throw new Error('the source took the request')
     expect(result.snapshot.subscriptions[0]?.willRenew).toBe('no')
     expect(source.stopRenewalCalls).toBe(1)
     expect(notified.flatMap((entry) => entry.changes.map((change) => change.kind))).toContain(
@@ -236,21 +244,22 @@ describe('management: refusals and failures', () => {
   })
 
   it('reports not stopped when the read-back no longer holds the subscription', async () => {
-    // Scenario: the source accepted and its next read has no such subscription.
+    // Scenario: once the source accepted, its next read has no such subscription.
     const { app, source, service } = await boot()
     source.setCapabilities('play_store', {
       operations: ['stop_renewal'],
       managementReference: null
     })
-    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' })
-    source.setAccount(OWNER, { ...stateOf(OWNER, SUBSCRIPTION, T1), subscriptions: [] })
+    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' }, () =>
+      source.setAccount(OWNER, { ...stateOf(OWNER, SUBSCRIPTION, T1), subscriptions: [] })
+    )
     expect((await service.stopRenewal(OWNER, 'sub-1')).outcome).toBe('not_stopped')
     await app.close()
   })
 
   it('surfaces each kind of source failure as the source-unavailable code, and keeps a library error', async () => {
-    // Scenario: the adapter rejects, throws at once, fails the capability query, or the read-back
-    // fails; a library error from the adapter keeps its own code.
+    // Scenario: the adapter rejects, throws at once, fails the capability query, or the read that
+    // precedes the write fails; a library error from the adapter keeps its own code.
     const { app, source, service } = await boot()
     source.setCapabilities('play_store', {
       operations: ['stop_renewal'],
@@ -338,7 +347,8 @@ const OPERATIONS: readonly Operation[] = [
 
 describe.each(OPERATIONS)('management: $name through the module', (operation) => {
   it('returns the snapshot read back, and not done when the read-back shows nothing', async () => {
-    // Scenario: one call, one refresh; the result follows the source's next read in both cases.
+    // Scenario: the result follows the read after the write: unchanged in the first call, and the
+    // effect in the second.
     const { app, source, service } = await boot()
     source.setCapabilities('play_store', {
       operations: [operation.name],
@@ -347,7 +357,9 @@ describe.each(OPERATIONS)('management: $name through the module', (operation) =>
     source.setOperationResult(operation.name, 'play_store', { outcome: 'accepted' })
     source.setAccount(OWNER, stateOf(OWNER, SUBSCRIPTION, T1))
     const unchanged = await operation.call(service, OWNER, 'sub-1')
-    source.setAccount(OWNER, stateOf(OWNER, operation.effect, '2026-01-03T00:00:00.000Z'))
+    source.setOperationResult(operation.name, 'play_store', { outcome: 'accepted' }, () =>
+      source.setAccount(OWNER, stateOf(OWNER, operation.effect, '2026-01-03T00:00:00.000Z'))
+    )
     const effective = await operation.call(service, OWNER, 'sub-1')
     expect([unchanged.outcome, effective.outcome]).toStrictEqual(
       operation.name === 'resume'
@@ -462,5 +474,111 @@ describe('management: the public surface', () => {
       'resume',
       'stopRenewal'
     ])
+  })
+})
+
+describe('management: a read-back that fails, and the order of the flow', () => {
+  it.each(OPERATIONS)(
+    'returns unconfirmed, with no snapshot and no error, for $name',
+    async (operation) => {
+      // Scenario: the source accepted and the read that should confirm it rejects; the host must
+      // not repeat the operation, and the result says so without an error.
+      const { app, source, service } = await boot()
+      source.setCapabilities('play_store', {
+        operations: [operation.name],
+        managementReference: null
+      })
+      source.setOperationResult(operation.name, 'play_store', { outcome: 'accepted' }, () =>
+        source.failNextRead(new Error('read-back down'))
+      )
+      expect(await operation.call(service, OWNER, 'sub-1')).toStrictEqual({
+        outcome: 'unconfirmed'
+      })
+      expect(source.operationCalls(operation.name)).toBe(1)
+      await app.close()
+    }
+  )
+
+  it('reads the account afresh before the write, so a renewal the store has not seen is not the extension', async () => {
+    // Scenario: the source already shows a later period end than the stored snapshot; the write
+    // changes nothing further.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', { operations: ['extend'], managementReference: null })
+    source.setOperationResult('extend', 'play_store', { outcome: 'accepted' })
+    const renewed = { ...SUBSCRIPTION, currentPeriodEnd: '2026-03-03T00:00:00.000Z' }
+    source.setAccount(OWNER, stateOf(OWNER, renewed, T1))
+    expect((await service.extend(OWNER, 'sub-1', { days: 7 })).outcome).toBe('not_extended')
+    await app.close()
+  })
+
+  it('refuses a record the fresh read no longer holds, and writes nothing', async () => {
+    // Scenario: the record is in the stored snapshot and gone at the source.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', { operations: ['extend'], managementReference: null })
+    source.setOperationResult('extend', 'play_store', { outcome: 'accepted' })
+    source.setAccount(OWNER, { ...stateOf(OWNER, SUBSCRIPTION, T1), subscriptions: [] })
+    await expect(service.extend(OWNER, 'sub-1', { days: 7 })).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN
+    })
+    expect(source.totalOperationCalls).toBe(0)
+    await app.close()
+  })
+
+  it('reads nothing and writes nothing where a server cannot do the operation', async () => {
+    // Scenario: the person must act; the source is not read, not even afresh.
+    const { app, source, service } = await boot()
+    const reads = source.totalReads
+    expect((await service.refund(OWNER, 'sub-1')).outcome).toBe('person_must_act')
+    expect(source.totalReads).toBe(reads)
+    expect(source.totalOperationCalls).toBe(0)
+    await app.close()
+  })
+
+  it('returns the result of an operation whose change hook fails, on both reads', async () => {
+    // Scenario: the host's hook throws on the fresh read and on the read-back; neither fails the
+    // operation.
+    const { app, source, service } = await boot(true)
+    source.setCapabilities('play_store', {
+      operations: ['stop_renewal'],
+      managementReference: null
+    })
+    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' }, () =>
+      source.setAccount(OWNER, stateOf(OWNER, { ...SUBSCRIPTION, willRenew: 'no' }, T1))
+    )
+    source.setAccount(OWNER, stateOf(OWNER, { ...SUBSCRIPTION, productReference: 'other' }, T1))
+    expect((await service.stopRenewal(OWNER, 'sub-1')).outcome).toBe('stopped')
+    await app.close()
+  })
+
+  it('answers the fallback of each operation for a record or an adapter it does not apply to', async () => {
+    // Scenario: the specs answer the person's, with no reference, and say they do not apply.
+    const { app, source } = await boot()
+    const specs = [
+      STOP_RENEWAL,
+      RESUME,
+      changeProductSpec('pro_annual'),
+      extendSpec({ days: 1 }),
+      REFUND
+    ]
+    const lacking: SubscriptionSource = {
+      name: 'minimal',
+      readAccount: () => Promise.reject(new Error('not read')),
+      verifyWebhook: () => Promise.resolve({ accepted: false }),
+      capabilities: () => Promise.resolve({ operations: [], managementReference: null }),
+      stopRenewal: () => Promise.resolve({ outcome: 'accepted' })
+    }
+    for (const spec of specs) {
+      const target: ManagedRecord =
+        spec.operation === 'stop_renewal'
+          ? { kind: 'purchase', record: PURCHASE }
+          : { kind: 'subscription', record: SUBSCRIPTION }
+      expect(await spec.ask(lacking, OWNER, target)).toStrictEqual({
+        outcome: 'customer_action_required',
+        managementReference: null
+      })
+      expect(spec.applies(lacking, target.kind)).toBe(false)
+      expect(spec.applies(source, 'subscription')).toBe(true)
+    }
+    await app.close()
   })
 })

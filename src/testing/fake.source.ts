@@ -101,6 +101,7 @@ export class FakeSubscriptionSource implements SubscriptionSource {
   readonly #reads = new PerAccount<number>()
   readonly #capabilities = new Map<SubscriptionOrigin, SourceCapabilities>()
   readonly #results = new Map<string, OperationResult>()
+  readonly #effects = new Map<string, () => void>()
   readonly #calls = new Map<ManagementOperation, number>()
   readonly #queued: WebhookRequest[] = []
   readonly #gates: Array<Promise<void>> = []
@@ -173,13 +174,19 @@ export class FakeSubscriptionSource implements SubscriptionSource {
   /**
    * Sets what an operation answers for every record bought from an origin. Until it is set, an
    * operation answers that the person must act, with the record's own management reference.
+   *
+   * @param effect Runs when the operation is asked, before it answers, so a test can change the
+   *   state the next read returns at the instant of the write, as a real source does.
    */
   setOperationResult(
     operation: ManagementOperation,
     origin: SubscriptionOrigin,
-    result: OperationResult
+    result: OperationResult,
+    effect?: () => void
   ): void {
     this.#results.set(`${operation}:${origin}`, result)
+    if (effect === undefined) this.#effects.delete(`${operation}:${origin}`)
+    else this.#effects.set(`${operation}:${origin}`, effect)
   }
 
   /** Builds the signed request that `verifyWebhook` accepts for a notification. */
@@ -271,6 +278,7 @@ export class FakeSubscriptionSource implements SubscriptionSource {
   /** Counts the call and answers what a test scripted for the record's origin. */
   #answer(operation: ManagementOperation, target: ManagedRecord): Promise<OperationResult> {
     this.#calls.set(operation, this.operationCalls(operation) + 1)
+    this.#effects.get(`${operation}:${target.record.origin}`)?.()
     return Promise.resolve(
       this.#results.get(`${operation}:${target.record.origin}`) ?? {
         outcome: 'customer_action_required',

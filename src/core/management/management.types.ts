@@ -33,6 +33,16 @@ export interface PersonMustAct {
 }
 
 /**
+ * The result when the source accepted the request and the read that should confirm it failed. The
+ * effect is unknown, and there is no snapshot. It is never a done value: the host must not repeat
+ * the operation before a later read shows the record, or it may extend or refund twice.
+ */
+export interface Unconfirmed {
+  /** Discriminant: the request was accepted, and its effect could not be read back. */
+  readonly outcome: 'unconfirmed'
+}
+
+/**
  * The result of an operation that reached the source: the snapshot read back afterwards, under
  * the name that says whether the read-back shows the effect.
  */
@@ -44,17 +54,17 @@ export interface ReadBack<Outcome extends string> {
 }
 
 /** The result of stopping a renewal. */
-export type StopRenewalOutcome = ReadBack<'stopped' | 'not_stopped'> | PersonMustAct
+export type StopRenewalOutcome = ReadBack<'stopped' | 'not_stopped'> | PersonMustAct | Unconfirmed
 
 /** The result of resuming a renewal. */
-export type ResumeOutcome = ReadBack<'resumed' | 'not_resumed'> | PersonMustAct
+export type ResumeOutcome = ReadBack<'resumed' | 'not_resumed'> | PersonMustAct | Unconfirmed
 
 /** The result of changing the product. */
 export type ChangeProductOutcome =
-  ReadBack<'product_changed' | 'product_not_changed'> | PersonMustAct
+  ReadBack<'product_changed' | 'product_not_changed'> | PersonMustAct | Unconfirmed
 
 /** The result of extending the current period. */
-export type ExtendOutcome = ReadBack<'extended' | 'not_extended'> | PersonMustAct
+export type ExtendOutcome = ReadBack<'extended' | 'not_extended'> | PersonMustAct | Unconfirmed
 
 /** The result of a refund. */
-export type RefundOutcome = ReadBack<'refunded' | 'not_refunded'> | PersonMustAct
+export type RefundOutcome = ReadBack<'refunded' | 'not_refunded'> | PersonMustAct | Unconfirmed

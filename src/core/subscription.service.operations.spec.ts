@@ -116,14 +116,22 @@ function before(row: Row): SubscriptionRecord {
   return row.operation === 'resume' ? subscriptionOf({ willRenew: 'no' }) : subscriptionOf()
 }
 
-/** A harness whose Google Play origin can do the operation and accepts the request. */
-async function possible(row: Row): Promise<Harness> {
+/**
+ * A harness whose Google Play origin can do the operation and accepts the request. When `after`
+ * is given, that is the state the source reports from the moment it accepts.
+ */
+async function possible(row: Row, after?: SubscriptionSnapshot): Promise<Harness> {
   const parts = harness()
   parts.source.setCapabilities('play_store', {
     operations: [row.operation],
     managementReference: 'https://manage.example/sub-1'
   })
-  parts.source.setOperationResult(row.operation, 'play_store', { outcome: 'accepted' })
+  parts.source.setOperationResult(
+    row.operation,
+    'play_store',
+    { outcome: 'accepted' },
+    after === undefined ? undefined : () => parts.source.setAccount(ACCOUNT, after)
+  )
   await parts.seed(ACCOUNT, snapshotOf(ACCOUNT, [before(row)], [purchaseOf()]))
   return parts
 }
@@ -138,16 +146,16 @@ function later(
 
 describe.each(ROWS)('SubscriptionService.$operation', (row) => {
   it('makes one source call, refreshes and returns the snapshot read back as the result', async () => {
-    // Scenario: the origin can do it; the source's next read shows the effect, and the result
-    // is that read, not the request.
-    const { source, service } = await possible(row)
-    source.setAccount(ACCOUNT, later(row.effect))
+    // Scenario: the origin can do it; once the source accepts, its next read shows the effect,
+    // and the result is that read, not the request. The account is read twice: before the write
+    // and after it.
+    const { source, service } = await possible(row, later(row.effect))
     const reads = source.readCount(ACCOUNT)
     const result = await row.call(service, ACCOUNT, 'sub-1')
     expect(result.outcome).toBe(row.done)
     expect(source.operationCalls(row.operation)).toBe(1)
     expect(source.totalOperationCalls).toBe(1)
-    expect(source.readCount(ACCOUNT)).toBe(reads + 1)
+    expect(source.readCount(ACCOUNT)).toBe(reads + 2)
     expect('snapshot' in result && result.snapshot).toMatchObject({
       sourceUpdatedAt: '2026-01-02T00:00:00.000Z',
       subscriptions: [row.effect]
@@ -155,18 +163,17 @@ describe.each(ROWS)('SubscriptionService.$operation', (row) => {
   })
 
   it('reports not done when the source accepted and the read-back shows no effect', async () => {
-    // Scenario: the next read is the state from before the request.
+    // Scenario: the source accepts and its state does not change.
     const { source, service } = await possible(row)
-    source.setAccount(ACCOUNT, later(before(row)))
     const result = await row.call(service, ACCOUNT, 'sub-1')
     expect(result.outcome).toBe(row.notDone)
     expect(source.operationCalls(row.operation)).toBe(1)
   })
 
   it('reports not done when the read-back no longer holds the record', async () => {
-    // Scenario: the next read has neither the subscription nor the purchase.
-    const { source, service } = await possible(row)
-    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, [], [], '2026-01-02T00:00:00.000Z'))
+    // Scenario: once the source accepts, its next read has neither the subscription nor the
+    // purchase.
+    const { service } = await possible(row, snapshotOf(ACCOUNT, [], [], '2026-01-02T00:00:00.000Z'))
     expect((await row.call(service, ACCOUNT, 'sub-1')).outcome).toBe(row.notDone)
   })
 
@@ -244,17 +251,15 @@ describe.each(ROWS)('SubscriptionService.$operation', (row) => {
     expect(result.outcome).toBe(row.kinds.includes('purchase') ? row.notDone : 'person_must_act')
   })
 
-  it('fails as source-unavailable and leaves the stored snapshot as it was when the call fails', async () => {
-    // Scenario: the operation rejects; no refresh happens.
-    const { source, service, store } = await possible(row)
-    const stored = structuredClone(await store.getSnapshot('acc-1'))
+  it('fails as source-unavailable, with no read-back, when the call fails', async () => {
+    // Scenario: the operation rejects after the read that precedes it; nothing is read back.
+    const { source, service } = await possible(row)
     row.reject(source, new Error('upstream'))
     const reads = source.totalReads
     await expect(row.call(service, ACCOUNT, 'sub-1')).rejects.toMatchObject({
       code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
     })
-    expect(source.totalReads).toBe(reads)
-    expect(await store.getSnapshot('acc-1')).toStrictEqual(stored)
+    expect(source.totalReads).toBe(reads + 1)
   })
 })
 
@@ -355,9 +360,10 @@ describe('SubscriptionService.refund: what the read-back must show', () => {
     // Scenario: the purchase's own read-back decides, never the request.
     const { source, seed, service } = harness()
     source.setCapabilities('play_store', { operations: ['refund'], managementReference: null })
-    source.setOperationResult('refund', 'play_store', { outcome: 'accepted' })
+    source.setOperationResult('refund', 'play_store', { outcome: 'accepted' }, () =>
+      source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, [], [after], '2026-01-02T00:00:00.000Z'))
+    )
     await seed(ACCOUNT, snapshotOf(ACCOUNT, [], [purchaseOf()]))
-    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, [], [after], '2026-01-02T00:00:00.000Z'))
     expect((await service.refund(ACCOUNT, 'pur-1')).outcome).toBe(
       refunded ? 'refunded' : 'not_refunded'
     )
@@ -386,9 +392,10 @@ describe('SubscriptionService.extend: what the read-back must show', () => {
     // Scenario: only a later end counts, by how much is the source's to say.
     const { source, seed, service } = harness()
     source.setCapabilities('play_store', { operations: ['extend'], managementReference: null })
-    source.setOperationResult('extend', 'play_store', { outcome: 'accepted' })
+    source.setOperationResult('extend', 'play_store', { outcome: 'accepted' }, () =>
+      source.setAccount(ACCOUNT, later(subscriptionOf({ currentPeriodEnd: end })))
+    )
     await seed(ACCOUNT, snapshotOf(ACCOUNT, [subscriptionOf()]))
-    source.setAccount(ACCOUNT, later(subscriptionOf({ currentPeriodEnd: end })))
     expect((await service.extend(ACCOUNT, 'sub-1', { days: 1 })).outcome).toBe(outcome)
   })
 })

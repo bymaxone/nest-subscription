@@ -169,14 +169,20 @@ export class SubscriptionService {
   }
 
   /**
-   * Asks the source to stop the renewal of a subscription of the account, then refreshes. The
-   * result is the snapshot read back: `stopped` when it shows a subscription that will not renew,
-   * `not_stopped` when the source accepted and the read-back still shows otherwise. Where a server
-   * cannot do it the result is `person_must_act` with the management reference, and nothing was
-   * asked of the source. The source is called at most once and never retried.
+   * Asks the source to stop the renewal of a subscription of the account, then refreshes. Where a
+   * server cannot do it the result is `person_must_act` with the management reference, with no
+   * read and no write. Otherwise the account is read afresh, the source is asked once about the
+   * record of that read and is never retried, and the result is the snapshot read back: `stopped`
+   * when it shows a subscription that will not renew, `not_stopped` when the source accepted and
+   * the read-back still shows otherwise, and `unconfirmed`, with no snapshot, when the source
+   * accepted and the read-back failed: the effect is unknown, and the operation must not be
+   * repeated before a later read shows the record.
    *
-   * @throws {SubscriptionError} as {@link SubscriptionService.getCapabilities} does; the stored
-   * snapshot is untouched when the source fails.
+   * @throws {SubscriptionError} with `SUBSCRIPTION_ACCOUNT_UNKNOWN` for a record the account does
+   * not hold, with `SUBSCRIPTION_INVALID_INPUT` as {@link SubscriptionService.getSnapshot} does,
+   * and with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the capability query or the fresh read fails
+   * (nothing was written) or when the write itself throws. A thrown write may have reached the
+   * source, so its effect is unknown: refresh, and read the record, before repeating it.
    */
   async stopRenewal(account: AccountReference, recordRef: string): Promise<StopRenewalOutcome> {
     this.#keyOf(account)
@@ -187,7 +193,8 @@ export class SubscriptionService {
    * Asks the source to resume a renewal of a subscription of the account, then refreshes. The
    * result is the snapshot read back: `resumed` when it shows a subscription that will renew,
    * `not_resumed` when the source accepted and it does not, `person_must_act` with the management
-   * reference where a server cannot do it.
+   * reference where a server cannot do it, and `unconfirmed` when the read-back failed after the
+   * source accepted.
    *
    * @throws {SubscriptionError} as {@link SubscriptionService.stopRenewal} does.
    */
@@ -199,7 +206,8 @@ export class SubscriptionService {
   /**
    * Asks the source to move a subscription of the account to another product, then refreshes. The
    * result is the snapshot read back: `product_changed` when it shows the subscription on the
-   * product asked for, `product_not_changed` when it does not.
+   * product asked for, `product_not_changed` when it does not, `unconfirmed` as for
+   * {@link SubscriptionService.stopRenewal}.
    *
    * @param productReference The product to change to, as the source names it.
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank product, before
@@ -217,12 +225,13 @@ export class SubscriptionService {
   /**
    * Asks the source to extend the current period of a subscription of the account, then
    * refreshes. The result is the snapshot read back: `extended` when the current period ends
-   * later than it did, `not_extended` when it does not.
+   * later than it did in the fresh read before the write, `not_extended` when it does not,
+   * `unconfirmed` as for {@link SubscriptionService.stopRenewal}.
    *
    * @param extension The whole days to add and, where the origin asks for one, the reason.
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for an extension that is not
    * whole days of at least one or has an unknown reason, and for one the origin refuses before
-   * any call; otherwise as {@link SubscriptionService.stopRenewal} does.
+   * any write; otherwise as {@link SubscriptionService.stopRenewal} does.
    */
   async extend(
     account: AccountReference,
@@ -236,7 +245,8 @@ export class SubscriptionService {
   /**
    * Asks the source to refund a subscription or a non-renewing purchase of the account, then
    * refreshes. The result is the snapshot read back: `refunded` when it shows a refund instant or
-   * access that is gone, `not_refunded` when it does not.
+   * access that was there before the write and is gone, `not_refunded` when it does not,
+   * `unconfirmed` as for {@link SubscriptionService.stopRenewal}.
    *
    * @throws {SubscriptionError} as {@link SubscriptionService.stopRenewal} does.
    */

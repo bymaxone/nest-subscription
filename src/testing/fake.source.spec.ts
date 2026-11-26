@@ -341,6 +341,20 @@ describe('FakeSubscriptionSource management', () => {
     expect((await source.resume(account, record)).outcome).toBe('customer_action_required')
   })
 
+  it('runs the scripted effect when the operation is asked, for that origin only, and no more once cleared', async () => {
+    // Scenario: the effect is the state change a real source makes at the write.
+    const source = new FakeSubscriptionSource({ clock })
+    const ran: string[] = []
+    source.setOperationResult('extend', 'play_store', { outcome: 'accepted' }, () => ran.push('a'))
+    await source.extend(account, record, { days: 1 })
+    await source.extend(account, { ...record, origin: 'web' }, { days: 1 })
+    await source.resume(account, record)
+    expect(ran).toStrictEqual(['a'])
+    source.setOperationResult('extend', 'play_store', { outcome: 'accepted' })
+    await source.extend(account, record, { days: 1 })
+    expect(ran).toStrictEqual(['a'])
+  })
+
   it('is usable wherever the source port is expected', async () => {
     // Scenario: the class is passed as the port, with no private member needed.
     const port: SubscriptionSource = new FakeSubscriptionSource({ clock })

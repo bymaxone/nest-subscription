@@ -98,7 +98,8 @@ export type {
   RefundOutcome,
   ResumeOutcome,
   StopRenewalOutcome,
-  SubscriptionCapabilities
+  SubscriptionCapabilities,
+  Unconfirmed
 } from './management/management.types'
 export type { AgedSnapshot } from './snapshot-view'
 export type { ReconcileOptions, ReconcileResult } from './reconciliation/reconciler'

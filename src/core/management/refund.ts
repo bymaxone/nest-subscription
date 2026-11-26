@@ -8,6 +8,7 @@ import type { AccountReference } from '@bymax-one/nest-subscription/internal'
 
 import type { RefundOutcome } from './management.types'
 import {
+  NOT_APPLICABLE,
   named,
   performOperation,
   type ManagementContext,
@@ -17,7 +18,9 @@ import {
 /** The operation: one source call, and a read-back that shows the refund. */
 export const REFUND: OperationSpec = {
   operation: 'refund',
-  ask: (source, account, target) => source.refund?.(account, target),
+  applies: (source) => source.refund !== undefined,
+  ask: (source, account, target) =>
+    source.refund === undefined ? NOT_APPLICABLE : source.refund(account, target),
   shows: (before, after) =>
     after !== undefined &&
     (after.record.refundedAt !== null || (before.record.givesAccess && !after.record.givesAccess))

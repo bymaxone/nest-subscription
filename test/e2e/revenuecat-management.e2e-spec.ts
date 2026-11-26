@@ -135,7 +135,7 @@ describe('revenuecat management: stop renewal', () => {
     )
     const result = await service.stopRenewal(ACCOUNT, SUBSCRIPTION)
     expect(result.outcome).toBe('stopped')
-    if (result.outcome === 'person_must_act') throw new Error('Google Play allows it')
+    if (!('snapshot' in result)) throw new Error('Google Play allows it')
     expect(result.snapshot.subscriptions[0]?.willRenew).toBe('no')
     expect(writes(stand).map((request) => `${request.method} ${request.url}`)).toStrictEqual([
       'POST /v1/subscribers/customer_a/subscriptions/store_sub_PLACEHOLDER_1/cancel'
@@ -286,7 +286,7 @@ describe('revenuecat management: extend', () => {
       )
       const result = await service.extend(ACCOUNT, SUBSCRIPTION, { days: 7, reason })
       expect(result.outcome).toBe('extended')
-      if (result.outcome === 'person_must_act') throw new Error('the origin allows it')
+      if (!('snapshot' in result)) throw new Error('the origin allows it')
       expect(Date.parse(result.snapshot.subscriptions[0]?.currentPeriodEnd ?? '')).toBe(
         PERIOD_END + WEEK
       )
@@ -308,18 +308,17 @@ describe('revenuecat management: extend', () => {
     expect((await service.extend(ACCOUNT, SUBSCRIPTION, { days: 7 })).outcome).toBe('not_extended')
   })
 
-  it('refuses an App Store extension without a reason or past 90 days before any request', async () => {
-    // Scenario: the origin's limits are checked ahead of the write.
+  it('refuses an App Store extension without a reason or past 90 days before any write', async () => {
+    // Scenario: the origin's limits are checked ahead of the write, after the fresh read.
     running = await boot('app_store')
     const { service, stand } = running
     stand.respondWith(serving('app_store', () => ({ status: 500 })))
-    const requests = stand.requests.length
     for (const extension of [{ days: 7 }, { days: 91, reason: 'other' as const }]) {
       await expect(service.extend(ACCOUNT, SUBSCRIPTION, extension)).rejects.toMatchObject({
         code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
       })
     }
-    expect(stand.requests).toHaveLength(requests)
+    expect(writes(stand)).toHaveLength(0)
   })
 
   it('asks the person to act for Stripe, and answers the capability per origin', async () => {

@@ -9,6 +9,7 @@ import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import type { ChangeProductOutcome } from './management.types'
 import {
+  NOT_APPLICABLE,
   named,
   performOperation,
   type ManagementContext,
@@ -19,10 +20,11 @@ import {
 export function changeProductSpec(productReference: string): OperationSpec {
   return {
     operation: 'change_product',
+    applies: (source, kind) => kind === 'subscription' && source.changeProduct !== undefined,
     ask: (source, account, target) =>
-      target.kind === 'subscription'
-        ? source.changeProduct?.(account, target.record, productReference)
-        : undefined,
+      target.kind === 'subscription' && source.changeProduct !== undefined
+        ? source.changeProduct(account, target.record, productReference)
+        : NOT_APPLICABLE,
     shows: (_before, after) => after?.record.productReference === productReference
   }
 }

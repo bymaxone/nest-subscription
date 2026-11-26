@@ -9,6 +9,7 @@ import type { AccountReference } from '@bymax-one/nest-subscription/internal'
 
 import type { ResumeOutcome } from './management.types'
 import {
+  NOT_APPLICABLE,
   named,
   performOperation,
   type ManagementContext,
@@ -18,8 +19,11 @@ import {
 /** The operation: one source call, and a read-back whose renewal intent is `yes`. */
 export const RESUME: OperationSpec = {
   operation: 'resume',
+  applies: (source, kind) => kind === 'subscription' && source.resume !== undefined,
   ask: (source, account, target) =>
-    target.kind === 'subscription' ? source.resume?.(account, target.record) : undefined,
+    target.kind === 'subscription' && source.resume !== undefined
+      ? source.resume(account, target.record)
+      : NOT_APPLICABLE,
   shows: (_before, after) =>
     after !== undefined && after.kind === 'subscription' && after.record.willRenew === 'yes'
 }
