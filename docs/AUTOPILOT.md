@@ -130,7 +130,7 @@ The numbered ones are from the specification §8.2. Each is an auditable stateme
 - **SEC07.** Sandbox purchases grant nothing by default. Enabling them in production needs a second, separate option or the boot fails. The RevenueCat adapter filters sandbox by itself.
 - **SEC08.** Tenant and account are joined only by `encodeAccountKey`, whose construction keeps the boundary between the two fields. The tenant comes from the authenticated request, never from a body.
 - **SEC09.** Two valid webhook secrets are accepted at once where the source allows rotation.
-- **SEC10.** A management operation finds the record, a subscription or a non-renewing purchase (D31), inside the authenticated account's own snapshot through the one ownership check (`findOwnRecord`), and never by an identifier taken on trust; a record of another account or tenant is refused and reaches no source.
+- **SEC10.** A management operation finds the record, a subscription or a non-renewing purchase (D31), inside the authenticated account's own snapshot through the one ownership check, and never by an identifier taken on trust; a record of another account or tenant is refused and reaches no source.
 - **Access from the flag.** No function maps a status name to access. The guard reads the entitlement's active flag, which comes from the source's "gives access" flag.
 - **Honest results.** A management operation reports the snapshot read back from the source, never the request having succeeded.
 - **Provider facts.** Every RevenueCat endpoint, field and value in code traces to `docs/revenuecat-facts.md` and the page it cites.

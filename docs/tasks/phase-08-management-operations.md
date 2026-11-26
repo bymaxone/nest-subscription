@@ -234,7 +234,7 @@ Fill the RevenueCat adapter's capabilities and stop renewal: Google Play through
 
 #### Acceptance criteria
 
-- [x] The capability answer for each origin and store matches the RevenueCat column of the FR36 table, in a table-driven test: App Store not possible with the management reference; Google Play possible; RevenueCat web billing possible; Stripe tracked by RevenueCat not possible, with a result that tells the host to cancel in Stripe.
+- [x] The capability answer for each origin and store matches the RevenueCat column of the FR36 table, in a table-driven test: App Store not possible with the management reference; Google Play possible with `apiKeyV1`; RevenueCat web billing possible; Stripe tracked by RevenueCat not possible, with a result that tells the host to cancel in Stripe.
 - [x] Stop renewal on a Google Play subscription makes exactly one version 1 call; on a web billing subscription exactly one version 2 call; on the others no call.
 - [x] The management reference is returned when the read provides one.
 - [x] A 4xx from the operation becomes a typed failure that does not include the response body or the customer identifier.
@@ -757,7 +757,7 @@ Implement refund through the service and the RevenueCat adapter, for the origins
 - [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
 - [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
 - [x] The result of a refund is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports it through the normal path (AC05).
-- [x] The refund acts on a subscription or a non-renewing purchase found by `findOwnRecord` inside the authenticated account's own snapshot, and on no other record.
+- [x] The refund acts on a subscription or a non-renewing purchase found inside the authenticated account's own snapshot, and on no other record.
 - [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
@@ -831,7 +831,7 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
-- 8.1 ✅ 2026-11-26 — capability query, management reference and the single ownership check (findOwnRecord)
+- 8.1 ✅ 2026-11-26 — capability query, management reference and the single ownership check
 - 8.2 ✅ 2026-11-26 — stop renewal on the shared flow with the snapshot read back as the result
 - 8.3 ✅ 2026-11-26 — RevenueCat capabilities and stop renewal: Google Play through version 1, web billing through version 2, the rest not possible
 - 8.5 ✅ 2026-11-26 — one shared flow and per-operation capabilities for resume, change product, extend and refund; foreign records refused for every operation and both kinds

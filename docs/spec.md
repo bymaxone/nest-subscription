@@ -376,18 +376,18 @@ The library keeps no other state. It stores no payment data, no price paid and n
 
 ### 8.2 Security requirements
 
-| Id    | Requirement                                                                                                                                                                                                                                              |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SEC01 | No access is ever granted from a webhook payload. Access comes only from a read of the source, or from a stored snapshot that came from one                                                                                                              |
-| SEC02 | Signature verification runs over the raw request bytes, before parsing, with a timestamp tolerance and a constant-time comparison                                                                                                                        |
-| SEC03 | A refused webhook answers without telling which check failed. It covers every check the library makes; an answer the framework's body parser gives before the controller runs (D45) is outside it                                                        |
-| SEC04 | The default on a missing snapshot, an unreadable store or an unreachable source is to refuse. Trusting a last known state is an explicit option with a bounded tolerance                                                                                 |
-| SEC05 | Credentials and webhook secrets are held so that serialization, spread and inspection of a library object never expose them. They never appear in an error or a log                                                                                      |
-| SEC06 | The library stores and logs no payment data and no raw payload. Account identifiers are absent from logs and observer payloads, or present only as a short hash                                                                                          |
-| SEC07 | Sandbox purchases grant nothing unless the host enabled it explicitly, and enabling it in a production environment is refused at boot unless a second, separate option confirms it                                                                       |
-| SEC08 | One account can never read or change another's snapshot. In a multi-tenant host the tenant is part of every key and comes from the authenticated request, never from a request body                                                                      |
-| SEC09 | Secret rotation is supported without downtime where the source allows two valid secrets, and documented as a restart where it does not                                                                                                                   |
-| SEC10 | A management operation acts only on a subscription or a non-renewing purchase found, by `findOwnRecord`, inside the authenticated account's own snapshot, and on no other record. A record of another account or tenant is refused and reaches no source |
+| Id    | Requirement                                                                                                                                                                                                                         |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SEC01 | No access is ever granted from a webhook payload. Access comes only from a read of the source, or from a stored snapshot that came from one                                                                                         |
+| SEC02 | Signature verification runs over the raw request bytes, before parsing, with a timestamp tolerance and a constant-time comparison                                                                                                   |
+| SEC03 | A refused webhook answers without telling which check failed. It covers every check the library makes; an answer the framework's body parser gives before the controller runs (D45) is outside it                                   |
+| SEC04 | The default on a missing snapshot, an unreadable store or an unreachable source is to refuse. Trusting a last known state is an explicit option with a bounded tolerance                                                            |
+| SEC05 | Credentials and webhook secrets are held so that serialization, spread and inspection of a library object never expose them. They never appear in an error or a log                                                                 |
+| SEC06 | The library stores and logs no payment data and no raw payload. Account identifiers are absent from logs and observer payloads, or present only as a short hash                                                                     |
+| SEC07 | Sandbox purchases grant nothing unless the host enabled it explicitly, and enabling it in a production environment is refused at boot unless a second, separate option confirms it                                                  |
+| SEC08 | One account can never read or change another's snapshot. In a multi-tenant host the tenant is part of every key and comes from the authenticated request, never from a request body                                                 |
+| SEC09 | Secret rotation is supported without downtime where the source allows two valid secrets, and documented as a restart where it does not                                                                                              |
+| SEC10 | A management operation acts only on a subscription or a non-renewing purchase found inside the authenticated account's own snapshot, and on no other record. A record of another account or tenant is refused and reaches no source |
 
 ---
 

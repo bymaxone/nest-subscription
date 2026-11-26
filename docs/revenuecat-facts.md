@@ -344,8 +344,8 @@ Statements, quoted from the pages:
 - App Store: "Apple does not allow developers to manage subscriptions on behalf of users." (cancel);
   "Apple does not allow developers to issue refunds on behalf of customers." (refund). Amazon: neither
   cancel nor refund. Stripe: cancel and refund are done in Stripe, not through RevenueCat.
-- Resume (undo a cancellation): no page lists an operation. The Subscription page has seven
-  operations, the v1 transactions page six, none of them a resume. **Not stated** for every origin.
+- Resume (undo a cancellation): no page lists an operation, on the Subscription page or the v1
+  transactions page. **Not stated** for every origin.
 - Change product: the managing page says the app stores do not let a developer change a
   subscription for a customer; for Web Billing it describes the customer's portal; the Subscription page mentions "the
   change product endpoint" in a field description but lists no such operation. No server operation is
