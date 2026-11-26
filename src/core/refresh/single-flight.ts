@@ -11,6 +11,7 @@
  */
 export class SingleFlight<T> {
   readonly #inFlight = new Map<string, Promise<T>>()
+  readonly #successors = new Map<string, Promise<T>>()
 
   /** The number of runs in flight. */
   get size(): number {
@@ -30,6 +31,36 @@ export class SingleFlight<T> {
     const flight = this.#begin(key, start)
     this.#inFlight.set(key, flight)
     return flight
+  }
+
+  /**
+   * Returns a run that began after this call. A run already in flight began before it, so it is
+   * waited for, whatever it ends with, and a new run is then started or joined: callers that
+   * arrive while the same older run is in flight share one new run, and a run that begins after
+   * this call, whoever started it, is joined. With no run in flight this is {@link run}.
+   *
+   * @param key The identity of the work.
+   * @param start Begins the work. It is called at most once per run.
+   */
+  runAfter(key: string, start: () => Promise<T>): Promise<T> {
+    const older = this.#inFlight.get(key)
+    if (older === undefined) return this.run(key, start)
+    const pending = this.#successors.get(key)
+    if (pending !== undefined) return pending
+    const successor = this.#afterSettled(key, older, start)
+    this.#successors.set(key, successor)
+    return successor
+  }
+
+  /** Waits for an older run, ignoring how it ended, then starts or joins a run of the key. */
+  async #afterSettled(key: string, older: Promise<T>, start: () => Promise<T>): Promise<T> {
+    try {
+      await older
+    } catch {
+      // The older run's outcome is its own callers'; this caller wants a run of its own.
+    }
+    this.#successors.delete(key)
+    return this.run(key, start)
   }
 
   /**

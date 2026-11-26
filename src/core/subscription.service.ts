@@ -15,6 +15,7 @@ import {
   encodeAccountKey,
   type AccountReference,
   type Clock,
+  type ExtendRequest,
   type SubscriptionSource,
   type SubscriptionStore
 } from '@bymax-one/nest-subscription/internal'
@@ -27,6 +28,20 @@ import {
 import { SnapshotCache } from './cache/snapshot-cache'
 import { entitlementHeld } from './entitlement-held'
 import { logEvent } from './logging/subscription-logger'
+import { changeProduct } from './management/change-product'
+import { extend } from './management/extend'
+import type {
+  ChangeProductOutcome,
+  ExtendOutcome,
+  RefundOutcome,
+  ResumeOutcome,
+  StopRenewalOutcome,
+  SubscriptionCapabilities
+} from './management/management.types'
+import { describeCapabilities, type ManagementContext } from './management/perform-operation'
+import { refund } from './management/refund'
+import { resume } from './management/resume'
+import { stopRenewal } from './management/stop-renewal'
 import { ObserverBridge } from './observer/observer-bridge'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
 import {
@@ -92,9 +107,10 @@ export class SubscriptionService {
   }
 
   /**
-   * Reads the account from the source now and returns the snapshot the store holds afterwards.
-   * Concurrent refreshes of one account share one source call. When the host set a change hook and
-   * the refresh stored changes, the call returns after the hook has returned or failed; a failing
+   * Reads the account from the source and returns the snapshot the store holds afterwards.
+   * Concurrent refreshes of one account share one source call, and a refresh joins a read of the
+   * account already in flight, so the snapshot may have been read before this call (FR24, NFR03).
+   * When the host set a change hook and the refresh stored changes, the call returns after the hook has returned or failed; a failing
    * hook never fails the refresh.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be
@@ -120,6 +136,134 @@ export class SubscriptionService {
    */
   reconcile(options: ReconcileOptions = {}): Promise<ReconcileResult> {
     return this.reconciler.run(options)
+  }
+
+  /**
+   * What can be done with one subscription or non-renewing purchase of the account, for each
+   * management operation. The record is found in the account's own stored snapshot, and the answer
+   * comes from the adapter each time and depends on the origin.
+   *
+   * @throws {SubscriptionError} with `SUBSCRIPTION_ACCOUNT_UNKNOWN` for a reference the account
+   * does not hold (no source is reached), with `SUBSCRIPTION_INVALID_INPUT` as
+   * {@link SubscriptionService.getSnapshot} does, and with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when
+   * the adapter fails.
+   */
+  async getCapabilities(
+    account: AccountReference,
+    recordRef: string
+  ): Promise<SubscriptionCapabilities> {
+    this.#keyOf(account)
+    return describeCapabilities(this.#management(), account, recordRef)
+  }
+
+  /**
+   * Where the person manages one record of the account, or `null` when the source provides no
+   * place.
+   *
+   * @throws {SubscriptionError} as {@link SubscriptionService.getCapabilities} does.
+   */
+  async getManagementReference(
+    account: AccountReference,
+    recordRef: string
+  ): Promise<string | null> {
+    return (await this.getCapabilities(account, recordRef)).managementReference
+  }
+
+  /**
+   * Asks the source to stop the renewal of a subscription of the account, then refreshes. Where a
+   * server cannot do it the result is `person_must_act` with the management reference, with no
+   * read and no write. Otherwise the account is read afresh, the source is asked once about the
+   * record of that read and is never retried, and the result is the snapshot read back: `stopped`
+   * when it shows a subscription that will not renew, `not_stopped` when the source accepted and
+   * the read-back still shows otherwise, and `unconfirmed`, with no snapshot, when the source
+   * accepted and the read-back failed: the effect is unknown, and the operation must not be
+   * repeated before a later read shows the record.
+   *
+   * @throws {SubscriptionError} with `SUBSCRIPTION_ACCOUNT_UNKNOWN` for a record the account does
+   * not hold, with `SUBSCRIPTION_INVALID_INPUT` as {@link SubscriptionService.getSnapshot} does,
+   * and with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the capability query or the fresh read fails
+   * (nothing was written) or when the write itself throws. A thrown write may have reached the
+   * source, so its effect is unknown: refresh, and read the record, before repeating it.
+   */
+  async stopRenewal(account: AccountReference, recordRef: string): Promise<StopRenewalOutcome> {
+    this.#keyOf(account)
+    return stopRenewal(this.#management(), account, recordRef)
+  }
+
+  /**
+   * Asks the source to resume a renewal of a subscription of the account, then refreshes. The
+   * result is the snapshot read back: `resumed` when it shows a subscription that will renew,
+   * `not_resumed` when the source accepted and it does not, `person_must_act` with the management
+   * reference where a server cannot do it, and `unconfirmed` when the read-back failed after the
+   * source accepted.
+   *
+   * @throws {SubscriptionError} as {@link SubscriptionService.stopRenewal} does.
+   */
+  async resume(account: AccountReference, recordRef: string): Promise<ResumeOutcome> {
+    this.#keyOf(account)
+    return resume(this.#management(), account, recordRef)
+  }
+
+  /**
+   * Asks the source to move a subscription of the account to another product, then refreshes. The
+   * result is the snapshot read back: `product_changed` when it shows the subscription on the
+   * product asked for, `product_not_changed` when it does not, `unconfirmed` as for
+   * {@link SubscriptionService.stopRenewal}.
+   *
+   * @param productReference The product to change to, as the source names it.
+   * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank product, before
+   * anything is read or asked; otherwise as {@link SubscriptionService.stopRenewal} does.
+   */
+  async changeProduct(
+    account: AccountReference,
+    recordRef: string,
+    productReference: string
+  ): Promise<ChangeProductOutcome> {
+    this.#keyOf(account)
+    return changeProduct(this.#management(), account, recordRef, productReference)
+  }
+
+  /**
+   * Asks the source to extend the current period of a subscription of the account, then
+   * refreshes. The result is the snapshot read back: `extended` when the current period ends
+   * later than it did in the fresh read before the write, `not_extended` when it does not,
+   * `unconfirmed` as for {@link SubscriptionService.stopRenewal}.
+   *
+   * @param extension The whole days to add and, where the origin asks for one, the reason.
+   * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for an extension that is not
+   * whole days of at least one or has an unknown reason, and for one the origin refuses before
+   * any write; otherwise as {@link SubscriptionService.stopRenewal} does.
+   */
+  async extend(
+    account: AccountReference,
+    recordRef: string,
+    extension: ExtendRequest
+  ): Promise<ExtendOutcome> {
+    this.#keyOf(account)
+    return extend(this.#management(), account, recordRef, extension)
+  }
+
+  /**
+   * Asks the source to refund a subscription or a non-renewing purchase of the account, then
+   * refreshes. The result is the snapshot read back: `refunded` when it shows a refund instant or
+   * access that was there before the write and is gone, `not_refunded` when it does not,
+   * `unconfirmed` as for {@link SubscriptionService.stopRenewal}.
+   *
+   * @throws {SubscriptionError} as {@link SubscriptionService.stopRenewal} does.
+   */
+  async refund(account: AccountReference, recordRef: string): Promise<RefundOutcome> {
+    this.#keyOf(account)
+    return refund(this.#management(), account, recordRef)
+  }
+
+  /** What the management operations need from this service. */
+  #management(): ManagementContext {
+    return {
+      source: this.source,
+      store: this.store,
+      refresher: this.refresher,
+      view: (snapshot) => this.#view(snapshot, this.clock.now())
+    }
   }
 
   /** The stored snapshot, through the cache when the host configured one; `undefined` when none. */

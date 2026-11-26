@@ -1,6 +1,6 @@
 # Phase 8 — Management operations
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 9 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P8 — management-operations
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,15 +39,15 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 
 | ID  | Task                                                              | Status  | Priority | Size | Depends on              |
 | --- | ----------------------------------------------------------------- | ------- | -------- | ---- | ----------------------- |
-| 8.1 | Model capabilities and the service API                            | 📋 ToDo | P0       | M    | —                       |
-| 8.2 | Implement stop renewal with an honest result                      | 📋 ToDo | P0       | M    | 8.1                     |
-| 8.3 | Implement the RevenueCat operations                               | 📋 ToDo | P0       | M    | 8.2                     |
-| 8.5 | Generalize capabilities and the operation flow to every operation | 📋 ToDo | P0       | M    | 8.3                     |
-| 8.6 | Implement resume                                                  | 📋 ToDo | P0       | M    | 8.5                     |
-| 8.7 | Implement change product                                          | 📋 ToDo | P0       | M    | 8.5                     |
-| 8.8 | Implement extend                                                  | 📋 ToDo | P0       | M    | 8.5                     |
-| 8.9 | Implement refund                                                  | 📋 ToDo | P0       | M    | 8.5                     |
-| 8.4 | Close the phase                                                   | 📋 ToDo | P0       | S    | 8.3, 8.6, 8.7, 8.8, 8.9 |
+| 8.1 | Model capabilities and the service API                            | ✅ Done | P0       | M    | —                       |
+| 8.2 | Implement stop renewal with an honest result                      | ✅ Done | P0       | M    | 8.1                     |
+| 8.3 | Implement the RevenueCat operations                               | ✅ Done | P0       | M    | 8.2                     |
+| 8.5 | Generalize capabilities and the operation flow to every operation | ✅ Done | P0       | M    | 8.3                     |
+| 8.6 | Implement resume                                                  | ✅ Done | P0       | M    | 8.5                     |
+| 8.7 | Implement change product                                          | ✅ Done | P0       | M    | 8.5                     |
+| 8.8 | Implement extend                                                  | ✅ Done | P0       | M    | 8.5                     |
+| 8.9 | Implement refund                                                  | ✅ Done | P0       | M    | 8.5                     |
+| 8.4 | Close the phase                                                   | ✅ Done | P0       | S    | 8.3, 8.6, 8.7, 8.8, 8.9 |
 
 ---
 
@@ -55,7 +55,7 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 
 ### Task 8.1 — Model capabilities and the service API
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -66,12 +66,12 @@ Define what a host can ask about and do to a subscription, and add the capabilit
 
 #### Acceptance criteria
 
-- [ ] `SubscriptionService.getCapabilities(account, recordRef)` returns, for that subscription or non-renewing purchase, whether stop renewal is possible from a server and the management reference when the source provides one.
-- [ ] The answer comes from the adapter's `capabilities` and depends on the origin.
-- [ ] `getManagementReference(account, recordRef)` returns the reference or `null`.
-- [ ] A reference that is neither a subscription nor a non-renewing purchase in the account's own snapshot is refused with the "unknown account" family of codes and reaches no source.
-- [ ] With the fake source, a test scripts capabilities per origin and reads them back through the service.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `SubscriptionService.getCapabilities(account, recordRef)` returns, for that subscription or non-renewing purchase, whether stop renewal is possible from a server and the management reference when the source provides one.
+- [x] The answer comes from the adapter's `capabilities` and depends on the origin.
+- [x] `getManagementReference(account, recordRef)` returns the reference or `null`.
+- [x] A reference that is neither a subscription nor a non-renewing purchase in the account's own snapshot is refused with the "unknown account" family of codes and reaches no source.
+- [x] With the fake source, a test scripts capabilities per origin and reads them back through the service.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -140,7 +140,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.2 — Implement stop renewal with an honest result
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.1
@@ -151,13 +151,13 @@ Add stop renewal to the service: check ownership, ask the source, refresh, and r
 
 #### Acceptance criteria
 
-- [ ] Where the adapter says a server can do it, the service calls the source once, refreshes the account, and returns the refreshed snapshot with the outcome the source reported.
-- [ ] Where it cannot, the service calls nothing at the source and returns the "must be done by the person" result with the management reference.
-- [ ] When the source accepts the request and the read-back still shows a renewing subscription, the result says so; it does not report success.
-- [ ] A subscription of another account or of another tenant is refused and no source call is made.
-- [ ] A source failure surfaces as the source-unavailable code, and the stored snapshot is unchanged.
-- [ ] The refresh after the operation goes through `SnapshotRefresher`, so the host hook receives `will_not_renew` through the normal path.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Where the adapter says a server can do it, the service calls the source once, refreshes the account, and returns the refreshed snapshot with the outcome the source reported.
+- [x] Where it cannot, the service calls nothing at the source and returns the "must be done by the person" result with the management reference.
+- [x] When the source accepts the request and the read-back still shows a renewing subscription, the result says so; it does not report success.
+- [x] A subscription of another account or of another tenant is refused and no source call is made.
+- [x] A source failure surfaces as the source-unavailable code, and the stored snapshot is unchanged.
+- [x] The refresh after the operation goes through `SnapshotRefresher`, so the host hook receives `will_not_renew` through the normal path.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -223,7 +223,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.3 — Implement the RevenueCat operations
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.2
@@ -234,11 +234,11 @@ Fill the RevenueCat adapter's capabilities and stop renewal: Google Play through
 
 #### Acceptance criteria
 
-- [ ] The capability answer for each origin and store matches the RevenueCat column of the FR36 table, in a table-driven test: App Store not possible with the management reference; Google Play possible; RevenueCat web billing possible; Stripe tracked by RevenueCat not possible, with a result that tells the host to cancel in Stripe.
-- [ ] Stop renewal on a Google Play subscription makes exactly one version 1 call; on a web billing subscription exactly one version 2 call; on the others no call.
-- [ ] The management reference is returned when the read provides one.
-- [ ] A 4xx from the operation becomes a typed failure that does not include the response body or the customer identifier.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The capability answer for each origin and store matches the RevenueCat column of the FR36 table, in a table-driven test: App Store not possible with the management reference; Google Play possible with `apiKeyV1`; RevenueCat web billing possible; Stripe tracked by RevenueCat not possible, with a result that tells the host to cancel in Stripe.
+- [x] Stop renewal on a Google Play subscription makes exactly one version 1 call; on a web billing subscription exactly one version 2 call; on the others no call.
+- [x] The management reference is returned when the read provides one.
+- [x] A 4xx from the operation becomes a typed failure that does not include the response body or the customer identifier.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -310,7 +310,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.4 — Close the phase
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 8.3, 8.6, 8.7, 8.8, 8.9
@@ -321,11 +321,11 @@ Check the phase against its Definition of Done, extend the cross-cutting sweeps 
 
 #### Acceptance criteria
 
-- [ ] The secret-containment and no-identifier end-to-end sweeps, the SEC10 cross-account and cross-tenant refusals and the honest-result checks cover every operation of D32 and every branch of each, not stop renewal alone.
-- [ ] The API surface baseline contains the new service methods and result types and nothing unintended.
-- [ ] A table-driven test covers every operation (stop renewal, resume, change product, extend, refund) on every origin against Appendix A.4, and one test per operation shows the result is the snapshot read back.
-- [ ] Every Definition of Done item of P8 in `docs/plan.md` has a named test.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The secret-containment and no-identifier end-to-end sweeps, the SEC10 cross-account and cross-tenant refusals and the honest-result checks cover every operation of D32 and every branch of each, not stop renewal alone.
+- [x] The API surface baseline contains the new service methods and result types and nothing unintended.
+- [x] A table-driven test covers every operation (stop renewal, resume, change product, extend, refund) on every origin against Appendix A.4, and one test per operation shows the result is the snapshot read back.
+- [x] Every Definition of Done item of P8 in `docs/plan.md` has a named test.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -389,7 +389,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.5 — Generalize capabilities and the operation flow to every operation
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.3
@@ -400,12 +400,12 @@ Extend the capability answer and the ownership-checked, read-back flow of stop r
 
 #### Acceptance criteria
 
-- [ ] `getCapabilities` answers, for one subscription, whether each of stop renewal, resume, change product, extend and refund is possible from a server, and the management reference when the source provides one; the answer comes from the adapter and depends on the origin.
-- [ ] One shared flow performs any operation: ownership check inside the caller's own snapshot, one source call, a refresh through `SnapshotRefresher`, and a closed result union with no "assumed done" value; stop renewal runs on it and its existing tests pass unchanged.
-- [ ] The source port declares each operation with the arguments it needs, and an adapter answers "not supported" for one it does not implement; the fake source can be scripted per operation and per origin.
-- [ ] The ownership lookup and the capability query cover every record an operation can act on, subscriptions and non-renewing purchases, found only inside the caller's own snapshot and never by an identifier taken on trust; the capability answer for a purchase is per operation and per origin, as RevenueCat documents it.
-- [ ] An operation on a record of another account or tenant is refused and reaches no source, for every operation and both kinds of record, in a table-driven test.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `getCapabilities` answers, for one subscription, whether each of stop renewal, resume, change product, extend and refund is possible from a server, and the management reference when the source provides one; the answer comes from the adapter and depends on the origin.
+- [x] One shared flow performs any operation: ownership check inside the caller's own snapshot, one source call, a refresh through `SnapshotRefresher`, and a closed result union with no "assumed done" value; stop renewal runs on it and its existing tests pass unchanged.
+- [x] The source port declares each operation with the arguments it needs, and an adapter answers "not supported" for one it does not implement; the fake source can be scripted per operation and per origin.
+- [x] The ownership lookup and the capability query cover every record an operation can act on, subscriptions and non-renewing purchases, found only inside the caller's own snapshot and never by an identifier taken on trust; the capability answer for a purchase is per operation and per origin, as RevenueCat documents it.
+- [x] An operation on a record of another account or tenant is refused and reaches no source, for every operation and both kinds of record, in a table-driven test.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -472,7 +472,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.6 — Implement resume
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.5
@@ -483,14 +483,14 @@ Implement resume through the service and the RevenueCat adapter, for the origins
 
 #### Acceptance criteria
 
-- [ ] Before any code, the RevenueCat page that documents resume, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
-- [ ] `docs/spec.md` Appendix A.4 gains the resume column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
-- [ ] The capability answer for resume, per origin and store, matches Appendix A.4 in a table-driven test.
-- [ ] The service method for resume takes the record reference and returns the closed result of the shared flow; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
-- [ ] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
-- [ ] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
-- [ ] The result of a resume is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports the change through the normal path.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Before any code, the RevenueCat page that documents resume, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
+- [x] `docs/spec.md` Appendix A.4 gains the resume column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
+- [x] The capability answer for resume, per origin and store, matches Appendix A.4 in a table-driven test.
+- [x] The service method for resume takes the record reference and returns the closed result of the shared flow; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
+- [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
+- [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
+- [x] The result of a resume is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports the change through the normal path.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -561,7 +561,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.7 — Implement change product
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.5
@@ -572,14 +572,14 @@ Implement change product through the service and the RevenueCat adapter, for the
 
 #### Acceptance criteria
 
-- [ ] Before any code, the RevenueCat page that documents change product, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
-- [ ] `docs/spec.md` Appendix A.4 gains the change product column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
-- [ ] The capability answer for change product, per origin and store, matches Appendix A.4 in a table-driven test.
-- [ ] The service method for change product takes the record reference and the target product reference, validated as a non-empty string before any call; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
-- [ ] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
-- [ ] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
-- [ ] A target product the page says RevenueCat will not accept for that origin is refused before any call, with the invalid-input code, and a change that the read-back does not show, as RevenueCat documents the result, is reported as not done.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Before any code, the RevenueCat page that documents change product, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
+- [x] `docs/spec.md` Appendix A.4 gains the change product column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
+- [x] The capability answer for change product, per origin and store, matches Appendix A.4 in a table-driven test.
+- [x] The service method for change product takes the record reference and the target product reference, validated as a non-empty string before any call; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
+- [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
+- [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
+- [x] A target product the page says RevenueCat will not accept for that origin is refused before any call, with the invalid-input code, and a change that the read-back does not show, as RevenueCat documents the result, is reported as not done.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -650,7 +650,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.8 — Implement extend
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.5
@@ -661,14 +661,14 @@ Implement extend through the service and the RevenueCat adapter, for the origins
 
 #### Acceptance criteria
 
-- [ ] Before any code, the RevenueCat page that documents extend, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
-- [ ] `docs/spec.md` Appendix A.4 gains the extend column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
-- [ ] The capability answer for extend, per origin and store, matches Appendix A.4 in a table-driven test.
-- [ ] The service method for extend takes the record reference and the extension the page requires, validated before any call; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
-- [ ] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
-- [ ] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
-- [ ] An extension outside the bounds the page states is refused before any call, with the invalid-input code, and the result is the snapshot read back, whose access end is compared with the effect RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Before any code, the RevenueCat page that documents extend, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
+- [x] `docs/spec.md` Appendix A.4 gains the extend column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
+- [x] The capability answer for extend, per origin and store, matches Appendix A.4 in a table-driven test.
+- [x] The service method for extend takes the record reference and the extension the page requires, validated before any call; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
+- [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
+- [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
+- [x] An extension outside the bounds the page states is refused before any call, with the invalid-input code, and the result is the snapshot read back, whose access end is compared with the effect RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -739,7 +739,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.9 — Implement refund
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.5
@@ -750,15 +750,15 @@ Implement refund through the service and the RevenueCat adapter, for the origins
 
 #### Acceptance criteria
 
-- [ ] Before any code, the RevenueCat page that documents refund, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
-- [ ] `docs/spec.md` Appendix A.4 gains the refund column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
-- [ ] The capability answer for refund, per origin and store, matches Appendix A.4 in a table-driven test.
-- [ ] The service method for refund takes the record reference (a subscription or a non-renewing purchase), and what else the page requires; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
-- [ ] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
-- [ ] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
-- [ ] The result of a refund is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports it through the normal path (AC05).
-- [ ] The refund acts on a subscription or a non-renewing purchase found by `findOwnRecord` inside the authenticated account's own snapshot, and on no other record.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Before any code, the RevenueCat page that documents refund, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
+- [x] `docs/spec.md` Appendix A.4 gains the refund column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
+- [x] The capability answer for refund, per origin and store, matches Appendix A.4 in a table-driven test.
+- [x] The service method for refund takes the record reference (a subscription or a non-renewing purchase), and what else the page requires; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
+- [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
+- [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
+- [x] The result of a refund is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports it through the normal path (AC05).
+- [x] The refund acts on a subscription or a non-renewing purchase found inside the authenticated account's own snapshot, and on no other record.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -831,4 +831,12 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
-<!-- entries are added as tasks complete -->
+- 8.1 ✅ 2026-11-26 — capability query, management reference and the single ownership check
+- 8.2 ✅ 2026-11-26 — stop renewal on the shared flow with the snapshot read back as the result
+- 8.3 ✅ 2026-11-26 — RevenueCat capabilities and stop renewal: Google Play through version 1, web billing through version 2, the rest not possible
+- 8.5 ✅ 2026-11-26 — one shared flow and per-operation capabilities for resume, change product, extend and refund; foreign records refused for every operation and both kinds
+- 8.6 ✅ 2026-11-26 — resume re-read on the RevenueCat pages: no server operation is documented, so every origin is answered as not possible with the management reference
+- 8.7 ✅ 2026-11-26 — change product re-read on the RevenueCat pages: no server operation is documented; the target product is validated before any call and every origin is not possible
+- 8.8 ✅ 2026-11-26 — extend through version 2 for Google Play, the App Store (reason, at most 90 days) and web billing; the read-back must show a later period end
+- 8.9 ✅ 2026-11-26 — refund for Google Play (version 2 transaction, version 1 purchase) and web billing (version 2), App Store and Stripe not possible; the read-back decides
+- 8.4 ✅ 2026-11-26 — sweeps extended to every operation and branch, the Appendix A.4 matrix in one table, one read-back test per operation, the service surface pinned, Definition of Done mapped to named tests

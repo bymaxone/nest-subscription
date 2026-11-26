@@ -4,6 +4,7 @@
  * @layer internal
  */
 import type {
+  NonRenewingPurchaseRecord,
   SubscriptionEnvironment,
   SubscriptionRecord,
   SubscriptionSnapshot
@@ -48,25 +49,46 @@ export type WebhookVerification =
   | { readonly accepted: true; readonly notification: SourceNotification }
 
 /** A management operation an adapter can perform at the source. */
-export type ManagementOperation = 'stop_renewal'
+export type ManagementOperation = 'stop_renewal' | 'resume' | 'change_product' | 'extend' | 'refund'
 
-/** What can be done with one subscription, which depends on where it was purchased. */
+/**
+ * A record an operation can act on, tagged with its kind. It is always taken from the
+ * authenticated account's own snapshot, never built from an identifier a caller supplied.
+ */
+export type ManagedRecord =
+  | { readonly kind: 'subscription'; readonly record: SubscriptionRecord }
+  | { readonly kind: 'purchase'; readonly record: NonRenewingPurchaseRecord }
+
+/** What can be done with one record, which depends on where it was purchased. */
 export interface SourceCapabilities {
-  /** The operations the adapter can perform for this subscription. */
+  /** The operations the adapter can perform for this record. */
   readonly operations: readonly ManagementOperation[]
-  /** Where the person manages the subscription, when the source provides one. */
+  /** Where the person manages the record, when the source provides one. */
   readonly managementReference: string | null
 }
 
+/** The reason of an extension, for the origins that ask for one. */
+export type ExtendReason =
+  'undeclared' | 'customer_satisfaction' | 'other' | 'service_issue_or_outage'
+
+/** The extension a caller asks for. */
+export interface ExtendRequest {
+  /** How many whole days the current period is extended by; at least 1. */
+  readonly days: number
+  /** The reason code, for the origins that require one. */
+  readonly reason?: ExtendReason | undefined
+}
+
 /**
- * The result of asking the source to stop a renewal. Where a server cannot do it, that is a
- * result and not an error: the person must act, and the management reference says where.
+ * What a source says about a request it was given. Where a server cannot do it, that is a result
+ * and not an error: the person must act, and the management reference says where. `accepted` only
+ * says the source took the request. It is never the result of an operation, which is the state
+ * read back afterwards.
  */
-export type StopRenewalResult =
+export type OperationResult =
   | {
-      /** The source stopped the renewal; the snapshot is the state read back afterwards. */
-      readonly outcome: 'stopped'
-      readonly snapshot: SubscriptionSnapshot
+      /** The source took the request. */
+      readonly outcome: 'accepted'
     }
   | {
       /** The source does not allow a server to do it. */
@@ -101,15 +123,35 @@ export interface SubscriptionSource {
    */
   verifyWebhook(request: WebhookRequest): Promise<WebhookVerification>
 
-  /** Declares what can be done with one subscription, which depends on its origin. */
-  capabilities(subscription: SubscriptionRecord): SourceCapabilities
+  /**
+   * Declares what can be done with one record of the account, which depends on its origin. It may
+   * read the source to learn what the origin alone does not say, and it changes nothing.
+   */
+  capabilities(account: AccountReference, target: ManagedRecord): Promise<SourceCapabilities>
 
   /**
    * Asks the source to stop the renewal of a subscription the caller has already shown belongs
-   * to the account. Reports what happened at the source, not what was asked.
+   * to the account. Reports what the source did with the request, not what became of the state.
    */
-  stopRenewal(
+  stopRenewal(account: AccountReference, subscription: SubscriptionRecord): Promise<OperationResult>
+
+  /** Asks the source to resume a renewal that was stopped. An adapter without it omits it. */
+  resume?(account: AccountReference, subscription: SubscriptionRecord): Promise<OperationResult>
+
+  /** Asks the source to change the product of a subscription. An adapter without it omits it. */
+  changeProduct?(
     account: AccountReference,
-    subscription: SubscriptionRecord
-  ): Promise<StopRenewalResult>
+    subscription: SubscriptionRecord,
+    productReference: string
+  ): Promise<OperationResult>
+
+  /** Asks the source to extend the current period. An adapter without it omits it. */
+  extend?(
+    account: AccountReference,
+    subscription: SubscriptionRecord,
+    extension: ExtendRequest
+  ): Promise<OperationResult>
+
+  /** Asks the source to refund a subscription or a purchase. An adapter without it omits it. */
+  refund?(account: AccountReference, target: ManagedRecord): Promise<OperationResult>
 }

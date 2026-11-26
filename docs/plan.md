@@ -1,7 +1,7 @@
 # Roadmap — @bymax-one/nest-subscription
 
 > **Source spec**: [`docs/spec.md`](./spec.md)
-> **Last updated**: 2026-11-25
+> **Last updated**: 2026-11-26
 > **Derived documents**: `docs/tasks/phase-NN-<slug>.md`, one file per phase, written from this roadmap by `/bymax-workflow:phase-tasks`
 
 This document says in which order the specification is built and when each part counts as done. It holds no task-level instructions and no code. Identifiers such as `FR16`, `SEC04`, `AC03` and `D11` are the specification's.
@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 7 / 10 phases of the first release done (70%) — P0 to P9
-**Active phase**: P7 — revenuecat-adapter
+**Overall progress**: 🔄 8 / 10 phases of the first release done (80%) — P0 to P9
+**Active phase**: P8 — management-operations
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -43,8 +43,8 @@ This document says in which order the specification is built and when each part 
 | P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done   | 4/4      | M    | 2026-11-25   |
 | P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
 | P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | ✅ Done   | 5/5      | L    | 2026-11-25   |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 👀 Review | 8/8      | L    | 2026-11-25   |
-| P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo   | 0/9      | L    | —            |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | ✅ Done   | 8/8      | L    | 2026-11-25   |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | 👀 Review | 9/9      | L    | 2026-11-26   |
 | P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo   | 0/6      | M    | —            |
 | P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo   | 0/5      | L    | —            |
 
@@ -354,12 +354,12 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the capability query per subscription, answered by the adapter according to the origin (FR35); stop renewal, resume, change product, extend and refund through the service, each followed by a refresh, with the snapshot read back from the source as the result (FR36, FR38, D32); the "not possible from a server" result that carries the management reference instead of an error (FR36); the management reference on its own (FR37); the check that the subscription belongs to the authenticated account (SEC10); for RevenueCat, each operation for the origins where RevenueCat documents it as possible from a server, through the version of its API that offers it, and the others answered as not possible with the management reference (Appendix A.4, D06, D13, D32).
   - Out: any controller for these operations, which the host writes.
 - **Definition of Done**:
-  - [ ] The capability answer for every operation and every origin matches Appendix A.4 as recorded from RevenueCat's documentation, in a table-driven test.
-  - [ ] For every operation (stop renewal, resume, change product, extend, refund), the result is the snapshot read back from the source, in one test per operation, and an accepted request that the read-back contradicts is reported as not done.
-  - [ ] Stop renewal on a Google Play subscription calls the source once and returns the snapshot read back afterwards, with will renew `no`.
-  - [ ] Stop renewal on an App Store subscription returns the "must be done by the person" result with the management reference, and calls nothing.
-  - [ ] An operation on a subscription of another account, or of another tenant, is refused and reaches no source.
-  - [ ] When the source accepts the request and the read-back still shows a renewing subscription, the result reports what the source says.
+  - [x] The capability answer for every operation and every origin matches Appendix A.4 as recorded from RevenueCat's documentation, in a table-driven test.
+  - [x] For every operation (stop renewal, resume, change product, extend, refund), the result is the snapshot read back from the source, in one test per operation, and an accepted request that the read-back contradicts is reported as not done.
+  - [x] Stop renewal on a Google Play subscription calls the source once and returns the snapshot read back afterwards, with will renew `no`.
+  - [x] Stop renewal on an App Store subscription returns the "must be done by the person" result with the management reference, and calls nothing.
+  - [x] An operation on a subscription of another account, or of another tenant, is refused and reaches no source.
+  - [x] When the source accepts the request and the read-back still shows a renewing subscription, the result reports what the source says.
 - **Context / preconditions**: P3 and P7 are done.
 - **Rules-of-phase**:
   1. The result type has no "assumed done" value: success is defined by the read-back.
@@ -450,6 +450,7 @@ When a phase moves status:
 - P4 ✅ 2026-11-25 — the decorator, the guard, the stable refusal codes and the two fail policies merged in #10 (cba5824)
 - P5 ✅ 2026-11-25 — the change list, its stable keys, the host hook with at-least-once delivery and the observer merged in #11 (60d7136)
 - P6 ✅ 2026-11-25 — the processor, the controller, de-duplication by event identifier, the five outcomes and the response deadline merged in #12 (e004c38)
+- P7 ✅ 2026-11-25 — the RevenueCat read, verification, sandbox filter, mapping tables and non-renewing purchases merged in #13 (48354d4)
 
 ---
 

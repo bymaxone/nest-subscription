@@ -112,7 +112,8 @@ describe('the fake source through the testing subpath', () => {
   it('scripts capabilities and renewal results per origin', async () => {
     // Scenario: defaults first, then a script for one origin.
     const source = new FakeSubscriptionSource({ clock })
-    expect(source.capabilities(RECORD).operations).toEqual([])
+    const target = { kind: 'subscription', record: RECORD } as const
+    expect((await source.capabilities({ accountId: 'a' }, target)).operations).toEqual([])
     expect((await source.stopRenewal({ accountId: 'a' }, RECORD)).outcome).toBe(
       'customer_action_required'
     )
@@ -120,13 +121,11 @@ describe('the fake source through the testing subpath', () => {
       operations: ['stop_renewal'],
       managementReference: null
     })
-    const snapshot = createEmptySnapshot({ accountId: 'a', source: 'fake', fetchedAt: NOW })
-    source.setStopRenewalResult('play_store', { outcome: 'stopped', snapshot })
-    expect(source.capabilities(RECORD).operations).toEqual(['stop_renewal'])
-    expect(await source.stopRenewal({ accountId: 'a' }, RECORD)).toEqual({
-      outcome: 'stopped',
-      snapshot
-    })
+    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' })
+    expect((await source.capabilities({ accountId: 'a' }, target)).operations).toEqual([
+      'stop_renewal'
+    ])
+    expect(await source.stopRenewal({ accountId: 'a' }, RECORD)).toEqual({ outcome: 'accepted' })
     expect(source.stopRenewalCalls).toBe(2)
   })
 })

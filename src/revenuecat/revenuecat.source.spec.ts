@@ -71,21 +71,102 @@ describe('revenueCatSource', () => {
     expect((await closed.readAccount({ accountId: 'c' })).entitlements).toHaveLength(0)
   })
 
-  it('answers the management calls as not possible from a server, with the management reference', async () => {
+  it('answers stop renewal as not possible for the App Store, with the management reference', async () => {
     // Scenario: the source advertises no server-side operation, and the answer carries the
     // management reference for the person to act on.
     const source = sourceWith()
     const snapshot = await source.readAccount({ accountId: 'c' })
     const subscription = snapshot.subscriptions[0]
     if (subscription === undefined) throw new Error('the fixture holds a subscription')
-    expect(source.capabilities(subscription)).toStrictEqual({
-      operations: [],
+    expect(
+      await source.capabilities({ accountId: 'c' }, { kind: 'subscription', record: subscription })
+    ).toStrictEqual({
+      operations: ['extend'],
       managementReference: 'https://apps.apple.com/account/subscriptions'
     })
     expect(await source.stopRenewal({ accountId: 'c' }, subscription)).toStrictEqual({
       outcome: 'customer_action_required',
       managementReference: 'https://apps.apple.com/account/subscriptions'
     })
+  })
+})
+
+describe('revenueCatSource extend', () => {
+  it('extends an App Store subscription through the version 2 action, with its key', async () => {
+    // Scenario: the source hands the request to the extend operation with the adapter's own client.
+    const requests: Array<{ url: string; init: RequestInit }> = []
+    const source = sourceWith({
+      fetch: (url, init) => {
+        requests.push({ url, init })
+        return Promise.resolve(new Response('{}', { status: 200 }))
+      }
+    })
+    const [subscription] = (
+      await sourceWith().readAccount({ accountId: 'customer_PLACEHOLDER_active' })
+    ).subscriptions
+    if (subscription === undefined) throw new Error('the fixture holds a subscription')
+    expect(
+      await source.extend?.({ accountId: 'c' }, subscription, { days: 5, reason: 'other' })
+    ).toStrictEqual({ outcome: 'accepted' })
+    expect(requests).toHaveLength(1)
+    expect(requests[0]?.url).toBe(
+      'http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_1/actions/extend'
+    )
+    expect(requests[0]?.init.body).toBe('{"extend_by_days":5,"extend_reason_code":"other"}')
+  })
+})
+
+describe('revenueCatSource refund', () => {
+  it('refunds a web billing purchase through the version 2 action, with its key', async () => {
+    // Scenario: the source hands the request to the refund operation with the adapter's own client.
+    const requests: Array<{ url: string; method: string | undefined }> = []
+    const source = sourceWith({
+      fetch: (url, init) => {
+        requests.push({ url, method: init.method })
+        return Promise.resolve(new Response('{"store":"rc_billing"}', { status: 200 }))
+      }
+    })
+    const record = {
+      purchaseReference: 'pur_1',
+      entitlementNames: ['pro'],
+      givesAccess: true,
+      origin: 'web',
+      environment: 'production',
+      productReference: 'lifetime',
+      purchasedAt: '2026-01-01T00:00:00.000Z',
+      accessUntil: null,
+      refundedAt: null
+    } as const
+    expect(await source.refund?.({ accountId: 'c' }, { kind: 'purchase', record })).toStrictEqual({
+      outcome: 'accepted'
+    })
+    expect(requests).toStrictEqual([
+      { url: 'http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/purchases/pur_1', method: 'GET' },
+      {
+        url: 'http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/purchases/pur_1/actions/refund',
+        method: 'POST'
+      }
+    ])
+  })
+})
+
+describe('revenueCatSource purchases', () => {
+  it('has no management reference for a non-renewing purchase', async () => {
+    // Scenario: a purchase carries no management reference, so none is answered.
+    const purchase = {
+      purchaseReference: 'p1',
+      entitlementNames: ['pro'],
+      givesAccess: true,
+      origin: 'app_store',
+      environment: 'production',
+      productReference: 'lifetime',
+      purchasedAt: '2026-01-01T00:00:00.000Z',
+      accessUntil: null,
+      refundedAt: null
+    } as const
+    expect(
+      await sourceWith().capabilities({ accountId: 'c' }, { kind: 'purchase', record: purchase })
+    ).toStrictEqual({ operations: [], managementReference: null })
   })
 })
 

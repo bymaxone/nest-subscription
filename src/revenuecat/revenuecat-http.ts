@@ -75,14 +75,17 @@ export class RevenueCatHttp {
   }
 
   /**
-   * Sends a JSON body and returns the parsed answer as `unknown`.
+   * Sends a request and returns the parsed answer as `unknown`.
    *
    * @param path The path after the base address, with every identifier already encoded.
-   * @param body The value to send as JSON.
+   * @param body The value to send as JSON; none is sent, and no content type, when it is absent.
    * @throws SubscriptionError as {@link RevenueCatHttp.get} does.
    */
-  post(path: string, body: unknown): Promise<unknown> {
-    return this.#send(path, undefined, { method: 'POST', body: JSON.stringify(body) })
+  post(path: string, body?: unknown): Promise<unknown> {
+    return this.#send(path, undefined, {
+      method: 'POST',
+      ...(body === undefined ? {} : { body: JSON.stringify(body) })
+    })
   }
 
   async #send(

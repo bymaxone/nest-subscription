@@ -10,6 +10,9 @@ export const WEBHOOK_SENTINEL = 'sentinel-webhook-secret-c0ffee01'
 /** The previous secret during a rotation; no output of `outputsOf` may contain it either. */
 export const ROTATED_SENTINEL = 'sentinel-rotated-secret-bada5501'
 
+/** The version 1 key of a sweep; no output of `outputsOf` may contain it either. */
+export const V1_SENTINEL = 'sentinel-v1-key-5d3e9a02'
+
 /** Applies every path that could expose a value to `subject` and returns what each one printed. */
 export function outputsOf(subject: object): readonly string[] {
   const keys: string[] = []
@@ -46,5 +49,6 @@ export function expectNoSentinel(outputs: readonly string[]): void {
   for (const output of outputs) {
     expect(output).not.toContain(WEBHOOK_SENTINEL)
     expect(output).not.toContain(ROTATED_SENTINEL)
+    expect(output).not.toContain(V1_SENTINEL)
   }
 }

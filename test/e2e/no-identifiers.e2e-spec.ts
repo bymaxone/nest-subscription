@@ -6,7 +6,7 @@
  * sentinels. A positive control proves the capture saw the events it is meant to search.
  * @layer e2e
  */
-import { Test } from '@nestjs/testing'
+import { Test, type TestingModule } from '@nestjs/testing'
 import request from 'supertest'
 import {
   SubscriptionError,
@@ -19,6 +19,7 @@ import { revenueCatSource } from '@bymax-one/nest-subscription/revenuecat'
 import type { AccountReference, SubscriptionCache } from '@bymax-one/nest-subscription'
 import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 import {
+  FakeSubscriptionSource,
   InMemorySubscriptionStore,
   ManualClock,
   assertNoSentinel,
@@ -92,6 +93,66 @@ function getAs(built: GuardedApp, account: AccountReference): request.Test {
     .get('/premium')
     .set(ACCOUNT_HEADER, account.accountId)
     .set(TENANT_HEADER, account.tenantId ?? '')
+}
+
+/** The operations of FR36 by their port names. */
+const ALL_OPERATIONS = ['stop_renewal', 'resume', 'change_product', 'extend', 'refund'] as const
+
+/** An application over the fake source whose one stored subscription carries sentinel values. */
+async function managementApp(capture: ReturnType<typeof createCapture>): Promise<{
+  app: TestingModule
+  service: SubscriptionService
+  source: FakeSubscriptionSource
+}> {
+  const source = new FakeSubscriptionSource()
+  const app = await Test.createTestingModule({
+    imports: [
+      SubscriptionModule.forRoot({
+        source,
+        store: new InMemorySubscriptionStore({ logger: () => undefined }),
+        clock: new ManualClock('2026-01-01T00:00:00.000Z'),
+        multiTenant: true,
+        accountResolver: () => null,
+        logger: capture.logger,
+        observer: capture.observer
+      })
+    ]
+  }).compile()
+  const service = app.get(SubscriptionService)
+  source.setAccount(ACCOUNT, sourceState())
+  await service.refresh(ACCOUNT)
+  return { app, service, source }
+}
+
+/** Runs every management operation and the capability query as an account, keeping what came. */
+function operationsRunner(service: SubscriptionService): {
+  readonly outcomes: unknown[]
+  readonly failures: unknown[]
+  on: (account: AccountReference) => Promise<void>
+} {
+  const reference = sourceState().subscriptions[0]?.subscriptionReference ?? ''
+  const outcomes: unknown[] = []
+  const failures: unknown[] = []
+  return {
+    outcomes,
+    failures,
+    on: async (account) => {
+      const calls = [
+        () => service.stopRenewal(account, reference),
+        () => service.resume(account, reference),
+        () => service.changeProduct(account, reference, SENTINEL_PRODUCT),
+        () => service.extend(account, reference, { days: 3 }),
+        () => service.refund(account, reference),
+        () => service.getCapabilities(account, reference)
+      ]
+      for (const call of calls) {
+        await call().then(
+          (outcome) => void outcomes.push(outcome),
+          (error: unknown) => void failures.push(error)
+        )
+      }
+    }
+  }
 }
 
 describe('no identifiers', () => {
@@ -254,6 +315,40 @@ describe('no identifiers', () => {
     expect(capture.payloads.length).toBeGreaterThan(0)
     assertNoSentinel(capture, SENTINELS)
     expect(JSON.stringify(error)).not.toContain(SENTINEL_ACCOUNT)
+    await app.close()
+  })
+
+  it('keeps every identifier out of the logs, the observer and the errors of every management operation and branch', async () => {
+    // Scenario: SEC06: the five operations run not possible, accepted with the read-back
+    // unchanged, failing with an error that holds the identifiers, and refused for a foreign
+    // record; neither what the logger and the observer received nor the errors raised hold one.
+    const capture = createCapture()
+    const { app, service, source } = await managementApp(capture)
+    const run = operationsRunner(service)
+    await run.on(ACCOUNT)
+    source.setCapabilities('web', { operations: ALL_OPERATIONS, managementReference: null })
+    for (const name of ALL_OPERATIONS) {
+      source.setOperationResult(name, 'web', { outcome: 'accepted' })
+    }
+    await run.on(ACCOUNT)
+    jest
+      .spyOn(source, 'capabilities')
+      .mockRejectedValue(
+        new Error(`down for ${SENTINEL_ACCOUNT} ${SENTINEL_SOURCE_TEXT} ${SENTINEL_TENANT}`)
+      )
+    await run.on(ACCOUNT)
+    await run.on(OTHER)
+    expect(run.failures.length).toBeGreaterThanOrEqual(12)
+    expect(run.outcomes.length).toBeGreaterThanOrEqual(12)
+    expect(capture.payloads.length).toBeGreaterThan(0)
+    expect(() => assertNoSentinel(capture, SENTINELS)).not.toThrow()
+    for (const failure of run.failures) {
+      expect(failure).toBeInstanceOf(SubscriptionError)
+      const shown = JSON.stringify(failure) + String(failure)
+      for (const sentinel of [SENTINEL_ACCOUNT, SENTINEL_TENANT, SENTINEL_SOURCE_TEXT]) {
+        expect(shown).not.toContain(sentinel)
+      }
+    }
     await app.close()
   })
 

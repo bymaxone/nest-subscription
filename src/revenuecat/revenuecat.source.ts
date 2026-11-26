@@ -8,8 +8,10 @@
  */
 import type {
   AccountReference,
+  ManagedRecord,
+  ExtendRequest,
+  OperationResult,
   SourceCapabilities,
-  StopRenewalResult,
   SubscriptionSource,
   WebhookRequest,
   WebhookVerification
@@ -20,6 +22,11 @@ import type {
   SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
+import { capabilitiesOf } from './management/capabilities'
+import { extendAt } from './management/extend'
+import type { RevenueCatManagementContext } from './management/management-context'
+import { refundAt } from './management/refund'
+import { stopRenewalAt } from './management/stop-renewal'
 import { readRevenueCatAccount } from './read/read-account'
 import type { RevenueCatReadContext } from './read/read-context'
 import { RevenueCatHttp } from './revenuecat-http'
@@ -43,16 +50,31 @@ class RevenueCatSource implements SubscriptionSource {
   readonly name = REVENUECAT_SOURCE_NAME
   readonly #options: ResolvedRevenueCatOptions
   readonly #context: RevenueCatReadContext
+  readonly #management: RevenueCatManagementContext
 
   constructor(options: ResolvedRevenueCatOptions) {
     this.#options = options
+    const http = new RevenueCatHttp({
+      baseUrl: options.baseUrl,
+      apiKey: options.apiKey,
+      timeoutMs: options.requestTimeoutMs,
+      fetch: options.fetch
+    })
+    this.#management = {
+      http,
+      httpV1:
+        options.apiKeyV1 === null
+          ? null
+          : new RevenueCatHttp({
+              baseUrl: options.baseUrlV1,
+              apiKey: options.apiKeyV1,
+              timeoutMs: options.requestTimeoutMs,
+              fetch: options.fetch
+            }),
+      projectId: options.projectId
+    }
     this.#context = {
-      http: new RevenueCatHttp({
-        baseUrl: options.baseUrl,
-        apiKey: options.apiKey,
-        timeoutMs: options.requestTimeoutMs,
-        fetch: options.fetch
-      }),
+      http,
       projectId: options.projectId,
       sourceName: REVENUECAT_SOURCE_NAME,
       allowSandbox: options.allowSandbox,
@@ -71,18 +93,27 @@ class RevenueCatSource implements SubscriptionSource {
     return Promise.resolve({ accepted: true, notification })
   }
 
-  capabilities(subscription: SubscriptionRecord): SourceCapabilities {
-    return { operations: [], managementReference: subscription.managementReference }
+  capabilities(_account: AccountReference, target: ManagedRecord): Promise<SourceCapabilities> {
+    return capabilitiesOf(this.#management, target)
   }
 
   stopRenewal(
-    _account: AccountReference,
+    account: AccountReference,
     subscription: SubscriptionRecord
-  ): Promise<StopRenewalResult> {
-    return Promise.resolve({
-      outcome: 'customer_action_required',
-      managementReference: subscription.managementReference
-    })
+  ): Promise<OperationResult> {
+    return stopRenewalAt(this.#management, account, subscription)
+  }
+
+  extend(
+    _account: AccountReference,
+    subscription: SubscriptionRecord,
+    extension: ExtendRequest
+  ): Promise<OperationResult> {
+    return extendAt(this.#management, subscription, extension)
+  }
+
+  refund(account: AccountReference, target: ManagedRecord): Promise<OperationResult> {
+    return refundAt(this.#management, account, target)
   }
 
   /** Records an event that named no account, with no identifier, and never fails the request. */

@@ -49,6 +49,7 @@ describe('resolveRevenueCatOptions', () => {
     // Scenario: only the two required options are given; every other option takes its default.
     const resolved = resolveRevenueCatOptions(minimal)
     expect(resolved.baseUrl).toBe(DEFAULT_BASE_URL)
+    expect(resolved.baseUrlV1).toBe('https://api.revenuecat.com/v1')
     expect(resolved.signatureToleranceMs).toBe(DEFAULT_SIGNATURE_TOLERANCE_MS)
     expect(resolved.requestTimeoutMs).toBe(DEFAULT_REQUEST_TIMEOUT_MS)
     expect(resolved.allowSandbox).toBe(false)
@@ -240,6 +241,15 @@ describe('resolveRevenueCatOptions', () => {
     })
 
     it.each([
+      ['https://api.example.com/v2', 'https://api.example.com/v1'],
+      ['http://127.0.0.1:8080', 'http://127.0.0.1:8080/v1'],
+      ['https://proxy.example.com/revenuecat/v2/', 'https://proxy.example.com/revenuecat/v1']
+    ])('derives the version 1 address of %s as %s', (given, expected) => {
+      // Scenario: a trailing /v2 becomes /v1; an address without one gets /v1 added.
+      expect(resolveRevenueCatOptions({ ...minimal, baseUrl: given }).baseUrlV1).toBe(expected)
+    })
+
+    it.each([
       ['a relative address', '/v2'],
       ['a bare host', 'api.revenuecat.com'],
       ['plain HTTP to a public host', 'http://api.example.com/v2'],
@@ -302,5 +312,34 @@ describe('resolveRevenueCatOptions', () => {
     refusedPaths({ ...minimal, projectId: '', logger: { warn }, onUnidentifiedEvent: callback })
     expect(warn).toHaveBeenCalledTimes(0)
     expect(callback).toHaveBeenCalledTimes(0)
+  })
+})
+
+describe('resolveRevenueCatOptions: apiKeyV1', () => {
+  it('holds no version 1 key when none is given', () => {
+    // Scenario: the option is optional and absent by default.
+    expect(resolveRevenueCatOptions(minimal).apiKeyV1).toBeNull()
+  })
+
+  it('holds a single key and a rotation pair of the version 1 key as secrets', () => {
+    // Scenario: the same shapes as apiKey, held in a Secret.
+    const single = resolveRevenueCatOptions({ ...minimal, apiKeyV1: 'v1-key' })
+    expect(single.apiKeyV1).toBeInstanceOf(Secret)
+    expect(single.apiKeyV1?.candidates()).toStrictEqual(['v1-key'])
+    const pair = resolveRevenueCatOptions({
+      ...minimal,
+      apiKeyV1: { current: 'v1-key', previous: 'v1-old' }
+    })
+    expect(pair.apiKeyV1?.candidates()).toStrictEqual(['v1-key', 'v1-old'])
+  })
+
+  it.each([
+    ['an empty key', ''],
+    ['a pair with an empty previous', { current: 'v1-key', previous: '' }],
+    ['a pair with no current', { previous: 'v1-key' }],
+    ['a number', 12]
+  ])('refuses %s as apiKeyV1, naming only that option', (_label, apiKeyV1) => {
+    // Scenario: the shape rules of apiKey apply to apiKeyV1.
+    expect(refusedPaths({ ...minimal, apiKeyV1 })).toStrictEqual(['apiKeyV1'])
   })
 })

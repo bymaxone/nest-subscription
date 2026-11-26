@@ -53,6 +53,13 @@ export interface RevenueCatSourceOptions {
   /** The version 2 secret key, one value or `{ current, previous }` during a rotation. */
   readonly apiKey: SecretInput
   /**
+   * A version 1 secret key, one value or `{ current, previous }` during a rotation. The two
+   * operations that exist only in version 1 (Google Play stop renewal and Google Play one-time
+   * purchase refund) run with it, and never with `apiKey`; without it they are answered as not
+   * possible from a server, with the management reference.
+   */
+  readonly apiKeyV1?: SecretInput
+  /**
    * The value of the `Authorization` header RevenueCat is configured to send with each webhook,
    * one value or `{ current, previous }`. Setting it turns the header check on.
    */
@@ -93,8 +100,12 @@ export interface ResolvedRevenueCatOptions {
   readonly projectId: string
   /** The base address of the API, without a trailing slash. */
   readonly baseUrl: string
+  /** The base address of version 1 of the API, which the operations that exist only there use. */
+  readonly baseUrlV1: string
   /** The API key. */
   readonly apiKey: Secret
+  /** The version 1 key, or `null` when none was given. */
+  readonly apiKeyV1: Secret | null
   /** The accepted `Authorization` values of the webhook, or `null` when that check is off. */
   readonly webhookAuthorization: Secret | null
   /** The accepted signing secrets of the webhook, or `null` when that check is off. */
@@ -196,6 +207,7 @@ const sandboxRule: Rule = (options) =>
 const RULES: readonly Rule[] = [
   required('projectId', (value) => isUsable(value) && value.length <= 255),
   required('apiKey', isSecretInput),
+  optional('apiKeyV1', isSecretInput),
   optional('webhookAuthorization', isSecretInput),
   optional('webhookSigningSecret', isSecretInput),
   optional('signatureToleranceMs', isBoundedInteger(MAX_SIGNATURE_TOLERANCE_MS)),
@@ -215,6 +227,11 @@ const RULES: readonly Rule[] = [
 function normalizeBaseUrl(value: string | undefined): string {
   const url = new URL(value ?? DEFAULT_BASE_URL)
   return `${url.origin}${url.pathname.replace(/\/+$/, '')}`
+}
+
+/** The address of version 1 beside the given one: its trailing `/v2` becomes `/v1`, else `/v1` is added. */
+function versionOneOf(baseUrl: string): string {
+  return baseUrl.endsWith('/v2') ? `${baseUrl.slice(0, -3)}/v1` : `${baseUrl}/v1`
 }
 
 /** Calls the runtime's `fetch`, looked up at call time. */
@@ -252,10 +269,13 @@ function assertOptions(input: unknown): asserts input is RevenueCatSourceOptions
  */
 export function resolveRevenueCatOptions(input: unknown): ResolvedRevenueCatOptions {
   assertOptions(input)
+  const baseUrl = normalizeBaseUrl(input.baseUrl)
   return {
     projectId: input.projectId,
-    baseUrl: normalizeBaseUrl(input.baseUrl),
+    baseUrl,
+    baseUrlV1: versionOneOf(baseUrl),
     apiKey: Secret.from(input.apiKey),
+    apiKeyV1: secretOrNull(input.apiKeyV1),
     webhookAuthorization: secretOrNull(input.webhookAuthorization),
     webhookSigningSecret: secretOrNull(input.webhookSigningSecret),
     signatureToleranceMs: input.signatureToleranceMs ?? DEFAULT_SIGNATURE_TOLERANCE_MS,

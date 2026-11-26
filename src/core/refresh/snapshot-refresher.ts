@@ -109,6 +109,22 @@ export class SnapshotRefresher {
     return flight.finish()
   }
 
+  /**
+   * Reads the account from the source in a read that started after this call, and stores the
+   * result as {@link SnapshotRefresher.refresh} does. A refresh already in flight read the source
+   * before this call, so it is waited for and its outcome ignored; a read is then started, or one
+   * that began after this call is joined. It is for a read that must show a state after an event,
+   * such as a write the library just made or a webhook it just verified.
+   *
+   * @throws {SubscriptionError} as {@link SnapshotRefresher.refresh} does; an older refresh that
+   * failed does not fail this one.
+   */
+  async refreshAfter(account: AccountReference): Promise<RefreshResult> {
+    const key = encodeAccountKey(account)
+    const flight = await this.#flights.runAfter(key, () => this.#refreshOnce(key, account))
+    return flight.finish()
+  }
+
   /** One read of the source and the ordered write of its result, reported to the observer. */
   async #refreshOnce(key: string, account: AccountReference): Promise<Flight> {
     const started = this.observer.mark()

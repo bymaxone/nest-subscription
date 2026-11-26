@@ -173,9 +173,10 @@ describe('WebhookProcessor deadline', () => {
     expect(hook).toHaveBeenCalledTimes(1)
   })
 
-  it('processes the retry of a timed-out event and shares the read still running', async () => {
+  it('processes the retry of a timed-out event and reads again after the read still running', async () => {
     // Scenario: the identifier was removed on timeout; the retry arrives while the first read is
-    // held, is processed (not a duplicate) and joins that read, so the source is read once.
+    // held, is processed (not a duplicate), waits for that read, which began before the retry, and
+    // reads once more, so the source is read twice.
     const { source, processor, expire } = build()
     const release = source.delayNextRead()
     const request = source.buildRequest(NOTIFICATION)
@@ -187,7 +188,24 @@ describe('WebhookProcessor deadline', () => {
     await flush()
     release()
     expect(await retry).toStrictEqual({ kind: 'processed', accounts: 1 })
+    expect(source.readCount(ACCOUNT)).toBe(2)
+  })
+
+  it('counts the wait for an older read inside the deadline', async () => {
+    // Scenario: a refresh that began before the event is held; the webhook waits for it, the
+    // deadline passes, and the answer is a failure although the webhook's own read never began.
+    const { source, processor, expire, waits } = build()
+    const release = source.delayNextRead()
+    void processor['refresher'].refresh(ACCOUNT).catch(() => undefined)
+    await flush()
+    const answer = processor.process(source.buildRequest(NOTIFICATION))
+    await flush()
+    expire()
+    expect(await answer).toStrictEqual({ kind: 'failed' })
+    expect(waits).toStrictEqual([DEADLINE_MS])
     expect(source.readCount(ACCOUNT)).toBe(1)
+    release()
+    await flush()
   })
 
   it('does not fail a read that finishes before the deadline', async () => {
