@@ -35,7 +35,11 @@ interface Running {
 let running: Running
 
 /** The customer's lists with the store and renewal status of its one subscription changed. */
-function customerOf(store: string, renewal: string): ReturnType<typeof fixtureLists> {
+function customerOf(
+  store: string,
+  renewal: string,
+  periodEndsAt?: number
+): ReturnType<typeof fixtureLists> {
   const lists = fixtureLists('active-subscription')
   const subscriptions: Record<string, unknown> = Object(lists.subscriptions)
   const items: unknown = subscriptions['items']
@@ -49,6 +53,7 @@ function customerOf(store: string, renewal: string): ReturnType<typeof fixtureLi
           ...first,
           store,
           auto_renewal_status: renewal,
+          ...(periodEndsAt === undefined ? {} : { current_period_ends_at: periodEndsAt }),
           management_url: `https://manage.example/${store}`
         }
       ]
@@ -242,4 +247,77 @@ describe('revenuecat management: resume and change product', () => {
       expect(writes(stand)).toHaveLength(0)
     }
   )
+})
+
+describe('revenuecat management: extend', () => {
+  const PERIOD_END = 1797600000000
+  const WEEK = 7 * 24 * 3600 * 1000
+
+  it.each([
+    ['play_store', 'Google Play', undefined],
+    ['rc_billing', 'RevenueCat web billing', undefined],
+    ['app_store', 'the App Store', 'customer_satisfaction' as const]
+  ])(
+    'extends %s with one version 2 write and returns the period read back',
+    async (store, _label, reason) => {
+      // Scenario: the write goes to the extend action with whole days; the stand-in then serves the
+      // customer with a later period end, and that read is the result.
+      running = await boot(store)
+      const { service, stand } = running
+      stand.respondWith(
+        serving(store, () => {
+          stand.serve(ACCOUNT.accountId, customerOf(store, 'will_renew', PERIOD_END + WEEK))
+          return { status: 200, body: {} }
+        })
+      )
+      const result = await service.extend(ACCOUNT, SUBSCRIPTION, { days: 7, reason })
+      expect(result.outcome).toBe('extended')
+      if (result.outcome === 'person_must_act') throw new Error('the origin allows it')
+      expect(Date.parse(result.snapshot.subscriptions[0]?.currentPeriodEnd ?? '')).toBe(
+        PERIOD_END + WEEK
+      )
+      expect(writes(stand).map((request) => `${request.method} ${request.url}`)).toStrictEqual([
+        `POST ${PROJECT}/subscriptions/${SUBSCRIPTION}/actions/extend`
+      ])
+      expect(JSON.parse(writes(stand)[0]?.body ?? '{}')).toStrictEqual({
+        extend_by_days: 7,
+        ...(reason === undefined ? {} : { extend_reason_code: reason })
+      })
+    }
+  )
+
+  it('reports not extended when RevenueCat accepted and the period did not move', async () => {
+    // Scenario: the write answers 200 and the next read is the same period.
+    running = await boot('play_store')
+    const { service, stand } = running
+    stand.respondWith(serving('play_store', () => ({ status: 200, body: {} })))
+    expect((await service.extend(ACCOUNT, SUBSCRIPTION, { days: 7 })).outcome).toBe('not_extended')
+  })
+
+  it('refuses an App Store extension without a reason or past 90 days before any request', async () => {
+    // Scenario: the origin's limits are checked ahead of the write.
+    running = await boot('app_store')
+    const { service, stand } = running
+    stand.respondWith(serving('app_store', () => ({ status: 500 })))
+    const requests = stand.requests.length
+    for (const extension of [{ days: 7 }, { days: 91, reason: 'other' as const }]) {
+      await expect(service.extend(ACCOUNT, SUBSCRIPTION, extension)).rejects.toMatchObject({
+        code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
+      })
+    }
+    expect(stand.requests).toHaveLength(requests)
+  })
+
+  it('asks the person to act for Stripe, and answers the capability per origin', async () => {
+    // Scenario: Stripe is not listed as extendable; the capability column says the same.
+    running = await boot('stripe')
+    const { service, stand } = running
+    stand.respondWith(serving('stripe', () => ({ status: 500 })))
+    expect((await service.getCapabilities(ACCOUNT, SUBSCRIPTION)).possible.extend).toBe(false)
+    expect(await service.extend(ACCOUNT, SUBSCRIPTION, { days: 7 })).toStrictEqual({
+      outcome: 'person_must_act',
+      managementReference: 'https://manage.example/stripe'
+    })
+    expect(writes(stand)).toHaveLength(0)
+  })
 })

@@ -16,18 +16,18 @@ const sub = (origin: Parameters<typeof subscriptionOf>[0] = {}): ManagedRecord =
   record: subscriptionOf(origin)
 })
 
-describe('operationsOf: Appendix A.4, stop renewal', () => {
+describe('operationsOf: Appendix A.4, stop renewal and extend', () => {
   it.each([
-    ['Google Play', 'play_store', null, ['stop_renewal']],
-    ['App Store', 'app_store', null, []],
-    ['RevenueCat web billing', 'web', 'rc_billing', ['stop_renewal']],
+    ['Google Play', 'play_store', null, ['stop_renewal', 'extend']],
+    ['App Store', 'app_store', null, ['extend']],
+    ['RevenueCat web billing', 'web', 'rc_billing', ['stop_renewal', 'extend']],
     ['Stripe tracked by RevenueCat', 'web', 'stripe', []],
     ['another web store', 'web', 'paddle', []],
     ['a web record whose store is not stated', 'web', null, []],
     ['a promotional grant', 'promotional', null, []],
     ['another origin', 'other', null, []]
   ] as const)('%s allows %j', (_label, origin, store, expected) => {
-    // Scenario: each row of the stop renewal column, per origin and store.
+    // Scenario: each row of the stop renewal and extend columns, per origin and store.
     expect(operationsOf(sub({ origin }), store)).toStrictEqual(expected)
   })
 
@@ -66,7 +66,7 @@ describe('capabilitiesOf', () => {
     // Scenario: the origin alone decides, so no request is made.
     const { context, calls } = stubbed(() => ok({}))
     expect(await capabilitiesOf(context, sub())).toStrictEqual({
-      operations: ['stop_renewal'],
+      operations: ['stop_renewal', 'extend'],
       managementReference: 'https://manage.example/sub_1'
     })
     expect(calls).toHaveLength(0)
@@ -76,7 +76,8 @@ describe('capabilitiesOf', () => {
     // Scenario: web billing may stop; Stripe may not and the reference is returned.
     const web = stubbed(() => ok({ store: 'rc_billing' }))
     expect((await capabilitiesOf(web.context, sub({ origin: 'web' }))).operations).toStrictEqual([
-      'stop_renewal'
+      'stop_renewal',
+      'extend'
     ])
     expect(web.calls.map((call) => call.url)).toStrictEqual([
       'https://rc.test/v2/projects/proj_1/subscriptions/sub_1'
@@ -88,11 +89,11 @@ describe('capabilitiesOf', () => {
     })
   })
 
-  it('answers an App Store subscription as not possible with no request', async () => {
+  it('answers an App Store subscription as able to extend only, with no request', async () => {
     // Scenario: Apple does not allow it; the management reference is returned.
     const { context, calls } = stubbed(() => ok({}))
     expect(await capabilitiesOf(context, sub({ origin: 'app_store' }))).toStrictEqual({
-      operations: [],
+      operations: ['extend'],
       managementReference: 'https://manage.example/sub_1'
     })
     expect(calls).toHaveLength(0)

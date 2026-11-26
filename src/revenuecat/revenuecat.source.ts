@@ -9,6 +9,7 @@
 import type {
   AccountReference,
   ManagedRecord,
+  ExtendRequest,
   OperationResult,
   SourceCapabilities,
   SubscriptionSource,
@@ -22,6 +23,7 @@ import type {
 } from '@bymax-one/nest-subscription/shared'
 
 import { capabilitiesOf } from './management/capabilities'
+import { extendAt } from './management/extend'
 import type { RevenueCatManagementContext } from './management/management-context'
 import { stopRenewalAt } from './management/stop-renewal'
 import { readRevenueCatAccount } from './read/read-account'
@@ -96,6 +98,14 @@ class RevenueCatSource implements SubscriptionSource {
     subscription: SubscriptionRecord
   ): Promise<OperationResult> {
     return stopRenewalAt(this.#management, account, subscription)
+  }
+
+  extend(
+    _account: AccountReference,
+    subscription: SubscriptionRecord,
+    extension: ExtendRequest
+  ): Promise<OperationResult> {
+    return extendAt(this.#management, subscription, extension)
   }
 
   /** Records an event that named no account, with no identifier, and never fails the request. */

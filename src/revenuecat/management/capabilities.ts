@@ -19,8 +19,9 @@ const WEB_BILLING = 'rc_billing'
 
 /** The operations a subscription of an origin allows from a server (Appendix A.4). */
 function subscriptionOperations(origin: string, store: string | null): ManagementOperation[] {
-  if (origin === 'play_store') return ['stop_renewal']
-  return origin === 'web' && store === WEB_BILLING ? ['stop_renewal'] : []
+  if (origin === 'play_store') return ['stop_renewal', 'extend']
+  if (origin === 'app_store') return ['extend']
+  return origin === 'web' && store === WEB_BILLING ? ['stop_renewal', 'extend'] : []
 }
 
 /**
