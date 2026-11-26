@@ -41,6 +41,26 @@ describe('operationsOf: Appendix A.4, stop renewal', () => {
   })
 })
 
+describe('operationsOf: Appendix A.4, resume and change product', () => {
+  const origins = ['play_store', 'app_store', 'web', 'promotional', 'other'] as const
+  const stores = [null, 'rc_billing', 'stripe', 'play_store', 'app_store', 'paddle'] as const
+
+  it.each(origins)('allows neither resume nor change product for %s on any store', (origin) => {
+    // Scenario: no RevenueCat page documents a server operation for either, so every origin and
+    // store is answered as not possible, for a subscription and for a purchase.
+    for (const store of stores) {
+      for (const target of [
+        sub({ origin }),
+        { kind: 'purchase', record: purchaseOf({ origin }) } as const
+      ]) {
+        const operations = operationsOf(target, store)
+        expect(operations).not.toContain('resume')
+        expect(operations).not.toContain('change_product')
+      }
+    }
+  })
+})
+
 describe('capabilitiesOf', () => {
   it('answers a Google Play subscription without reading the source, with its management reference', async () => {
     // Scenario: the origin alone decides, so no request is made.

@@ -211,3 +211,35 @@ describe('revenuecat management: stop renewal', () => {
     running = await boot('app_store')
   })
 })
+
+describe('revenuecat management: resume and change product', () => {
+  it.each([
+    ['play_store', 'resume'],
+    ['rc_billing', 'resume'],
+    ['app_store', 'resume'],
+    ['stripe', 'resume'],
+    ['play_store', 'change_product'],
+    ['rc_billing', 'change_product'],
+    ['app_store', 'change_product'],
+    ['stripe', 'change_product']
+  ] as const)(
+    'answers %s as not possible for %s, with the management reference, and writes nothing',
+    async (store, operation) => {
+      // Scenario: RevenueCat documents no server operation for either, for any origin or store.
+      running = await boot(store)
+      const { service, stand } = running
+      stand.respondWith(serving(store, () => ({ status: 500 })))
+      const answer = await service.getCapabilities(ACCOUNT, SUBSCRIPTION)
+      expect(answer.possible[operation]).toBe(false)
+      const result =
+        operation === 'resume'
+          ? await service.resume(ACCOUNT, SUBSCRIPTION)
+          : await service.changeProduct(ACCOUNT, SUBSCRIPTION, 'product_PLACEHOLDER_annual')
+      expect(result).toStrictEqual({
+        outcome: 'person_must_act',
+        managementReference: `https://manage.example/${store}`
+      })
+      expect(writes(stand)).toHaveLength(0)
+    }
+  )
+})
