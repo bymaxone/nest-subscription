@@ -469,7 +469,15 @@ The library keeps no other state. It stores no payment data, no price paid and n
 A new question is added here with a proposal and is never answered on the owner's behalf. The
 proposal below is what the code does until the owner answers.
 
-None.
+**Q01. The module's sandbox options are validated and drive nothing.** `SubscriptionModule` takes
+`allowSandbox`, `confirmSandboxInProduction` and `isProduction`, and refuses at boot a production
+configuration that enables sandbox access without the confirmation (SEC07). The RevenueCat adapter
+takes the same three options and applies the sandbox filter from its own `allowSandbox` alone, so
+`allowSandbox: true` on the module and not on the adapter admits no sandbox purchase, and the
+reverse is also true. A host that sets only one of the two is not stopped. _Proposal:_ keep both
+validations, state in the README that the adapter's option is the one that admits sandbox
+purchases, and decide in a later release whether the module's options should be removed or passed
+to the adapter. Until then the README says so and the code is unchanged.
 
 ---
 

@@ -1,6 +1,6 @@
 # Phase 9 — Release readiness
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P9 — release-readiness
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,7 +39,7 @@ At the end the package is publishable: the README follows the family's canonical
 
 | ID  | Task                                              | Status  | Priority | Size | Depends on    |
 | --- | ------------------------------------------------- | ------- | -------- | ---- | ------------- |
-| 9.1 | Write the public README                           | 📋 ToDo | P0       | L    | —             |
+| 9.1 | Write the public README                           | ✅ Done | P0       | L    | —             |
 | 9.2 | Write the host guides                             | 📋 ToDo | P0       | M    | 9.1           |
 | 9.3 | Sweep the captured logs of the whole suite        | ✅ Done | P0       | M    | 9.1           |
 | 9.6 | Prove AC08 with one suite run against two sources | ✅ Done | P0       | M    | —             |
@@ -52,7 +52,7 @@ At the end the package is publishable: the README follows the family's canonical
 
 ### Task 9.1 — Write the public README
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: —
@@ -63,12 +63,12 @@ Replace the scaffold README with the public document of the package, in the fami
 
 #### Acceptance criteria
 
-- [ ] The README has, in order: centred header with badges and links; Overview with "Why"; Features; Subpath Exports with a dependency diagram and the peer dependency matrix; Quick Start; Configuration (options table); the domain sections (reading and guarding, webhooks, refresh and reconciliation, change notifications, management operations, testing); Architecture with a drawn diagram and design principles; Security Model; Security Table; Tech Stack; Testing and Quality; API Reference; Error Code Catalog; What This Library Does Not Do; Contributing; Security Policy; License; footer.
-- [ ] Every snippet compiles: `pnpm check:docs` passes with the snippet baseline empty.
-- [ ] The Security Model has one subsection per property, each stating its limit, and the Security Table lists only controls the repository runs.
-- [ ] The Bymax Finance adapter is described as planned and not available.
-- [ ] The error code catalog table is checked against `SUBSCRIPTION_ERROR_CODES` by a test or a gate.
-- [ ] The security contact is `support@bymax.one`.
+- [x] The README has, in order: centred header with badges and links; Overview with "Why"; Features; Subpath Exports with a dependency diagram and the peer dependency matrix; Quick Start; Configuration (options table); the domain sections (reading and guarding, webhooks, refresh and reconciliation, change notifications, management operations, testing); Architecture with a drawn diagram and design principles; Security Model; Security Table; Tech Stack; Testing and Quality; API Reference; Error Code Catalog; What This Library Does Not Do; Contributing; Security Policy; License; footer.
+- [x] Every snippet compiles: `pnpm check:docs` passes with the snippet baseline empty.
+- [x] The Security Model has one subsection per property, each stating its limit, and the Security Table lists only controls the repository runs.
+- [x] The Bymax Finance adapter is described as planned and not available.
+- [x] The error code catalog table is checked against `SUBSCRIPTION_ERROR_CODES` by a test or a gate.
+- [x] The security contact is `support@bymax.one`.
 
 #### Files to create / modify
 
@@ -555,3 +555,4 @@ Completion Protocol (after the work is reported done):
 
 - 9.6 ✅ 2026-11-26 — one suite runs the same application and cases against the fake source and the RevenueCat adapter over a local stand-in (AC08)
 - 9.3 ✅ 2026-11-26 — a per-file sweep and a global teardown search every log line, observer payload, response body and library error of the whole end-to-end run for the sentinels the specs declare
+- 9.1 ✅ 2026-11-26 — the public README in the family's sequence, every snippet compiled against the built package, the error table checked against the catalogue
