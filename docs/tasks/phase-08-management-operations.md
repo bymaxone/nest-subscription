@@ -1,6 +1,6 @@
 # Phase 8 — Management operations
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 5 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 6 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P8 — management-operations
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -44,7 +44,7 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 | 8.3 | Implement the RevenueCat operations                               | ✅ Done | P0       | M    | 8.2                     |
 | 8.5 | Generalize capabilities and the operation flow to every operation | ✅ Done | P0       | M    | 8.3                     |
 | 8.6 | Implement resume                                                  | ✅ Done | P0       | M    | 8.5                     |
-| 8.7 | Implement change product                                          | 📋 ToDo | P0       | M    | 8.5                     |
+| 8.7 | Implement change product                                          | ✅ Done | P0       | M    | 8.5                     |
 | 8.8 | Implement extend                                                  | 📋 ToDo | P0       | M    | 8.5                     |
 | 8.9 | Implement refund                                                  | 📋 ToDo | P0       | M    | 8.5                     |
 | 8.4 | Close the phase                                                   | 📋 ToDo | P0       | S    | 8.3, 8.6, 8.7, 8.8, 8.9 |
@@ -561,7 +561,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.7 — Implement change product
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.5
@@ -572,13 +572,13 @@ Implement change product through the service and the RevenueCat adapter, for the
 
 #### Acceptance criteria
 
-- [ ] Before any code, the RevenueCat page that documents change product, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
-- [ ] `docs/spec.md` Appendix A.4 gains the change product column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
-- [ ] The capability answer for change product, per origin and store, matches Appendix A.4 in a table-driven test.
-- [ ] The service method for change product takes the record reference and the target product reference, validated as a non-empty string before any call; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
-- [ ] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
-- [ ] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
-- [ ] A target product the page says RevenueCat will not accept for that origin is refused before any call, with the invalid-input code, and a change that the read-back does not show, as RevenueCat documents the result, is reported as not done.
+- [x] Before any code, the RevenueCat page that documents change product, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
+- [x] `docs/spec.md` Appendix A.4 gains the change product column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
+- [x] The capability answer for change product, per origin and store, matches Appendix A.4 in a table-driven test.
+- [x] The service method for change product takes the record reference and the target product reference, validated as a non-empty string before any call; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
+- [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
+- [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
+- [x] A target product the page says RevenueCat will not accept for that origin is refused before any call, with the invalid-input code, and a change that the read-back does not show, as RevenueCat documents the result, is reported as not done.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
@@ -836,3 +836,4 @@ Completion Protocol (after the work is reported done):
 - 8.3 ✅ 2026-11-26 — RevenueCat capabilities and stop renewal: Google Play through version 1, web billing through version 2, the rest not possible
 - 8.5 ✅ 2026-11-26 — one shared flow and per-operation capabilities for resume, change product, extend and refund; foreign records refused for every operation and both kinds
 - 8.6 ✅ 2026-11-26 — resume re-read on the RevenueCat pages: no server operation is documented, so every origin is answered as not possible with the management reference
+- 8.7 ✅ 2026-11-26 — change product re-read on the RevenueCat pages: no server operation is documented; the target product is validated before any call and every origin is not possible

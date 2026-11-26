@@ -12,7 +12,7 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 > Mirrors the phase dashboard of [`docs/plan.md`](../plan.md). Both are updated together.
 
-**Phases done**: 8 / 11 · **Tasks done**: 51 / 66
+**Phases done**: 8 / 11 · **Tasks done**: 52 / 66
 
 | ID  | Task file                                                                                        | Status         | Progress | Last updated |
 | --- | ------------------------------------------------------------------------------------------------ | -------------- | -------- | ------------ |
@@ -24,7 +24,7 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 | P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | ✅ Done        | 5/5      | 2026-11-25   |
 | P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | ✅ Done        | 5/5      | 2026-11-25   |
 | P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | ✅ Done        | 8/8      | 2026-11-25   |
-| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 🔄 In Progress | 5/9      | 2026-11-26   |
+| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 🔄 In Progress | 6/9      | 2026-11-26   |
 | P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo        | 0/6      | —            |
 | P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | 📋 ToDo        | 0/5      | —            |
 
