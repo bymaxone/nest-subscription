@@ -13,6 +13,11 @@
 # lists. No credential, no repository detail and no account identifier leaves the runner. What it
 # cannot do: compare prose. A clean run does not prove that nothing else moved.
 #
+# Exit codes of the script, which the last step reads: 0 everything matches (an open issue is closed),
+# 1 the provider's pages differ from the facts file (the issue is opened or updated), anything else
+# (2 is a page that gave no answer, such as a network outage) means nothing was compared: the run
+# fails and the issue is left as it is.
+#
 # Third-party actions are pinned by commit SHA. The job holds `issues: write` and nothing else, runs
 # only the repository's own script, and installs nothing.
 name: Provider changelog

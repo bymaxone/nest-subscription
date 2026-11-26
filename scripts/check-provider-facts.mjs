@@ -24,8 +24,10 @@
  * credential, no repository detail, no account identifier and no cookie, and it follows no link
  * but the cited pages.
  *
- * Usage: `node scripts/check-provider-facts.mjs` prints what it found and exits 1 when something
- * moved, 2 when it could not run.
+ * Usage: `node scripts/check-provider-facts.mjs` prints what it found and exits 0 when everything
+ * matches, 1 when something moved (a page answered with an HTTP error status, or its content
+ * differs from the facts file), and 2 when it could not compare: a page gave no answer at all
+ * (network, DNS or timeout), or the script itself failed. Only 1 means the provider changed.
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -129,7 +131,7 @@ async function readPage(fetchPage, url) {
     if (!response.ok) return { failure: `answered HTTP ${String(response.status)}` }
     return { text: await response.text() }
   } catch {
-    return { failure: 'could not be fetched' }
+    return { failure: 'could not be fetched', unreachable: true }
   }
 }
 
@@ -138,16 +140,19 @@ async function readPage(fetchPage, url) {
  *
  * @param {string} facts - The text of `docs/revenuecat-facts.md`.
  * @param {typeof fetch} fetchPage - The `fetch` to call; a test passes a stub.
- * @returns {Promise<{ problems: string[], pages: number }>} Every difference found.
+ * @returns {Promise<{ problems: string[], unreachable: string[], pages: number }>} Every difference
+ *   found, and the pages that could not be fetched at all (no answer, as opposed to an HTTP status).
  */
 export async function compareWithProvider(facts, fetchPage) {
   const pages = citedPages(facts)
   const recorded = recordedFacts(facts)
   const problems = []
+  const unreachable = []
   const texts = new Map()
   for (const page of pages) {
     const read = await readPage(fetchPage, page.url)
     if (read.failure === undefined) texts.set(page.name, read.text)
+    else if (read.unreachable === true) unreachable.push(`${page.name} (${page.url})`)
     else problems.push(`${page.name} (${page.url}) ${read.failure}.`)
   }
   const events = texts.get(EVENT_PAGE)
@@ -159,13 +164,22 @@ export async function compareWithProvider(facts, fetchPage) {
   if (model !== undefined) {
     problems.push(...differences('Subscription statuses', recorded.statuses, pageStatuses(model)))
   }
-  return { problems, pages: pages.length }
+  return { problems, unreachable, pages: pages.length }
 }
 
 /** Reads the facts file, compares it with the provider and reports. */
 async function main() {
   const facts = readFileSync(join(ROOT, 'docs', 'revenuecat-facts.md'), 'utf8')
-  const { problems, pages } = await compareWithProvider(facts, fetch)
+  const { problems, unreachable, pages } = await compareWithProvider(facts, fetch)
+  if (unreachable.length > 0) {
+    // Nothing can be said about a page that did not answer, and a network outage is not a change
+    // on the provider's side, so this is "could not compare" and never "moved".
+    console.log(
+      `Could not compare: ${String(unreachable.length)} of ${String(pages)} pages did not answer:`
+    )
+    for (const page of unreachable) console.log(`- ${page}`)
+    return 2
+  }
   if (problems.length === 0) {
     console.log(
       `Provider facts: ${String(pages)} cited pages read; event types, statuses and stores match.`

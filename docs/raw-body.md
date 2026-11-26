@@ -139,4 +139,17 @@ The Fastify route is documented from the framework's own page and is not exercis
 
 ## Checking it
 
-Whatever the adapter, one signed request proves the setup: send a notification the source signs (RevenueCat's event types include `TEST`, which names no account) and expect `200`. A `503` with `SUBSCRIPTION_SOURCE_UNAVAILABLE` on the library's controller means the bytes were not kept; a `401` with `SUBSCRIPTION_WEBHOOK_REFUSED` means they were kept and the request failed a check (a wrong secret, a stale timestamp or an altered body).
+One signed request proves the setup: send a notification the source signs (RevenueCat's event types include `TEST`, which names no account) and expect `200`. What a failure means depends on the route.
+
+- **On the library's controller**, a `503` with `SUBSCRIPTION_SOURCE_UNAVAILABLE` (and one logged warning) means a body was parsed and its bytes were not kept, so `rawBody: true` is missing. A `401` with `SUBSCRIPTION_WEBHOOK_REFUSED` means the bytes were kept or there was no body for a parser to read, and the request failed a check (a wrong secret, a stale timestamp, an altered body, or a content type no parser reads).
+- **On a route the host owns**, a `401` does **not** tell the two apart. The route in this guide passes `request.rawBody ?? new Uint8Array()`: when the bytes were not kept, the adapter receives an empty body and answers the same `401`, with no warning, as it does for a bad secret. Only the library's controller makes the distinction, because it looks at `request.body` as well (`src/core/webhook/raw-body.ts`). A host-owned route that wants the same signal makes it itself, before it calls the processor:
+
+```ts
+// Inside the route, before `processor.process(...)`: a body was parsed and no bytes were kept.
+if (request.rawBody === undefined && request.body !== undefined) {
+  response.status(503)
+  return { code: 'SUBSCRIPTION_SOURCE_UNAVAILABLE' }
+}
+```
+
+Without that line, check a host-owned route by sending a request that must pass (a correctly signed one, built with the `testing` subpath's request builders) and failing the deployment if it is refused.

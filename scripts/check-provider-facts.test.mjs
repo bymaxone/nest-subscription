@@ -7,6 +7,7 @@
  */
 
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it } from 'node:test'
@@ -115,17 +116,17 @@ describe('the comparison with the provider', () => {
     ])
   })
 
-  it('reports a page that no longer answers, whatever the reason', async () => {
+  it('reports an HTTP failure as a change, and a page with no answer apart from it', async () => {
     // Scenario: one page is gone (404), one fails to connect, and the rest still compare.
     const urls = citedPages(FACTS).map((page) => page.url)
-    const { problems } = await compareWithProvider(
+    const { problems, unreachable } = await compareWithProvider(
       FACTS,
       pages({ [urls[0]]: 404, [urls[2]]: new Error('connection refused') })
     )
-    assert.equal(problems.length, 2)
+    assert.equal(problems.length, 1)
     assert.match(problems[0], /answered HTTP 404\.$/)
-    assert.match(problems[1], /could not be fetched\.$/)
-    assert.ok(!problems.join(' ').includes('connection refused'))
+    assert.equal(unreachable.length, 1)
+    assert.ok(!(problems.join(' ') + unreachable.join(' ')).includes('connection refused'))
   })
 
   it('reports a page whose shape changed instead of passing it', async () => {
@@ -136,5 +137,29 @@ describe('the comparison with the provider', () => {
     )
     assert.equal(problems.length, 3)
     for (const problem of problems) assert.match(problem, /no longer has the shape/)
+  })
+})
+
+describe('the exit code of the script', () => {
+  /** Runs the script with `fetch` replaced by the given source text, and returns its status. */
+  function exitCodeWith(fetchSource) {
+    const preload = `data:text/javascript,${encodeURIComponent(`globalThis.fetch = ${fetchSource}`)}`
+    const run = spawnSync(
+      process.execPath,
+      ['--import', preload, join(ROOT, 'scripts', 'check-provider-facts.mjs')],
+      { encoding: 'utf8' }
+    )
+    return run.status
+  }
+
+  it('is 2, never 1, when a page cannot be reached at all', () => {
+    // Scenario: the network is down. Nothing was compared, so the run must not report that the
+    // facts moved (exit 1 opens an issue); it reports that it could not compare (exit 2).
+    assert.equal(exitCodeWith("() => Promise.reject(new TypeError('offline'))"), 2)
+  })
+
+  it('stays 1 when a page answers with a failing HTTP status', () => {
+    // Scenario: the provider answered, and what it answered is a change (a page that went away).
+    assert.equal(exitCodeWith("() => Promise.resolve(new Response('', { status: 404 }))"), 1)
   })
 })
