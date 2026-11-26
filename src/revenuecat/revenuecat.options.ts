@@ -93,6 +93,8 @@ export interface ResolvedRevenueCatOptions {
   readonly projectId: string
   /** The base address of the API, without a trailing slash. */
   readonly baseUrl: string
+  /** The base address of version 1 of the API, which the operations that exist only there use. */
+  readonly baseUrlV1: string
   /** The API key. */
   readonly apiKey: Secret
   /** The accepted `Authorization` values of the webhook, or `null` when that check is off. */
@@ -217,6 +219,11 @@ function normalizeBaseUrl(value: string | undefined): string {
   return `${url.origin}${url.pathname.replace(/\/+$/, '')}`
 }
 
+/** The address of version 1 beside the given one: its trailing `/v2` becomes `/v1`, else `/v1` is added. */
+function versionOneOf(baseUrl: string): string {
+  return baseUrl.endsWith('/v2') ? `${baseUrl.slice(0, -3)}/v1` : `${baseUrl}/v1`
+}
+
 /** Calls the runtime's `fetch`, looked up at call time. */
 function runtimeFetch(url: string, init: RequestInit): Promise<Response> {
   return fetch(url, init)
@@ -252,9 +259,11 @@ function assertOptions(input: unknown): asserts input is RevenueCatSourceOptions
  */
 export function resolveRevenueCatOptions(input: unknown): ResolvedRevenueCatOptions {
   assertOptions(input)
+  const baseUrl = normalizeBaseUrl(input.baseUrl)
   return {
     projectId: input.projectId,
-    baseUrl: normalizeBaseUrl(input.baseUrl),
+    baseUrl,
+    baseUrlV1: versionOneOf(baseUrl),
     apiKey: Secret.from(input.apiKey),
     webhookAuthorization: secretOrNull(input.webhookAuthorization),
     webhookSigningSecret: secretOrNull(input.webhookSigningSecret),

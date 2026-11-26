@@ -1,6 +1,6 @@
 # Phase 8 — Management operations
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P8 — management-operations
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -41,7 +41,7 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 | --- | ----------------------------------------------------------------- | ------- | -------- | ---- | ----------------------- |
 | 8.1 | Model capabilities and the service API                            | ✅ Done | P0       | M    | —                       |
 | 8.2 | Implement stop renewal with an honest result                      | ✅ Done | P0       | M    | 8.1                     |
-| 8.3 | Implement the RevenueCat operations                               | 📋 ToDo | P0       | M    | 8.2                     |
+| 8.3 | Implement the RevenueCat operations                               | ✅ Done | P0       | M    | 8.2                     |
 | 8.5 | Generalize capabilities and the operation flow to every operation | 📋 ToDo | P0       | M    | 8.3                     |
 | 8.6 | Implement resume                                                  | 📋 ToDo | P0       | M    | 8.5                     |
 | 8.7 | Implement change product                                          | 📋 ToDo | P0       | M    | 8.5                     |
@@ -223,7 +223,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.3 — Implement the RevenueCat operations
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.2
@@ -234,10 +234,10 @@ Fill the RevenueCat adapter's capabilities and stop renewal: Google Play through
 
 #### Acceptance criteria
 
-- [ ] The capability answer for each origin and store matches the RevenueCat column of the FR36 table, in a table-driven test: App Store not possible with the management reference; Google Play possible; RevenueCat web billing possible; Stripe tracked by RevenueCat not possible, with a result that tells the host to cancel in Stripe.
-- [ ] Stop renewal on a Google Play subscription makes exactly one version 1 call; on a web billing subscription exactly one version 2 call; on the others no call.
-- [ ] The management reference is returned when the read provides one.
-- [ ] A 4xx from the operation becomes a typed failure that does not include the response body or the customer identifier.
+- [x] The capability answer for each origin and store matches the RevenueCat column of the FR36 table, in a table-driven test: App Store not possible with the management reference; Google Play possible; RevenueCat web billing possible; Stripe tracked by RevenueCat not possible, with a result that tells the host to cancel in Stripe.
+- [x] Stop renewal on a Google Play subscription makes exactly one version 1 call; on a web billing subscription exactly one version 2 call; on the others no call.
+- [x] The management reference is returned when the read provides one.
+- [x] A 4xx from the operation becomes a typed failure that does not include the response body or the customer identifier.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
@@ -833,3 +833,4 @@ Completion Protocol (after the work is reported done):
 
 - 8.1 ✅ 2026-11-26 — capability query, management reference and the single ownership check (findOwnRecord)
 - 8.2 ✅ 2026-11-26 — stop renewal on the shared flow with the snapshot read back as the result
+- 8.3 ✅ 2026-11-26 — RevenueCat capabilities and stop renewal: Google Play through version 1, web billing through version 2, the rest not possible

@@ -39,6 +39,8 @@ export interface StandInRequest {
   readonly url: string
   /** The `Authorization` header, as sent. */
   readonly authorization: string | undefined
+  /** The body, as text; empty when none was sent. */
+  readonly body: string
 }
 
 /** A scripted answer: a status, a body, and the address of a redirect when it has one. */
@@ -152,13 +154,18 @@ export async function startStandIn(expectedKey: string): Promise<StandIn> {
   const script: Script = { customers: new Map(), failing: null, handler: null }
   const requests: StandInRequest[] = []
   const server: Server = createServer((request, response) => {
-    const received: StandInRequest = {
-      method: request.method ?? '',
-      url: request.url ?? '',
-      authorization: request.headers.authorization
-    }
-    requests.push(received)
-    reply(response, answerOf(script, expectedKey, received))
+    const chunks: Buffer[] = []
+    request.on('data', (chunk: Buffer) => void chunks.push(chunk))
+    request.on('end', () => {
+      const received: StandInRequest = {
+        method: request.method ?? '',
+        url: request.url ?? '',
+        authorization: request.headers.authorization,
+        body: Buffer.concat(chunks).toString('utf8')
+      }
+      requests.push(received)
+      reply(response, answerOf(script, expectedKey, received))
+    })
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()

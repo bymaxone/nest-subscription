@@ -88,6 +88,21 @@ describe('RevenueCatHttp', () => {
     })
   })
 
+  it('sends no body and no content type on a post without one', async () => {
+    // Scenario: an operation that takes no body is posted bare.
+    const stub = jest.fn<Promise<Response>, [string, RequestInit]>(() =>
+      Promise.resolve(jsonResponse(200, {}))
+    )
+    await clientWith(stub).post('/projects/p/x')
+    const init = stub.mock.calls[0]?.[1]
+    expect(init?.method).toBe('POST')
+    expect(init).not.toHaveProperty('body')
+    expect(init?.headers).toStrictEqual({
+      authorization: `Bearer ${KEY}`,
+      accept: 'application/json'
+    })
+  })
+
   it('refuses redirects and bounds each request with the configured time limit', async () => {
     // Scenario: the credential must never follow a redirect to another host, and no request may
     // hang; the signal comes from the runtime's timeout for the configured number of milliseconds.

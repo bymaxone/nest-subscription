@@ -21,6 +21,9 @@ import type {
   SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
+import { capabilitiesOf } from './management/capabilities'
+import type { RevenueCatManagementContext } from './management/management-context'
+import { stopRenewalAt } from './management/stop-renewal'
 import { readRevenueCatAccount } from './read/read-account'
 import type { RevenueCatReadContext } from './read/read-context'
 import { RevenueCatHttp } from './revenuecat-http'
@@ -44,16 +47,28 @@ class RevenueCatSource implements SubscriptionSource {
   readonly name = REVENUECAT_SOURCE_NAME
   readonly #options: ResolvedRevenueCatOptions
   readonly #context: RevenueCatReadContext
+  readonly #management: RevenueCatManagementContext
 
   constructor(options: ResolvedRevenueCatOptions) {
     this.#options = options
-    this.#context = {
-      http: new RevenueCatHttp({
-        baseUrl: options.baseUrl,
+    const http = new RevenueCatHttp({
+      baseUrl: options.baseUrl,
+      apiKey: options.apiKey,
+      timeoutMs: options.requestTimeoutMs,
+      fetch: options.fetch
+    })
+    this.#management = {
+      http,
+      httpV1: new RevenueCatHttp({
+        baseUrl: options.baseUrlV1,
         apiKey: options.apiKey,
         timeoutMs: options.requestTimeoutMs,
         fetch: options.fetch
       }),
+      projectId: options.projectId
+    }
+    this.#context = {
+      http,
       projectId: options.projectId,
       sourceName: REVENUECAT_SOURCE_NAME,
       allowSandbox: options.allowSandbox,
@@ -73,20 +88,14 @@ class RevenueCatSource implements SubscriptionSource {
   }
 
   capabilities(_account: AccountReference, target: ManagedRecord): Promise<SourceCapabilities> {
-    return Promise.resolve({
-      operations: [],
-      managementReference: target.kind === 'subscription' ? target.record.managementReference : null
-    })
+    return capabilitiesOf(this.#management, target)
   }
 
   stopRenewal(
-    _account: AccountReference,
+    account: AccountReference,
     subscription: SubscriptionRecord
   ): Promise<OperationResult> {
-    return Promise.resolve({
-      outcome: 'customer_action_required',
-      managementReference: subscription.managementReference
-    })
+    return stopRenewalAt(this.#management, account, subscription)
   }
 
   /** Records an event that named no account, with no identifier, and never fails the request. */

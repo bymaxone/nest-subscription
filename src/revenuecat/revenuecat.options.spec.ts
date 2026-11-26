@@ -49,6 +49,7 @@ describe('resolveRevenueCatOptions', () => {
     // Scenario: only the two required options are given; every other option takes its default.
     const resolved = resolveRevenueCatOptions(minimal)
     expect(resolved.baseUrl).toBe(DEFAULT_BASE_URL)
+    expect(resolved.baseUrlV1).toBe('https://api.revenuecat.com/v1')
     expect(resolved.signatureToleranceMs).toBe(DEFAULT_SIGNATURE_TOLERANCE_MS)
     expect(resolved.requestTimeoutMs).toBe(DEFAULT_REQUEST_TIMEOUT_MS)
     expect(resolved.allowSandbox).toBe(false)
@@ -237,6 +238,15 @@ describe('resolveRevenueCatOptions', () => {
     ])('accepts %s and resolves it to %s', (given, resolved) => {
       // Scenario: HTTPS anywhere, plain HTTP to loopback; trailing slashes are dropped.
       expect(resolveRevenueCatOptions({ ...minimal, baseUrl: given }).baseUrl).toBe(resolved)
+    })
+
+    it.each([
+      ['https://api.example.com/v2', 'https://api.example.com/v1'],
+      ['http://127.0.0.1:8080', 'http://127.0.0.1:8080/v1'],
+      ['https://proxy.example.com/revenuecat/v2/', 'https://proxy.example.com/revenuecat/v1']
+    ])('derives the version 1 address of %s as %s', (given, expected) => {
+      // Scenario: a trailing /v2 becomes /v1; an address without one gets /v1 added.
+      expect(resolveRevenueCatOptions({ ...minimal, baseUrl: given }).baseUrlV1).toBe(expected)
     })
 
     it.each([
