@@ -30,7 +30,7 @@ import {
 import { ObserverBridge } from '../../src/core/observer/observer-bridge'
 import { SnapshotRefresher } from '../../src/core/refresh/snapshot-refresher'
 
-const ACCOUNT: AccountReference = { accountId: 'acc-1' }
+const ACCOUNT: AccountReference = { accountId: 'sentinel-acc-1' }
 const T10 = '2026-01-01T00:00:10.000Z'
 
 /** A snapshot of an account as of the given source instant. */
@@ -443,7 +443,7 @@ describe('read and refresh: the service in a running application', () => {
     expect((error as SubscriptionError).code).toBe(SUBSCRIPTION_ERROR_CODES.INVALID_INPUT)
     const withTenant = await app
       .get(SubscriptionService)
-      .getSnapshot({ tenantId: 'acme', accountId: 'acc-1' })
+      .getSnapshot({ tenantId: 'acme', accountId: 'sentinel-acc-1' })
     expect(withTenant.tenantId).toBe('acme')
     await app.close()
   })

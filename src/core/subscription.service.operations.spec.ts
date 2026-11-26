@@ -318,6 +318,28 @@ describe('SubscriptionService input validation', () => {
     })
   })
 
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['a string', 'three days'],
+    ['a number', 3]
+  ])(
+    'refuses an extension that is %s as invalid input before anything is asked',
+    async (_label, value) => {
+      // Scenario: a caller without types passes no object; it is refused as input, not as a
+      // failed property read, and the adapter is never reached.
+      const { source, service } = harness()
+      const asked = jest.spyOn(source, 'capabilities')
+      const holder: object = { value }
+      const loose: ExtendRequest = Reflect.get(holder, 'value')
+      const failure: unknown = await service
+        .extend(ACCOUNT, 'sub-1', loose)
+        .catch((e: unknown) => e)
+      expect(failure).toMatchObject({ code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT })
+      expect(asked).not.toHaveBeenCalled()
+    }
+  )
+
   it('passes a well-formed extension, with each known reason, to the source unchanged', async () => {
     // Scenario: the request the adapter receives is the caller's, copied.
     const { source, seed, service } = harness()

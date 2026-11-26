@@ -46,6 +46,11 @@ const config: Config = {
   coverageThreshold: {
     global: { branches: 100, functions: 100, lines: 100, statements: 100 }
   },
+  // Every test file records what the library logs, sends and throws and searches it for the
+  // sentinels the suite declares; the global teardown reports the totals and fails on a leak.
+  globalSetup: '<rootDir>/test/e2e/setup/global-setup.ts',
+  globalTeardown: '<rootDir>/test/e2e/setup/global-teardown.ts',
+  setupFilesAfterEnv: ['<rootDir>/test/e2e/setup/sentinel-sweep.ts'],
   testTimeout: 30_000,
   clearMocks: true,
   restoreMocks: true,

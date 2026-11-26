@@ -23,7 +23,7 @@ import {
 
 import { SnapshotCache } from '../../src/core/cache/snapshot-cache'
 
-const ACCOUNT: AccountReference = { accountId: 'acc-1' }
+const ACCOUNT: AccountReference = { accountId: 'sentinel-acc-1' }
 
 /** A snapshot with one entitlement `pro`, active or not, as of a source instant. */
 function snapshotOf(
@@ -198,8 +198,8 @@ describe('cache', () => {
     // snapshot as JSON.
     const cache = mapCache()
     const { app, service, source, store } = await boot(cache, true)
-    const one: AccountReference = { tenantId: 'one', accountId: 'acc-1' }
-    const two: AccountReference = { tenantId: 'two', accountId: 'acc-1' }
+    const one: AccountReference = { tenantId: 'one', accountId: 'sentinel-acc-1' }
+    const two: AccountReference = { tenantId: 'two', accountId: 'sentinel-acc-1' }
     source.setAccount(one, snapshotOf(one, true, '2026-01-01T00:00:10.000Z'))
     source.setAccount(two, snapshotOf(two, false, '2026-01-01T00:00:10.000Z'))
     await service.refresh(one)
@@ -210,7 +210,7 @@ describe('cache', () => {
       true
     )
     expect(cache.entries.size).toBe(2)
-    const storedOne = (await store.getSnapshot('t3:one:a5:acc-1'))?.snapshot
+    const storedOne = (await store.getSnapshot('t3:one:a14:sentinel-acc-1'))?.snapshot
     expect([...cache.entries.values()]).toContain(JSON.stringify(storedOne))
     await expect(service.hasEntitlement(one, 'pro')).resolves.toBe(true)
     await expect(service.hasEntitlement(two, 'pro')).resolves.toBe(false)
@@ -226,9 +226,9 @@ describe('cache', () => {
       const { app, service, source } = await boot(cache)
       source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
       await service.refresh(ACCOUNT)
-      cache.entries.set('subscription:snapshot:a5:acc-1', poisoned)
+      cache.entries.set('subscription:snapshot:a14:sentinel-acc-1', poisoned)
       await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
-      expect(cache.entries.get('subscription:snapshot:a5:acc-1')).not.toBe(poisoned)
+      expect(cache.entries.get('subscription:snapshot:a14:sentinel-acc-1')).not.toBe(poisoned)
       expect(app.get(SnapshotCache)?.pendingLoads).toBe(0)
       expect(app.get(SnapshotCache)?.pendingAccounts).toBe(0)
       await app.close()
@@ -269,7 +269,7 @@ describe('cache', () => {
     release()
     await open
     await expect(stale).resolves.toBe(true)
-    await expect(alsoStale).resolves.toMatchObject({ accountId: 'acc-1' })
+    await expect(alsoStale).resolves.toMatchObject({ accountId: 'sentinel-acc-1' })
     await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(false)
     await app.close()
   })
@@ -278,15 +278,15 @@ describe('cache', () => {
     // Scenario: a well-formed snapshot of another account sits under this account's key.
     const cache = mapCache()
     const { app, service, source } = await boot(cache)
-    const other: AccountReference = { accountId: 'acc-2' }
+    const other: AccountReference = { accountId: 'sentinel-acc-2' }
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
     await service.refresh(ACCOUNT)
     cache.entries.set(
-      'subscription:snapshot:a5:acc-1',
+      'subscription:snapshot:a14:sentinel-acc-1',
       JSON.stringify(snapshotOf(other, false, '2026-01-01T00:00:10.000Z'))
     )
     await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
-    expect((await service.getSnapshot(ACCOUNT)).accountId).toBe('acc-1')
+    expect((await service.getSnapshot(ACCOUNT)).accountId).toBe('sentinel-acc-1')
     await app.close()
   })
 
@@ -340,7 +340,7 @@ describe('cache', () => {
       delete: () => Promise.reject(new Error('delete failed'))
     }
     const { app, service, source, store } = await boot(failing, false, { clock, cacheTtlMs: 5000 })
-    const other: AccountReference = { accountId: 'acc-2' }
+    const other: AccountReference = { accountId: 'sentinel-acc-2' }
     for (const account of [ACCOUNT, other]) {
       source.setAccount(account, snapshotOf(account, true, '2026-01-01T00:00:10.000Z'))
       await service.refresh(account)

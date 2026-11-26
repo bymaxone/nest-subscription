@@ -1,6 +1,6 @@
 # Phase 9 — Release readiness
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 6 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P9 — release-readiness
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -39,12 +39,12 @@ At the end the package is publishable: the README follows the family's canonical
 
 | ID  | Task                                              | Status  | Priority | Size | Depends on    |
 | --- | ------------------------------------------------- | ------- | -------- | ---- | ------------- |
-| 9.1 | Write the public README                           | 📋 ToDo | P0       | L    | —             |
-| 9.2 | Write the host guides                             | 📋 ToDo | P0       | M    | 9.1           |
-| 9.3 | Sweep the captured logs of the whole suite        | 📋 ToDo | P0       | M    | 9.1           |
-| 9.6 | Prove AC08 with one suite run against two sources | 📋 ToDo | P0       | M    | —             |
-| 9.4 | Measure the whole package                         | 📋 ToDo | P0       | M    | 9.2, 9.3, 9.6 |
-| 9.5 | Prepare the release candidate                     | 📋 ToDo | P0       | M    | 9.4           |
+| 9.1 | Write the public README                           | ✅ Done | P0       | L    | —             |
+| 9.2 | Write the host guides                             | ✅ Done | P0       | M    | 9.1           |
+| 9.3 | Sweep the captured logs of the whole suite        | ✅ Done | P0       | M    | 9.1           |
+| 9.6 | Prove AC08 with one suite run against two sources | ✅ Done | P0       | M    | —             |
+| 9.4 | Measure the whole package                         | ✅ Done | P0       | M    | 9.2, 9.3, 9.6 |
+| 9.5 | Prepare the release candidate                     | ✅ Done | P0       | M    | 9.4           |
 
 ---
 
@@ -52,7 +52,7 @@ At the end the package is publishable: the README follows the family's canonical
 
 ### Task 9.1 — Write the public README
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: —
@@ -63,12 +63,12 @@ Replace the scaffold README with the public document of the package, in the fami
 
 #### Acceptance criteria
 
-- [ ] The README has, in order: centred header with badges and links; Overview with "Why"; Features; Subpath Exports with a dependency diagram and the peer dependency matrix; Quick Start; Configuration (options table); the domain sections (reading and guarding, webhooks, refresh and reconciliation, change notifications, management operations, testing); Architecture with a drawn diagram and design principles; Security Model; Security Table; Tech Stack; Testing and Quality; API Reference; Error Code Catalog; What This Library Does Not Do; Contributing; Security Policy; License; footer.
-- [ ] Every snippet compiles: `pnpm check:docs` passes with the snippet baseline empty.
-- [ ] The Security Model has one subsection per property, each stating its limit, and the Security Table lists only controls the repository runs.
-- [ ] The Bymax Finance adapter is described as planned and not available.
-- [ ] The error code catalog table is checked against `SUBSCRIPTION_ERROR_CODES` by a test or a gate.
-- [ ] The security contact is `support@bymax.one`.
+- [x] The README has, in order: centred header with badges and links; Overview with "Why"; Features; Subpath Exports with a dependency diagram and the peer dependency matrix; Quick Start; Configuration (options table); the domain sections (reading and guarding, webhooks, refresh and reconciliation, change notifications, management operations, testing); Architecture with a drawn diagram and design principles; Security Model; Security Table; Tech Stack; Testing and Quality; API Reference; Error Code Catalog; What This Library Does Not Do; Contributing; Security Policy; License; footer.
+- [x] Every snippet compiles: `pnpm check:docs` passes with the snippet baseline empty.
+- [x] The Security Model has one subsection per property, each stating its limit, and the Security Table lists only controls the repository runs.
+- [x] The Bymax Finance adapter is described as planned and not available.
+- [x] The error code catalog table is checked against `SUBSCRIPTION_ERROR_CODES` by a test or a gate.
+- [x] The security contact is `support@bymax.one`.
 
 #### Files to create / modify
 
@@ -135,7 +135,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.2 — Write the host guides
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.1
@@ -146,10 +146,10 @@ Write the two guides the specification promises to a host: how to obtain the raw
 
 #### Acceptance criteria
 
-- [ ] `docs/raw-body.md` shows how to enable the raw body for the webhook route with the Express adapter, what breaks without it, and what a Fastify host does.
-- [ ] `docs/reference-store.md` gives the two records of specification §7 as a table definition, the uniqueness and ordering the library relies on, and each port method as a query, for PostgreSQL.
-- [ ] The reference store's code, kept as a test fixture, passes `storeConformanceCases`; if a database is not available in CI, the guide says how it was run and the fixture is exercised against a database by the host that adopts it.
-- [ ] Both guides are linked from the README and from `docs/README.md`.
+- [x] `docs/raw-body.md` shows how to enable the raw body for the webhook route with the Express adapter, what breaks without it, and what a Fastify host does.
+- [x] `docs/reference-store.md` gives the two records of specification §7 as a table definition, the uniqueness and ordering the library relies on, and each port method as a query, for PostgreSQL.
+- [x] The reference store's code, kept as a test fixture, passes `storeConformanceCases`; if a database is not available in CI, the guide says how it was run and the fixture is exercised against a database by the host that adopts it.
+- [x] Both guides are linked from the README and from `docs/README.md`.
 
 #### Files to create / modify
 
@@ -211,7 +211,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.3 — Sweep the captured logs of the whole suite
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.1
@@ -222,10 +222,10 @@ Prove AC09 on the whole package: no secret and no account identifier in any log 
 
 #### Acceptance criteria
 
-- [ ] The end-to-end suite runs with every configured secret and every account and tenant identifier set to recognisable sentinels, and a global teardown fails the run if any captured log line, observer payload, thrown error message or HTTP response body contains one.
-- [ ] The four serialization paths (JSON, spread, inspect, inspect with hidden properties) are applied to every provider the module exports and to the object each adapter factory returns.
-- [ ] A deliberately introduced leak (a log line with an identifier, added and then removed) is caught by the sweep.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The end-to-end suite runs with every configured secret and every account and tenant identifier set to recognisable sentinels, and a global teardown fails the run if any captured log line, observer payload, thrown error message or HTTP response body contains one.
+- [x] The four serialization paths (JSON, spread, inspect, inspect with hidden properties) are applied to every provider the module exports and to the object each adapter factory returns.
+- [x] A deliberately introduced leak (a log line with an identifier, added and then removed) is caught by the sweep.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -291,7 +291,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.4 — Measure the whole package
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.2, 9.3, 9.6
@@ -302,12 +302,12 @@ Run the full, non-incremental mutation run, set the size budget and the API base
 
 #### Acceptance criteria
 
-- [ ] `pnpm mutation:full` scores 100, with no disable directive lacking a recorded reason (`pnpm check:mutants`).
-- [ ] The size budget is set per subpath from the measured build with a small stated margin, and `pnpm size` passes.
-- [ ] The API surface baseline matches the build, reviewed name by name for anything exported by accident.
-- [ ] `docs/acceptance.md` maps AC01 to AC07, AC09 and the Appendix A half of AC10 to named passing tests, maps AC08 to the suite of task 9.6 for the fake source and the RevenueCat stand-in, and marks the Finance run of AC08 and the Appendix B half of AC10 as owned by P11.
-- [ ] `docs/mutation_testing_results.md` records the full run's numbers.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `pnpm mutation:full` scores 100, with no disable directive lacking a recorded reason (`pnpm check:mutants`).
+- [x] The size budget is set per subpath from the measured build with a small stated margin, and `pnpm size` passes.
+- [x] The API surface baseline matches the build, reviewed name by name for anything exported by accident.
+- [x] `docs/acceptance.md` maps AC01 to AC07, AC09 and the Appendix A half of AC10 to named passing tests, maps AC08 to the suite of task 9.6 for the fake source and the RevenueCat stand-in, and marks the Finance run of AC08 and the Appendix B half of AC10 as owned by P11.
+- [x] `docs/mutation_testing_results.md` records the full run's numbers.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -377,7 +377,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.5 — Prepare the release candidate
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.4
@@ -388,12 +388,12 @@ Write the changelog entry, add the scheduled job that watches the provider's cha
 
 #### Acceptance criteria
 
-- [ ] `CHANGELOG.md` has the first release's entry under "Unreleased", written for a host: what the library does, its requirements (Node.js 26, NestJS 11), and its known limits.
-- [ ] A scheduled workflow checks the RevenueCat changelog or API reference for changes to the facts in `docs/revenuecat-facts.md` and opens an issue when something moved; its first manual run is green.
-- [ ] `npm publish --dry-run` succeeds from a clean checkout, and the tarball's file list holds `dist/`, `README.md`, `CHANGELOG.md`, `LICENSE` and nothing from `test/`, `scripts/` or `docs/`.
-- [ ] `prepublishOnly` runs the whole gate chain and passes.
-- [ ] A list for the owner states what a release needs: the version number, the first manual publish (trusted publishing can be configured only after the package exists), the `npm-publish` environment, the tag made from updated `main` after the merge.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `CHANGELOG.md` has the first release's entry under "Unreleased", written for a host: what the library does, its requirements (Node.js 26, NestJS 11), and its known limits.
+- [ ] A scheduled workflow checks the RevenueCat changelog or API reference for changes to the facts in `docs/revenuecat-facts.md` and opens an issue when something moved; its first manual run is green. (the script and its tests pass and the workflow passes actionlint; a manual run needs the workflow on the default branch, so it is run after the merge: `gh workflow run provider-changelog.yml`)
+- [x] `npm publish --dry-run` succeeds from a clean checkout, and the tarball's file list holds `dist/`, `README.md`, `CHANGELOG.md`, `LICENSE` and nothing from `test/`, `scripts/` or `docs/`.
+- [x] `prepublishOnly` runs the whole gate chain and passes.
+- [x] A list for the owner states what a release needs: the version number, the first manual publish (trusted publishing can be configured only after the package exists), the `npm-publish` environment, the tag made from updated `main` after the merge.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -466,7 +466,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.6 — Prove AC08 with one suite run against two sources
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -477,12 +477,12 @@ Add one end-to-end suite that runs the same routes and the same hook code, uncha
 
 #### Acceptance criteria
 
-- [ ] One suite file holds every case, and one application factory builds the host: the protected routes, the webhook controller with the raw body and the hook are written once and shared by both runs.
-- [ ] The only difference between the two runs is the module configuration: the fake source in one, `revenueCatSource` with its `baseUrl` option set to the local stand-in (task 7.2) in the other. A test fails if a route or the hook is defined per source.
-- [ ] Both runs pass the same cases: a granted entitlement admits the request, an account with no subscription is refused, a webhook event changes the snapshot and calls the hook once, the same event delivered again calls it once, and the source down follows the configured fail policy (AC08, AC03, AC07).
-- [ ] The RevenueCat run serves recorded fixtures from `test/fixtures/revenuecat/` through the local stand-in; it opens no connection to a host outside the loopback address and uses no real credential. The credential and the webhook secret are literals made for the test.
-- [ ] The suite is registered so that adding the Finance adapter later is one more entry in the list of sources, with the cases untouched.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] One suite file holds every case, and one application factory builds the host: the protected routes, the webhook controller with the raw body and the hook are written once and shared by both runs.
+- [x] The only difference between the two runs is the module configuration: the fake source in one, `revenueCatSource` with its `baseUrl` option set to the local stand-in (task 7.2) in the other. A test fails if a route or the hook is defined per source.
+- [x] Both runs pass the same cases: a granted entitlement admits the request, an account with no subscription is refused, a webhook event changes the snapshot and calls the hook once, the same event delivered again calls it once, and the source down follows the configured fail policy (AC08, AC03, AC07).
+- [x] The RevenueCat run serves recorded fixtures from `test/fixtures/revenuecat/` through the local stand-in; it opens no connection to a host outside the loopback address and uses no real credential. The credential and the webhook secret are literals made for the test.
+- [x] The suite is registered so that adding the Finance adapter later is one more entry in the list of sources, with the cases untouched.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -553,4 +553,20 @@ Completion Protocol (after the work is reported done):
 
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
-<!-- entries are added as tasks complete -->
+- 9.6 ✅ 2026-11-26 — one suite runs the same application and cases against the fake source and the RevenueCat adapter over a local stand-in (AC08)
+- 9.3 ✅ 2026-11-26 — a per-file sweep and a global teardown search every log line, observer payload, response body and library error of the whole end-to-end run for the sentinels the specs declare
+- 9.1 ✅ 2026-11-26 — the public README in the family's sequence, every snippet compiled against the built package, the error table checked against the catalogue
+- 9.2 ✅ 2026-11-26 — the raw-body guide and the PostgreSQL reference store, whose fixture passes the conformance cases against PostgreSQL 17
+- 9.4 ✅ 2026-11-26 — the full mutation run scores 100, the size budgets are re-derived from the build, the acceptance table and the mutation results are written
+- 9.5 ✅ 2026-11-26 — the first release's changelog entry, the weekly provider watch, and the publish dry run recorded
+
+### Hand-off to the owner: what a release needs
+
+Nothing below is done by this phase. The phase ends at a release candidate.
+
+1. **The version number.** `package.json` holds `0.0.0`. The owner names the version; then the `Unreleased` heading of `CHANGELOG.md` becomes `## [x.y.z] — <date>` with a `[x.y.z]: <compare link>` definition at the foot, `version` is set, and the "not published" notes of `README.md`, `SECURITY.md` and `AGENTS.md` are updated.
+2. **The first publish is manual.** Trusted publishing can be configured on npmjs.com only after the package exists, so the first version is published by hand from a clean checkout of the updated `main`, with the owner's credentials. Then the trusted publisher is configured for repository `bymaxone/nest-subscription`, workflow file `release.yml` and environment `npm-publish`, and later releases run from the tag.
+3. **The `npm-publish` environment.** Create it with a required reviewer and a deployment policy that allows the tags `v*.*.*` only, and a tag ruleset on `v*.*.*` limiting who can create them (`release.yml` relies on both).
+4. **The tag.** After the merge, from updated `main`: the tag `vx.y.z` on the commit that holds the version and the changelog heading. Never from a branch.
+5. **The provider watch.** After the merge, run `gh workflow run provider-changelog.yml` once and confirm it is green; it then runs on Sundays.
+6. **Open question Q01** in `docs/spec.md` section 10.2 (the module's sandbox options validate and drive nothing) is the owner's to answer before or after the release.

@@ -101,13 +101,16 @@ describe('InMemorySubscriptionStore', () => {
     })
   })
 
-  it('leaves the snapshot alone when it clears changes of another key', async () => {
-    // Scenario: clearing on one key does not touch another key's pending changes.
+  it('clears the changes of one key and leaves the stored state of another key as it was', async () => {
+    // Scenario: clearing on one key empties that key's pending changes and leaves the other
+    // key's snapshot and pending changes equal to a copy taken before.
     const store = quiet()
     await store.putSnapshot('one', snapshot('one'), [{ kind: 'started', key: 'c' }], AT)
     await store.putSnapshot('two', snapshot('two'), [{ kind: 'started', key: 'c' }], AT)
+    const before = structuredClone(await store.getSnapshot('two'))
     await store.clearPendingChanges('one', ['c'])
-    expect((await store.getSnapshot('two'))?.pendingChanges).toHaveLength(1)
+    expect((await store.getSnapshot('one'))?.pendingChanges).toStrictEqual([])
+    expect(await store.getSnapshot('two')).toStrictEqual(before)
   })
 
   it('pages in key order and ends with a null cursor', async () => {

@@ -319,16 +319,22 @@ describe('resolveEntitlements', () => {
     expect((failure as SubscriptionError).message).not.toContain('secret-looking-text')
   })
 
-  it('changes none of its arguments and returns the same result twice', () => {
-    // Scenario: the rule is pure; frozen inputs would throw on a write, and the result repeats.
-    const subscriptions = Object.freeze([sub('s1'), sub('s2', { accessUntil: MAR })])
+  it('leaves its arguments equal to a copy taken before and returns the same result twice', () => {
+    // Scenario: the rule is pure; each record and each list is frozen so a write would throw,
+    // the arguments are compared with a copy taken before, and the result repeats.
+    const subscriptions = Object.freeze([
+      Object.freeze(sub('s1')),
+      Object.freeze(sub('s2', { accessUntil: MAR }))
+    ])
     const grants = new Map([
       ['s1', Object.freeze(['pro'])],
       ['s2', Object.freeze(['pro'])]
     ])
+    const subscriptionsBefore = structuredClone(subscriptions)
+    const grantsBefore = structuredClone(grants)
     const first = resolveEntitlements(subscriptions, grants)
-    expect(resolveEntitlements(subscriptions, grants)).toEqual(first)
-    expect(grants.get('s1')).toEqual(['pro'])
-    expect(subscriptions).toHaveLength(2)
+    expect(resolveEntitlements(subscriptions, grants)).toStrictEqual(first)
+    expect(subscriptions).toStrictEqual(subscriptionsBefore)
+    expect(grants).toStrictEqual(grantsBefore)
   })
 })

@@ -1,0 +1,111 @@
+# Watches the RevenueCat pages that docs/revenuecat-facts.md cites, once a week, and keeps one issue open
+# while what they say differs from what that file records (event types, subscription statuses, stores,
+# and whether each page still answers).
+#
+# Why a schedule: the adapter is built on facts read from a provider that can change its webhook or its
+# API without a commit here. Unknown event kinds and fields are tolerated by the receiver, so a change
+# does not break it at once; this is how a person finds out before a mapping table is quietly wrong.
+#
+# Why Sunday: every other schedule of this repository has a day of its own, Monday (scorecard,
+# Dependabot) to Saturday (full mutation run), and Sunday is the day left.
+#
+# What it sends: plain unauthenticated GET requests to the public documentation pages the facts file
+# lists. No credential, no repository detail and no account identifier leaves the runner. What it
+# cannot do: compare prose. A clean run does not prove that nothing else moved.
+#
+# Exit codes of the script, which the last step reads: 0 everything matches (an open issue is closed),
+# 1 the provider's pages differ from the facts file (the issue is opened or updated), anything else
+# (2 is a page that gave no answer, such as a network outage) means nothing was compared: the run
+# fails and the issue is left as it is.
+#
+# Third-party actions are pinned by commit SHA. The job holds `issues: write` and nothing else, runs
+# only the repository's own script, and installs nothing.
+name: Provider changelog
+
+on:
+  schedule:
+    - cron: '41 8 * * 0'
+  workflow_dispatch:
+
+# One run at a time: two runs would race over the one tracking issue.
+concurrency:
+  group: provider-changelog
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    name: Compare the provider's pages with the facts file
+    # A dispatch can be started from any branch, and a branch's facts file is not the repository's.
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26.x
+
+      - name: Compare the pages with the facts file
+        id: compare
+        run: |
+          set -uo pipefail
+          status=0
+          node scripts/check-provider-facts.mjs > "$RUNNER_TEMP/report.txt" || status=$?
+          cat "$RUNNER_TEMP/report.txt"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Keep one issue open while the facts differ
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS: ${{ steps.compare.outputs.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title='RevenueCat facts moved'
+          number=$(gh issue list --state open --limit 100 --json number,title \
+            --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)
+          case "$STATUS" in
+            0)
+              if [ -n "$number" ]; then
+                gh issue close "$number" --comment "The pages the facts file cites match it again."
+              fi
+              ;;
+            1)
+              {
+                echo "The weekly watch found that what RevenueCat's pages say differs from \`docs/revenuecat-facts.md\`."
+                echo
+                echo '```text'
+                cat "$RUNNER_TEMP/report.txt"
+                echo '```'
+                echo
+                echo "Run: $RUN_URL"
+                echo
+                echo "Re-read the pages named above, then update the facts file and the adapter if a fact changed."
+              } > "$RUNNER_TEMP/issue.md"
+              if [ -n "$number" ]; then
+                gh issue edit "$number" --body-file "$RUNNER_TEMP/issue.md"
+              else
+                gh issue create --title "$title" --body-file "$RUNNER_TEMP/issue.md"
+              fi
+              ;;
+            *)
+              echo "::error title=provider watch::The watch could not run."
+              exit 1
+              ;;
+          esac

@@ -44,7 +44,7 @@ function snapshotOf(
   fetchedAt = T0
 ): SubscriptionSnapshot {
   return {
-    ...createEmptySnapshot({ accountId: 'acc-1', source: 'fake', fetchedAt }),
+    ...createEmptySnapshot({ accountId: 'sentinel-acc-1', source: 'fake', fetchedAt }),
     subscriptions: subscriptions.map((overrides) => ({ ...BASE, ...overrides })),
     sourceCustomer: customer === null ? null : { id: customer }
   }

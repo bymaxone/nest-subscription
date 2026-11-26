@@ -29,11 +29,20 @@ const REASONS: readonly ExtendReason[] = [
   'service_issue_or_outage'
 ]
 
-/** Whether an extension is well formed: whole days, at least one, and a known reason or none. */
-function isValid(extension: ExtendRequest): boolean {
-  const { days, reason } = extension
+/**
+ * Whether an extension is well formed: an object, whole days, at least one, and a known reason or
+ * none. The argument is read as unknown because a caller without types can pass anything,
+ * including `null`, which must be refused as input and not fail on a property read.
+ */
+function isValid(extension: unknown): boolean {
+  if (typeof extension !== 'object' || extension === null) return false
+  const days: unknown = Reflect.get(extension, 'days')
+  const reason: unknown = Reflect.get(extension, 'reason')
   return (
-    Number.isSafeInteger(days) && days >= 1 && (reason === undefined || REASONS.includes(reason))
+    typeof days === 'number' &&
+    Number.isSafeInteger(days) &&
+    days >= 1 &&
+    (reason === undefined || REASONS.some((known) => known === reason))
   )
 }
 

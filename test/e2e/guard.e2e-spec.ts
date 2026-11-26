@@ -34,9 +34,9 @@ import {
 } from './fixtures/guarded-app'
 
 const HOUR_MS = 3_600_000
-const HELD: AccountReference = { accountId: 'acc-held' }
-const NONE: AccountReference = { accountId: 'acc-none' }
-const ON_HOLD: AccountReference = { accountId: 'acc-hold' }
+const HELD: AccountReference = { accountId: 'sentinel-acc-held' }
+const NONE: AccountReference = { accountId: 'sentinel-acc-none' }
+const ON_HOLD: AccountReference = { accountId: 'sentinel-acc-hold' }
 
 /** The apps a test built, closed after it. */
 const running: GuardedApp[] = []
@@ -98,7 +98,7 @@ describe('guard: the three outcomes', () => {
     // Scenario: nothing is stored for the account; the store is readable, so this is "no
     // subscription" and the source is not asked.
     const built = await boot()
-    const response = await get(built, '/premium', { accountId: 'acc-unknown' })
+    const response = await get(built, '/premium', { accountId: 'sentinel-acc-unknown' })
     expectRefusal(response, 403, SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED)
     expect(built.source.totalReads).toBe(0)
   })
@@ -149,11 +149,11 @@ describe('guard: the account comes from the resolver only', () => {
   })
 
   it.each([
-    ['a string', '"acc-held"'],
+    ['a string', '"sentinel-acc-held"'],
     ['an empty object', '{}'],
     ['a blank identifier', '{"accountId":"  "}'],
     ['a numeric identifier', '{"accountId":7}'],
-    ['a numeric tenant', '{"accountId":"acc-held","tenantId":3}'],
+    ['a numeric tenant', '{"accountId":"sentinel-acc-held","tenantId":3}'],
     ['null', 'null']
   ])('refuses as unauthenticated a resolver answer that is %s', async (_title, raw) => {
     // Scenario: the host's resolver answers with something that is not an account.
@@ -221,19 +221,19 @@ describe('guard: the account comes from the resolver only', () => {
   })
 
   it('decides for the account the resolver names, whatever the body, query and headers say', async () => {
-    // Scenario: the caller is `acc-none` but the body, the query string and other headers all name
-    // `acc-held`; it is refused. The reverse is allowed. The guard reads none of them.
+    // Scenario: the caller is `sentinel-acc-none` but the body, the query string and other headers all name
+    // `sentinel-acc-held`; it is refused. The reverse is allowed. The guard reads none of them.
     const built = await boot()
     await seedThree(built)
     const forged = await request(built.app.getHttpServer())
-      .post('/premium?accountId=acc-held&tenantId=t')
+      .post('/premium?accountId=sentinel-acc-held&tenantId=t')
       .set(ACCOUNT_HEADER, NONE.accountId)
       .set('x-account-id', HELD.accountId)
       .set('x-tenant-id', 't')
       .send({ accountId: HELD.accountId, tenantId: 't' })
     expectRefusal(forged, 403, SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED)
     const honest = await request(built.app.getHttpServer())
-      .post('/premium?accountId=acc-none')
+      .post('/premium?accountId=sentinel-acc-none')
       .set(ACCOUNT_HEADER, HELD.accountId)
       .send({ accountId: NONE.accountId })
     expect(honest.status).toBe(201)
@@ -243,11 +243,11 @@ describe('guard: the account comes from the resolver only', () => {
     // Scenario: the account is subscribed in tenant `t1`. A request resolved to `t1` is allowed,
     // the same account in `t2` is not, and a request with no tenant is unauthenticated.
     const built = await boot({ multiTenant: true })
-    const inT1: AccountReference = { accountId: 'acc-held', tenantId: 't1' }
+    const inT1: AccountReference = { accountId: 'sentinel-acc-held', tenantId: 't1' }
     await built.seed(snapshotOf(inT1, { givesAccess: true, entitlement: 'premium' }))
     expect((await get(built, '/premium', inT1)).status).toBe(200)
     expectRefusal(
-      await get(built, '/premium', { accountId: 'acc-held', tenantId: 't2' }),
+      await get(built, '/premium', { accountId: 'sentinel-acc-held', tenantId: 't2' }),
       403,
       SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED
     )
@@ -261,7 +261,7 @@ describe('guard: the account comes from the resolver only', () => {
     // in its body, and each body is the code and the message.
     const built = await boot({ multiTenant: true, maxSnapshotAgeMs: HOUR_MS })
     const hidden: AccountReference = {
-      accountId: 'acc-sentinel-77',
+      accountId: 'sentinel-acc-sentinel-77',
       tenantId: 'tenant-sentinel-77'
     }
     await built.seed(snapshotOf(hidden, { givesAccess: false, entitlement: 'premium' }))
@@ -280,7 +280,7 @@ describe('guard: the account comes from the resolver only', () => {
       [
         await request(built.app.getHttpServer())
           .get('/premium')
-          .set(RAW_HEADER, '{"accountId":"acc-sentinel-77","tenantId":7}'),
+          .set(RAW_HEADER, '{"accountId":"sentinel-acc-sentinel-77","tenantId":7}'),
         401
       ]
     ]
@@ -484,7 +484,7 @@ describe('guard: the fail policy with the source down', () => {
     for (const failPolicy of ['refuse', 'last_known_state'] as const) {
       const built = await boot({ failPolicy })
       expectRefusal(
-        await get(built, '/premium', { accountId: 'acc-new' }),
+        await get(built, '/premium', { accountId: 'sentinel-acc-new' }),
         403,
         SUBSCRIPTION_ERROR_CODES.ENTITLEMENT_REQUIRED
       )
@@ -606,7 +606,7 @@ describe('guard: cases a request cannot make', () => {
     // decision refuses it; the same snapshot written straight into the store reads as absent
     // through the service, which answers false, and the guard refuses the route.
     const snapshot = {
-      ...createEmptySnapshot({ accountId: 'acc-held', source: 'fake', fetchedAt: START }),
+      ...createEmptySnapshot({ accountId: 'sentinel-acc-held', source: 'fake', fetchedAt: START }),
       entitlements: [
         {
           name: 'premium',

@@ -13,6 +13,7 @@ import {
   SubscriptionModule,
   SubscriptionService,
   type AccountReference,
+  type ExtendRequest,
   type ManagedRecord,
   type ManagementOperation,
   type SubscriptionSource,
@@ -37,7 +38,7 @@ import {
 
 const T0 = '2026-01-01T00:00:00.000Z'
 const T1 = '2026-01-02T00:00:00.000Z'
-const OWNER: AccountReference = { accountId: 'acc-1', tenantId: 'tenant-a' }
+const OWNER: AccountReference = { accountId: 'sentinel-acc-1', tenantId: 'tenant-a' }
 
 /** A renewing Google Play subscription. */
 const SUBSCRIPTION: SubscriptionRecord = {
@@ -174,8 +175,8 @@ describe('management: stop renewal', () => {
   })
 
   it.each([
-    ['another account', { accountId: 'acc-2', tenantId: 'tenant-a' }],
-    ['another tenant', { accountId: 'acc-1', tenantId: 'tenant-b' }]
+    ['another account', { accountId: 'sentinel-acc-2', tenantId: 'tenant-a' }],
+    ['another tenant', { accountId: 'sentinel-acc-1', tenantId: 'tenant-b' }]
   ])('refuses a record of %s, for both kinds, and reaches no source', async (_label, caller) => {
     // Scenario: SEC10 across accounts and tenants, with a subscription and a purchase.
     const { app, source, service } = await boot()
@@ -386,8 +387,8 @@ describe.each(OPERATIONS)('management: $name through the module', (operation) =>
   })
 
   it.each([
-    ['another account', { accountId: 'acc-2', tenantId: 'tenant-a' }],
-    ['another tenant', { accountId: 'acc-1', tenantId: 'tenant-b' }]
+    ['another account', { accountId: 'sentinel-acc-2', tenantId: 'tenant-a' }],
+    ['another tenant', { accountId: 'sentinel-acc-1', tenantId: 'tenant-b' }]
   ])(
     'refuses a subscription and a purchase of %s and reaches no source',
     async (_label, caller) => {
@@ -423,6 +424,11 @@ describe('management: purchases and input', () => {
     })
     expect((await service.refund(OWNER, 'pur-1')).outcome).toBe('refunded')
     await expect(service.extend(OWNER, 'sub-1', { days: 0 })).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
+    })
+    const holder: object = { value: null }
+    const untyped: ExtendRequest = Reflect.get(holder, 'value')
+    await expect(service.extend(OWNER, 'sub-1', untyped)).rejects.toMatchObject({
       code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
     })
     await expect(service.changeProduct(OWNER, 'sub-1', ' ')).rejects.toMatchObject({

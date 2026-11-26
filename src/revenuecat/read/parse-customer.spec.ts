@@ -65,14 +65,32 @@ describe('field readers', () => {
 
 describe('parseList', () => {
   it('reads the items and whether a next page is named', () => {
-    // Scenario: the envelope has `next_page` as a string, `null`, or nothing.
+    // Scenario: the envelope has `next_page` as a string, `null`, or nothing; a `next_page` with
+    // no query names a next page and no cursor.
     expect(parseList({ items: [1, 2], next_page: 'https://x/y' })).toStrictEqual({
       items: [1, 2],
-      hasMore: true
+      hasMore: true,
+      nextCursor: null
     })
-    expect(parseList({ items: [], next_page: null })).toStrictEqual({ items: [], hasMore: false })
-    expect(parseList({ items: [] })).toStrictEqual({ items: [], hasMore: false })
-    expect(parseList({ items: [], next_page: '' })).toStrictEqual({ items: [], hasMore: false })
+    for (const envelope of [
+      { items: [], next_page: null },
+      { items: [] },
+      { items: [], next_page: '' }
+    ]) {
+      expect(parseList(envelope)).toStrictEqual({ items: [], hasMore: false, nextCursor: null })
+    }
+  })
+
+  it.each([
+    ['an absolute address', 'https://api.example.test/v2/p?starting_after=abc&limit=1', 'abc'],
+    ['a relative path', '/v2/p?limit=1&starting_after=abc', 'abc'],
+    ['a percent-encoded value', '/x?starting_after=a%2Fb%20c', 'a/b c'],
+    ['an empty value', '/x?starting_after=', null],
+    ['no such parameter', '/x?limit=1', null],
+    ['text that is no address at all', 'http://', null]
+  ])('reads the cursor from the query of %s', (_label, nextPage, cursor) => {
+    // Scenario: only the value of `starting_after` is read; the address is never requested.
+    expect(parseList({ items: [], next_page: nextPage })?.nextCursor).toBe(cursor)
   })
 
   it.each([null, 'x', [], {}, { items: 'x' }, { items: {} }])('refuses %j as a list', (value) => {

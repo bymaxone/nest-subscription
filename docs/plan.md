@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 8 / 10 phases of the first release done (80%) — P0 to P9
-**Active phase**: P8 — management-operations
+**Overall progress**: 🔄 9 / 10 phases of the first release done (90%) — P0 to P8
+**Active phase**: P9 — release-readiness
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -44,8 +44,8 @@ This document says in which order the specification is built and when each part 
 | P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
 | P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | ✅ Done   | 5/5      | L    | 2026-11-25   |
 | P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | ✅ Done   | 8/8      | L    | 2026-11-25   |
-| P8  | management-operations — capabilities, the five operations and the management reference                    | 👀 Review | 9/9      | L    | 2026-11-26   |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo   | 0/6      | M    | —            |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | ✅ Done   | 9/9      | L    | 2026-11-26   |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 👀 Review | 6/6      | M    | 2026-11-26   |
 | P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo   | 0/5      | L    | —            |
 
 ---
@@ -451,6 +451,7 @@ When a phase moves status:
 - P5 ✅ 2026-11-25 — the change list, its stable keys, the host hook with at-least-once delivery and the observer merged in #11 (60d7136)
 - P6 ✅ 2026-11-25 — the processor, the controller, de-duplication by event identifier, the five outcomes and the response deadline merged in #12 (e004c38)
 - P7 ✅ 2026-11-25 — the RevenueCat read, verification, sandbox filter, mapping tables and non-renewing purchases merged in #13 (48354d4)
+- P8 ✅ 2026-11-26 — management operations merged in #14
 
 ---
 

@@ -1,7 +1,7 @@
 # @bymax-one/nest-subscription — Agent Specification
 
 > **Type:** npm public library (not an application)
-> **Stage:** scaffolded. The build, the gates and the CI run on entry points that export almost nothing; the library's behaviour is written phase by phase from `docs/plan.md`. Nothing is published.
+> **Stage:** release candidate. The first release's behaviour (the model, the module, the guard, the webhook receiver, the RevenueCat adapter, the management operations and the testing subpath) is written and documented; the Bymax Finance adapter is planned and its entry point exports nothing. Nothing is published, and publishing waits for the owner's instruction.
 
 ## 1. Where things are
 
@@ -261,7 +261,7 @@ Each requirement below is stated in `docs/spec.md` §8.2 and is built by the pha
 | SEC09 | Secret rotation without downtime where the source allows two secrets                       | P2, P7   |
 | SEC10 | A management operation acts only on a record of the authenticated account's own snapshot   | P8       |
 
-What the repository runs today is the scaffold's own protection: the lint rule set, the no-socket gate for unit tests, the dependency scan in CI, and the commit rule that rejects AI attribution.
+What the repository runs today: the lint rule set, the no-socket gate for unit tests, the sentinel sweep over the whole end-to-end run, CodeQL, OSV-Scanner, dependency review and Socket Security on pull requests, the weekly scorecard and peer-advisory audits, and the commit rule that rejects AI attribution. `README.md` lists them as the Security Table, which names only what runs.
 
 ## 7. Testing strategy
 
