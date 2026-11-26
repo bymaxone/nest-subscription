@@ -1,7 +1,6 @@
 /**
  * @fileoverview Pins the reads that must show a state after an event: the management fresh read
- * and read-back, the webhook processor's read and the host's explicit refresh each start after the
- * call, so a refresh already in flight, which read the state before the event, is never mistaken
+ * and read-back and the webhook processor's read each start after the call, so a refresh already in flight, which read the state before the event, is never mistaken
  * for them. Two refreshes that start after one another still share one read.
  * @layer core
  */
@@ -158,21 +157,6 @@ describe('a verified webhook while another refresh is in flight', () => {
     expect(await outcome).toStrictEqual({ kind: 'processed', accounts: 1 })
     const stored = await store.getSnapshot(encodeAccountKey(ACCOUNT))
     expect(stored?.snapshot.subscriptions[0]?.currentPeriodEnd).toBe('2026-03-01T00:00:00.000Z')
-  })
-})
-
-describe("the host's explicit refresh while another refresh is in flight", () => {
-  it('returns the state read after the call', async () => {
-    // Scenario: the same case through SubscriptionService.refresh.
-    const { source, service, context } = harness()
-    source.setAccount(ACCOUNT, PRE_EVENT)
-    const release = source.delayNextRead()
-    void context.refresher.refresh(ACCOUNT).catch(() => undefined)
-    await tick()
-    source.setAccount(ACCOUNT, POST_EVENT)
-    const refreshed = service.refresh(ACCOUNT)
-    setImmediate(release)
-    expect((await refreshed).subscriptions[0]?.currentPeriodEnd).toBe('2026-03-01T00:00:00.000Z')
   })
 })
 

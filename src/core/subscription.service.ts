@@ -107,11 +107,10 @@ export class SubscriptionService {
   }
 
   /**
-   * Reads the account from the source, in a read that starts after this call, and returns the
-   * snapshot the store holds afterwards. A refresh already in flight read the source before this
-   * call, so it is waited for and a new read follows. Refreshes made while the same read is in
-   * flight share one source call. When the host set a change hook and
-   * the refresh stored changes, the call returns after the hook has returned or failed; a failing
+   * Reads the account from the source and returns the snapshot the store holds afterwards.
+   * Concurrent refreshes of one account share one source call, and a refresh joins a read of the
+   * account already in flight, so the snapshot may have been read before this call (FR24, NFR03).
+   * When the host set a change hook and the refresh stored changes, the call returns after the hook has returned or failed; a failing
    * hook never fails the refresh.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be
@@ -120,7 +119,7 @@ export class SubscriptionService {
    */
   async refresh(account: AccountReference): Promise<AgedSnapshot> {
     this.#keyOf(account)
-    const { current, delivery } = await this.refresher.refreshAfter(account)
+    const { current, delivery } = await this.refresher.refresh(account)
     await delivery
     return this.#view(current, this.clock.now())
   }

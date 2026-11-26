@@ -219,8 +219,7 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   too: refresh before repeating it. The source port gains `resume`, `changeProduct`, `extend` and
   `refund` as optional methods and the types `ManagedRecord`, `ExtendRequest` and
   `OperationResult`.
-- A webhook's read, the host's explicit refresh and the reads of a management operation start after
-  the call, so a refresh already in flight, which read the state before the event, is waited for
+- A webhook's read and the reads of a management operation start after the call, so a refresh already in flight, which read the state before the event, is waited for
   and not joined: `SnapshotRefresher.refreshAfter` and `SingleFlight.runAfter`.
 - The RevenueCat adapter answers each operation per origin and store as RevenueCat documents it:
   stop renewal for Google Play (version 1) and RevenueCat web billing (version 2), extend for
