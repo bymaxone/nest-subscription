@@ -210,16 +210,13 @@ export class FakeSubscriptionSource implements SubscriptionSource {
   async readAccount(account: AccountReference): Promise<SubscriptionSnapshot> {
     this.#totalReads += 1
     this.#reads.set(account, this.readCount(account) + 1)
-    // The hold and the failure belong to this call from its start: a read that starts while this
-    // one is held takes the next of each, never this one's.
+    // The hold, the failure and the state belong to this call from its start: a read that starts
+    // while this one is held takes the next of each, and a state set while this one is held is not
+    // what this one returns, as a read of a real source returns what it saw when it began.
     const gate = this.#gates.shift()
     const fails = this.#failures.length > 0
     const failure = this.#failures.shift()
-    await gate
-    if (fails) {
-      throw failure
-    }
-    return (
+    const state =
       this.#states.get(account) ??
       createEmptySnapshot({
         accountId: account.accountId,
@@ -227,7 +224,11 @@ export class FakeSubscriptionSource implements SubscriptionSource {
         source: this.name,
         fetchedAt: this.#clock.now().toISOString()
       })
-    )
+    await gate
+    if (fails) {
+      throw failure
+    }
+    return state
   }
 
   verifyWebhook(request: WebhookRequest): Promise<WebhookVerification> {

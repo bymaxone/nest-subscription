@@ -215,7 +215,7 @@ export class WebhookProcessor {
    */
   async #refreshAll(references: readonly AccountReference[]): Promise<boolean> {
     const reads = Promise.allSettled(
-      references.map((reference) => this.refresher.refresh(reference))
+      references.map((reference) => this.refresher.refreshAfter(reference))
     )
     try {
       const result = await withDeadline(reads, this.options.webhookDeadlineMs, this.wait)

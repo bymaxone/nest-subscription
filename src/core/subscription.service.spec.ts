@@ -305,8 +305,9 @@ describe('SubscriptionService reads', () => {
     expect({ ...refreshed, ageMs: undefined }).toEqual({ ...stored, ageMs: undefined })
   })
 
-  it('collapses a hundred concurrent on-demand refreshes into one source call', async () => {
-    // Scenario: a hundred refreshes of one account while the first read is held.
+  it('collapses a hundred concurrent on-demand refreshes into two source calls', async () => {
+    // Scenario: a hundred refreshes of one account while the first read is held. The first read
+    // began before the other ninety-nine calls, so they wait for it and share one read of their own.
     const { source, service } = setup()
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true))
     const release = source.delayNextRead()
@@ -314,7 +315,7 @@ describe('SubscriptionService reads', () => {
     for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
     release()
     await Promise.all(callers)
-    expect(source.readCount(ACCOUNT)).toBe(1)
+    expect(source.readCount(ACCOUNT)).toBe(2)
   })
 
   it('surfaces a source failure on refresh as the source-unavailable code', async () => {

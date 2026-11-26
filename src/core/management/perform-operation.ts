@@ -141,7 +141,7 @@ async function readFresh(
   context: ManagementContext,
   account: AccountReference
 ): Promise<SubscriptionSnapshot> {
-  const { current, delivery } = await context.refresher.refresh(account)
+  const { current, delivery } = await context.refresher.refreshAfter(account)
   await delivery
   return current
 }

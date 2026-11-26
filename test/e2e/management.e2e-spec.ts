@@ -582,3 +582,63 @@ describe('management: a read-back that fails, and the order of the flow', () => 
     await app.close()
   })
 })
+
+describe('management: reads that start after the write', () => {
+  it('shows the state after the write when a refresh that began before it is still in flight', async () => {
+    // Scenario: a refresh reads the state from before the write and is released after it; the
+    // read-back does not join it.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', { operations: ['extend'], managementReference: null })
+    const effect = { ...SUBSCRIPTION, currentPeriodEnd: '2026-02-08T00:00:00.000Z' }
+    jest.spyOn(source, 'extend').mockImplementation(async () => {
+      const release = source.delayNextRead()
+      void service.refresh(OWNER).catch(() => undefined)
+      await new Promise((resolve) => setImmediate(resolve))
+      source.setAccount(OWNER, stateOf(OWNER, effect, '2026-01-03T00:00:00.000Z'))
+      setImmediate(release)
+      return { outcome: 'accepted' }
+    })
+    expect((await service.extend(OWNER, 'sub-1', { days: 7 })).outcome).toBe('extended')
+    await app.close()
+  })
+
+  it('reads on its own when the refresh in flight fails', async () => {
+    // Scenario: the older refresh rejects; the operation's read is not failed by it.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', { operations: ['extend'], managementReference: null })
+    source.setOperationResult('extend', 'play_store', { outcome: 'accepted' })
+    const release = source.delayNextRead()
+    source.failNextRead(new Error('older failed'))
+    const older = service.refresh(OWNER).catch((error: unknown) => error)
+    await new Promise((resolve) => setImmediate(resolve))
+    const operation = service.extend(OWNER, 'sub-1', { days: 7 })
+    release()
+    expect(await older).toBeInstanceOf(SubscriptionError)
+    expect((await operation).outcome).toBe('not_extended')
+    await app.close()
+  })
+
+  it('serves two operations on one account at once while a refresh is in flight', async () => {
+    // Scenario: both wait for the same older refresh and share the read that follows it.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', {
+      operations: ['stop_renewal', 'extend'],
+      managementReference: null
+    })
+    source.setOperationResult('stop_renewal', 'play_store', { outcome: 'accepted' })
+    source.setOperationResult('extend', 'play_store', { outcome: 'accepted' })
+    const release = source.delayNextRead()
+    void service.refresh(OWNER).catch(() => undefined)
+    await new Promise((resolve) => setImmediate(resolve))
+    const both = Promise.all([
+      service.stopRenewal(OWNER, 'sub-1'),
+      service.extend(OWNER, 'sub-1', { days: 7 })
+    ])
+    setImmediate(release)
+    expect((await both).map((result) => result.outcome)).toStrictEqual([
+      'not_stopped',
+      'not_extended'
+    ])
+    await app.close()
+  })
+})

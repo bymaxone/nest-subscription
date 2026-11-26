@@ -93,4 +93,83 @@ describe('SingleFlight', () => {
     await flights.run('k', start)
     expect(start).toHaveBeenCalledTimes(2)
   })
+
+  describe('runAfter', () => {
+    it('is a plain run when nothing is in flight', async () => {
+      // Scenario: no earlier run, so the new run starts at once and leaves no entry.
+      const flights = new SingleFlight<number>()
+      const start = jest.fn(() => Promise.resolve(5))
+      await expect(flights.runAfter('k', start)).resolves.toBe(5)
+      expect(start).toHaveBeenCalledTimes(1)
+      expect(flights.size).toBe(0)
+    })
+
+    it('waits for the run in flight and then starts a run of its own', async () => {
+      // Scenario: the older run is held; the new one does not start until it settles.
+      const flights = new SingleFlight<string>()
+      const older = deferred<string>()
+      const first = flights.run('k', () => older.promise)
+      const start = jest.fn(() => Promise.resolve('new'))
+      const after = flights.runAfter('k', start)
+      await Promise.resolve()
+      expect(start).not.toHaveBeenCalled()
+      older.resolve('old')
+      await expect(first).resolves.toBe('old')
+      await expect(after).resolves.toBe('new')
+      expect(start).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores how the older run ended, and leaves its rejection to its own callers', async () => {
+      // Scenario: the older run rejects; the caller that waited for it still gets a run of its own.
+      const flights = new SingleFlight<string>()
+      const older = deferred<string>()
+      const first = flights.run('k', () => older.promise)
+      const after = flights.runAfter('k', () => Promise.resolve('new'))
+      older.reject(new Error('older failed'))
+      await expect(first).rejects.toThrow('older failed')
+      await expect(after).resolves.toBe('new')
+    })
+
+    it('shares one new run between callers that wait for the same older run', async () => {
+      // Scenario: fifty callers arrive while one run is held; they start one run between them.
+      const flights = new SingleFlight<number>()
+      const older = deferred<number>()
+      void flights.run('k', () => older.promise)
+      const start = jest.fn(() => Promise.resolve(9))
+      const callers = Array.from({ length: 50 }, () => flights.runAfter('k', start))
+      older.resolve(1)
+      expect(await Promise.all(callers)).toEqual(Array.from({ length: 50 }, () => 9))
+      expect(start).toHaveBeenCalledTimes(1)
+    })
+
+    it('waits for a run that began after an earlier caller but before this one', async () => {
+      // Scenario: the run the first caller started is itself older than a later caller.
+      const flights = new SingleFlight<number>()
+      const older = deferred<number>()
+      const second = deferred<number>()
+      void flights.run('k', () => older.promise)
+      const firstAfter = flights.runAfter('k', () => second.promise)
+      older.resolve(1)
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      const start = jest.fn(() => Promise.resolve(3))
+      const laterAfter = flights.runAfter('k', start)
+      expect(start).not.toHaveBeenCalled()
+      second.resolve(2)
+      await expect(firstAfter).resolves.toBe(2)
+      await expect(laterAfter).resolves.toBe(3)
+    })
+
+    it('rejects for its own callers when the new run fails, and keeps no entry', async () => {
+      // Scenario: the new run rejects.
+      const flights = new SingleFlight<number>()
+      const older = deferred<number>()
+      void flights.run('k', () => older.promise)
+      const after = flights.runAfter('k', () => Promise.reject(new Error('new failed')))
+      older.resolve(1)
+      await expect(after).rejects.toThrow('new failed')
+      expect(flights.size).toBe(0)
+    })
+  })
 })

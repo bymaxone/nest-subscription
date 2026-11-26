@@ -355,6 +355,18 @@ describe('FakeSubscriptionSource management', () => {
     expect(ran).toStrictEqual(['a'])
   })
 
+  it('returns the state it saw when the read began, not the state set while it was held', async () => {
+    // Scenario: a held read and a state change after it started.
+    const source = new FakeSubscriptionSource({ clock })
+    source.setAccount(account, snapshotFor('a'))
+    const release = source.delayNextRead()
+    const held = source.readAccount(account)
+    source.setAccount(account, { ...snapshotFor('a'), sourceUpdatedAt: '2030-01-01T00:00:00.000Z' })
+    release()
+    expect((await held).sourceUpdatedAt).toBe(snapshotFor('a').sourceUpdatedAt)
+    expect((await source.readAccount(account)).sourceUpdatedAt).toBe('2030-01-01T00:00:00.000Z')
+  })
+
   it('is usable wherever the source port is expected', async () => {
     // Scenario: the class is passed as the port, with no private member needed.
     const port: SubscriptionSource = new FakeSubscriptionSource({ clock })

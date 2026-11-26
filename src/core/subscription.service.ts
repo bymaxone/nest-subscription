@@ -107,8 +107,10 @@ export class SubscriptionService {
   }
 
   /**
-   * Reads the account from the source now and returns the snapshot the store holds afterwards.
-   * Concurrent refreshes of one account share one source call. When the host set a change hook and
+   * Reads the account from the source, in a read that starts after this call, and returns the
+   * snapshot the store holds afterwards. A refresh already in flight read the source before this
+   * call, so it is waited for and a new read follows. Refreshes made while the same read is in
+   * flight share one source call. When the host set a change hook and
    * the refresh stored changes, the call returns after the hook has returned or failed; a failing
    * hook never fails the refresh.
    *
@@ -118,7 +120,7 @@ export class SubscriptionService {
    */
   async refresh(account: AccountReference): Promise<AgedSnapshot> {
     this.#keyOf(account)
-    const { current, delivery } = await this.refresher.refresh(account)
+    const { current, delivery } = await this.refresher.refreshAfter(account)
     await delivery
     return this.#view(current, this.clock.now())
   }

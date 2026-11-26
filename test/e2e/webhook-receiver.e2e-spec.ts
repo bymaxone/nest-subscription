@@ -162,7 +162,8 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
 
   it('answers a slow source as a temporary failure before the deadline, and processes the retry', async () => {
     // Scenario: the read is held past the deadline; the answer is 503 at the deadline by the
-    // injected clock, and the retry of the same event is processed.
+    // injected clock, and the retry of the same event is processed. The retry waits for the held
+    // read, which began before it, and reads once more.
     app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:10.000Z'))
     const mark = jest.spyOn(app.store, 'markEventProcessed')
     const release = app.source.delayNextRead()
@@ -176,7 +177,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
     await until(() => mark.mock.calls.length === 2)
     release()
     expect((await retry).status).toBe(200)
-    expect(app.source.readCount(ACCOUNT)).toBe(1)
+    expect(app.source.readCount(ACCOUNT)).toBe(2)
   })
 
   it('answers 503 for a source that cannot be read and 200 for the retry', async () => {
