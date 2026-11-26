@@ -2,7 +2,8 @@
  * @fileoverview Maps one RevenueCat one-time purchase into a `NonRenewingPurchaseRecord` (D31).
  * A purchase has no access flag and no expiry of its own, so the source's own statement stands in:
  * it gives access while its status is `owned` and an entitlement it grants is in the customer's
- * active-entitlements list that no sandbox subscription or purchase of the customer also grants,
+ * active-entitlements list that no sandbox subscription giving access and no owned sandbox
+ * purchase of the customer also grants,
  * and it ends when that entitlement ends, with no end when the list gives none. A purchase that
  * grants no entitlement, as a consumable does not, is not held.
  * @layer revenuecat
@@ -38,7 +39,8 @@ interface LiveEntitlement {
 
 /**
  * The entitlements of the purchase that the source lists as active now, with each one's end. One
- * that a sandbox grantor also grants is left out: the list cannot say which grantor keeps it active.
+ * that a sandbox grantor giving access also grants is left out: the list cannot say which grantor
+ * keeps it active.
  */
 function liveOf(
   entitlements: readonly ParsedEntitlement[],

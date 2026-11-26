@@ -153,8 +153,8 @@ Adapter (the design the code follows, from the rows above):
 - A nested list with a `next_page` is completed from the per-subscription or per-purchase
   entitlements endpoint.
 - A purchase gives access when its status is `owned` and the entitlement it grants is in the
-  active-entitlements list, unless sandbox access is not allowed and a sandbox subscription or
-  purchase of the customer also grants that entitlement: the list spans both environments and names
+  active-entitlements list, unless sandbox access is not allowed and a sandbox subscription giving
+  access or an owned sandbox purchase of the customer also grants that entitlement: the list spans both environments and names
   no grantor, so it is no evidence for the production purchase. Its access-until is the
   latest `expires_at` of those entitlements (`null` when one has none). This is the adapter's equivalent of the access flag a purchase lacks; the
   documentation does not state it.

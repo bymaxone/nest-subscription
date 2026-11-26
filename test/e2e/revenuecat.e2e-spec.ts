@@ -189,6 +189,30 @@ describe('the RevenueCat adapter with non-renewing purchases, through the servic
     expect(await running.service.hasEntitlement(ACCOUNT, 'premium')).toBe(true)
   })
 
+  it('keeps access for a production purchase beside a refunded sandbox purchase of the same entitlement', async () => {
+    // Scenario: a refunded purchase grants nothing, so it is not what keeps the entitlement in the
+    // active list and the production purchase stays active.
+    running = await boot()
+    const list = (items: unknown[]): unknown => ({ object: 'list', items, next_page: null })
+    const entitlements = list([{ id: 'entl_1', lookup_key: 'premium' }])
+    const bought = (id: string, environment: string, status: string): unknown => ({
+      id,
+      status,
+      environment,
+      store: 'app_store',
+      entitlements
+    })
+    running.stand.serve('customer_a', {
+      purchases: list([
+        bought('p_prod', 'production', 'owned'),
+        bought('p_sbx', 'sandbox', 'refunded')
+      ]),
+      activeEntitlements: list([{ entitlement_id: 'entl_1', expires_at: null }])
+    })
+    await running.service.refresh(ACCOUNT)
+    expect(await running.service.hasEntitlement(ACCOUNT, 'premium')).toBe(true)
+  })
+
   it('keeps the stored entitlement when a later request of a refresh answers 404', async () => {
     // Scenario: a subscription's entitlement list disappears between two requests of one read: the
     // refresh fails, the stored snapshot still grants access and no change is delivered.

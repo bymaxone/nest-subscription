@@ -16,6 +16,7 @@ import {
 } from '@bymax-one/nest-subscription/shared'
 
 import { encodeSegment } from '../revenuecat-http'
+import type { Grantor } from './contested'
 import { listAll } from './list-all'
 import { mapSubscription } from './map-subscription'
 import {
@@ -54,12 +55,12 @@ async function readSubscriptions(
   })
 }
 
-/** The records of the customer, the names each grants and what its sandbox subscriptions grant. */
+/** The records of the customer, the names each grants and each subscription as a grantor. */
 interface ReadGranted {
   /** The records and the names each grants, before the sandbox filter. */
   readonly granted: GrantedRecords
-  /** The entitlements the sandbox subscriptions grant, whatever their access flag. */
-  readonly sandbox: readonly ParsedEntitlement[]
+  /** Every subscription with its environment, its access flag and its entitlements. */
+  readonly grantors: readonly Grantor[]
 }
 
 /** The records of the customer and the entitlements each grants, before the sandbox filter. */
@@ -70,7 +71,7 @@ async function readGranted(
 ): Promise<ReadGranted> {
   const records: SubscriptionRecord[] = []
   const grants = new Map<string, readonly string[]>()
-  const sandbox: ParsedEntitlement[] = []
+  const grantors: Grantor[] = []
   for (const subscription of parsed) {
     const record = mapSubscription(subscription, fetchedAt)
     const entitlements = await entitlementsOf(context, subscription)
@@ -79,9 +80,13 @@ async function readGranted(
       subscription.id,
       entitlements.map((entitlement) => entitlement.name)
     )
-    if (record.environment === 'sandbox') sandbox.push(...entitlements)
+    grantors.push({
+      environment: record.environment,
+      givesAccess: record.givesAccess,
+      entitlements
+    })
   }
-  return { granted: { records, grants }, sandbox }
+  return { granted: { records, grants }, grantors }
 }
 
 /**
@@ -99,7 +104,7 @@ async function buildSnapshot(
     const read = await readGranted(context, parsed, fetchedAt)
     const granted = applySandboxFilter(read.granted, context.allowSandbox)
     const purchases = filterSandboxPurchases(
-      await readPurchases(context, account.accountId, fetchedAt, read.sandbox),
+      await readPurchases(context, account.accountId, fetchedAt, read.grantors),
       context.allowSandbox
     )
     return {

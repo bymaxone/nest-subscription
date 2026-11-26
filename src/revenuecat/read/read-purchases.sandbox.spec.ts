@@ -1,8 +1,9 @@
 /**
  * @fileoverview Pins how sandbox activity of a customer bears on a production purchase: the
  * active-entitlements list spans both environments and names no grantor, so while sandbox access
- * is not allowed an entitlement that a sandbox subscription or a sandbox purchase also grants is
- * no evidence for a production purchase.
+ * is not allowed an entitlement that a sandbox subscription giving access or an owned sandbox
+ * purchase also grants is no evidence for a production purchase, and one that a sandbox grantor
+ * giving no access lists does not matter.
  * @layer revenuecat
  */
 import { Secret } from '@bymax-one/nest-subscription/internal'
@@ -49,50 +50,65 @@ const production = (entitlements: unknown[]): unknown => ({
   entitlements: list(entitlements)
 })
 
-/** A purchase in the sandbox, with the status given, that grants the entitlements. */
-const sandboxPurchase = (entitlements: unknown[], status = 'owned'): unknown => ({
+/** A purchase with the status and environment given, that grants the entitlements. */
+const sandboxPurchase = (
+  entitlements: unknown[] | undefined,
+  status = 'owned',
+  environment = 'sandbox'
+): unknown => ({
   id: 'p_sbx',
   status,
-  environment: 'sandbox',
+  environment,
   store: 'test_store',
-  entitlements: list(entitlements)
+  ...(entitlements === undefined ? {} : { entitlements: list(entitlements) })
 })
 
-/** A subscription in the sandbox, with the flag given, that grants the entitlements. */
-const sandboxSubscription = (entitlements: unknown[], givesAccess = true): unknown => ({
-  id: 's_sbx',
+/** A subscription with the flag and environment given, that grants the entitlements. */
+const sandboxSubscription = (
+  entitlements: unknown[] | undefined,
+  givesAccess = true,
+  environment = 'sandbox',
+  id = 's_sbx'
+): unknown => ({
+  id,
   status: 'active',
   gives_access: givesAccess,
-  environment: 'sandbox',
+  environment,
   store: 'test_store',
-  entitlements: list(entitlements)
+  ...(entitlements === undefined ? {} : { entitlements: list(entitlements) })
 })
 
 /** What the customer's lists hold; the active list spans both environments. */
 interface Lists {
   readonly subscriptions?: unknown[]
+  readonly subscriptionsSecondPage?: unknown[]
+  readonly subscriptionEntitlements?: unknown[]
+  readonly purchaseEntitlements?: unknown[]
   readonly purchases?: unknown[]
   readonly purchasesSecondPage?: unknown[]
   readonly active: unknown[]
 }
 
-/** A `fetch` that serves the lists; the purchases list has a second page when one is given. */
+/** A `fetch` that serves the lists; a list has a second page when one is given for it. */
 function served(lists: Lists): RevenueCatFetch {
   return (url) => {
     const parsed = new URL(url)
     const last = parsed.pathname.split('/').at(-1)
     const second = parsed.searchParams.get('starting_after') !== null
-    const body =
-      last === 'subscriptions'
-        ? list(lists.subscriptions ?? [])
-        : last === 'purchases'
-          ? second
-            ? list(lists.purchasesSecondPage ?? [])
-            : list(lists.purchases ?? [], lists.purchasesSecondPage === undefined ? null : 'next')
-          : last === 'active_entitlements'
-            ? list(lists.active)
-            : list([])
-    return Promise.resolve(new Response(JSON.stringify(body)))
+    const forSubscription = parsed.pathname.includes('/subscriptions/')
+    const page = (first: unknown[] | undefined, next: unknown[] | undefined): unknown =>
+      second ? list(next ?? []) : list(first ?? [], next === undefined ? null : 'next')
+    const bodies: Record<string, unknown> = {
+      subscriptions: page(lists.subscriptions, lists.subscriptionsSecondPage),
+      purchases: page(lists.purchases, lists.purchasesSecondPage),
+      active_entitlements: list(lists.active),
+      entitlements: list(
+        (forSubscription ? lists.subscriptionEntitlements : lists.purchaseEntitlements) ?? []
+      )
+    }
+    return Promise.resolve(
+      new Response(JSON.stringify(Reflect.get(bodies, last ?? '') ?? list([])))
+    )
   }
 }
 
@@ -106,41 +122,116 @@ const productionOf = (snapshot: SubscriptionSnapshot): unknown =>
 
 const activeNoEnd = { entitlement_id: 'entl_1', expires_at: null }
 
+const prod = production([premium])
+
 describe('a production purchase beside sandbox activity of the same entitlement', () => {
   it.each([
-    ['a sandbox purchase', { purchases: [production([premium]), sandboxPurchase([premium])] }],
     [
-      'a refunded sandbox purchase',
-      { purchases: [production([premium]), sandboxPurchase([premium], 'refunded')] }
+      'a sandbox subscription that gives access',
+      { subscriptions: [sandboxSubscription([premium])], purchases: [prod] }
+    ],
+    ['an owned sandbox purchase', { purchases: [prod, sandboxPurchase([premium])] }],
+    [
+      'a subscription of an unstated environment that gives access, read as sandbox',
+      { subscriptions: [sandboxSubscription([premium], true, 'staging')], purchases: [prod] }
     ],
     [
-      'a sandbox subscription',
-      { subscriptions: [sandboxSubscription([premium])], purchases: [production([premium])] }
+      'an owned purchase of an unstated environment, read as sandbox',
+      { purchases: [prod, sandboxPurchase([premium], 'owned', 'staging')] }
     ],
     [
-      'a sandbox subscription that gives no access',
-      { subscriptions: [sandboxSubscription([premium], false)], purchases: [production([premium])] }
+      'a sandbox subscription that gives access, whose entitlement has no identifier',
+      { subscriptions: [sandboxSubscription([nameOnly])], purchases: [prod] }
     ],
     [
-      'a sandbox purchase whose entitlement has no identifier',
-      { purchases: [production([premium]), sandboxPurchase([nameOnly])] }
+      'an owned sandbox purchase whose entitlement has no identifier',
+      { purchases: [prod, sandboxPurchase([nameOnly])] }
     ],
     [
-      'a sandbox subscription whose entitlement has no identifier',
-      { subscriptions: [sandboxSubscription([nameOnly])], purchases: [production([premium])] }
+      'an owned sandbox purchase on a later page of the purchases list',
+      { purchases: [prod], purchasesSecondPage: [sandboxPurchase([premium])] }
     ],
     [
-      'a sandbox purchase on a later page of the purchases list',
-      { purchases: [production([premium])], purchasesSecondPage: [sandboxPurchase([premium])] }
+      'a sandbox subscription that gives access, on a later page of the subscriptions list',
+      {
+        subscriptions: [sandboxSubscription([], true, 'production', 's_prod')],
+        subscriptionsSecondPage: [sandboxSubscription([premium])],
+        purchases: [prod]
+      }
+    ],
+    [
+      'a sandbox subscription that gives access, whose entitlements come from its own endpoint',
+      {
+        subscriptions: [sandboxSubscription(undefined)],
+        subscriptionEntitlements: [premium],
+        purchases: [prod]
+      }
+    ],
+    [
+      'an owned sandbox purchase whose entitlements come from its own endpoint',
+      { purchases: [prod, sandboxPurchase(undefined)], purchaseEntitlements: [premium] }
     ]
   ])(
     'gives the production purchase no access and no end, with %s and sandbox access off',
     async (_label, lists) => {
       // Scenario: an owned production purchase whose entitlement the active list shows as active
-      // with no end; the sandbox grant of the same entitlement is no evidence for it.
+      // with no end; a sandbox grantor that gives access also grants it.
       const snapshot = await read({ ...lists, active: [activeNoEnd] })
       expect(productionOf(snapshot)).toMatchObject({ givesAccess: false, accessUntil: null })
       expect(snapshot.entitlements.some((held) => held.active)).toBe(false)
+    }
+  )
+
+  it.each([
+    [
+      'a sandbox subscription whose flag is false',
+      { subscriptions: [sandboxSubscription([premium], false)], purchases: [prod] }
+    ],
+    ['a refunded sandbox purchase', { purchases: [prod, sandboxPurchase([premium], 'refunded')] }],
+    [
+      'a subscription of an unstated environment whose flag is false',
+      { subscriptions: [sandboxSubscription([premium], false, 'staging')], purchases: [prod] }
+    ],
+    [
+      'a refunded purchase of an unstated environment',
+      { purchases: [prod, sandboxPurchase([premium], 'refunded', 'staging')] }
+    ],
+    [
+      'a sandbox subscription whose flag is false and whose entitlement has no identifier',
+      { subscriptions: [sandboxSubscription([nameOnly], false)], purchases: [prod] }
+    ],
+    [
+      'a refunded sandbox purchase whose entitlement has no identifier',
+      { purchases: [prod, sandboxPurchase([nameOnly], 'refunded')] }
+    ],
+    [
+      'a sandbox subscription whose flag is false, on a later page of the subscriptions list',
+      {
+        subscriptions: [sandboxSubscription([], true, 'production', 's_prod')],
+        subscriptionsSecondPage: [sandboxSubscription([premium], false)],
+        purchases: [prod]
+      }
+    ],
+    [
+      'a production subscription that gives access, whose entitlements come from its own endpoint',
+      {
+        subscriptions: [sandboxSubscription(undefined, true, 'production')],
+        subscriptionEntitlements: [premium],
+        purchases: [prod]
+      }
+    ],
+    [
+      'an owned sandbox purchase of a different entitlement',
+      { purchases: [prod, sandboxPurchase([extra])] }
+    ]
+  ])(
+    'keeps the production purchase active with no end, with %s and sandbox access off',
+    async (_label, lists) => {
+      // Scenario: the grantor beside it gives no access, is in production or grants another
+      // entitlement, so it is not what keeps the entitlement in the active list.
+      const snapshot = await read({ ...lists, active: [activeNoEnd] })
+      expect(productionOf(snapshot)).toMatchObject({ givesAccess: true, accessUntil: null })
+      expect(snapshot.entitlements).toMatchObject([{ name: 'premium', active: true }])
     }
   )
 
@@ -196,14 +287,5 @@ describe('a production purchase beside sandbox activity of the same entitlement'
     // Scenario: the control: only production grants, so nothing is contested.
     const snapshot = await read({ purchases: [production([premium])], active: [activeNoEnd] })
     expect(productionOf(snapshot)).toMatchObject({ givesAccess: true, accessUntil: null })
-  })
-
-  it('leaves a production purchase as it was when the sandbox grants a different entitlement', async () => {
-    // Scenario: a sandbox purchase of another entitlement contests nothing of this one.
-    const snapshot = await read({
-      purchases: [production([premium]), sandboxPurchase([extra])],
-      active: [activeNoEnd]
-    })
-    expect(productionOf(snapshot)).toMatchObject({ givesAccess: true })
   })
 })

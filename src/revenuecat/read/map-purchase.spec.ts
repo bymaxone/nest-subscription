@@ -8,6 +8,12 @@ import { mapPurchase } from './map-purchase'
 import type { ParsedEntitlement } from './parse-customer'
 import type { ParsedPurchase } from './parse-purchases'
 
+/** What a sandbox grantor that gives access contests, for the entitlements it grants. */
+const sandboxGrants = (
+  entitlements: readonly ParsedEntitlement[]
+): ReturnType<typeof contestedBy> =>
+  contestedBy([{ environment: 'sandbox', givesAccess: true, entitlements }])
+
 const NOW = '2026-11-25T12:00:00.000Z'
 const NOW_MS = Date.parse(NOW)
 const DAY = 86_400_000
@@ -240,7 +246,7 @@ describe('mapPurchase', () => {
         parsed(),
         [premium],
         new Map([['e1', null]]),
-        contestedBy([{ id: 'e1', name: 'premium' }]),
+        sandboxGrants([{ id: 'e1', name: 'premium' }]),
         NOW
       )
       expect(record).toMatchObject({
@@ -256,7 +262,7 @@ describe('mapPurchase', () => {
         parsed(),
         [premium],
         new Map([['e1', null]]),
-        contestedBy([{ id: null, name: 'premium' }]),
+        sandboxGrants([{ id: null, name: 'premium' }]),
         NOW
       )
       expect(record?.givesAccess).toBe(false)
@@ -268,7 +274,7 @@ describe('mapPurchase', () => {
         parsed(),
         [premium],
         new Map([['e1', null]]),
-        contestedBy([{ id: 'other', name: 'premium' }]),
+        sandboxGrants([{ id: 'other', name: 'premium' }]),
         NOW
       )
       expect(record?.givesAccess).toBe(true)
@@ -280,7 +286,7 @@ describe('mapPurchase', () => {
         parsed(),
         both,
         active,
-        contestedBy([{ id: 'e1', name: 'premium' }]),
+        sandboxGrants([{ id: 'e1', name: 'premium' }]),
         NOW
       )
       expect(record).toMatchObject({
@@ -296,7 +302,7 @@ describe('mapPurchase', () => {
         parsed(),
         both,
         active,
-        contestedBy([
+        sandboxGrants([
           { id: 'e1', name: 'premium' },
           { id: 'e2', name: 'extra' }
         ]),
