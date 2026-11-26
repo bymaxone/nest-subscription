@@ -5,13 +5,17 @@
  * runs is what the library logged, sent and threw.
  * @layer e2e
  */
+// The sweep is loaded first: it replaces the error constructor, and a class that extends `Error`
+// binds the constructor it finds when it is defined, so the library must be loaded after it. Under
+// the end-to-end configuration it is already loaded by `setupFilesAfterEnv`; under the combined
+// configuration this import is what loads it.
+import { recorded } from './setup/sentinel-sweep'
 import { Logger } from '@nestjs/common'
 import request from 'supertest'
 import { validateOptions } from '@bymax-one/nest-subscription'
 
 import { buildGuardedApp } from './fixtures/guarded-app'
 import { declaredSentinels, emptyRecording, findLeaks } from './setup/sweep-core'
-import { recorded } from './setup/sentinel-sweep'
 
 const LEAK = 'sentinel-planted-in-this-spec-9f2c'
 

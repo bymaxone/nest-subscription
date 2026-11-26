@@ -42,13 +42,13 @@ function modelPage(statuses) {
 
 /** A `fetch` that answers each cited page with the text given for its address, or a status. */
 function pages(overrides = {}) {
-  const answers = {
-    [EVENT_URL]: eventPage(RECORDED.events, RECORDED.stores),
-    [MODEL_URL]: modelPage(RECORDED.statuses),
-    ...overrides
-  }
+  const answers = new Map([
+    [EVENT_URL, eventPage(RECORDED.events, RECORDED.stores)],
+    [MODEL_URL, modelPage(RECORDED.statuses)],
+    ...Object.entries(overrides)
+  ])
   return (url) => {
-    const answer = answers[url] ?? 'a page the comparison does not read'
+    const answer = answers.get(url) ?? 'a page the comparison does not read'
     if (answer instanceof Error) return Promise.reject(answer)
     if (typeof answer === 'number') return Promise.resolve(new Response('', { status: answer }))
     return Promise.resolve(new Response(answer))
