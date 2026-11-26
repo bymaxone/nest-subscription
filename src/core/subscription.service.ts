@@ -15,6 +15,7 @@ import {
   encodeAccountKey,
   type AccountReference,
   type Clock,
+  type ExtendRequest,
   type SubscriptionSource,
   type SubscriptionStore
 } from '@bymax-one/nest-subscription/internal'
@@ -27,8 +28,19 @@ import {
 import { SnapshotCache } from './cache/snapshot-cache'
 import { entitlementHeld } from './entitlement-held'
 import { logEvent } from './logging/subscription-logger'
-import type { StopRenewalOutcome, SubscriptionCapabilities } from './management/management.types'
+import { changeProduct } from './management/change-product'
+import { extend } from './management/extend'
+import type {
+  ChangeProductOutcome,
+  ExtendOutcome,
+  RefundOutcome,
+  ResumeOutcome,
+  StopRenewalOutcome,
+  SubscriptionCapabilities
+} from './management/management.types'
 import { describeCapabilities, type ManagementContext } from './management/perform-operation'
+import { refund } from './management/refund'
+import { resume } from './management/resume'
 import { stopRenewal } from './management/stop-renewal'
 import { ObserverBridge } from './observer/observer-bridge'
 import type { ResolvedSubscriptionOptions } from './options/subscription-options.types'
@@ -169,6 +181,68 @@ export class SubscriptionService {
   async stopRenewal(account: AccountReference, recordRef: string): Promise<StopRenewalOutcome> {
     this.#keyOf(account)
     return stopRenewal(this.#management(), account, recordRef)
+  }
+
+  /**
+   * Asks the source to resume a renewal of a subscription of the account, then refreshes. The
+   * result is the snapshot read back: `resumed` when it shows a subscription that will renew,
+   * `not_resumed` when the source accepted and it does not, `person_must_act` with the management
+   * reference where a server cannot do it.
+   *
+   * @throws {SubscriptionError} as {@link SubscriptionService.stopRenewal} does.
+   */
+  async resume(account: AccountReference, recordRef: string): Promise<ResumeOutcome> {
+    this.#keyOf(account)
+    return resume(this.#management(), account, recordRef)
+  }
+
+  /**
+   * Asks the source to move a subscription of the account to another product, then refreshes. The
+   * result is the snapshot read back: `product_changed` when it shows the subscription on the
+   * product asked for, `product_not_changed` when it does not.
+   *
+   * @param productReference The product to change to, as the source names it.
+   * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank product, before
+   * anything is read or asked; otherwise as {@link SubscriptionService.stopRenewal} does.
+   */
+  async changeProduct(
+    account: AccountReference,
+    recordRef: string,
+    productReference: string
+  ): Promise<ChangeProductOutcome> {
+    this.#keyOf(account)
+    return changeProduct(this.#management(), account, recordRef, productReference)
+  }
+
+  /**
+   * Asks the source to extend the current period of a subscription of the account, then
+   * refreshes. The result is the snapshot read back: `extended` when the current period ends
+   * later than it did, `not_extended` when it does not.
+   *
+   * @param extension The whole days to add and, where the origin asks for one, the reason.
+   * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for an extension that is not
+   * whole days of at least one or has an unknown reason, and for one the origin refuses before
+   * any call; otherwise as {@link SubscriptionService.stopRenewal} does.
+   */
+  async extend(
+    account: AccountReference,
+    recordRef: string,
+    extension: ExtendRequest
+  ): Promise<ExtendOutcome> {
+    this.#keyOf(account)
+    return extend(this.#management(), account, recordRef, extension)
+  }
+
+  /**
+   * Asks the source to refund a subscription or a non-renewing purchase of the account, then
+   * refreshes. The result is the snapshot read back: `refunded` when it shows a refund instant or
+   * access that is gone, `not_refunded` when it does not.
+   *
+   * @throws {SubscriptionError} as {@link SubscriptionService.stopRenewal} does.
+   */
+  async refund(account: AccountReference, recordRef: string): Promise<RefundOutcome> {
+    this.#keyOf(account)
+    return refund(this.#management(), account, recordRef)
   }
 
   /** What the management operations need from this service. */

@@ -13,6 +13,7 @@ import {
   SubscriptionModule,
   SubscriptionService,
   type AccountReference,
+  type ManagementOperation,
   type SubscriptionChangeNotification
 } from '@bymax-one/nest-subscription'
 import {
@@ -280,6 +281,142 @@ describe('management: refusals and failures', () => {
     await expect(service.stopRenewal(OWNER, 'sub-1')).rejects.toMatchObject({
       code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
     })
+    await app.close()
+  })
+})
+
+/** One operation of FR36 as a row: how it is called, and the state the source shows afterwards. */
+interface Operation {
+  readonly name: ManagementOperation
+  readonly done: string
+  readonly notDone: string
+  readonly call: (
+    service: SubscriptionService,
+    account: AccountReference,
+    reference: string
+  ) => Promise<{ readonly outcome: string }>
+  readonly effect: SubscriptionRecord
+}
+
+const OPERATIONS: readonly Operation[] = [
+  {
+    name: 'stop_renewal',
+    done: 'stopped',
+    notDone: 'not_stopped',
+    call: (service, account, reference) => service.stopRenewal(account, reference),
+    effect: { ...SUBSCRIPTION, willRenew: 'no' }
+  },
+  {
+    name: 'resume',
+    done: 'resumed',
+    notDone: 'not_resumed',
+    call: (service, account, reference) => service.resume(account, reference),
+    effect: { ...SUBSCRIPTION, willRenew: 'yes' }
+  },
+  {
+    name: 'change_product',
+    done: 'product_changed',
+    notDone: 'product_not_changed',
+    call: (service, account, reference) => service.changeProduct(account, reference, 'pro_annual'),
+    effect: { ...SUBSCRIPTION, productReference: 'pro_annual' }
+  },
+  {
+    name: 'extend',
+    done: 'extended',
+    notDone: 'not_extended',
+    call: (service, account, reference) => service.extend(account, reference, { days: 7 }),
+    effect: { ...SUBSCRIPTION, currentPeriodEnd: '2026-02-08T00:00:00.000Z' }
+  },
+  {
+    name: 'refund',
+    done: 'refunded',
+    notDone: 'not_refunded',
+    call: (service, account, reference) => service.refund(account, reference),
+    effect: { ...SUBSCRIPTION, givesAccess: false, refundedAt: T1 }
+  }
+]
+
+describe.each(OPERATIONS)('management: $name through the module', (operation) => {
+  it('returns the snapshot read back, and not done when the read-back shows nothing', async () => {
+    // Scenario: one call, one refresh; the result follows the source's next read in both cases.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', {
+      operations: [operation.name],
+      managementReference: null
+    })
+    source.setOperationResult(operation.name, 'play_store', { outcome: 'accepted' })
+    source.setAccount(OWNER, stateOf(OWNER, SUBSCRIPTION, T1))
+    const unchanged = await operation.call(service, OWNER, 'sub-1')
+    source.setAccount(OWNER, stateOf(OWNER, operation.effect, '2026-01-03T00:00:00.000Z'))
+    const effective = await operation.call(service, OWNER, 'sub-1')
+    expect([unchanged.outcome, effective.outcome]).toStrictEqual(
+      operation.name === 'resume'
+        ? [operation.done, operation.done]
+        : [operation.notDone, operation.done]
+    )
+    expect(source.operationCalls(operation.name)).toBe(2)
+    await app.close()
+  })
+
+  it('asks the person to act, with the reference, where the origin cannot do it', async () => {
+    // Scenario: nothing is possible for the origin; nothing is asked of the source.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', {
+      operations: [],
+      managementReference: 'https://manage.example/sub-1'
+    })
+    expect(await operation.call(service, OWNER, 'sub-1')).toStrictEqual({
+      outcome: 'person_must_act',
+      managementReference: 'https://manage.example/sub-1'
+    })
+    expect(source.totalOperationCalls).toBe(0)
+    await app.close()
+  })
+
+  it.each([
+    ['another account', { accountId: 'acc-2', tenantId: 'tenant-a' }],
+    ['another tenant', { accountId: 'acc-1', tenantId: 'tenant-b' }]
+  ])(
+    'refuses a subscription and a purchase of %s and reaches no source',
+    async (_label, caller) => {
+      // Scenario: SEC10 for this operation.
+      const { app, source, service } = await boot()
+      source.setCapabilities('play_store', {
+        operations: [operation.name],
+        managementReference: null
+      })
+      for (const reference of ['sub-1', 'pur-1']) {
+        await expect(operation.call(service, caller, reference)).rejects.toMatchObject({
+          code: SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN
+        })
+      }
+      expect(source.totalOperationCalls).toBe(0)
+      await app.close()
+    }
+  )
+})
+
+describe('management: purchases and input', () => {
+  it('refunds a purchase, and refuses a bad extension or product before any call', async () => {
+    // Scenario: the purchase is refunded through the same flow; bad input never reaches a source.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', {
+      operations: ['refund', 'extend', 'change_product'],
+      managementReference: null
+    })
+    source.setOperationResult('refund', 'play_store', { outcome: 'accepted' })
+    source.setAccount(OWNER, {
+      ...stateOf(OWNER, SUBSCRIPTION, T1),
+      nonRenewingPurchases: [{ ...PURCHASE, refundedAt: T1, givesAccess: false }]
+    })
+    expect((await service.refund(OWNER, 'pur-1')).outcome).toBe('refunded')
+    await expect(service.extend(OWNER, 'sub-1', { days: 0 })).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
+    })
+    await expect(service.changeProduct(OWNER, 'sub-1', ' ')).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.INVALID_INPUT
+    })
+    expect(source.totalOperationCalls).toBe(1)
     await app.close()
   })
 })

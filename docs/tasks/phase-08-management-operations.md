@@ -1,6 +1,6 @@
 # Phase 8 — Management operations
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 3 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P8 — management-operations
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,7 +42,7 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 | 8.1 | Model capabilities and the service API                            | ✅ Done | P0       | M    | —                       |
 | 8.2 | Implement stop renewal with an honest result                      | ✅ Done | P0       | M    | 8.1                     |
 | 8.3 | Implement the RevenueCat operations                               | ✅ Done | P0       | M    | 8.2                     |
-| 8.5 | Generalize capabilities and the operation flow to every operation | 📋 ToDo | P0       | M    | 8.3                     |
+| 8.5 | Generalize capabilities and the operation flow to every operation | ✅ Done | P0       | M    | 8.3                     |
 | 8.6 | Implement resume                                                  | 📋 ToDo | P0       | M    | 8.5                     |
 | 8.7 | Implement change product                                          | 📋 ToDo | P0       | M    | 8.5                     |
 | 8.8 | Implement extend                                                  | 📋 ToDo | P0       | M    | 8.5                     |
@@ -389,7 +389,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.5 — Generalize capabilities and the operation flow to every operation
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.3
@@ -400,11 +400,11 @@ Extend the capability answer and the ownership-checked, read-back flow of stop r
 
 #### Acceptance criteria
 
-- [ ] `getCapabilities` answers, for one subscription, whether each of stop renewal, resume, change product, extend and refund is possible from a server, and the management reference when the source provides one; the answer comes from the adapter and depends on the origin.
-- [ ] One shared flow performs any operation: ownership check inside the caller's own snapshot, one source call, a refresh through `SnapshotRefresher`, and a closed result union with no "assumed done" value; stop renewal runs on it and its existing tests pass unchanged.
-- [ ] The source port declares each operation with the arguments it needs, and an adapter answers "not supported" for one it does not implement; the fake source can be scripted per operation and per origin.
-- [ ] The ownership lookup and the capability query cover every record an operation can act on, subscriptions and non-renewing purchases, found only inside the caller's own snapshot and never by an identifier taken on trust; the capability answer for a purchase is per operation and per origin, as RevenueCat documents it.
-- [ ] An operation on a record of another account or tenant is refused and reaches no source, for every operation and both kinds of record, in a table-driven test.
+- [x] `getCapabilities` answers, for one subscription, whether each of stop renewal, resume, change product, extend and refund is possible from a server, and the management reference when the source provides one; the answer comes from the adapter and depends on the origin.
+- [x] One shared flow performs any operation: ownership check inside the caller's own snapshot, one source call, a refresh through `SnapshotRefresher`, and a closed result union with no "assumed done" value; stop renewal runs on it and its existing tests pass unchanged.
+- [x] The source port declares each operation with the arguments it needs, and an adapter answers "not supported" for one it does not implement; the fake source can be scripted per operation and per origin.
+- [x] The ownership lookup and the capability query cover every record an operation can act on, subscriptions and non-renewing purchases, found only inside the caller's own snapshot and never by an identifier taken on trust; the capability answer for a purchase is per operation and per origin, as RevenueCat documents it.
+- [x] An operation on a record of another account or tenant is refused and reaches no source, for every operation and both kinds of record, in a table-driven test.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
@@ -834,3 +834,4 @@ Completion Protocol (after the work is reported done):
 - 8.1 ✅ 2026-11-26 — capability query, management reference and the single ownership check (findOwnRecord)
 - 8.2 ✅ 2026-11-26 — stop renewal on the shared flow with the snapshot read back as the result
 - 8.3 ✅ 2026-11-26 — RevenueCat capabilities and stop renewal: Google Play through version 1, web billing through version 2, the rest not possible
+- 8.5 ✅ 2026-11-26 — one shared flow and per-operation capabilities for resume, change product, extend and refund; foreign records refused for every operation and both kinds

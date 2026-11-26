@@ -44,7 +44,7 @@ This document says in which order the specification is built and when each part 
 | P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done        | 5/5      | M    | 2026-11-25   |
 | P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | ✅ Done        | 5/5      | L    | 2026-11-25   |
 | P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | ✅ Done        | 8/8      | L    | 2026-11-25   |
-| P8  | management-operations — capabilities, the five operations and the management reference                    | 🔄 In Progress | 3/9      | L    | 2026-11-26   |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | 🔄 In Progress | 4/9      | L    | 2026-11-26   |
 | P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo        | 0/6      | M    | —            |
 | P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo        | 0/5      | L    | —            |
 
