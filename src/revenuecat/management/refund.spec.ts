@@ -172,3 +172,22 @@ describe('refundAt', () => {
     }
   )
 })
+
+describe('refundAt without a version 1 key', () => {
+  it('makes no request for a Google Play purchase and returns no management reference', async () => {
+    // Scenario: the one-time purchase refund exists only in version 1.
+    const { context, calls } = stubbed(source('play_store'), false)
+    expect(await refundAt(context, ACCOUNT, pur('play_store'))).toStrictEqual({
+      outcome: 'customer_action_required',
+      managementReference: null
+    })
+    expect(calls).toHaveLength(0)
+  })
+
+  it('still refunds a Google Play subscription through version 2', async () => {
+    // Scenario: the subscription refund goes by its transaction, in version 2.
+    const { context, calls } = stubbed(source('play_store'), false)
+    await refundAt(context, ACCOUNT, sub('play_store'))
+    expect(written(calls)).toHaveLength(1)
+  })
+})

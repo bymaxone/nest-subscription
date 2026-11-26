@@ -7,7 +7,8 @@
 import { SubscriptionError, type ManagedRecord } from '@bymax-one/nest-subscription/internal'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
-import { capabilitiesOf, operationsOf } from './capabilities'
+import { capabilitiesOf, operationsOf, permitted } from './capabilities'
+import { versionOne } from './management-context'
 import { ok, purchaseOf, stubbed, subscriptionOf } from './management.builders.spec'
 
 /** A subscription target of an origin. */
@@ -28,7 +29,7 @@ describe('operationsOf: Appendix A.4, stop renewal, extend and refund', () => {
     ['another origin', 'other', null, []]
   ] as const)('%s allows %j', (_label, origin, store, expected) => {
     // Scenario: each row of the stop renewal, extend and refund columns, per origin and store.
-    expect(operationsOf(sub({ origin }), store)).toStrictEqual(expected)
+    expect(operationsOf(sub({ origin }), store, true)).toStrictEqual(expected)
   })
 
   it.each([
@@ -40,9 +41,9 @@ describe('operationsOf: Appendix A.4, stop renewal, extend and refund', () => {
     ['another origin', 'other', null, []]
   ] as const)('allows a purchase from %s only %j', (_label, origin, store, expected) => {
     // Scenario: the refund column for a non-renewing purchase; nothing else applies to one.
-    expect(operationsOf({ kind: 'purchase', record: purchaseOf({ origin }) }, store)).toStrictEqual(
-      expected
-    )
+    expect(
+      operationsOf({ kind: 'purchase', record: purchaseOf({ origin }) }, store, true)
+    ).toStrictEqual(expected)
   })
 
   it('allows neither a stop nor an extension on a non-renewing purchase, whatever its origin', () => {
@@ -50,7 +51,8 @@ describe('operationsOf: Appendix A.4, stop renewal, extend and refund', () => {
     for (const origin of ['play_store', 'web', 'app_store'] as const) {
       const operations = operationsOf(
         { kind: 'purchase', record: purchaseOf({ origin }) },
-        'rc_billing'
+        'rc_billing',
+        true
       )
       expect(operations).not.toContain('stop_renewal')
       expect(operations).not.toContain('extend')
@@ -70,7 +72,7 @@ describe('operationsOf: Appendix A.4, resume and change product', () => {
         sub({ origin }),
         { kind: 'purchase', record: purchaseOf({ origin }) } as const
       ]) {
-        const operations = operationsOf(target, store)
+        const operations = operationsOf(target, store, true)
         expect(operations).not.toContain('resume')
         expect(operations).not.toContain('change_product')
       }
@@ -111,7 +113,7 @@ describe('operationsOf: Appendix A.4 as a whole', () => {
       kind === 'subscription'
         ? sub({ origin })
         : { kind: 'purchase', record: purchaseOf({ origin }) }
-    expect(operationsOf(target, store)).toStrictEqual(expected)
+    expect(operationsOf(target, store, true)).toStrictEqual(expected)
   })
 })
 
@@ -183,5 +185,76 @@ describe('capabilitiesOf', () => {
     await expect(capabilitiesOf(context, sub({ origin: 'web' }))).rejects.toMatchObject({
       code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
     })
+  })
+})
+
+describe('operationsOf without a version 1 key', () => {
+  it.each([
+    ['subscription', 'play_store', null, ['extend', 'refund']],
+    ['subscription', 'app_store', null, ['extend']],
+    ['subscription', 'web', 'rc_billing', ['stop_renewal', 'extend', 'refund']],
+    ['subscription', 'web', 'stripe', []],
+    ['purchase', 'play_store', null, []],
+    ['purchase', 'web', 'rc_billing', ['refund']],
+    ['purchase', 'app_store', null, []]
+  ] as const)('a %s from %s on store %s allows exactly %j', (kind, origin, store, expected) => {
+    // Scenario: only Google Play stop renewal and Google Play purchase refund depend on the key.
+    const target: ManagedRecord =
+      kind === 'subscription'
+        ? sub({ origin })
+        : { kind: 'purchase', record: purchaseOf({ origin }) }
+    expect(operationsOf(target, store, false)).toStrictEqual(expected)
+  })
+
+  it('answers the capability query without the two operations, and with no request', async () => {
+    // Scenario: a context with no version 1 client.
+    const { context, calls } = stubbed(() => ok({}), false)
+    expect((await capabilitiesOf(context, sub())).operations).toStrictEqual(['extend', 'refund'])
+    expect(
+      (await capabilitiesOf(context, { kind: 'purchase', record: purchaseOf() })).operations
+    ).toStrictEqual([])
+    expect(calls).toHaveLength(0)
+  })
+})
+
+describe('permitted', () => {
+  it('decides a Google Play record before any request, with and without the version 1 client', async () => {
+    // Scenario: the origin alone decides; a refusal costs no read.
+    const without = stubbed(() => ok({}), false)
+    expect(await permitted(without.context, sub(), 'stop_renewal', true)).toBeNull()
+    expect(without.calls).toHaveLength(0)
+    const withKey = stubbed(() => ok({ store: 'play_store', store_subscription_identifier: 'x' }))
+    expect(await permitted(withKey.context, sub(), 'stop_renewal', true)).toStrictEqual({
+      store: 'play_store',
+      identifier: 'x'
+    })
+    expect(withKey.calls).toHaveLength(1)
+  })
+
+  it('reads a web record first and refuses a store that does not allow the operation', async () => {
+    // Scenario: the store decides for a web origin.
+    const stripe = stubbed(() => ok({ store: 'stripe' }))
+    expect(await permitted(stripe.context, sub({ origin: 'web' }), 'extend', true)).toBeNull()
+    expect(stripe.calls).toHaveLength(1)
+  })
+
+  it('does not read when the operation needs no detail', async () => {
+    // Scenario: a Google Play subscription refund is by transaction.
+    const { context, calls } = stubbed(() => ok({}), false)
+    expect(await permitted(context, sub(), 'refund', false)).toStrictEqual({
+      store: null,
+      identifier: null
+    })
+    expect(calls).toHaveLength(0)
+  })
+})
+
+describe('versionOne', () => {
+  it('returns the version 1 client, and fails as unavailable when there is none', () => {
+    // Scenario: the guard that keeps the version 2 key from ever being used for version 1.
+    expect(versionOne(stubbed(() => ok({})).context)).toBeDefined()
+    expect(() => versionOne(stubbed(() => ok({}), false).context)).toThrow(
+      expect.objectContaining({ code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE })
+    )
   })
 })

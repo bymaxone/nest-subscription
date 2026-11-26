@@ -219,6 +219,11 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   Google Play, the App Store and web billing, refund for Google Play (a subscription through its
   latest transaction, a purchase through version 1) and web billing; resume and change product are
   not possible from a server for any origin, and every other origin or store is the person's.
+- The RevenueCat option `apiKeyV1`, a version 1 secret key (one value or `{ current, previous }`),
+  validated like `apiKey` and held as a secret. Google Play stop renewal and Google Play one-time
+  purchase refund exist only in version 1 and run with it, never with `apiKey`; without it they are
+  answered as not possible from a server, with the management reference, and the operation reaches
+  no source. Apply to a derived backend: pass a version 1 secret key as `apiKeyV1` to keep those two.
 - `FakeSubscriptionSource` scripts capabilities and an answer per operation and origin, and counts
   the calls of each operation.
 

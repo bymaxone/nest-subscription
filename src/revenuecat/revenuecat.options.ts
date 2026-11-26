@@ -53,6 +53,13 @@ export interface RevenueCatSourceOptions {
   /** The version 2 secret key, one value or `{ current, previous }` during a rotation. */
   readonly apiKey: SecretInput
   /**
+   * A version 1 secret key, one value or `{ current, previous }` during a rotation. The two
+   * operations that exist only in version 1 (Google Play stop renewal and Google Play one-time
+   * purchase refund) run with it, and never with `apiKey`; without it they are answered as not
+   * possible from a server, with the management reference.
+   */
+  readonly apiKeyV1?: SecretInput
+  /**
    * The value of the `Authorization` header RevenueCat is configured to send with each webhook,
    * one value or `{ current, previous }`. Setting it turns the header check on.
    */
@@ -97,6 +104,8 @@ export interface ResolvedRevenueCatOptions {
   readonly baseUrlV1: string
   /** The API key. */
   readonly apiKey: Secret
+  /** The version 1 key, or `null` when none was given. */
+  readonly apiKeyV1: Secret | null
   /** The accepted `Authorization` values of the webhook, or `null` when that check is off. */
   readonly webhookAuthorization: Secret | null
   /** The accepted signing secrets of the webhook, or `null` when that check is off. */
@@ -198,6 +207,7 @@ const sandboxRule: Rule = (options) =>
 const RULES: readonly Rule[] = [
   required('projectId', (value) => isUsable(value) && value.length <= 255),
   required('apiKey', isSecretInput),
+  optional('apiKeyV1', isSecretInput),
   optional('webhookAuthorization', isSecretInput),
   optional('webhookSigningSecret', isSecretInput),
   optional('signatureToleranceMs', isBoundedInteger(MAX_SIGNATURE_TOLERANCE_MS)),
@@ -265,6 +275,7 @@ export function resolveRevenueCatOptions(input: unknown): ResolvedRevenueCatOpti
     baseUrl,
     baseUrlV1: versionOneOf(baseUrl),
     apiKey: Secret.from(input.apiKey),
+    apiKeyV1: secretOrNull(input.apiKeyV1),
     webhookAuthorization: secretOrNull(input.webhookAuthorization),
     webhookSigningSecret: secretOrNull(input.webhookSigningSecret),
     signatureToleranceMs: input.signatureToleranceMs ?? DEFAULT_SIGNATURE_TOLERANCE_MS,

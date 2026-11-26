@@ -314,3 +314,32 @@ describe('resolveRevenueCatOptions', () => {
     expect(callback).toHaveBeenCalledTimes(0)
   })
 })
+
+describe('resolveRevenueCatOptions: apiKeyV1', () => {
+  it('holds no version 1 key when none is given', () => {
+    // Scenario: the option is optional and absent by default.
+    expect(resolveRevenueCatOptions(minimal).apiKeyV1).toBeNull()
+  })
+
+  it('holds a single key and a rotation pair of the version 1 key as secrets', () => {
+    // Scenario: the same shapes as apiKey, held in a Secret.
+    const single = resolveRevenueCatOptions({ ...minimal, apiKeyV1: 'v1-key' })
+    expect(single.apiKeyV1).toBeInstanceOf(Secret)
+    expect(single.apiKeyV1?.candidates()).toStrictEqual(['v1-key'])
+    const pair = resolveRevenueCatOptions({
+      ...minimal,
+      apiKeyV1: { current: 'v1-key', previous: 'v1-old' }
+    })
+    expect(pair.apiKeyV1?.candidates()).toStrictEqual(['v1-key', 'v1-old'])
+  })
+
+  it.each([
+    ['an empty key', ''],
+    ['a pair with an empty previous', { current: 'v1-key', previous: '' }],
+    ['a pair with no current', { previous: 'v1-key' }],
+    ['a number', 12]
+  ])('refuses %s as apiKeyV1, naming only that option', (_label, apiKeyV1) => {
+    // Scenario: the shape rules of apiKey apply to apiKeyV1.
+    expect(refusedPaths({ ...minimal, apiKeyV1 })).toStrictEqual(['apiKeyV1'])
+  })
+})

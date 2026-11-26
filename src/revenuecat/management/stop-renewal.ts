@@ -12,14 +12,14 @@ import type {
 } from '@bymax-one/nest-subscription/internal'
 import type { SubscriptionRecord } from '@bymax-one/nest-subscription/shared'
 
-import { operationsOf } from './capabilities'
+import { permitted } from './capabilities'
 import {
   ACCEPTED,
   attempt,
   personMustAct,
+  versionOne,
   type RevenueCatManagementContext
 } from './management-context'
-import { readStoreDetail } from './store-detail'
 import { unreadable } from '../read/read-context'
 import { encodeSegment } from '../revenuecat-http'
 
@@ -38,12 +38,12 @@ export async function stopRenewalAt(
   subscription: SubscriptionRecord
 ): Promise<OperationResult> {
   const target: ManagedRecord = { kind: 'subscription', record: subscription }
-  const detail = await readStoreDetail(context, target)
-  if (!operationsOf(target, detail.store).includes('stop_renewal')) return personMustAct(target)
+  const detail = await permitted(context, target, 'stop_renewal', true)
+  if (detail === null) return personMustAct(target)
   if (subscription.origin === 'play_store') {
     if (detail.identifier === null) throw unreadable()
     const path = `/subscribers/${encodeSegment(account.accountId)}/subscriptions/${encodeSegment(detail.identifier)}/cancel`
-    await attempt(context.httpV1.post(path))
+    await attempt(versionOne(context).post(path))
   } else {
     const project = encodeSegment(context.projectId)
     const path = `/projects/${project}/subscriptions/${encodeSegment(subscription.subscriptionReference)}/actions/cancel`

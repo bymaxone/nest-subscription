@@ -114,3 +114,22 @@ describe('stopRenewalAt', () => {
     }
   )
 })
+
+describe('stopRenewalAt without a version 1 key', () => {
+  it('makes no request for a Google Play subscription and returns the management reference', async () => {
+    // Scenario: Google Play stop renewal exists only in version 1.
+    const { context, calls } = stubbed(reading('play_store'), false)
+    expect(await stopRenewalAt(context, ACCOUNT, subscriptionOf())).toStrictEqual({
+      outcome: 'customer_action_required',
+      managementReference: 'https://manage.example/sub_1'
+    })
+    expect(calls).toHaveLength(0)
+  })
+
+  it('still stops a web billing renewal through version 2', async () => {
+    // Scenario: the version 1 key is not needed for the version 2 operation.
+    const { context, writes } = stubbed(reading('rc_billing'), false)
+    await stopRenewalAt(context, ACCOUNT, subscriptionOf({ origin: 'web' }))
+    expect(writes()).toHaveLength(1)
+  })
+})

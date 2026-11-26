@@ -16,14 +16,13 @@ import {
   type SubscriptionRecord
 } from '@bymax-one/nest-subscription/shared'
 
-import { operationsOf } from './capabilities'
+import { permitted } from './capabilities'
 import {
   ACCEPTED,
   attempt,
   personMustAct,
   type RevenueCatManagementContext
 } from './management-context'
-import { NO_DETAIL, readStoreDetail } from './store-detail'
 import { encodeSegment } from '../revenuecat-http'
 
 /** The most days Apple lets one extension add. */
@@ -56,8 +55,8 @@ export async function extendAt(
 ): Promise<OperationResult> {
   assertAcceptable(subscription, extension)
   const target: ManagedRecord = { kind: 'subscription', record: subscription }
-  const detail = subscription.origin === 'web' ? await readStoreDetail(context, target) : NO_DETAIL
-  if (!operationsOf(target, detail.store).includes('extend')) return personMustAct(target)
+  const detail = await permitted(context, target, 'extend', subscription.origin === 'web')
+  if (detail === null) return personMustAct(target)
   const project = encodeSegment(context.projectId)
   const path = `/projects/${project}/subscriptions/${encodeSegment(subscription.subscriptionReference)}/actions/extend`
   await attempt(

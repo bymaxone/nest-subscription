@@ -353,12 +353,20 @@ Statements, quoted from the pages:
 - Management reference: the subscription's `management_url` (section 3). The Subscription page also lists an authenticated
   management URL operation, which the page says to treat as a credential and not store; the adapter does not call it.
 
+Observation, not a page quote (2026-11-26, read-only, the dedicated sandbox project): a GET of version 1
+`/v1/subscribers/{app_user_id}` sent with a version 2 secret key as the bearer credential returned HTTP 403
+with the body `{"code": 7723, "message": "You're trying to use a secret API key incompatible with
+RevenueCat API V1."}`. A version 2 key therefore does not authorize a version 1 operation. The
+adapter takes a separate optional version 1 key, `apiKeyV1` (specification D50), sends it to version 1
+only, and never sends the version 2 key there. Without it the two operations that exist only in
+version 1 are answered as not possible from a server.
+
 Not stated, and the adapter's answer:
 
-- Whether the v2 secret key authorizes the version 1 operations. The adapter sends the configured key as
-  the bearer credential to version 1 (specification section 10.2, question 1).
 - Whether the `store_transaction_identifier` of the version 1 paths is the `store_subscription_identifier`
-  of a subscription and the `store_purchase_identifier` of a purchase (question 2). The adapter uses those fields.
+  of a subscription and the `store_purchase_identifier` of a purchase. Decided: it is (D51).
+- How a refunded Google Play subscription reads after a refund: the transaction object has no stated
+  refund field. Decided: a refund instant, or no access where there was access before (D52).
 - Which store a `web` origin is: the origin only says web, so the adapter reads the subscription (or purchase)
   by its identifier, which carries `store`, before it answers for a web record.
 

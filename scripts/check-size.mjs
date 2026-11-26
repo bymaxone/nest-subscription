@@ -49,13 +49,13 @@ const BUDGETS = [
   { name: 'root', path: 'dist/core/index.mjs', brotli: 19.0 * 1024 },
   { name: 'shared', path: 'dist/shared/index.mjs', brotli: 2.2 * 1024 },
   { name: 'internal', path: 'dist/internal/index.mjs', brotli: 1.39 * 1024 },
-  { name: 'revenuecat', path: 'dist/revenuecat/index.mjs', brotli: 8.5 * 1024 },
+  { name: 'revenuecat', path: 'dist/revenuecat/index.mjs', brotli: 8.65 * 1024 },
   { name: 'finance', path: 'dist/finance/index.mjs', brotli: 0.05 * 1024 },
   { name: 'testing', path: 'dist/testing/index.mjs', brotli: 6.75 * 1024 },
   { name: 'root (CommonJS)', path: 'dist/core/index.cjs', brotli: 19.1 * 1024 },
   { name: 'shared (CommonJS)', path: 'dist/shared/index.cjs', brotli: 2.25 * 1024 },
   { name: 'internal (CommonJS)', path: 'dist/internal/index.cjs', brotli: 1.5 * 1024 },
-  { name: 'revenuecat (CommonJS)', path: 'dist/revenuecat/index.cjs', brotli: 8.55 * 1024 },
+  { name: 'revenuecat (CommonJS)', path: 'dist/revenuecat/index.cjs', brotli: 8.65 * 1024 },
   { name: 'finance (CommonJS)', path: 'dist/finance/index.cjs', brotli: 0.05 * 1024 },
   { name: 'testing (CommonJS)', path: 'dist/testing/index.cjs', brotli: 6.9 * 1024 }
 ]

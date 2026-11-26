@@ -12,14 +12,15 @@ import type {
   OperationResult
 } from '@bymax-one/nest-subscription/internal'
 
-import { operationsOf } from './capabilities'
+import { permitted } from './capabilities'
 import {
   ACCEPTED,
   attempt,
   personMustAct,
+  versionOne,
   type RevenueCatManagementContext
 } from './management-context'
-import { NO_DETAIL, readStoreDetail, type StoreDetail } from './store-detail'
+import type { StoreDetail } from './store-detail'
 import { isRecord, parseList, readString } from '../read/parse-customer'
 import { unreadable } from '../read/read-context'
 import { encodeSegment } from '../revenuecat-http'
@@ -58,7 +59,7 @@ async function refundRecord(
     }
     if (detail.identifier === null) throw unreadable()
     const path = `/subscribers/${encodeSegment(account.accountId)}/transactions/${encodeSegment(detail.identifier)}/refund`
-    await attempt(context.httpV1.post(path))
+    await attempt(versionOne(context).post(path))
     return
   }
   const subscription = `${project}/subscriptions/${encodeSegment(target.record.subscriptionReference)}`
@@ -88,8 +89,8 @@ export async function refundAt(
   target: ManagedRecord
 ): Promise<OperationResult> {
   const byTransaction = target.kind === 'subscription' && target.record.origin === 'play_store'
-  const detail = byTransaction ? NO_DETAIL : await readStoreDetail(context, target)
-  if (!operationsOf(target, detail.store).includes('refund')) return personMustAct(target)
+  const detail = await permitted(context, target, 'refund', !byTransaction)
+  if (detail === null) return personMustAct(target)
   await refundRecord(context, account, target, detail)
   return ACCEPTED
 }

@@ -6,17 +6,31 @@
  */
 import type { ManagedRecord, OperationResult } from '@bymax-one/nest-subscription/internal'
 
-import { unavailableIfUnknown } from '../read/read-context'
+import { unavailableIfUnknown, unreadable } from '../read/read-context'
 import type { RevenueCatHttp } from '../revenuecat-http'
 
 /** The clients and the project the operations use. */
 export interface RevenueCatManagementContext {
   /** The client of version 2 of the REST API. */
   readonly http: RevenueCatHttp
-  /** The client of version 1, for the operations that exist only there. */
-  readonly httpV1: RevenueCatHttp
+  /**
+   * The client of version 1, for the operations that exist only there. It carries the version 1
+   * key, and is `null` when the host gave none.
+   */
+  readonly httpV1: RevenueCatHttp | null
   /** The RevenueCat project. */
   readonly projectId: string
+}
+
+/**
+ * The client of version 1. Only an operation that was found possible asks for it, and that needs
+ * the version 1 key, so a missing client is a source that cannot be used.
+ *
+ * @throws SubscriptionError with the source-unavailable code when no version 1 key was given.
+ */
+export function versionOne(context: RevenueCatManagementContext): RevenueCatHttp {
+  if (context.httpV1 === null) throw unreadable()
+  return context.httpV1
 }
 
 /**

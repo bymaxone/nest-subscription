@@ -50,8 +50,8 @@ export interface Stubbed {
   writes(): Call[]
 }
 
-/** Builds a context over a stub that answers with `respond`. */
-export function stubbed(respond: Responder): Stubbed {
+/** Builds a context over a stub that answers with `respond`; `versionOne` false holds no version 1 client. */
+export function stubbed(respond: Responder, versionOne = true): Stubbed {
   const calls: Call[] = []
   const fetch = (url: string, init: RequestInit): Promise<Response> => {
     const call: Call = {
@@ -69,7 +69,7 @@ export function stubbed(respond: Responder): Stubbed {
   return {
     context: {
       http: new RevenueCatHttp({ ...config, baseUrl: 'https://rc.test/v2' }),
-      httpV1: new RevenueCatHttp({ ...config, baseUrl: 'https://rc.test/v1' }),
+      httpV1: versionOne ? new RevenueCatHttp({ ...config, baseUrl: 'https://rc.test/v1' }) : null,
       projectId: 'proj_1'
     },
     calls,
@@ -122,7 +122,7 @@ describe('management builders', () => {
     // Scenario: a read and a write through the two clients are recorded with their bodies.
     const { context, calls, writes } = stubbed(() => ok({ done: true }))
     await context.http.get('/a')
-    await context.httpV1.post('/b', { x: 1 })
+    await context.httpV1?.post('/b', { x: 1 })
     await context.http.post('/c')
     expect(calls.map((call) => [call.method, call.url, call.body])).toStrictEqual([
       ['GET', 'https://rc.test/v2/a', undefined],

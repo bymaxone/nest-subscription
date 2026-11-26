@@ -62,12 +62,15 @@ class RevenueCatSource implements SubscriptionSource {
     })
     this.#management = {
       http,
-      httpV1: new RevenueCatHttp({
-        baseUrl: options.baseUrlV1,
-        apiKey: options.apiKey,
-        timeoutMs: options.requestTimeoutMs,
-        fetch: options.fetch
-      }),
+      httpV1:
+        options.apiKeyV1 === null
+          ? null
+          : new RevenueCatHttp({
+              baseUrl: options.baseUrlV1,
+              apiKey: options.apiKeyV1,
+              timeoutMs: options.requestTimeoutMs,
+              fetch: options.fetch
+            }),
       projectId: options.projectId
     }
     this.#context = {

@@ -2,7 +2,7 @@
  * @fileoverview The store detail of one record, read from the source by the record's own
  * reference. The model's origin says only `web` for several stores, and the version 1 paths need
  * the store's own identifier, so the adapter asks the source instead of keeping either as a new
- * public field. A request is made only for an origin that needs the answer.
+ * public field.
  * @layer revenuecat
  */
 import type { ManagedRecord } from '@bymax-one/nest-subscription/internal'
@@ -23,14 +23,9 @@ export interface StoreDetail {
 /** The detail of a record whose origin needs none. */
 export const NO_DETAIL: StoreDetail = { store: null, identifier: null }
 
-/** Whether the origin of a record needs the detail: it is web, or an origin with a version 1 path. */
-function needsDetail(target: ManagedRecord): boolean {
-  return target.record.origin === 'web' || target.record.origin === 'play_store'
-}
-
 /**
- * Reads the detail of a subscription or purchase of the project by its reference, or answers
- * `NO_DETAIL` without a request for an origin that needs none.
+ * Reads the detail of a subscription or purchase of the project by its reference. The caller
+ * decides whether its origin needs it.
  *
  * @throws SubscriptionError with the source-unavailable code when the request fails or the body is
  *   not an object.
@@ -39,7 +34,6 @@ export async function readStoreDetail(
   context: RevenueCatManagementContext,
   target: ManagedRecord
 ): Promise<StoreDetail> {
-  if (!needsDetail(target)) return NO_DETAIL
   const project = encodeSegment(context.projectId)
   const path =
     target.kind === 'subscription'

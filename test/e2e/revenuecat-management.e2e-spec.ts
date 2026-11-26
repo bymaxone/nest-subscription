@@ -7,6 +7,7 @@
 import { Test, type TestingModule } from '@nestjs/testing'
 import {
   SUBSCRIPTION_ERROR_CODES,
+  Secret,
   SubscriptionModule,
   SubscriptionService
 } from '@bymax-one/nest-subscription'
@@ -17,6 +18,8 @@ import {
 import { revenueCatSource } from '@bymax-one/nest-subscription/revenuecat'
 import { InMemorySubscriptionStore, ManualClock } from '@bymax-one/nest-subscription/testing'
 
+import { versionOne } from '../../src/revenuecat/management/management-context'
+import { RevenueCatHttp } from '../../src/revenuecat/revenuecat-http'
 import {
   fixtureLists,
   startStandIn,
@@ -26,6 +29,7 @@ import {
 } from './fixtures/revenuecat-stand-in'
 
 const KEY = 'sentinel-api-key-e2e-8a41'
+const KEY_V1 = 'sentinel-v1-key-e2e-2b70'
 const ACCOUNT = { accountId: 'customer_a' }
 const PROJECT = '/v2/projects/proj_PLACEHOLDER'
 const SUBSCRIPTION = 'sub_PLACEHOLDER_1'
@@ -66,7 +70,7 @@ function customerOf(
 }
 
 /** Boots the application over a stand-in that serves the customer as given. */
-async function boot(store: string): Promise<Running> {
+async function boot(store: string, withV1 = true): Promise<Running> {
   const stand = await startStandIn(KEY)
   stand.serve(ACCOUNT.accountId, customerOf(store, 'will_renew'))
   const clock = new ManualClock('2026-11-25T12:00:00.000Z')
@@ -76,6 +80,7 @@ async function boot(store: string): Promise<Running> {
         source: revenueCatSource({
           projectId: 'proj_PLACEHOLDER',
           apiKey: KEY,
+          ...(withV1 ? { apiKeyV1: KEY_V1 } : {}),
           baseUrl: stand.baseUrl,
           clock
         }),
@@ -135,6 +140,11 @@ describe('revenuecat management: stop renewal', () => {
     expect(writes(stand).map((request) => `${request.method} ${request.url}`)).toStrictEqual([
       'POST /v1/subscribers/customer_a/subscriptions/store_sub_PLACEHOLDER_1/cancel'
     ])
+    expect(writes(stand).map((request) => request.authorization)).toStrictEqual([
+      `Bearer ${KEY_V1}`
+    ])
+    const version2 = stand.requests.filter((request) => request.url.startsWith('/v2/'))
+    expect(version2.every((request) => request.authorization === `Bearer ${KEY}`)).toBe(true)
   })
 
   it('stops a web billing renewal with one version 2 write', async () => {
@@ -511,6 +521,7 @@ describe('revenuecat management: the adapter asked directly', () => {
     const source = revenueCatSource({
       projectId: 'proj_PLACEHOLDER',
       apiKey: KEY,
+      apiKeyV1: KEY_V1,
       baseUrl: stand.baseUrl
     })
     const snapshot = await source.readAccount(ACCOUNT)
@@ -607,5 +618,50 @@ describe('revenuecat management: the adapter asked directly', () => {
         baseUrl: 'http://127.0.0.1:9'
       })
     ).not.toThrow()
+  })
+})
+
+describe('revenuecat management: without a version 1 key', () => {
+  it("answers Google Play stop renewal and purchase refund as the person's, with no request, and says so in the capabilities", async () => {
+    // Scenario: no apiKeyV1: the two operations that exist only in version 1 are not possible,
+    // and the version 2 key is never offered to version 1.
+    running = await boot('play_store', false)
+    const { service, stand } = running
+    stand.serve(ACCOUNT.accountId, refundCustomer({ store: 'play_store', refunded: false }))
+    await service.refresh(ACCOUNT)
+    stand.respondWith(refunding('play_store', () => ({ status: 500 })))
+    const before = stand.requests.length
+    expect((await service.getCapabilities(ACCOUNT, SUBSCRIPTION)).possible).toMatchObject({
+      stop_renewal: false,
+      extend: true,
+      refund: true
+    })
+    expect((await service.getCapabilities(ACCOUNT, 'purchase_PLACEHOLDER_1')).possible.refund).toBe(
+      false
+    )
+    expect(await service.stopRenewal(ACCOUNT, SUBSCRIPTION)).toStrictEqual({
+      outcome: 'person_must_act',
+      managementReference: 'https://manage.example/play_store'
+    })
+    expect(await service.refund(ACCOUNT, 'purchase_PLACEHOLDER_1')).toStrictEqual({
+      outcome: 'person_must_act',
+      managementReference: null
+    })
+    expect(stand.requests).toHaveLength(before)
+    expect(stand.requests.some((request) => request.url.startsWith('/v1/'))).toBe(false)
+  })
+
+  it('hands out no version 1 client when none was configured', async () => {
+    running = await boot('app_store')
+    // Scenario: the guard that keeps the version 2 key from standing in for a version 1 key.
+    const http = new RevenueCatHttp({
+      baseUrl: 'http://127.0.0.1:9/v2',
+      apiKey: new Secret(KEY),
+      timeoutMs: 1000,
+      fetch: () => Promise.reject(new Error('no request is made'))
+    })
+    expect(() => versionOne({ http, httpV1: null, projectId: 'proj_PLACEHOLDER' })).toThrow(
+      expect.objectContaining({ code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE })
+    )
   })
 })

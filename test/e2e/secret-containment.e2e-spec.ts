@@ -24,6 +24,7 @@ import {
   expectNoSentinel,
   outputsOf,
   ROTATED_SENTINEL,
+  V1_SENTINEL,
   WEBHOOK_SENTINEL
 } from './fixtures/sentinel-sweep'
 
@@ -93,6 +94,7 @@ describe('secret containment', () => {
     const source = revenueCatSource({
       projectId: 'proj_PLACEHOLDER',
       apiKey: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      apiKeyV1: { current: V1_SENTINEL },
       webhookAuthorization: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
       webhookSigningSecret: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
       baseUrl: 'http://127.0.0.1:9/v2',
@@ -130,6 +132,7 @@ describe('secret containment', () => {
     const source = revenueCatSource({
       projectId: 'proj_PLACEHOLDER',
       apiKey: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      apiKeyV1: V1_SENTINEL,
       baseUrl: stand.baseUrl
     })
     const app = await Test.createTestingModule({
@@ -145,7 +148,10 @@ describe('secret containment', () => {
     await service.refresh({ accountId: 'customer_a' })
     stand.respondWith((request) =>
       request.method === 'POST'
-        ? { status: 409, body: { message: `${WEBHOOK_SENTINEL} ${ROTATED_SENTINEL}` } }
+        ? {
+            status: 409,
+            body: { message: `${WEBHOOK_SENTINEL} ${ROTATED_SENTINEL} ${V1_SENTINEL}` }
+          }
         : undefined
     )
     const results = await runManagement(service, { accountId: 'customer_a' })
@@ -155,6 +161,7 @@ describe('secret containment', () => {
     for (const result of results) {
       expect(JSON.stringify(result) + String(result)).not.toContain(WEBHOOK_SENTINEL)
       expect(JSON.stringify(result) + String(result)).not.toContain(ROTATED_SENTINEL)
+      expect(JSON.stringify(result) + String(result)).not.toContain(V1_SENTINEL)
       if (typeof result === 'object' && result !== null) expectNoSentinel(outputsOf(result))
     }
     expectNoSentinel(outputsOf(source))
