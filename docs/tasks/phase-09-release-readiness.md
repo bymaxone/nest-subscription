@@ -1,6 +1,6 @@
 # Phase 9 — Release readiness
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 1 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 2 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P9 — release-readiness
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -41,7 +41,7 @@ At the end the package is publishable: the README follows the family's canonical
 | --- | ------------------------------------------------- | ------- | -------- | ---- | ------------- |
 | 9.1 | Write the public README                           | 📋 ToDo | P0       | L    | —             |
 | 9.2 | Write the host guides                             | 📋 ToDo | P0       | M    | 9.1           |
-| 9.3 | Sweep the captured logs of the whole suite        | 📋 ToDo | P0       | M    | 9.1           |
+| 9.3 | Sweep the captured logs of the whole suite        | ✅ Done | P0       | M    | 9.1           |
 | 9.6 | Prove AC08 with one suite run against two sources | ✅ Done | P0       | M    | —             |
 | 9.4 | Measure the whole package                         | 📋 ToDo | P0       | M    | 9.2, 9.3, 9.6 |
 | 9.5 | Prepare the release candidate                     | 📋 ToDo | P0       | M    | 9.4           |
@@ -211,7 +211,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.3 — Sweep the captured logs of the whole suite
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.1
@@ -222,10 +222,10 @@ Prove AC09 on the whole package: no secret and no account identifier in any log 
 
 #### Acceptance criteria
 
-- [ ] The end-to-end suite runs with every configured secret and every account and tenant identifier set to recognisable sentinels, and a global teardown fails the run if any captured log line, observer payload, thrown error message or HTTP response body contains one.
-- [ ] The four serialization paths (JSON, spread, inspect, inspect with hidden properties) are applied to every provider the module exports and to the object each adapter factory returns.
-- [ ] A deliberately introduced leak (a log line with an identifier, added and then removed) is caught by the sweep.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The end-to-end suite runs with every configured secret and every account and tenant identifier set to recognisable sentinels, and a global teardown fails the run if any captured log line, observer payload, thrown error message or HTTP response body contains one.
+- [x] The four serialization paths (JSON, spread, inspect, inspect with hidden properties) are applied to every provider the module exports and to the object each adapter factory returns.
+- [x] A deliberately introduced leak (a log line with an identifier, added and then removed) is caught by the sweep.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -554,3 +554,4 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 - 9.6 ✅ 2026-11-26 — one suite runs the same application and cases against the fake source and the RevenueCat adapter over a local stand-in (AC08)
+- 9.3 ✅ 2026-11-26 — a per-file sweep and a global teardown search every log line, observer payload, response body and library error of the whole end-to-end run for the sentinels the specs declare

@@ -40,6 +40,7 @@ import {
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
 
+import { watch } from '../setup/sentinel-sweep'
 import { WEBHOOK_WAIT, type DeadlineWait } from '../../../src/core/webhook/deadline'
 
 /** The route of the library's controller. */
@@ -149,6 +150,7 @@ export async function buildWebhookApp(
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const clock = new ManualClock(START)
   const capture = createCapture()
+  watch(capture)
   const hook = jest.fn<unknown, [SubscriptionChangeNotification]>()
   let expire = (): void => undefined
   const manual: DeadlineWait = (milliseconds) =>
@@ -186,12 +188,12 @@ export async function buildWebhookApp(
 }
 
 /** The account most cases are about. */
-export const ACCOUNT: AccountReference = { accountId: 'acc-1' }
+export const ACCOUNT: AccountReference = { accountId: 'sentinel-acc-1' }
 
 /** The notification most cases deliver. */
 export const NOTIFICATION: SourceNotification = {
   eventId: 'evt-1',
-  accountIds: ['acc-1'],
+  accountIds: ['sentinel-acc-1'],
   kind: 'RENEWAL',
   eventTime: START,
   environment: 'production'

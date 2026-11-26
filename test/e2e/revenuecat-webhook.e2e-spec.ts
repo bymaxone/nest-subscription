@@ -35,6 +35,7 @@ import {
   type RevenueCatRequestFlaw
 } from '@bymax-one/nest-subscription/testing'
 
+import { watch } from './setup/sentinel-sweep'
 import { outputsOf } from './fixtures/sentinel-sweep'
 import { startStandIn, type StandIn } from './fixtures/revenuecat-stand-in'
 
@@ -73,6 +74,7 @@ async function boot(allowSandbox = false): Promise<Running> {
   const stand = await startStandIn(API_KEY)
   const clock = new ManualClock(START)
   const capture = createCapture()
+  watch(capture)
   const store = new InMemorySubscriptionStore({ logger: () => undefined })
   const notifications: SubscriptionChangeNotification[] = []
   const module = await Test.createTestingModule({

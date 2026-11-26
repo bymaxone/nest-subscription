@@ -28,6 +28,7 @@ import {
 
 import { ObserverBridge } from '../../src/core/observer/observer-bridge'
 
+import { watch } from './setup/sentinel-sweep'
 import {
   ACCOUNT_HEADER,
   TENANT_HEADER,
@@ -160,6 +161,7 @@ describe('no identifiers', () => {
     // Scenario: refresh, cached reads, an allowed and a refused request, a failing background
     // refresh, a failing source and a reconciliation run that calls a throwing hook.
     const capture = createCapture()
+    watch(capture)
     let hookWorks = false
     const built = await buildGuardedApp({
       multiTenant: true,
@@ -209,6 +211,7 @@ describe('no identifiers', () => {
     // Scenario: the line a failing hook produces carries the hash of the account key and nothing
     // of the account or tenant.
     const capture = createCapture()
+    watch(capture)
     const built = await buildGuardedApp({
       multiTenant: true,
       logger: capture.logger,
@@ -290,6 +293,7 @@ describe('no identifiers', () => {
     // Scenario: the adapter's request fails with an error that holds the identifier; the error the
     // library raises has a fixed message, so neither the log nor the observer ever holds it.
     const capture = createCapture()
+    watch(capture)
     const source = revenueCatSource({
       projectId: 'proj_PLACEHOLDER',
       apiKey: 'sentinel-api-key-0f1e',
@@ -323,6 +327,7 @@ describe('no identifiers', () => {
     // unchanged, failing with an error that holds the identifiers, and refused for a foreign
     // record; neither what the logger and the observer received nor the errors raised hold one.
     const capture = createCapture()
+    watch(capture)
     const { app, service, source } = await managementApp(capture)
     const run = operationsRunner(service)
     await run.on(ACCOUNT)

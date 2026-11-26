@@ -376,7 +376,13 @@ export default [
     // e2e spec fail the pre-commit hook on a parse error rather
     // than a defect, and the usual escape from a hook that cries wolf is to bypass
     // it entirely.
-    files: ['**/*.spec.ts', '**/*.test.ts', '**/*.e2e-spec.ts', 'test/**/fixtures/**/*.ts'],
+    files: [
+      '**/*.spec.ts',
+      '**/*.test.ts',
+      '**/*.e2e-spec.ts',
+      'test/**/fixtures/**/*.ts',
+      'test/**/setup/**/*.ts'
+    ],
     languageOptions: {
       parser: tsParser,
       parserOptions: {

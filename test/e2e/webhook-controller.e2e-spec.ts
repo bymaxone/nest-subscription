@@ -17,7 +17,7 @@ import { CONTROLLER_ROUTE, START, buildWebhookApp, send, signed } from './fixtur
 
 const NOTIFICATION: SourceNotification = {
   eventId: 'evt-1',
-  accountIds: ['acc-1'],
+  accountIds: ['sentinel-acc-1'],
   kind: 'RENEWAL',
   eventTime: START,
   environment: 'production'

@@ -68,7 +68,7 @@ const MISBEHAVING: ReadonlyArray<readonly [string, () => unknown]> = [
   ],
   ['an acceptance with no notification', () => ({ accepted: true })],
   ['an acceptance with a blank event identifier', () => accept({ eventId: ' ' })],
-  ['an acceptance whose accounts are not a list', () => accept({ accountIds: 'acc-1' })],
+  ['an acceptance whose accounts are not a list', () => accept({ accountIds: 'sentinel-acc-1' })],
   ['an acceptance naming a blank account', () => accept({ accountIds: [' '] })],
   ['an answer that is not an object', () => null]
 ]
@@ -291,7 +291,7 @@ describe('webhook receiver deadline with the real wait', () => {
     // and the timer is gone afterwards; time moves by Jest's fake timers, not by waiting.
     const app = await buildWebhookApp({ wait: 'timer' })
     const processor = app.moduleRef.get(WebhookProcessor)
-    app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:10.000Z'))
+    app.source.setAccount(ACCOUNT, subscribed('sentinel-acc-1', '2026-01-01T00:00:10.000Z'))
     const release = app.source.delayNextRead()
     jest.useFakeTimers({ doNotFake: ['nextTick', 'queueMicrotask', 'setImmediate'] })
     const answer = processor.process(app.source.buildRequest(NOTIFICATION))

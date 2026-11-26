@@ -30,7 +30,7 @@ import {
 
 const T0 = '2026-01-01T00:00:00.000Z'
 const T1 = '2026-01-01T00:01:00.000Z'
-const ACCOUNT = { accountId: 'acc-1' }
+const ACCOUNT = { accountId: 'sentinel-acc-1' }
 const KEY = encodeAccountKey(ACCOUNT)
 
 const RECORD: SubscriptionRecord = {
@@ -177,10 +177,10 @@ describe('change notifications', () => {
       observer: { onChangeDelivery }
     })
     setBehaviour(() => {
-      throw new Error('hook broke for acc-1')
+      throw new Error('hook broke for sentinel-acc-1')
     })
     source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
-    await expect(service.refresh(ACCOUNT)).resolves.toMatchObject({ accountId: 'acc-1' })
+    await expect(service.refresh(ACCOUNT)).resolves.toMatchObject({ accountId: 'sentinel-acc-1' })
     const held = await store.getSnapshot(KEY)
     expect(held?.snapshot.subscriptions).toHaveLength(1)
     expect(held?.pendingChanges.map((change) => change.kind)).toStrictEqual(['started'])
@@ -433,8 +433,10 @@ describe('change notifications when the store or the observer misbehaves', () =>
     // Scenario: an observer that breaks in each way; the host's operations succeed.
     const { service, source } = await boot({ observer })
     source.setAccount(ACCOUNT, sourceState('2026-02-01T00:00:00.000Z', T0))
-    await expect(service.refresh(ACCOUNT)).resolves.toMatchObject({ accountId: 'acc-1' })
-    await expect(service.getSnapshot(ACCOUNT)).resolves.toMatchObject({ accountId: 'acc-1' })
+    await expect(service.refresh(ACCOUNT)).resolves.toMatchObject({ accountId: 'sentinel-acc-1' })
+    await expect(service.getSnapshot(ACCOUNT)).resolves.toMatchObject({
+      accountId: 'sentinel-acc-1'
+    })
   })
 })
 
@@ -455,7 +457,7 @@ describe('change notifications from reconciliation, bounds and defences', () => 
   it('delivers no more accounts in a run than the batch bound and the rest in the next run', async () => {
     // Scenario: three accounts pending and a bound of two; the next run delivers the third.
     const { service, store, notifications } = await boot()
-    for (const accountId of ['acc-a', 'acc-b', 'acc-c']) {
+    for (const accountId of ['sentinel-acc-a', 'sentinel-acc-b', 'sentinel-acc-c']) {
       const account = { accountId }
       await store.putSnapshot(
         encodeAccountKey(account),

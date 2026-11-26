@@ -16,7 +16,7 @@ import {
   resolveOptions
 } from '@bymax-one/nest-subscription'
 import { revenueCatSource } from '@bymax-one/nest-subscription/revenuecat'
-import { InMemorySubscriptionStore } from '@bymax-one/nest-subscription/testing'
+import { InMemorySubscriptionStore, createCapture } from '@bymax-one/nest-subscription/testing'
 import { SnapshotRefresher } from '../../src/core/refresh/snapshot-refresher'
 import { credentialedSource } from './fixtures/credentialed-source'
 import { startStandIn } from './fixtures/revenuecat-stand-in'
@@ -78,11 +78,11 @@ describe('secret containment', () => {
       ]
     }).compile()
     const service = app.get(SubscriptionService)
-    await service.refresh({ accountId: 'acc-1' })
+    await service.refresh({ accountId: 'sentinel-acc-1' })
     expectNoSentinel(outputsOf(service))
     expectNoSentinel(outputsOf(app.get(SnapshotRefresher)))
     expectNoSentinel(outputsOf(app.get(EntitlementGuard)))
-    expectNoSentinel(outputsOf(await service.getSnapshot({ accountId: 'acc-1' })))
+    expectNoSentinel(outputsOf(await service.getSnapshot({ accountId: 'sentinel-acc-1' })))
     expect(inspect(service, { depth: null, showHidden: true })).toContain('[Secret]')
     await app.close()
   })
@@ -117,9 +117,50 @@ describe('secret containment', () => {
       ]
     }).compile()
     const service = app.get(SubscriptionService)
-    await service.refresh({ accountId: 'acc-1' }).catch(() => undefined)
+    await service.refresh({ accountId: 'sentinel-acc-1' }).catch(() => undefined)
     expectNoSentinel(outputsOf(service))
     expect(Object.keys(source)).toEqual(['name'])
+    await app.close()
+  })
+
+  it('shows no secret on any path of every provider the module exports or of the object each adapter factory returns', async () => {
+    // Scenario: the module is configured with the RevenueCat adapter (a rotation pair for each
+    // credential), a webhook controller, a cache and an observer; every token the dynamic module
+    // exports is resolved, the source the adapter factory returns and the fake source with a
+    // credential are swept, and each of the four serialization paths finds no value.
+    const source = revenueCatSource({
+      projectId: 'proj_PLACEHOLDER',
+      apiKey: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      apiKeyV1: V1_SENTINEL,
+      webhookAuthorization: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      webhookSigningSecret: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      baseUrl: 'http://127.0.0.1:9/v2',
+      fetch: () => Promise.reject(new TypeError('the source is down'))
+    })
+    const configured = SubscriptionModule.forRoot({
+      source,
+      store: new InMemorySubscriptionStore(),
+      accountResolver: () => null,
+      observer: createCapture().observer,
+      webhookController: true,
+      webhookPath: '/webhooks/billing'
+    })
+    const app = await Test.createTestingModule({ imports: [configured] }).compile()
+    const exported = configured.exports ?? []
+    expect(exported.length).toBeGreaterThan(6)
+    for (const token of exported) {
+      const provided: unknown = app.get(token as never, { strict: false })
+      expectNoSentinel(outputsOf(Object(provided)))
+    }
+    await app
+      .get(SubscriptionService)
+      .refresh({ accountId: 'sentinel-acc-1' })
+      .catch(() => undefined)
+    for (const token of exported) {
+      expectNoSentinel(outputsOf(Object(app.get(token as never, { strict: false }))))
+    }
+    expectNoSentinel(outputsOf(source))
+    expectNoSentinel(outputsOf(credentialedSource()))
     await app.close()
   })
 

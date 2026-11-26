@@ -25,6 +25,8 @@ import {
   type ManualClock
 } from '@bymax-one/nest-subscription/testing'
 
+import { watch } from '../setup/sentinel-sweep'
+
 /** The header the host's resolver reads the account from, standing in for its authentication. */
 export const PARITY_ACCOUNT_HEADER = 'x-parity-account'
 
@@ -84,6 +86,7 @@ export interface ParityApp {
 /** Builds the host application over the given module configuration. */
 export async function buildParityApp(config: ParityConfig): Promise<ParityApp> {
   const capture = createCapture()
+  watch(capture)
   const notifications: SubscriptionChangeNotification[] = []
   const moduleRef = await Test.createTestingModule({
     imports: [

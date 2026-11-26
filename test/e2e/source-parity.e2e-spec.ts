@@ -39,9 +39,9 @@ import { snapshotOf } from './fixtures/guarded-app'
 const START = '2026-11-25T12:00:00.000Z'
 const DAY_MS = 86_400_000
 const ACCOUNT = { accountId: 'user_PLACEHOLDER_a' }
-const API_KEY = 'parity-api-key-literal'
-const SIGNING_SECRET = 'parity-signing-secret-literal'
-const AUTHORIZATION = 'parity-authorization-literal'
+const API_KEY = 'sentinel-parity-api-key-1a2b'
+const SIGNING_SECRET = 'sentinel-parity-signing-3c4d'
+const AUTHORIZATION = 'sentinel-parity-authorization-5e6f'
 
 /** What an entry gives a run: the source to configure and the means to script it. */
 interface Scripted {

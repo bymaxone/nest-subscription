@@ -110,6 +110,26 @@ describe('lists the adapter cannot use', () => {
     expect(await outcome()).toBe(UNAVAILABLE)
   })
 
+  it.each([
+    ['an absolute address', 'https://elsewhere.invalid/v2/x?starting_after=s1&limit=1'],
+    ['a relative path', '/v2/x?limit=1&starting_after=s1'],
+    ['an address with no cursor, so the last item gives it', 'https://elsewhere.invalid/v2/x'],
+    ['an address with an empty cursor, so the last item gives it', '/v2/x?starting_after='],
+    ['text that is no address, so the last item gives it', 'http://']
+  ])('reads the next page from the cursor of next_page given as %s', async (_label, next) => {
+    // Scenario: the cursor is taken from the query of next_page, or from the last item when there
+    // is none, and the request goes to the configured address and never to the one next_page names.
+    stand.respondWith((request) => {
+      if (resource(request.url) !== 'subscriptions') return { status: 200, body: list([]) }
+      return request.url.includes('starting_after=s1')
+        ? { status: 200, body: list([subscription({ id: 's2' })]) }
+        : { status: 200, body: list([subscription({ id: 's1' })], next) }
+    })
+    const read = await outcome()
+    expect(typeof read === 'string' ? read : read.subscriptions.length).toBe(2)
+    expect(stand.requests.some((request) => request.url.includes('elsewhere.invalid'))).toBe(false)
+  })
+
   it('stops at the page bound for a list that never ends, and is a source that cannot be read', async () => {
     // Scenario: every page says another follows, with an item to take the cursor from.
     let pages = 0

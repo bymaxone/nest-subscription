@@ -57,7 +57,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
         const delivery = signed(current)
         return {
           ...delivery,
-          bytes: Buffer.from(delivery.bytes.toString().replace('acc-1', 'acc-9'))
+          bytes: Buffer.from(delivery.bytes.toString().replace('sentinel-acc-1', 'sentinel-acc-9'))
         }
       }
     ],
@@ -96,7 +96,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
 
   it('processes a signed notification and stores the source state', async () => {
     // Scenario: a good request ends in the stored state of the source, and the host hook is told.
-    app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:10.000Z'))
+    app.source.setAccount(ACCOUNT, subscribed('sentinel-acc-1', '2026-01-01T00:00:10.000Z'))
     const answer = await send(app, route, signed(app))
     expect(answer.status).toBe(200)
     expect(answer.body).toStrictEqual({ outcome: 'processed', accounts: 1 })
@@ -118,7 +118,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
 
   it('reads the source once for the same event delivered five times', async () => {
     // Scenario: one event, five deliveries (AC03): one read and one host notification.
-    app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:10.000Z'))
+    app.source.setAccount(ACCOUNT, subscribed('sentinel-acc-1', '2026-01-01T00:00:10.000Z'))
     const answers = []
     for (let n = 0; n < 5; n += 1) answers.push(await send(app, route, signed(app)))
     await new Promise((resolve) => setImmediate(resolve))
@@ -136,7 +136,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
 
   it('reads the source once for the same event delivered five times at once', async () => {
     // Scenario: five simultaneous deliveries while the read is held; exactly one reads.
-    app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:10.000Z'))
+    app.source.setAccount(ACCOUNT, subscribed('sentinel-acc-1', '2026-01-01T00:00:10.000Z'))
     const release = app.source.delayNextRead()
     const all = Promise.all([1, 2, 3, 4, 5].map(() => send(app, route, signed(app))))
     await until(() => heard(app) === 4)
@@ -151,7 +151,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
   it('leaves the source state when events arrive in reverse order', async () => {
     // Scenario: the newer event is delivered first and the older one after it (AC04); the stored
     // snapshot is the source's current state, never an older one.
-    app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:20.000Z'))
+    app.source.setAccount(ACCOUNT, subscribed('sentinel-acc-1', '2026-01-01T00:00:20.000Z'))
     await send(app, route, signed(app, { ...NOTIFICATION, eventId: 'evt-2' }))
     await send(app, route, signed(app, { ...NOTIFICATION, eventId: 'evt-1' }))
     const stored = await app.store.getSnapshot(encodeAccountKey(ACCOUNT))
@@ -164,7 +164,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
     // Scenario: the read is held past the deadline; the answer is 503 at the deadline by the
     // injected clock, and the retry of the same event is processed. The retry waits for the held
     // read, which began before it, and reads once more.
-    app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:10.000Z'))
+    app.source.setAccount(ACCOUNT, subscribed('sentinel-acc-1', '2026-01-01T00:00:10.000Z'))
     const mark = jest.spyOn(app.store, 'markEventProcessed')
     const release = app.source.delayNextRead()
     const first = send(app, route, signed(app))
@@ -199,7 +199,7 @@ describe.each(FORMS)('webhook receiver through %s', (_form, route) => {
   it('does not wait for the host hook', async () => {
     // Scenario: a hook that never returns does not hold the answer.
     app.hook.mockReturnValue(new Promise(() => undefined))
-    app.source.setAccount(ACCOUNT, subscribed('acc-1', '2026-01-01T00:00:10.000Z'))
+    app.source.setAccount(ACCOUNT, subscribed('sentinel-acc-1', '2026-01-01T00:00:10.000Z'))
     expect((await send(app, route, signed(app))).status).toBe(200)
   })
 
