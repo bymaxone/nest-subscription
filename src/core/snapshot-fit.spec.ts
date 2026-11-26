@@ -15,6 +15,19 @@ const ACCOUNT = { accountId: 'acc-1' }
 const TENANTED = { tenantId: 'one', accountId: 'acc-1' }
 const T0 = '2026-01-01T00:00:00.000Z'
 
+/** A non-renewing purchase with every field present and a value of each type. */
+const PURCHASE = {
+  purchaseReference: 'purchase-1',
+  entitlementNames: ['pro'],
+  givesAccess: true,
+  origin: 'web',
+  environment: 'production',
+  productReference: 'lifetime',
+  purchasedAt: T0,
+  accessUntil: T0,
+  refundedAt: T0
+} as const
+
 /** A snapshot with every field of the model present and a value of each type. */
 function full(): SubscriptionSnapshot {
   return {
@@ -48,6 +61,7 @@ function full(): SubscriptionSnapshot {
         managementReference: 'https://example.test/manage'
       }
     ],
+    nonRenewingPurchases: [PURCHASE],
     source: 'fake',
     sourceCustomer: { id: 'customer-1' },
     fetchedAt: T0,
@@ -107,7 +121,22 @@ const WRONG: ReadonlyArray<readonly [string, unknown]> = [
   ['subscriptions.0.billingIssueSince', 1],
   ['subscriptions.0.cancelledAt', 1],
   ['subscriptions.0.refundedAt', 1],
-  ['subscriptions.0.managementReference', 1]
+  ['subscriptions.0.managementReference', 1],
+  ['nonRenewingPurchases', {}],
+  ['nonRenewingPurchases', [null]],
+  ['nonRenewingPurchases.0.purchaseReference', 1],
+  ['nonRenewingPurchases.0.entitlementNames', undefined],
+  ['nonRenewingPurchases.0.entitlementNames', 'pro'],
+  ['nonRenewingPurchases.0.entitlementNames', [1]],
+  ['nonRenewingPurchases.0.entitlementNames', ['b', 'a']],
+  ['nonRenewingPurchases.0.entitlementNames', ['a', 'a']],
+  ['nonRenewingPurchases.0.givesAccess', 'true'],
+  ['nonRenewingPurchases.0.origin', 'moon'],
+  ['nonRenewingPurchases.0.environment', 'staging'],
+  ['nonRenewingPurchases.0.productReference', 1],
+  ['nonRenewingPurchases.0.purchasedAt', 1],
+  ['nonRenewingPurchases.0.accessUntil', 1],
+  ['nonRenewingPurchases.0.refundedAt', 1]
 ]
 
 /** Every path of a field in a snapshot, as the table writes it; lists are walked at their first item. */
@@ -149,6 +178,13 @@ describe('isSnapshotFor', () => {
     expect(
       isSnapshotFor(withField('entitlements.0.grantingSubscriptionReferences', grantors), TENANTED)
     ).toBe(true)
+  })
+
+  it('accepts a snapshot with no list of purchases, which reads as none, and one with an empty list', () => {
+    // Scenario: a snapshot with no list of purchases, and one of an account with none.
+    const { nonRenewingPurchases: _held, ...without } = full()
+    expect(isSnapshotFor(without, TENANTED)).toBe(true)
+    expect(isSnapshotFor({ ...full(), nonRenewingPurchases: [] }, TENANTED)).toBe(true)
   })
 
   it('accepts the snapshot with every field present', () => {

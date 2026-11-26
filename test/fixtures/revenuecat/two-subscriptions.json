@@ -1,0 +1,125 @@
+{
+  "customerId": "customer_PLACEHOLDER_b",
+  "subscriptions": {
+    "items": [
+      {
+        "auto_renewal_status": "will_not_renew",
+        "country": null,
+        "current_period_ends_at": 1798761600000,
+        "current_period_starts_at": 1795646467253,
+        "customer_id": "customer_PLACEHOLDER_b",
+        "ends_at": 1798761600000,
+        "entitlements": {
+          "items": [
+            {
+              "created_at": 1795646388861,
+              "display_name": "Premium",
+              "id": "entl_PLACEHOLDER_premium",
+              "lookup_key": "premium",
+              "object": "entitlement",
+              "project_id": "proj_PLACEHOLDER",
+              "state": "active"
+            }
+          ],
+          "next_page": null,
+          "object": "list",
+          "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_1/entitlements"
+        },
+        "environment": "production",
+        "gives_access": true,
+        "id": "sub_PLACEHOLDER_1",
+        "management_url": null,
+        "object": "subscription",
+        "original_customer_id": "customer_PLACEHOLDER_b",
+        "ownership": "purchased",
+        "pending_changes": null,
+        "pending_payment": false,
+        "presented_offering_id": null,
+        "product_id": null,
+        "starts_at": 1795646467253,
+        "status": "active",
+        "store": "promotional",
+        "store_subscription_identifier": "store_sub_PLACEHOLDER_2",
+        "total_revenue_in_usd": {
+          "commission": 0.0,
+          "currency": "USD",
+          "gross": 0.0,
+          "proceeds": 0.0,
+          "tax": 0.0
+        }
+      },
+      {
+        "auto_renewal_status": "will_not_renew",
+        "country": null,
+        "current_period_ends_at": 1801440000000,
+        "current_period_starts_at": 1795646467789,
+        "customer_id": "customer_PLACEHOLDER_b",
+        "ends_at": 1801440000000,
+        "entitlements": {
+          "items": [
+            {
+              "created_at": 1795646462492,
+              "display_name": "Extra",
+              "id": "entl_PLACEHOLDER_extra",
+              "lookup_key": "extra",
+              "object": "entitlement",
+              "project_id": "proj_PLACEHOLDER",
+              "state": "active"
+            }
+          ],
+          "next_page": null,
+          "object": "list",
+          "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_2/entitlements"
+        },
+        "environment": "production",
+        "gives_access": true,
+        "id": "sub_PLACEHOLDER_2",
+        "management_url": null,
+        "object": "subscription",
+        "original_customer_id": "customer_PLACEHOLDER_b",
+        "ownership": "purchased",
+        "pending_changes": null,
+        "pending_payment": false,
+        "presented_offering_id": null,
+        "product_id": null,
+        "starts_at": 1795646467789,
+        "status": "active",
+        "store": "promotional",
+        "store_subscription_identifier": "store_sub_PLACEHOLDER_1",
+        "total_revenue_in_usd": {
+          "commission": 0.0,
+          "currency": "USD",
+          "gross": 0.0,
+          "proceeds": 0.0,
+          "tax": 0.0
+        }
+      }
+    ],
+    "next_page": null,
+    "object": "list",
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_b/subscriptions"
+  },
+  "purchases": {
+    "items": [],
+    "next_page": null,
+    "object": "list",
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_b/purchases"
+  },
+  "activeEntitlements": {
+    "items": [
+      {
+        "entitlement_id": "entl_PLACEHOLDER_extra",
+        "expires_at": 1801440000000,
+        "object": "customer.active_entitlement"
+      },
+      {
+        "entitlement_id": "entl_PLACEHOLDER_premium",
+        "expires_at": 1798761600000,
+        "object": "customer.active_entitlement"
+      }
+    ],
+    "next_page": null,
+    "object": "list",
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_b/active_entitlements"
+  }
+}

@@ -83,25 +83,26 @@ describe('entry points', () => {
     expect(internal.SubscriptionError).toBe(shared.SubscriptionError)
   })
 
-  it('exposes nothing yet from the adapter subpaths', () => {
-    // Scenario: these subpaths are loaded through their aliases and hold no name.
-    for (const entry of [revenuecat, finance]) {
-      expect(Object.keys(entry)).toEqual([])
-    }
+  it('exposes the names of the RevenueCat subpath and nothing yet from the finance subpath', () => {
+    // Scenario: the RevenueCat factory and its signing function; the finance subpath holds no name.
+    expect(Object.keys(revenuecat).sort()).toEqual(['revenueCatSource', 'signRevenueCatWebhook'])
+    expect(Object.keys(finance)).toEqual([])
   })
 
   it('exposes exactly the names of the testing subpath', () => {
-    // Scenario: the store, the fake source, the manual clock, the failing store and the conformance cases.
+    // Scenario: the store, the fake source, the manual clock, the failing store, the conformance cases and the RevenueCat request builder.
     expect(Object.keys(testing).sort()).toEqual([
       'FakeSubscriptionSource',
       'InMemorySubscriptionStore',
       'ManualClock',
+      'REVENUECAT_REQUEST_FLAWS',
       'assertNoSentinel',
+      'buildRevenueCatWebhookRequest',
       'createCapture',
       'createFailingStore',
       'storeConformanceCases'
     ])
-    expect(Object.values(testing)).toHaveLength(7)
+    expect(Object.values(testing)).toHaveLength(9)
   })
 
   it('raises one error class whichever entry point it is reached from', () => {

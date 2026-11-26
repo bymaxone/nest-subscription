@@ -50,6 +50,32 @@ export interface SubscriptionRecord {
   readonly managementReference: string | null
 }
 
+/**
+ * A one-time or lifetime purchase that the source reports as granting an entitlement (D31). It is
+ * held beside the subscriptions: it never renews, so it has no status, no period and no renewal
+ * intent. A consumable grants nothing and is not held.
+ */
+export interface NonRenewingPurchaseRecord {
+  /** Stable reference of this purchase, as named by the source. It is listed among the grantors of the entitlements it grants. */
+  readonly purchaseReference: string
+  /** The entitlements it grants, sorted ascending with no duplicates. */
+  readonly entitlementNames: readonly string[]
+  /** Whether the source says this purchase gives access. Never derived from a date or a status. */
+  readonly givesAccess: boolean
+  /** Where it was purchased. */
+  readonly origin: SubscriptionOrigin
+  /** Whether it is a production or a sandbox purchase. */
+  readonly environment: SubscriptionEnvironment
+  /** The product, as named by the source. */
+  readonly productReference: string
+  /** When it was purchased. */
+  readonly purchasedAt: string
+  /** The instant access ends; `null` for a lifetime grant. */
+  readonly accessUntil: string | null
+  /** When it was refunded; `null` when it was not. */
+  readonly refundedAt: string | null
+}
+
 /** One named right of an account and whether it is active now. */
 export interface EntitlementState {
   /** The entitlement's name. */
@@ -82,6 +108,11 @@ export interface SubscriptionSnapshot {
   readonly entitlements: readonly EntitlementState[]
   /** The subscriptions of the account, usually one. */
   readonly subscriptions: readonly SubscriptionRecord[]
+  /**
+   * The non-renewing purchases of the account that grant an entitlement, usually none. A snapshot
+   * with no such list holds none.
+   */
+  readonly nonRenewingPurchases?: readonly NonRenewingPurchaseRecord[]
   /** The name of the source that produced this snapshot. */
   readonly source: string
   /** How the source names the account; `null` when the source has no record of it. */

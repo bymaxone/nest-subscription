@@ -8,6 +8,7 @@ import * as entry from './index'
 import { InMemorySubscriptionStore } from './in-memory.store'
 import { createFailingStore } from './failing.store'
 import { ManualClock } from './manual.clock'
+import { REVENUECAT_REQUEST_FLAWS, buildRevenueCatWebhookRequest } from './revenuecat-requests'
 import { storeConformanceCases } from './store-conformance'
 
 describe('testing entry point', () => {
@@ -18,7 +19,9 @@ describe('testing entry point', () => {
       'FakeSubscriptionSource',
       'InMemorySubscriptionStore',
       'ManualClock',
+      'REVENUECAT_REQUEST_FLAWS',
       'assertNoSentinel',
+      'buildRevenueCatWebhookRequest',
       'createCapture',
       'createFailingStore',
       'storeConformanceCases'
@@ -26,6 +29,8 @@ describe('testing entry point', () => {
     expect(entry.FakeSubscriptionSource).toBe(FakeSubscriptionSource)
     expect(entry.InMemorySubscriptionStore).toBe(InMemorySubscriptionStore)
     expect(entry.ManualClock).toBe(ManualClock)
+    expect(entry.REVENUECAT_REQUEST_FLAWS).toBe(REVENUECAT_REQUEST_FLAWS)
+    expect(entry.buildRevenueCatWebhookRequest).toBe(buildRevenueCatWebhookRequest)
     expect(entry.assertNoSentinel).toBe(assertNoSentinel)
     expect(entry.createCapture).toBe(createCapture)
     expect(entry.createFailingStore).toBe(createFailingStore)

@@ -1,6 +1,6 @@
 # Phase 6 — Webhook receiver
 
-> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
+> **Status**: ✅ Done &nbsp;·&nbsp; **Progress**: 5 / 5 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P6 — webhook-receiver
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -481,3 +481,4 @@ Completion Protocol (after the work is reported done):
 - 6.3 ✅ 2026-11-25 — the response deadline: the work raced against an injectable wait, the only timer cleared when the race is decided, a timed-out event freed for its retry, and a 60 000 ms ceiling at boot
 - 6.4 ✅ 2026-11-25 — the controller behind a switch that is off by default, the raw-body reading, a route chosen by the host with no default, and a first-request answer for an application without the raw body
 - 6.5 ✅ 2026-11-25 — the receiver end to end in both forms: one identical refusal for every failed check, one read per event, reverse order, a slow source and its retry, failure paths, the purge and the sentinel sweep
+- P6 ✅ 2026-11-25 — merged as #12 (e004c38)

@@ -72,12 +72,17 @@ const OPTIONAL_PEERS = ['@bymax-one/nest-cache', '@bymax-one/nest-core']
 /** The packages a host of the NestJS module provides and the `shared` subpath must not need. */
 const FRAMEWORK = ['@nestjs/', 'rxjs', 'reflect-metadata']
 
+/** Every runtime name of the `revenuecat` subpath. */
+const REVENUECAT_EXPORTS = ['revenueCatSource', 'signRevenueCatWebhook']
+
 /** Every runtime name of the `testing` subpath. */
 const TESTING_EXPORTS = [
   'FakeSubscriptionSource',
   'InMemorySubscriptionStore',
   'ManualClock',
+  'REVENUECAT_REQUEST_FLAWS',
   'assertNoSentinel',
+  'buildRevenueCatWebhookRequest',
   'createCapture',
   'createFailingStore',
   'storeConformanceCases'
@@ -147,7 +152,7 @@ const PROBES = [
     deny: OPTIONAL_PEERS,
     entries: {
       '.': ROOT_EXPORTS,
-      './revenuecat': [],
+      './revenuecat': REVENUECAT_EXPORTS,
       './finance': [],
       './testing': TESTING_EXPORTS
     },
@@ -192,7 +197,7 @@ const PROBES = [
   {
     label: 'root and the RevenueCat adapter load no file of the Finance adapter',
     deny: OPTIONAL_PEERS,
-    entries: { '.': ROOT_EXPORTS, './revenuecat': [] },
+    entries: { '.': ROOT_EXPORTS, './revenuecat': REVENUECAT_EXPORTS },
     loaded: [CORE_DIR, REVENUECAT_DIR],
     notLoaded: [FINANCE_DIR]
   },

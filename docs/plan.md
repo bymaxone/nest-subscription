@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 6 / 10 phases of the first release done (60%) — P0 to P9
-**Active phase**: P6 — webhook-receiver
+**Overall progress**: 🔄 7 / 10 phases of the first release done (70%) — P0 to P9
+**Active phase**: P7 — revenuecat-adapter
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -42,8 +42,8 @@ This document says in which order the specification is built and when each part 
 | P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done   | 5/5      | L    | 2026-11-25   |
 | P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done   | 4/4      | M    | 2026-11-25   |
 | P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | 👀 Review | 5/5      | L    | 2026-11-25   |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 📋 ToDo   | 0/8      | L    | —            |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | ✅ Done   | 5/5      | L    | 2026-11-25   |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | 👀 Review | 8/8      | L    | 2026-11-25   |
 | P8  | management-operations — capabilities, the five operations and the management reference                    | 📋 ToDo   | 0/9      | L    | —            |
 | P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 📋 ToDo   | 0/6      | M    | —            |
 | P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo   | 0/5      | L    | —            |
@@ -328,12 +328,12 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the read of a customer's subscriptions and active entitlements from version 2 of the REST API (FR10, D06); the App User ID as account identifier, events for anonymous or unknown identifiers recorded and reported, and the refresh of both accounts on an alias or a transfer (FR11); both verification methods, with the boot report when only the static header is used (FR12); the non-renewing purchases that grant an entitlement, read from the API and mapped into the model, which is extended where it cannot express them (FR02, FR05, D31); the sandbox filter applied by the adapter itself (FR13, SEC07); the status, renewal and store mappings and the three notable rules (FR14, Appendix A.3); the event kinds of Appendix A.2 mapped to the port's change kinds, with every other kind passing as unknown; secret rotation as RevenueCat allows it (SEC09); the signed request builders for RevenueCat in the testing subpath (FR39); recorded payload fixtures with identifiers and secrets replaced.
   - Out: the management operations and the management reference (P8); version 1 of the API except what P8 needs; consumables, which grant nothing (D31, specification §3.2).
 - **Definition of Done**:
-  - [ ] A table-driven test generated from Appendix A.3 maps every listed status, renewal status and store, and maps an unlisted value to `unknown` or `other` (AC10 for Appendix A).
-  - [ ] A wrong signature, a wrong authorization header, a stale timestamp and a body altered after signing are each refused, and the comparison is constant-time by construction (AC02 for RevenueCat).
-  - [ ] End to end, a recorded purchase notification yields an active entitlement through the service (AC01), and a refund of the current period removes access on the next refresh and emits `refunded` (AC05).
-  - [ ] A recorded RevenueCat fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the service, with access until null for a lifetime grant, and a consumable grants nothing (D31).
-  - [ ] A sandbox purchase grants nothing under the default configuration, with RevenueCat's own default of granting it reproduced in the fixture (AC06).
-  - [ ] Unit tests open no socket; the suite's only HTTP is a local stand-in for the RevenueCat API.
+  - [x] A table-driven test generated from Appendix A.3 maps every listed status, renewal status and store, and maps an unlisted value to `unknown` or `other` (AC10 for Appendix A).
+  - [x] A wrong signature, a wrong authorization header, a stale timestamp and a body altered after signing are each refused, and the comparison is constant-time by construction (AC02 for RevenueCat).
+  - [x] End to end, a recorded purchase notification yields an active entitlement through the service (AC01), and a refund of the current period removes access on the next refresh and emits `refunded` (AC05).
+  - [x] A recorded RevenueCat fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the service, with access until null for a lifetime grant, and a consumable grants nothing (D31).
+  - [x] A sandbox purchase grants nothing under the default configuration, with RevenueCat's own default of granting it reproduced in the fixture (AC06).
+  - [x] Unit tests open no socket; the suite's only HTTP is a local stand-in for the RevenueCat API.
 - **Context / preconditions**: The unit work needs P1 and P2. The non-renewing purchases need P3 and P5. Closing the phase needs P6. The owner provides a RevenueCat sandbox project and its credentials, from which the fixtures are recorded (D18).
 - **Rules-of-phase**:
   1. Each fact from Appendix A is re-read on the page listed in specification §12 before the code relies on it, and the three items of Appendix A.6 are resolved or kept explicitly unknown.
@@ -449,6 +449,7 @@ When a phase moves status:
 - P3 ✅ 2026-11-25 — reads, refresh with single flight, staleness, the cache and reconciliation merged in #9
 - P4 ✅ 2026-11-25 — the decorator, the guard, the stable refusal codes and the two fail policies merged in #10 (cba5824)
 - P5 ✅ 2026-11-25 — the change list, its stable keys, the host hook with at-least-once delivery and the observer merged in #11 (60d7136)
+- P6 ✅ 2026-11-25 — the processor, the controller, de-duplication by event identifier, the five outcomes and the response deadline merged in #12 (e004c38)
 
 ---
 

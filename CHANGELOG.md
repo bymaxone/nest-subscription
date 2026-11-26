@@ -184,6 +184,26 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   `webhookPath`; a factory that enables the controller or names a route without one, or that
   contradicts the static one, is refused at boot naming the option. The retention `eventRetentionMs` defaults to 7 days and is applied by each
   reconciliation run, which purges older identifiers; the library starts no timer for it.
+- `revenueCatSource` and `signRevenueCatWebhook` in the `revenuecat` subpath: RevenueCat as a billing
+  source. It reads a customer's subscriptions and one-time purchases from version 2 of the REST API
+  with the runtime's `fetch`, and the result is the empty snapshot for a customer RevenueCat does not
+  know. Access is RevenueCat's `gives_access` flag and never a status name; a scheduled pause is not
+  a pause, a cancellation is not an expiry and a billing issue follows the access flag. Webhooks are
+  verified by the static authorization header, by the HMAC signature over the raw bytes with a
+  timestamp tolerance (five minutes by default), or by both, in constant time, with two valid values
+  of each secret during a rotation; every refusal is the same value. Sandbox purchases give no access
+  and grant no entitlement unless `allowSandbox` is set, and enabling it with `isProduction` needs
+  `confirmSandboxInProduction`. The API address is the `baseUrl` option, validated at boot. Every
+  credential and webhook secret is held in a `Secret` in a private field.
+- `NonRenewingPurchaseRecord` and the optional `nonRenewingPurchases` list of `SubscriptionSnapshot`
+  in the `shared` subpath, and a third optional argument of `resolveEntitlements`: a one-time or
+  lifetime purchase that RevenueCat reports as granting an entitlement gives it, with no end for a
+  lifetime grant, and is named among the grantors of the entitlement. A consumable grants nothing.
+  `diffSnapshots` reports a purchase through the existing kinds: `started`, `expired`, `refunded`
+  and `transferred`.
+- `buildRevenueCatWebhookRequest` and `REVENUECAT_REQUEST_FLAWS` in the `testing` subpath: a
+  RevenueCat webhook request, signed or carrying the authorization header, and each way it can be
+  wrong on purpose.
 
 ### Changed
 

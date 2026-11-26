@@ -1,0 +1,67 @@
+{
+  "customerId": "customer_PLACEHOLDER_lifetime",
+  "subscriptions": {
+    "object": "list",
+    "items": [],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_lifetime/subscriptions"
+  },
+  "purchases": {
+    "object": "list",
+    "items": [
+      {
+        "object": "purchase",
+        "id": "purchase_PLACEHOLDER_1",
+        "customer_id": "customer_PLACEHOLDER_lifetime",
+        "original_customer_id": "customer_PLACEHOLDER_lifetime",
+        "product_id": "product_PLACEHOLDER_lifetime",
+        "purchased_at": 1795000000000,
+        "revenue_in_usd": {
+          "currency": "USD",
+          "gross": 49.99,
+          "commission": 7.5,
+          "tax": 0.0,
+          "proceeds": 42.49
+        },
+        "quantity": 1,
+        "status": "owned",
+        "presented_offering_id": null,
+        "entitlements": {
+          "object": "list",
+          "items": [
+            {
+              "object": "entitlement",
+              "id": "entl_PLACEHOLDER_premium",
+              "project_id": "proj_PLACEHOLDER",
+              "lookup_key": "premium",
+              "display_name": "Premium",
+              "state": "active",
+              "created_at": 1795000000000
+            }
+          ],
+          "next_page": null,
+          "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/subscriptions/sub_PLACEHOLDER_1/entitlements"
+        },
+        "environment": "production",
+        "store": "app_store",
+        "store_purchase_identifier": "store_purchase_PLACEHOLDER_1",
+        "ownership": "purchased",
+        "country": "US"
+      }
+    ],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_lifetime/purchases"
+  },
+  "activeEntitlements": {
+    "object": "list",
+    "items": [
+      {
+        "object": "customer.active_entitlement",
+        "entitlement_id": "entl_PLACEHOLDER_premium",
+        "expires_at": null
+      }
+    ],
+    "next_page": null,
+    "url": "https://api.revenuecat.com/v2/projects/proj_PLACEHOLDER/customers/customer_PLACEHOLDER_lifetime/active_entitlements"
+  }
+}

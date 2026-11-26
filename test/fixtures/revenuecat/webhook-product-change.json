@@ -1,0 +1,22 @@
+{
+  "api_version": "1.0",
+  "event": {
+    "id": "event_PLACEHOLDER_product-change",
+    "type": "PRODUCT_CHANGE",
+    "event_timestamp_ms": 1795000000000,
+    "app_id": "app_PLACEHOLDER",
+    "app_user_id": "user_PLACEHOLDER_a",
+    "original_app_user_id": "user_PLACEHOLDER_a",
+    "aliases": ["user_PLACEHOLDER_a"],
+    "environment": "PRODUCTION",
+    "store": "APP_STORE",
+    "product_id": "product_PLACEHOLDER_monthly",
+    "entitlement_ids": ["premium"],
+    "period_type": "NORMAL",
+    "purchased_at_ms": 1795000000000,
+    "expiration_at_ms": 1797600000000,
+    "transaction_id": "transaction_PLACEHOLDER_1",
+    "original_transaction_id": "transaction_PLACEHOLDER_1",
+    "new_product_id": "product_PLACEHOLDER_yearly"
+  }
+}

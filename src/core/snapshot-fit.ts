@@ -16,6 +16,7 @@ import {
   WILL_RENEW_VALUES,
   parseInstant,
   type EntitlementState,
+  type NonRenewingPurchaseRecord,
   type SourceCustomerReference,
   type SubscriptionRecord,
   type SubscriptionSnapshot
@@ -103,11 +104,24 @@ const SUBSCRIPTION_FIELDS: Record<keyof SubscriptionRecord, Check> = {
   managementReference: orNull(isString)
 }
 
+const PURCHASE_FIELDS: Record<keyof NonRenewingPurchaseRecord, Check> = {
+  purchaseReference: isString,
+  entitlementNames: isSortedUniqueStrings,
+  givesAccess: isBoolean,
+  origin: memberOf(SUBSCRIPTION_ORIGINS),
+  environment: memberOf(SUBSCRIPTION_ENVIRONMENTS),
+  productReference: isString,
+  purchasedAt: isInstant,
+  accessUntil: orNull(isInstant),
+  refundedAt: orNull(isInstant)
+}
+
 /** The fields of a snapshot other than the optional `tenantId`, which the identity check covers. */
 const SNAPSHOT_FIELDS: Record<Exclude<keyof SubscriptionSnapshot, 'tenantId'>, Check> = {
   accountId: isString,
   entitlements: (value) => Array.isArray(value) && value.every(isEntitlement),
   subscriptions: listOf(SUBSCRIPTION_FIELDS),
+  nonRenewingPurchases: (value) => value === undefined || listOf(PURCHASE_FIELDS)(value),
   source: isString,
   sourceCustomer: orNull((value) => hasFields(value, SOURCE_CUSTOMER_FIELDS)),
   fetchedAt: isInstant,

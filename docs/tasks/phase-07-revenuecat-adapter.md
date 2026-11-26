@@ -1,6 +1,6 @@
 # Phase 7 — RevenueCat adapter
 
-> **Status**: 📋 ToDo &nbsp;·&nbsp; **Progress**: 0 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-24
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 8 / 8 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-25
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P7 — revenuecat-adapter
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -42,14 +42,14 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 
 | ID  | Task                                                      | Status  | Priority | Size | Depends on |
 | --- | --------------------------------------------------------- | ------- | -------- | ---- | ---------- |
-| 7.1 | Re-read the RevenueCat facts and record the fixtures      | 📋 ToDo | P0       | M    | —          |
-| 7.2 | Add the adapter options and the HTTP client               | 📋 ToDo | P0       | M    | 7.1        |
-| 7.3 | Implement the mapping tables                              | 📋 ToDo | P0       | M    | 7.1        |
-| 7.4 | Read a customer into a snapshot                           | 📋 ToDo | P0       | L    | 7.2, 7.3   |
-| 7.5 | Verify RevenueCat webhooks                                | 📋 ToDo | P0       | M    | 7.2        |
-| 7.6 | Parse events and handle identity                          | 📋 ToDo | P0       | M    | 7.4, 7.5   |
-| 7.8 | Read non-renewing purchases and map them into the model   | 📋 ToDo | P0       | L    | 7.3, 7.4   |
-| 7.7 | Add the request builders and prove the adapter end to end | 📋 ToDo | P0       | L    | 7.6, 7.8   |
+| 7.1 | Re-read the RevenueCat facts and record the fixtures      | ✅ Done | P0       | M    | —          |
+| 7.2 | Add the adapter options and the HTTP client               | ✅ Done | P0       | M    | 7.1        |
+| 7.3 | Implement the mapping tables                              | ✅ Done | P0       | M    | 7.1        |
+| 7.4 | Read a customer into a snapshot                           | ✅ Done | P0       | L    | 7.2, 7.3   |
+| 7.5 | Verify RevenueCat webhooks                                | ✅ Done | P0       | M    | 7.2        |
+| 7.6 | Parse events and handle identity                          | ✅ Done | P0       | M    | 7.4, 7.5   |
+| 7.8 | Read non-renewing purchases and map them into the model   | ✅ Done | P0       | L    | 7.3, 7.4   |
+| 7.7 | Add the request builders and prove the adapter end to end | ✅ Done | P0       | L    | 7.6, 7.8   |
 
 ---
 
@@ -57,7 +57,7 @@ The unit work of this phase (tasks 7.1 to 7.6) needs only P1 and P2 and can run 
 
 ### Task 7.1 — Re-read the RevenueCat facts and record the fixtures
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: —
@@ -68,11 +68,11 @@ Re-read every page of specification §12 that the adapter relies on, write down 
 
 #### Acceptance criteria
 
-- [ ] `docs/revenuecat-facts.md` lists, with the URL and the date read: the version 2 endpoints for a customer's subscriptions and active entitlements and their response fields; the authentication header; the rate limits; the webhook authentication methods and the exact signature construction; the event fields the adapter reads; every status, renewal status and store value.
-- [ ] Each row of Appendix A.1 to A.5 is marked confirmed, changed or not found. A changed row is corrected in `docs/spec.md` in the same pull request.
-- [ ] Each item of Appendix A.6 (version 1 deprecation, a refund marker in version 2, delivery order) is marked resolved with its source, or still unknown.
-- [ ] Fixtures exist under `test/fixtures/revenuecat/` for: a customer with an active subscription, one in grace, one in billing retry, one paused, one expired, one refunded, one sandbox, one with two subscriptions, an unknown customer; and webhook bodies for each event kind the adapter distinguishes.
-- [ ] A script or a test proves no fixture contains an App User ID, an email, a token or a secret from a real project.
+- [x] `docs/revenuecat-facts.md` lists, with the URL and the date read: the version 2 endpoints for a customer's subscriptions and active entitlements and their response fields; the authentication header; the rate limits; the webhook authentication methods and the exact signature construction; the event fields the adapter reads; every status, renewal status and store value.
+- [x] Each row of Appendix A.1 to A.5 is marked confirmed, changed or not found. A changed row is corrected in `docs/spec.md` in the same pull request.
+- [x] Each item of Appendix A.6 (version 1 deprecation, a refund marker in version 2, delivery order) is marked resolved with its source, or still unknown.
+- [x] Fixtures exist under `test/fixtures/revenuecat/` for: a customer with an active subscription, one in grace, one in billing retry, one paused, one expired, one refunded, one sandbox, one with two subscriptions, an unknown customer; and webhook bodies for each event kind the adapter distinguishes.
+- [x] A script or a test proves no fixture contains an App User ID, an email, a token or a secret from a real project.
 
 #### Files to create / modify
 
@@ -140,7 +140,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.2 — Add the adapter options and the HTTP client
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 7.1
@@ -151,12 +151,12 @@ Write the options of the RevenueCat adapter and a small client over the runtime'
 
 #### Acceptance criteria
 
-- [ ] `RevenueCatSourceOptions` carries the project identifier, the API key, the webhook authorization value and signing secret (each optionally as two valid values), the timestamp tolerance, the request timeout, an injectable `fetch`, and `baseUrl`, the adapter's own option for the API's base address: it defaults to the address recorded in `docs/revenuecat-facts.md`, must be an absolute URL, is refused over plain HTTP unless the host is a loopback address, and is how a test points the adapter at a local stand-in.
-- [ ] Secrets are held in `Secret`, and the four containment paths expose none of them.
-- [ ] A network error, a timeout, a 5xx and a 429 become `SubscriptionError` with the source-unavailable code; a 404 for a customer becomes "unknown account", which the read turns into the empty snapshot.
-- [ ] No error message, cause or log line contains the API key, the URL's customer identifier or a response body.
-- [ ] Invalid options are refused when the factory is called, naming options and never values.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `RevenueCatSourceOptions` carries the project identifier, the API key, the webhook authorization value and signing secret (each optionally as two valid values), the timestamp tolerance, the request timeout, an injectable `fetch`, and `baseUrl`, the adapter's own option for the API's base address: it defaults to the address recorded in `docs/revenuecat-facts.md`, must be an absolute URL, is refused over plain HTTP unless the host is a loopback address, and is how a test points the adapter at a local stand-in.
+- [x] Secrets are held in `Secret`, and the four containment paths expose none of them.
+- [x] A network error, a timeout, a 5xx and a 429 become `SubscriptionError` with the source-unavailable code; a 404 for a customer becomes "unknown account", which the read turns into the empty snapshot.
+- [x] No error message, cause or log line contains the API key, the URL's customer identifier or a response body.
+- [x] Invalid options are refused when the factory is called, naming options and never values.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -223,7 +223,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.3 — Implement the mapping tables
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 7.1
@@ -234,12 +234,12 @@ Write the pure functions that map RevenueCat's status, renewal status and store 
 
 #### Acceptance criteria
 
-- [ ] Every status of Appendix A.3 maps as its table says, and an unlisted status maps to `unknown`.
-- [ ] Every renewal status maps to its will-renew value, and an unlisted one to `unknown`.
-- [ ] Every store maps to its origin, and an unlisted one to `other`.
-- [ ] The tables in the code are generated from, or checked against, one data file that mirrors Appendix A.3, so the specification and the code cannot drift silently.
-- [ ] `in_grace` against `on_hold` follows the source's access flag for a billing issue.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Every status of Appendix A.3 maps as its table says, and an unlisted status maps to `unknown`.
+- [x] Every renewal status maps to its will-renew value, and an unlisted one to `unknown`.
+- [x] Every store maps to its origin, and an unlisted one to `other`.
+- [x] The tables in the code are generated from, or checked against, one data file that mirrors Appendix A.3, so the specification and the code cannot drift silently.
+- [x] `in_grace` against `on_hold` follows the source's access flag for a billing issue.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -307,7 +307,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.4 — Read a customer into a snapshot
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 7.2, 7.3
@@ -318,13 +318,13 @@ Implement the read: fetch a customer's subscriptions and active entitlements fro
 
 #### Acceptance criteria
 
-- [ ] Each fixture of task 7.1 maps to the expected snapshot, field by field, in a table-driven test.
-- [ ] A cancellation keeps the subscription `active` with will renew `no`; a refund of the current period sets refunded-at and gives no access; a scheduled pause leaves access until the period ends.
-- [ ] A sandbox subscription gives no access and grants no entitlement unless sandbox access is enabled, even when RevenueCat reports the entitlement as active (AC06 at unit level).
-- [ ] An unknown customer yields the empty snapshot, not an error.
-- [ ] A response missing a field the adapter needs yields `unknown` status with the source's access flag passed through where present, and otherwise no access.
-- [ ] The snapshot's source-updated-at comes from the source's own freshness field when one exists, and the facts file says which.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Each fixture of task 7.1 maps to the expected snapshot, field by field, in a table-driven test.
+- [x] A cancellation keeps the subscription `active` with will renew `no`; a refund of the current period sets refunded-at and gives no access; a scheduled pause leaves access until the period ends.
+- [x] A sandbox subscription gives no access and grants no entitlement unless sandbox access is enabled, even when RevenueCat reports the entitlement as active (AC06 at unit level).
+- [x] An unknown customer yields the empty snapshot, not an error.
+- [x] A response missing a field the adapter needs yields `unknown` status with the source's access flag passed through where present, and otherwise no access.
+- [x] The snapshot's source-updated-at comes from the source's own freshness field when one exists, and the facts file says which.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -395,7 +395,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.5 — Verify RevenueCat webhooks
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 7.2
@@ -406,13 +406,13 @@ Implement both verification methods RevenueCat offers: the static authorization 
 
 #### Acceptance criteria
 
-- [ ] A request with the right authorization value is accepted; a wrong, missing or differently cased value is refused.
-- [ ] With a signing secret configured, a valid signature is accepted, and a wrong signature, a stale timestamp, a timestamp in the future beyond the tolerance, a malformed header and a body altered after signing are each refused (AC02 for RevenueCat).
-- [ ] Comparison uses `crypto.timingSafeEqual` on equal-length buffers, and a length mismatch is refused without throwing.
-- [ ] With two valid secrets configured, a request signed with either is accepted (SEC09).
-- [ ] Every refusal is the same value: the caller cannot tell which check failed (SEC03).
-- [ ] When only the static header is configured, the factory reports once, through the injectable logger, that the weaker method is in use.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] A request with the right authorization value is accepted; a wrong, missing or differently cased value is refused.
+- [x] With a signing secret configured, a valid signature is accepted, and a wrong signature, a stale timestamp, a timestamp in the future beyond the tolerance, a malformed header and a body altered after signing are each refused (AC02 for RevenueCat).
+- [x] Comparison uses `crypto.timingSafeEqual` on equal-length buffers, and a length mismatch is refused without throwing.
+- [x] With two valid secrets configured, a request signed with either is accepted (SEC09).
+- [x] Every refusal is the same value: the caller cannot tell which check failed (SEC03).
+- [x] When only the static header is configured, the factory reports once, through the injectable logger, that the weaker method is in use.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -479,7 +479,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.6 — Parse events and handle identity
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 7.4, 7.5
@@ -490,13 +490,13 @@ Turn a verified RevenueCat event into the port's notification: event identifier,
 
 #### Acceptance criteria
 
-- [ ] Each event kind of Appendix A.2 yields a notification; `TEST` and kinds that cannot change subscription state yield the "changes nothing" kind; a kind not in the list yields the unknown kind, which triggers a refresh.
-- [ ] A `TRANSFER` event names both the identifiers that lost and gained the purchases as affected accounts.
-- [ ] An event whose only identifier is anonymous (prefix `$RCAnonymousID:`) is reported through the observer and the log with no identifier in them, and yields a notification with no account to refresh, never a silent drop.
-- [ ] Aliases listed on an event are included as affected accounts.
-- [ ] A body that is not the expected shape after verification yields the unknown kind with whatever accounts could be read, never a thrown error.
-- [ ] The event identifier is the event's `id`, and the environment is carried into the notification.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] Each event kind of Appendix A.2 yields a notification; `TEST` and kinds that cannot change subscription state yield the "changes nothing" kind; a kind not in the list yields the unknown kind, which triggers a refresh.
+- [x] A `TRANSFER` event names both the identifiers that lost and gained the purchases as affected accounts.
+- [x] An event whose only identifier is anonymous (prefix `$RCAnonymousID:`) is reported through the observer and the log with no identifier in them, and yields a notification with no account to refresh, never a silent drop.
+- [x] Aliases listed on an event are included as affected accounts.
+- [x] A body that is not the expected shape after verification yields the unknown kind with whatever accounts could be read, never a thrown error.
+- [x] The event identifier is the event's `id`, and the environment is carried into the notification.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -568,7 +568,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.7 — Add the request builders and prove the adapter end to end
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 7.6, 7.8
@@ -579,14 +579,14 @@ Add the signed request builders to the testing subpath, and run the acceptance c
 
 #### Acceptance criteria
 
-- [ ] `buildRevenueCatWebhookRequest` builds a request the adapter accepts, for both verification methods, and can build each invalid variant on purpose.
-- [ ] A recorded purchase notification yields an active entitlement readable through the service (AC01).
-- [ ] A refund of the current period removes access on the next refresh and emits `refunded` (AC05).
-- [ ] A sandbox purchase grants nothing under the default configuration, with the stand-in reporting the entitlement as active the way RevenueCat does by default (AC06).
-- [ ] A wrong signature, a wrong authorization header, a stale timestamp and an altered body are refused through the controller and change nothing (AC02).
-- [ ] A recorded fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the real receiver and the service, and a consumable grants nothing (D31).
-- [ ] The suite's only HTTP is the local stand-in, reached through the adapter's `baseUrl` option; the sentinel sweep finds no secret and no identifier in logs or observer payloads.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `buildRevenueCatWebhookRequest` builds a request the adapter accepts, for both verification methods, and can build each invalid variant on purpose.
+- [x] A recorded purchase notification yields an active entitlement readable through the service (AC01).
+- [x] A refund of the current period removes access on the next refresh and emits `refunded` (AC05).
+- [x] A sandbox purchase grants nothing under the default configuration, with the stand-in reporting the entitlement as active the way RevenueCat does by default (AC06).
+- [x] A wrong signature, a wrong authorization header, a stale timestamp and an altered body are refused through the controller and change nothing (AC02).
+- [x] A recorded fixture of a non-renewing purchase that grants an entitlement yields an active entitlement through the real receiver and the service, and a consumable grants nothing (D31).
+- [x] The suite's only HTTP is the local stand-in, reached through the adapter's `baseUrl` option; the sentinel sweep finds no secret and no identifier in logs or observer payloads.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -660,7 +660,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 7.8 — Read non-renewing purchases and map them into the model
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: L
 - **Depends on**: 7.3, 7.4
@@ -671,16 +671,16 @@ Read the one-time and lifetime purchases that RevenueCat reports as granting an 
 
 #### Acceptance criteria
 
-- [ ] `docs/revenuecat-facts.md` is extended with the endpoint, fields and values that report a non-renewing purchase and the entitlement it grants, read from the RevenueCat customer and purchases pages on the day, with their URLs; the unknowns of Appendix A.6 about purchases are resolved or kept explicitly unknown.
-- [ ] The shared model expresses a non-renewing purchase as FR02 describes (what the source calls it, the entitlement it grants, origin, environment, whether it gives access, when access ends or null for a lifetime grant, and when it was refunded), and `resolveEntitlements` counts it beside subscriptions: an entitlement it grants is active while it gives access, with `until` null for a lifetime grant, and the entitlement names the purchase that grants it. Existing exports keep working; any change to a public type is listed in the pull request.
-- [ ] `readAccount` returns the purchases that grant an entitlement, in the snapshot, with the sandbox filter applied to them as to subscriptions (FR13).
-- [ ] A consumable, and a purchase that grants no entitlement, produces no entry and no entitlement.
-- [ ] A recorded, sanitized fixture of a non-renewing purchase that grants an entitlement and one of a lifetime grant exist under `test/fixtures/revenuecat/`; through the service, the first yields an active entitlement with the instant RevenueCat reports and the second with `until` null.
-- [ ] A refunded non-renewing purchase removes the access it granted on the next read, and `diffSnapshots` reports the grant and its removal through the existing change kinds, extended with tests if it did not compare purchases.
-- [ ] `test/e2e/fixtures/revenuecat-stand-in.ts` exists, serves the recorded fixtures at the version 2 paths on a loopback address, and the adapter reads it through its `baseUrl` option in the cases above.
-- [ ] A subscription and a purchase that grant the same entitlement give one active entitlement, with the latest `until`, and null if a lifetime grant is among them.
-- [ ] Table-driven tests cover the resolution over zero, one and several purchases, alone and mixed with subscriptions.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `docs/revenuecat-facts.md` is extended with the endpoint, fields and values that report a non-renewing purchase and the entitlement it grants, read from the RevenueCat customer and purchases pages on the day, with their URLs; the unknowns of Appendix A.6 about purchases are resolved or kept explicitly unknown.
+- [x] The shared model expresses a non-renewing purchase as FR02 describes (what the source calls it, the entitlement it grants, origin, environment, whether it gives access, when access ends or null for a lifetime grant, and when it was refunded), and `resolveEntitlements` counts it beside subscriptions: an entitlement it grants is active while it gives access, with `until` null for a lifetime grant, and the entitlement names the purchase that grants it. Existing exports keep working; any change to a public type is listed in the pull request.
+- [x] `readAccount` returns the purchases that grant an entitlement, in the snapshot, with the sandbox filter applied to them as to subscriptions (FR13).
+- [x] A consumable, and a purchase that grants no entitlement, produces no entry and no entitlement.
+- [x] A recorded, sanitized fixture of a non-renewing purchase that grants an entitlement and one of a lifetime grant exist under `test/fixtures/revenuecat/`; through the service, the first yields an active entitlement with the instant RevenueCat reports and the second with `until` null.
+- [x] A refunded non-renewing purchase removes the access it granted on the next read, and `diffSnapshots` reports the grant and its removal through the existing change kinds, extended with tests if it did not compare purchases.
+- [x] `test/e2e/fixtures/revenuecat-stand-in.ts` exists, serves the recorded fixtures at the version 2 paths on a loopback address, and the adapter reads it through its `baseUrl` option in the cases above.
+- [x] A subscription and a purchase that grant the same entitlement give one active entitlement, with the latest `until`, and null if a lifetime grant is among them.
+- [x] Table-driven tests cover the resolution over zero, one and several purchases, alone and mixed with subscriptions.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -761,3 +761,12 @@ Completion Protocol (after the work is reported done):
 > Append-only. One line per task completion. Format: `- <task-id> ✅ YYYY-MM-DD — <one-line summary>`.
 
 <!-- entries are added as tasks complete -->
+
+- 7.1 ✅ 2026-11-25 — the provider facts re-read and recorded with their pages, the sandbox and documentation fixtures, and a sanitization check that fails on a planted identifier
+- 7.2 ✅ 2026-11-25 — the adapter options with their validation and a fetch-based client that maps every failure to a fixed library error
+- 7.3 ✅ 2026-11-25 — the status, renewal and store tables as data checked against Appendix A.3, with a billing issue following the source's access flag
+- 7.4 ✅ 2026-11-25 — the read of a customer's subscriptions into a snapshot, with the sandbox filter, paged reads with a bound, and the unknown customer as an empty snapshot
+- 7.5 ✅ 2026-11-25 — both webhook verification methods over the raw bytes with a timestamp tolerance, constant-time comparison, two valid secrets, one refusal value and a header-only report
+- 7.6 ✅ 2026-11-25 — event parsing into the port's notification with transfers, aliases and anonymous identifiers, and the revenueCatSource factory with secrets held in private fields
+- 7.8 ✅ 2026-11-25 — non-renewing purchases that grant an entitlement read, mapped and filtered, the model extended with an optional purchase list that the resolution, the change rules and the fit check count, and the local stand-in
+- 7.7 ✅ 2026-11-25 — the signed request builders in the testing subpath sharing one signing function with the adapter, and the adapter proved end to end behind the real controller against a local stand-in
