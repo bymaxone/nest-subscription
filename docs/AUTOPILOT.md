@@ -83,7 +83,12 @@ The commands exist from P0 on (they are what P0 delivers). Before P0 is merged t
 
 **Other checks on every pull request**: `attribution / No AI attribution`, `Socket Security: Pull Request Alerts`, `Socket Security: Project Report`.
 
-**Expected-skip CI checks**: none. The repository is public, so no workflow is gated on visibility.
+**Expected-skip CI checks**: five jobs of the reusable workflows are skipped on every pull request, because
+of the inputs this repository passes to them, as `gh pr checks 14` showed on the merged pull request #14:
+`ci / Format check`, `ci / Build`, `ci / Mutation testing`, `security / Audit registry signatures` and
+`security / Semgrep`. A skipped job is not a failure; the required `CI passed` check and the build and size
+job (`Verify build + size`) cover what matters here. The repository is public, so no workflow is gated on
+visibility.
 
 **One test suite at a time.** The chain never runs two suites or two Stryker runs concurrently.
 

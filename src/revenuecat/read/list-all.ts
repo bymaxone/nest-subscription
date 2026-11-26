@@ -1,7 +1,9 @@
 /**
  * @fileoverview Reads a RevenueCat list to its end. The next request is built from the base
- * address and the id of the last item, never from the `next_page` address the response carries,
- * so a response cannot send the adapter, and its credential, to another host. The number of
+ * address and a cursor, never from the `next_page` address the response carries, so a response
+ * cannot send the adapter, and its credential, to another host. The cursor is the `starting_after`
+ * value in the query string of `next_page`, which is what the API itself asks for next; only when
+ * `next_page` carries none is it the cursor field of the last item. The number of
  * pages is bounded, and a list that cannot be read to its end is a failed read: an incomplete
  * list could hide a subscription that gives access.
  * @layer revenuecat
@@ -39,7 +41,8 @@ async function getPage(
  *
  * @param http The client.
  * @param path The path of the list, with every identifier already encoded.
- * @param cursorKey The field of an item whose value is the cursor of the next request.
+ * @param cursorKey The field of the last item whose value is the cursor of the next request when
+ *   `next_page` carries no `starting_after`.
  * @throws SubscriptionError with the source-unavailable code when a response is not a list, an
  *   item that must give the cursor has none, or the list runs past {@link MAX_PAGES} pages; and
  *   whatever the client throws.
@@ -59,7 +62,7 @@ export async function listAll(
     items.push(...parsed.items)
     if (!parsed.hasMore) return items
     const last: unknown = parsed.items.at(-1)
-    cursor = isRecord(last) ? readString(last, cursorKey) : null
+    cursor = parsed.nextCursor ?? (isRecord(last) ? readString(last, cursorKey) : null)
     if (cursor === null) break
   }
   throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)

@@ -407,10 +407,21 @@ describe('validateOptions', () => {
       expect(error.optionPaths).toEqual(['source'])
     })
 
-    it('does not mutate the options it reads', () => {
-      // Scenario: the options object and its nested object are unchanged after validation.
-      const options = Object.freeze({ ...valid(), cache: Object.freeze({ get: 1 }) })
+    it('leaves the options it reads equal to what they were', () => {
+      // Scenario: the options object, the cache and the source and store are frozen, so a write
+      // would throw, and the entries and the cache are compared with a copy taken before.
+      const base = valid()
+      const options = Object.freeze({
+        ...base,
+        source: Object.freeze(base['source']),
+        store: Object.freeze(base['store']),
+        cache: Object.freeze({ get: 1 })
+      })
+      const entries = Object.entries(options)
+      const cacheBefore = structuredClone(options.cache)
       expect(() => validateOptions(options)).toThrow(SubscriptionError)
+      expect(Object.entries(options)).toStrictEqual(entries)
+      expect(options.cache).toStrictEqual(cacheBefore)
     })
   })
 })

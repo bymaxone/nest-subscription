@@ -37,6 +37,21 @@ export interface ParsedList {
   readonly items: readonly unknown[]
   /** Whether `next_page` is present, which is how the API says there is more. */
   readonly hasMore: boolean
+  /**
+   * The `starting_after` value in the query string of `next_page`, or `null` when there is none.
+   * Only the value is read: the address itself is never requested.
+   */
+  readonly nextCursor: string | null
+}
+
+/** The base a relative `next_page` is resolved against; it is read from and never requested. */
+const PLACEHOLDER_BASE = 'https://placeholder.invalid'
+
+/** The `starting_after` of a `next_page` value, absolute or relative, or `null` when it has none. */
+function cursorOfNextPage(next: string): string | null {
+  if (!URL.canParse(next, PLACEHOLDER_BASE)) return null
+  const cursor = new URL(next, PLACEHOLDER_BASE).searchParams.get('starting_after')
+  return cursor === null || cursor.length === 0 ? null : cursor
 }
 
 /** The list envelope of the API (`object`, `items`, `next_page`, `url`), or `null` when it is not. */
@@ -45,7 +60,8 @@ export function parseList(value: unknown): ParsedList | null {
   const items: unknown = Reflect.get(value, 'items')
   if (!Array.isArray(items)) return null
   const next: unknown = Reflect.get(value, 'next_page')
-  return { items, hasMore: typeof next === 'string' && next.length > 0 }
+  const hasMore = typeof next === 'string' && next.length > 0
+  return { items, hasMore, nextCursor: hasMore ? cursorOfNextPage(next) : null }
 }
 
 /** One entitlement of a nested list: its internal identifier and the name a host gives it. */

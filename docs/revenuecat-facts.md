@@ -48,9 +48,18 @@ Pages:
 | Unknown customer                  | HTTP 404 with `type: resource_missing` and message `Could not find customer ID associated with this project`, from the customer endpoint and from each of its list endpoints (observed)                                                                           | Customer, observed                  |
 | Key of another project (observed) | HTTP 403 with `type: authorization_error` and the message that the key does not belong to the project; it is not a 404, so a wrong project is never read as an unknown customer                                                                                   | observed                            |
 
-Adapter: the customer identifier is percent-encoded into the path; `next_page` is never followed, the
-next request is built from the configured base address and the last item's id, so a response cannot
-send the adapter to another host.
+Pagination, re-read 2026-11-26 (API v2 overview): `starting_after` "accepts the ID of the first list
+item that will not be part of the list", "in other words, the ID of the last item of the previous
+page"; `next_page` is "the URL for the next page, if there is one". The items of the
+active-entitlements list have no `id`; their identifier is `entitlement_id`. Observed the same day
+against a sandbox project with a read-only request (`limit=1`): the `starting_after` in the query of
+`next_page` equals the `entitlement_id` of the item returned, and a request with that value was
+answered 200 with an empty page.
+
+Adapter: the customer identifier is percent-encoded into the path; `next_page` is never requested.
+Its `starting_after` query value is read as the cursor, and only when it has none is the cursor the
+`id` (`entitlement_id` for active entitlements) of the last item. The next request is always built
+from the configured base address, so a response cannot send the adapter to another host.
 
 ## 2. Reads the adapter makes
 
