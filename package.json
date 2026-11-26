@@ -112,7 +112,7 @@
   },
   "scripts": {
     "build": "pnpm clean && tsup",
-    "check:exports": "attw --pack . --profile strict",
+    "check:exports": "npm_config_dry_run=false attw --pack . --profile strict",
     "check:api": "node scripts/check-api-surface.mjs",
     "check:docs": "node scripts/check-doc-snippets.mjs",
     "check:mutants": "node scripts/check-mutation-directives.mjs",
