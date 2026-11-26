@@ -85,7 +85,9 @@ function acceptedTrigger(result: unknown): Trigger | null {
  * The identifier of an event is recorded when its processing starts and removed when it ends as
  * a failure, so the source's retry is processed (D16). The removal is started before the failed
  * answer is returned and is never awaited, so a store that is slow or down cannot hold the answer
- * past the deadline, and the observer hears of a failed event when its removal settles.
+ * past the deadline. The observer hears of a failed delivery when the removal that delivery started
+ * settles; a delivery answered while another delivery's removal is in flight starts none and is
+ * reported at once.
  *
  * An event is never processed while the removal of its identifier is unsettled. The processor
  * remembers in memory the failed events whose removal is in flight or failed, up to
