@@ -210,9 +210,8 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
   snapshot, through one ownership check, and a record of another account or tenant is refused with
   `SUBSCRIPTION_ACCOUNT_UNKNOWN` before any source is reached. Each operation asks the source once,
   refreshes through the refresher and returns the snapshot read back, under a closed result that has
-  no "assumed done" value: `stopped` and `not_stopped` (and the matching pairs for the other four)
-  say whether the read-back shows the effect, and `person_must_act` carries the management reference
-  where a server cannot do it. The source port gains `resume`, `changeProduct`, `extend` and `refund`
+  no "assumed done" value: for example `stopped` and `not_stopped` say whether the read-back shows
+  the effect, and `person_must_act` carries the management reference where a server cannot do it. The source port gains `resume`, `changeProduct`, `extend` and `refund`
   as optional methods and the types `ManagedRecord`, `ExtendRequest` and `OperationResult`.
 - The RevenueCat adapter answers each operation per origin and store as RevenueCat documents it:
   stop renewal for Google Play (version 1) and RevenueCat web billing (version 2), extend for

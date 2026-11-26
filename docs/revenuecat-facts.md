@@ -264,7 +264,7 @@ Status: confirmed, changed, or not found, against the pages above.
 | A.3 Status mapping                                               | Confirmed: the eight values of the subscription status                                                                                                                                                                                                                  |
 | A.3 Renewal status                                               | Changed: the page lists two more values, `requires_price_increase_consent` and `has_already_renewed`; both map to `unknown` as "the others"                                                                                                                             |
 | A.3 Store mapping                                                | Changed: the page lists `external`, `roku`, `galaxy` and `test_store` besides the stores of the table; they map to `other`, as the table says for every other value, and `paypal` is already in the table                                                               |
-| A.4 What a server can do                                         | Re-read on 2026-11-25; section 10 records each operation and the specification's Appendix A.4 carries the per-origin answers                                                                                                                                            |
+| A.4 What a server can do                                         | Re-read on 2026-11-25; section 10 records each operation                                                                                                                                                                                                                |
 | A.5 Identity                                                     | Confirmed. The limit of 100 characters is a "should not", and `/` is blocked                                                                                                                                                                                            |
 
 Appendix A.6:
@@ -297,10 +297,8 @@ question in the specification where the owner may want another answer.
 
 ## 10. Management operations
 
-Pages read on 2026-11-25: Managing subscriptions, Refunds, API v2 Subscription, API v2 Purchase,
-API v2 Subscription Transactions, API v2 Customer, API v1 Transactions, API v1 Customers (the URLs
-are listed at the top). Where a page does not state something it is marked **not stated** and the
-adapter answers "not possible from a server" with the management reference.
+Where a page does not state something it is marked **not stated** and the adapter answers "not
+possible from a server" with the management reference.
 
 ### 10.1 Endpoints
 
@@ -347,18 +345,20 @@ Statements, quoted from the pages:
 - Resume (undo a cancellation): no page lists an operation, on the Subscription page or the v1
   transactions page. **Not stated** for every origin.
 - Change product: the managing page says the app stores do not let a developer change a
-  subscription for a customer; for Web Billing it describes the customer's portal; the Subscription page mentions "the
-  change product endpoint" in a field description but lists no such operation. No server operation is
-  documented for any origin; **not stated** where a page is silent.
-- Management reference: the subscription's `management_url` (section 3). The Subscription page also lists an authenticated
-  management URL operation, which the page says to treat as a credential and not store; the adapter does not call it.
+  subscription for a customer; for Web Billing it describes the customer's portal; the
+  Subscription page mentions "the change product endpoint" in a field description but lists no
+  such operation. No server operation is documented for any origin; **not stated** where a page
+  is silent.
+- Management reference: the subscription's `management_url` (section 3). The Subscription page
+  also lists an authenticated management URL operation, which the page says to treat as a
+  credential and not store; the adapter does not call it.
 
 Observation, not a page quote (2026-11-26, read-only, the dedicated sandbox project): a GET of version 1
 `/v1/subscribers/{app_user_id}` sent with a version 2 secret key as the bearer credential returned HTTP 403
 with the body `{"code": 7723, "message": "You're trying to use a secret API key incompatible with
 RevenueCat API V1."}`. A version 2 key therefore does not authorize a version 1 operation. The
 adapter takes a separate optional version 1 key, `apiKeyV1` (specification D50), sends it to version 1
-only, and never sends the version 2 key there. Without it the two operations that exist only in
+only, and never sends the version 2 key there. Without it the operations that exist only in
 version 1 are answered as not possible from a server.
 
 Not stated, and the adapter's answer:

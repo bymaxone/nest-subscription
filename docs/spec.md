@@ -250,7 +250,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 **FR35. Capabilities first.** Before offering an action the host asks what is possible for a given subscription, for each operation of FR36. The answer comes from the adapter and depends on the origin.
 
-**FR36. Operations.** The library offers stop renewal, resume, change product, extend and refund (D32). For each, where the source allows a server to do it, the library asks the source to do it, then refreshes. Where it does not, the result is not an error: it says the person must do it themselves and gives the management reference. Which origin allows which operation is stated per origin, as RevenueCat documents it (Appendix A.4). The table below is stop renewal; Appendix A.4 holds every operation per origin, from RevenueCat's documentation read on 2026-11-25.
+**FR36. Operations.** The library offers stop renewal, resume, change product, extend and refund (D32). For each, where the source allows a server to do it, the library asks the source to do it, then refreshes. Where it does not, the result is not an error: it says the person must do it themselves and gives the management reference. Which origin allows which operation is stated per origin, as RevenueCat documents it (Appendix A.4). The table below is stop renewal only.
 
 Stop renewal, per origin:
 
