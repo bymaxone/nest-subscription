@@ -1,6 +1,6 @@
 # Phase 9 — Release readiness
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 5 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 6 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P9 — release-readiness
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -44,7 +44,7 @@ At the end the package is publishable: the README follows the family's canonical
 | 9.3 | Sweep the captured logs of the whole suite        | ✅ Done | P0       | M    | 9.1           |
 | 9.6 | Prove AC08 with one suite run against two sources | ✅ Done | P0       | M    | —             |
 | 9.4 | Measure the whole package                         | ✅ Done | P0       | M    | 9.2, 9.3, 9.6 |
-| 9.5 | Prepare the release candidate                     | 📋 ToDo | P0       | M    | 9.4           |
+| 9.5 | Prepare the release candidate                     | ✅ Done | P0       | M    | 9.4           |
 
 ---
 
@@ -377,7 +377,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.5 — Prepare the release candidate
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.4
@@ -388,12 +388,12 @@ Write the changelog entry, add the scheduled job that watches the provider's cha
 
 #### Acceptance criteria
 
-- [ ] `CHANGELOG.md` has the first release's entry under "Unreleased", written for a host: what the library does, its requirements (Node.js 26, NestJS 11), and its known limits.
-- [ ] A scheduled workflow checks the RevenueCat changelog or API reference for changes to the facts in `docs/revenuecat-facts.md` and opens an issue when something moved; its first manual run is green.
-- [ ] `npm publish --dry-run` succeeds from a clean checkout, and the tarball's file list holds `dist/`, `README.md`, `CHANGELOG.md`, `LICENSE` and nothing from `test/`, `scripts/` or `docs/`.
-- [ ] `prepublishOnly` runs the whole gate chain and passes.
-- [ ] A list for the owner states what a release needs: the version number, the first manual publish (trusted publishing can be configured only after the package exists), the `npm-publish` environment, the tag made from updated `main` after the merge.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `CHANGELOG.md` has the first release's entry under "Unreleased", written for a host: what the library does, its requirements (Node.js 26, NestJS 11), and its known limits.
+- [ ] A scheduled workflow checks the RevenueCat changelog or API reference for changes to the facts in `docs/revenuecat-facts.md` and opens an issue when something moved; its first manual run is green. (the script and its tests pass and the workflow passes actionlint; a manual run needs the workflow on the default branch, so it is run after the merge: `gh workflow run provider-changelog.yml`)
+- [x] `npm publish --dry-run` succeeds from a clean checkout, and the tarball's file list holds `dist/`, `README.md`, `CHANGELOG.md`, `LICENSE` and nothing from `test/`, `scripts/` or `docs/`.
+- [x] `prepublishOnly` runs the whole gate chain and passes.
+- [x] A list for the owner states what a release needs: the version number, the first manual publish (trusted publishing can be configured only after the package exists), the `npm-publish` environment, the tag made from updated `main` after the merge.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -558,3 +558,15 @@ Completion Protocol (after the work is reported done):
 - 9.1 ✅ 2026-11-26 — the public README in the family's sequence, every snippet compiled against the built package, the error table checked against the catalogue
 - 9.2 ✅ 2026-11-26 — the raw-body guide and the PostgreSQL reference store, whose fixture passes all 28 conformance cases against PostgreSQL 17
 - 9.4 ✅ 2026-11-26 — the full mutation run scores 100, the size budgets are re-derived from the build, the acceptance table and the mutation results are written
+- 9.5 ✅ 2026-11-26 — the first release's changelog entry, the weekly provider watch, and the publish dry run recorded
+
+### Hand-off to the owner: what a release needs
+
+Nothing below is done by this phase. The phase ends at a release candidate.
+
+1. **The version number.** `package.json` holds `0.0.0`. The owner names the version; then the `Unreleased` heading of `CHANGELOG.md` becomes `## [x.y.z] — <date>` with a `[x.y.z]: <compare link>` definition at the foot, `version` is set, and the "not published" notes of `README.md`, `SECURITY.md` and `AGENTS.md` are updated.
+2. **The first publish is manual.** Trusted publishing can be configured on npmjs.com only after the package exists, so the first version is published by hand from a clean checkout of the updated `main`, with the owner's credentials. Then the trusted publisher is configured for repository `bymaxone/nest-subscription`, workflow file `release.yml` and environment `npm-publish`, and later releases run from the tag.
+3. **The `npm-publish` environment.** Create it with a required reviewer and a deployment policy that allows the tags `v*.*.*` only, and a tag ruleset on `v*.*.*` limiting who can create them (`release.yml` relies on both).
+4. **The tag.** After the merge, from updated `main`: the tag `vx.y.z` on the commit that holds the version and the changelog heading. Never from a branch.
+5. **The provider watch.** After the merge, run `gh workflow run provider-changelog.yml` once and confirm it is green; it then runs on Sundays.
+6. **Open question Q01** in `docs/spec.md` section 10.2 (the module's sandbox options validate and drive nothing) is the owner's to answer before or after the release.
