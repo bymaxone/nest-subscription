@@ -87,10 +87,8 @@ export async function refundAt(
   account: AccountReference,
   target: ManagedRecord
 ): Promise<OperationResult> {
-  const reads =
-    target.record.origin === 'web' ||
-    (target.kind === 'purchase' && target.record.origin === 'play_store')
-  const detail = reads ? await readStoreDetail(context, target) : NO_DETAIL
+  const byTransaction = target.kind === 'subscription' && target.record.origin === 'play_store'
+  const detail = byTransaction ? NO_DETAIL : await readStoreDetail(context, target)
   if (!operationsOf(target, detail.store).includes('refund')) return personMustAct(target)
   await refundRecord(context, account, target, detail)
   return ACCEPTED

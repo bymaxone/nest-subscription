@@ -33,12 +33,10 @@ function source(store: string, identifier: string | null = 'store-id-1'): Respon
   return (call) => {
     if (call.method !== 'GET') return ok({})
     if (call.url.includes('/transactions')) return ok({ items: [{ id: 'txn-9' }], next_page: null })
-    return ok({
-      store,
-      ...(identifier === null
-        ? {}
-        : { store_subscription_identifier: identifier, store_purchase_identifier: identifier })
-    })
+    const key = call.url.includes('/purchases/')
+      ? 'store_purchase_identifier'
+      : 'store_subscription_identifier'
+    return ok({ store, ...(identifier === null ? {} : { [key]: identifier }) })
   }
 }
 

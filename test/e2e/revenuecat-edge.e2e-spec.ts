@@ -432,8 +432,8 @@ describe('the HTTP client and the options', () => {
     ).not.toThrow()
   })
 
-  it('answers the management calls as not possible from a server', async () => {
-    // Scenario: until the management operations exist, the person acts and is told where.
+  it('answers stop renewal as not possible for the App Store, which only allows an extension', async () => {
+    // Scenario: Apple allows an extension and no stop; the person acts on a stop and is told where.
     stand.serveFixture('c', 'active-subscription')
     const source = adapter()
     const subscribed = (await source.readAccount({ accountId: 'c' })).subscriptions[0]
@@ -441,7 +441,7 @@ describe('the HTTP client and the options', () => {
     expect(
       (await source.capabilities({ accountId: 'c' }, { kind: 'subscription', record: subscribed }))
         .operations
-    ).toStrictEqual([])
+    ).toStrictEqual(['extend'])
     expect(await source.stopRenewal({ accountId: 'c' }, subscribed)).toMatchObject({
       outcome: 'customer_action_required'
     })

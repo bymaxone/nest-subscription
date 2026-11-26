@@ -420,3 +420,47 @@ describe('management: purchases and input', () => {
     await app.close()
   })
 })
+
+describe('management: a non-renewing purchase', () => {
+  it("reaches the source for a refund only, whatever the capabilities list, and answers the others as the person's", async () => {
+    // Scenario: every operation is listed for the origin; four of them do not apply to a
+    // purchase, and a refund with no scripted answer is the person's, with no reference.
+    const { app, source, service } = await boot()
+    source.setCapabilities('play_store', {
+      operations: ['stop_renewal', 'resume', 'change_product', 'extend', 'refund'],
+      managementReference: null
+    })
+    const answers = await Promise.all(
+      OPERATIONS.map(async (operation) => (await operation.call(service, OWNER, 'pur-1')).outcome)
+    )
+    expect(answers).toStrictEqual(
+      OPERATIONS.map((operation) =>
+        operation.name === 'refund' ? 'person_must_act' : 'person_must_act'
+      )
+    )
+    expect(source.operationCalls('refund')).toBe(1)
+    expect(source.totalOperationCalls).toBe(1)
+    await app.close()
+  })
+})
+
+describe('management: the public surface', () => {
+  it('adds exactly the capability query, the management reference and the five operations to the service', () => {
+    // Scenario: the methods of the service are the reads, the refresh, the reconciliation and
+    // these seven, and nothing else is public.
+    expect(Object.getOwnPropertyNames(SubscriptionService.prototype).sort()).toStrictEqual([
+      'changeProduct',
+      'constructor',
+      'extend',
+      'getCapabilities',
+      'getManagementReference',
+      'getSnapshot',
+      'hasEntitlement',
+      'reconcile',
+      'refresh',
+      'refund',
+      'resume',
+      'stopRenewal'
+    ])
+  })
+})

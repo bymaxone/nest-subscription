@@ -57,8 +57,9 @@ describe('findOwnRecord', () => {
   it('refuses a reference the account does not hold and an account with nothing stored', async () => {
     // Scenario: an unknown reference, then an account the store has never seen.
     const { store, seed } = harness()
-    await seed(ACCOUNT, snapshotOf(ACCOUNT, [subscriptionOf()]))
+    await seed(ACCOUNT, snapshotOf(ACCOUNT, [subscriptionOf()], [purchaseOf()]))
     await expect(findOwnRecord(store, ACCOUNT, 'sub-9')).rejects.toBeInstanceOf(SubscriptionError)
+    await expect(findOwnRecord(store, ACCOUNT, 'pur-9')).rejects.toBeInstanceOf(SubscriptionError)
     await expect(findOwnRecord(store, { accountId: 'nobody' }, 'sub-1')).rejects.toMatchObject({
       code: SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN
     })

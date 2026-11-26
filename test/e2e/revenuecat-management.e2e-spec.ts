@@ -10,6 +10,10 @@ import {
   SubscriptionModule,
   SubscriptionService
 } from '@bymax-one/nest-subscription'
+import {
+  type NonRenewingPurchaseRecord,
+  type SubscriptionRecord
+} from '@bymax-one/nest-subscription/shared'
 import { revenueCatSource } from '@bymax-one/nest-subscription/revenuecat'
 import { InMemorySubscriptionStore, ManualClock } from '@bymax-one/nest-subscription/testing'
 
@@ -479,5 +483,129 @@ describe('revenuecat management: refund', () => {
     ]) {
       expect(shown).not.toContain(secret)
     }
+  })
+})
+
+describe('revenuecat management: the adapter asked directly', () => {
+  /** The adapter over the running stand-in, and the records its read of the customer holds. */
+  async function adapterOver(
+    store: string,
+    reading: unknown
+  ): Promise<{
+    source: ReturnType<typeof revenueCatSource>
+    stand: StandIn
+    subscription: SubscriptionRecord
+    purchase: NonRenewingPurchaseRecord
+  }> {
+    running = await boot(store)
+    const { stand } = running
+    stand.serve(ACCOUNT.accountId, refundCustomer({ store, refunded: false }))
+    stand.respondWith((request) => {
+      const reads =
+        request.method === 'GET' &&
+        (request.url.startsWith(`${PROJECT}/subscriptions/`) ||
+          request.url.startsWith(`${PROJECT}/purchases/`))
+      if (reads) return { status: 200, body: reading }
+      return request.method === 'POST' ? { status: 200, body: {} } : undefined
+    })
+    const source = revenueCatSource({
+      projectId: 'proj_PLACEHOLDER',
+      apiKey: KEY,
+      baseUrl: stand.baseUrl
+    })
+    const snapshot = await source.readAccount(ACCOUNT)
+    const subscription = snapshot.subscriptions[0]
+    const purchase = snapshot.nonRenewingPurchases?.[0]
+    if (subscription === undefined || purchase === undefined) throw new Error('both records exist')
+    return { source, stand, subscription, purchase }
+  }
+
+  it.each([
+    [
+      'app_store',
+      'a stop',
+      (s: ReturnType<typeof revenueCatSource>, a: SubscriptionRecord) => s.stopRenewal(ACCOUNT, a)
+    ],
+    [
+      'stripe',
+      'a stop',
+      (s: ReturnType<typeof revenueCatSource>, a: SubscriptionRecord) => s.stopRenewal(ACCOUNT, a)
+    ],
+    [
+      'stripe',
+      'an extension',
+      (s: ReturnType<typeof revenueCatSource>, a: SubscriptionRecord) =>
+        s.extend?.(ACCOUNT, a, { days: 3 })
+    ],
+    [
+      'stripe',
+      'a refund',
+      (s: ReturnType<typeof revenueCatSource>, a: SubscriptionRecord) =>
+        s.refund?.(ACCOUNT, { kind: 'subscription', record: a })
+    ],
+    [
+      'app_store',
+      'a refund',
+      (s: ReturnType<typeof revenueCatSource>, a: SubscriptionRecord) =>
+        s.refund?.(ACCOUNT, { kind: 'subscription', record: a })
+    ]
+  ])(
+    'answers %s: %s as not possible with no write, whatever the caller checked first',
+    async (store, _label, act) => {
+      // Scenario: the adapter does not rely on the service having asked for capabilities.
+      const { source, stand, subscription } = await adapterOver(store, { store })
+      expect(await act(source, subscription)).toMatchObject({ outcome: 'customer_action_required' })
+      expect(writes(stand)).toHaveLength(0)
+    }
+  )
+
+  it.each([
+    ['a Google Play stop whose subscription names no store identifier', 'play_store', 'stop'],
+    [
+      'a Google Play purchase refund whose purchase names no store identifier',
+      'play_store',
+      'purchase'
+    ],
+    ['a store read that is not an object', 'play_store', 'list']
+  ])('fails as unavailable, without a write, for %s', async (_label, store, kind) => {
+    // Scenario: what the next request needs is missing from RevenueCat's answer.
+    const reading = kind === 'list' ? [] : { store }
+    const { source, stand, subscription, purchase } = await adapterOver(store, reading)
+    const attempt =
+      kind === 'purchase'
+        ? source.refund?.(ACCOUNT, { kind: 'purchase', record: purchase })
+        : source.stopRenewal(ACCOUNT, subscription)
+    await expect(attempt).rejects.toMatchObject({
+      code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    })
+    expect(writes(stand)).toHaveLength(0)
+  })
+
+  it('fails as unavailable when the newest transaction of a Google Play subscription is missing or unnamed', async () => {
+    // Scenario: the transactions list is empty, then holds an item with no id.
+    const { source, stand, subscription } = await adapterOver('play_store', { store: 'play_store' })
+    for (const items of [[], [{ nope: 1 }], [7]]) {
+      stand.respondWith((request) =>
+        request.url.includes('/transactions?')
+          ? { status: 200, body: { items, next_page: null } }
+          : undefined
+      )
+      await expect(
+        source.refund?.(ACCOUNT, { kind: 'subscription', record: subscription })
+      ).rejects.toMatchObject({ code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE })
+    }
+    expect(writes(stand)).toHaveLength(0)
+  })
+
+  it('derives the version 1 address from a base address that does not end in /v2', async () => {
+    running = await boot('app_store')
+    // Scenario: the adapter builds with a bare host; no request is made.
+    expect(() =>
+      revenueCatSource({
+        projectId: 'proj_PLACEHOLDER',
+        apiKey: KEY,
+        baseUrl: 'http://127.0.0.1:9'
+      })
+    ).not.toThrow()
   })
 })

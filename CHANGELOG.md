@@ -204,8 +204,30 @@ All notable changes to `@bymax-one/nest-subscription` are recorded here. The for
 - `buildRevenueCatWebhookRequest` and `REVENUECAT_REQUEST_FLAWS` in the `testing` subpath: a
   RevenueCat webhook request, signed or carrying the authorization header, and each way it can be
   wrong on purpose.
+- The management operations on `SubscriptionService`: `getCapabilities` and `getManagementReference`
+  for a subscription or a non-renewing purchase of the account, and `stopRenewal`, `resume`,
+  `changeProduct`, `extend` and `refund`. A record is found only in the caller's own stored
+  snapshot, through one ownership check, and a record of another account or tenant is refused with
+  `SUBSCRIPTION_ACCOUNT_UNKNOWN` before any source is reached. Each operation asks the source once,
+  refreshes through the refresher and returns the snapshot read back, under a closed result that has
+  no "assumed done" value: `stopped` and `not_stopped` (and the matching pairs for the other four)
+  say whether the read-back shows the effect, and `person_must_act` carries the management reference
+  where a server cannot do it. The source port gains `resume`, `changeProduct`, `extend` and `refund`
+  as optional methods and the types `ManagedRecord`, `ExtendRequest` and `OperationResult`.
+- The RevenueCat adapter answers each operation per origin and store as RevenueCat documents it:
+  stop renewal for Google Play (version 1) and RevenueCat web billing (version 2), extend for
+  Google Play, the App Store and web billing, refund for Google Play (a subscription through its
+  latest transaction, a purchase through version 1) and web billing; resume and change product are
+  not possible from a server for any origin, and every other origin or store is the person's.
+- `FakeSubscriptionSource` scripts capabilities and an answer per operation and origin, and counts
+  the calls of each operation.
 
 ### Changed
+
+- `SubscriptionSource.capabilities` takes the account and the record (a subscription or a
+  purchase) and returns a promise, so an adapter can read the source to tell stores that share an
+  origin. `StopRenewalResult` is replaced by `OperationResult`, whose `accepted` outcome says only
+  that the source took the request; the result of an operation is the snapshot read back.
 
 - The observer's webhook outcome type is renamed `WebhookOutcomeKind`, and `WebhookEvent` gains
   `retained`, which is `true` when the store could not remove the identifier of a failed event and

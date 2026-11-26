@@ -12,21 +12,21 @@ Each `phase-NN-<slug>.md` in this folder breaks one phase of the roadmap into ta
 
 > Mirrors the phase dashboard of [`docs/plan.md`](../plan.md). Both are updated together.
 
-**Phases done**: 8 / 11 · **Tasks done**: 54 / 66
+**Phases done**: 8 / 11 · **Tasks done**: 55 / 66
 
-| ID  | Task file                                                                                        | Status         | Progress | Last updated |
-| --- | ------------------------------------------------------------------------------------------------ | -------------- | -------- | ------------ |
-| P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | ✅ Done        | 7/7      | 2026-11-24   |
-| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | ✅ Done        | 7/7      | 2026-11-24   |
-| P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | ✅ Done        | 5/5      | 2026-11-25   |
-| P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | ✅ Done        | 5/5      | 2026-11-25   |
-| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | ✅ Done        | 4/4      | 2026-11-25   |
-| P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | ✅ Done        | 5/5      | 2026-11-25   |
-| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | ✅ Done        | 5/5      | 2026-11-25   |
-| P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | ✅ Done        | 8/8      | 2026-11-25   |
-| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 🔄 In Progress | 8/9      | 2026-11-26   |
-| P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo        | 0/6      | —            |
-| P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | 📋 ToDo        | 0/5      | —            |
+| ID  | Task file                                                                                        | Status    | Progress | Last updated |
+| --- | ------------------------------------------------------------------------------------------------ | --------- | -------- | ------------ |
+| P0  | [`phase-00-scaffold-and-governance.md`](phase-00-scaffold-and-governance.md)                     | ✅ Done   | 7/7      | 2026-11-24   |
+| P1  | [`phase-01-model-ports-and-test-doubles.md`](phase-01-model-ports-and-test-doubles.md)           | ✅ Done   | 7/7      | 2026-11-24   |
+| P2  | [`phase-02-module-and-options.md`](phase-02-module-and-options.md)                               | ✅ Done   | 5/5      | 2026-11-25   |
+| P3  | [`phase-03-read-refresh-reconcile.md`](phase-03-read-refresh-reconcile.md)                       | ✅ Done   | 5/5      | 2026-11-25   |
+| P4  | [`phase-04-guard-and-fail-policy.md`](phase-04-guard-and-fail-policy.md)                         | ✅ Done   | 4/4      | 2026-11-25   |
+| P5  | [`phase-05-change-notifications-and-observer.md`](phase-05-change-notifications-and-observer.md) | ✅ Done   | 5/5      | 2026-11-25   |
+| P6  | [`phase-06-webhook-receiver.md`](phase-06-webhook-receiver.md)                                   | ✅ Done   | 5/5      | 2026-11-25   |
+| P7  | [`phase-07-revenuecat-adapter.md`](phase-07-revenuecat-adapter.md)                               | ✅ Done   | 8/8      | 2026-11-25   |
+| P8  | [`phase-08-management-operations.md`](phase-08-management-operations.md)                         | 👀 Review | 9/9      | 2026-11-26   |
+| P9  | [`phase-09-release-readiness.md`](phase-09-release-readiness.md)                                 | 📋 ToDo   | 0/6      | —            |
+| P11 | [`phase-11-finance-adapter.md`](phase-11-finance-adapter.md)                                     | 📋 ToDo   | 0/5      | —            |
 
 ---
 

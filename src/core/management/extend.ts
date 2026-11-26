@@ -32,10 +32,7 @@ const REASONS: readonly ExtendReason[] = [
 function isValid(extension: ExtendRequest): boolean {
   const { days, reason } = extension
   return (
-    typeof days === 'number' &&
-    Number.isSafeInteger(days) &&
-    days >= 1 &&
-    (reason === undefined || REASONS.includes(reason))
+    Number.isSafeInteger(days) && days >= 1 && (reason === undefined || REASONS.includes(reason))
   )
 }
 

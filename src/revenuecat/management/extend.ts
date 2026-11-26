@@ -63,7 +63,7 @@ export async function extendAt(
   await attempt(
     context.http.post(path, {
       extend_by_days: extension.days,
-      ...(extension.reason === undefined ? {} : { extend_reason_code: extension.reason })
+      extend_reason_code: extension.reason
     })
   )
   return ACCEPTED

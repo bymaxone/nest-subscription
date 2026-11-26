@@ -152,7 +152,7 @@ export async function performOperation(
   const asked = answer.operations.includes(spec.operation)
     ? askSource(context, spec, account, target)
     : undefined
-  const result = asked === undefined ? undefined : await asked
+  const result = await asked
   if (result === undefined || result.outcome === 'customer_action_required') {
     return {
       outcome: 'person_must_act',

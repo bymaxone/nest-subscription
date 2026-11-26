@@ -1,6 +1,6 @@
 # Phase 8 — Management operations
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 8 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 9 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P8 — management-operations
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -47,7 +47,7 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 | 8.7 | Implement change product                                          | ✅ Done | P0       | M    | 8.5                     |
 | 8.8 | Implement extend                                                  | ✅ Done | P0       | M    | 8.5                     |
 | 8.9 | Implement refund                                                  | ✅ Done | P0       | M    | 8.5                     |
-| 8.4 | Close the phase                                                   | 📋 ToDo | P0       | S    | 8.3, 8.6, 8.7, 8.8, 8.9 |
+| 8.4 | Close the phase                                                   | ✅ Done | P0       | S    | 8.3, 8.6, 8.7, 8.8, 8.9 |
 
 ---
 
@@ -71,7 +71,7 @@ Define what a host can ask about and do to a subscription, and add the capabilit
 - [x] `getManagementReference(account, recordRef)` returns the reference or `null`.
 - [x] A reference that is neither a subscription nor a non-renewing purchase in the account's own snapshot is refused with the "unknown account" family of codes and reaches no source.
 - [x] With the fake source, a test scripts capabilities per origin and reads them back through the service.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -157,7 +157,7 @@ Add stop renewal to the service: check ownership, ask the source, refresh, and r
 - [x] A subscription of another account or of another tenant is refused and no source call is made.
 - [x] A source failure surfaces as the source-unavailable code, and the stored snapshot is unchanged.
 - [x] The refresh after the operation goes through `SnapshotRefresher`, so the host hook receives `will_not_renew` through the normal path.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -238,7 +238,7 @@ Fill the RevenueCat adapter's capabilities and stop renewal: Google Play through
 - [x] Stop renewal on a Google Play subscription makes exactly one version 1 call; on a web billing subscription exactly one version 2 call; on the others no call.
 - [x] The management reference is returned when the read provides one.
 - [x] A 4xx from the operation becomes a typed failure that does not include the response body or the customer identifier.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -310,7 +310,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.4 — Close the phase
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: S
 - **Depends on**: 8.3, 8.6, 8.7, 8.8, 8.9
@@ -321,11 +321,11 @@ Check the phase against its Definition of Done, extend the cross-cutting sweeps 
 
 #### Acceptance criteria
 
-- [ ] The secret-containment and no-identifier end-to-end sweeps, the SEC10 cross-account and cross-tenant refusals and the honest-result checks cover every operation of D32 and every branch of each, not stop renewal alone.
-- [ ] The API surface baseline contains the new service methods and result types and nothing unintended.
-- [ ] A table-driven test covers every operation (stop renewal, resume, change product, extend, refund) on every origin against Appendix A.4, and one test per operation shows the result is the snapshot read back.
-- [ ] Every Definition of Done item of P8 in `docs/plan.md` has a named test.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] The secret-containment and no-identifier end-to-end sweeps, the SEC10 cross-account and cross-tenant refusals and the honest-result checks cover every operation of D32 and every branch of each, not stop renewal alone.
+- [x] The API surface baseline contains the new service methods and result types and nothing unintended.
+- [x] A table-driven test covers every operation (stop renewal, resume, change product, extend, refund) on every origin against Appendix A.4, and one test per operation shows the result is the snapshot read back.
+- [x] Every Definition of Done item of P8 in `docs/plan.md` has a named test.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -405,7 +405,7 @@ Extend the capability answer and the ownership-checked, read-back flow of stop r
 - [x] The source port declares each operation with the arguments it needs, and an adapter answers "not supported" for one it does not implement; the fake source can be scripted per operation and per origin.
 - [x] The ownership lookup and the capability query cover every record an operation can act on, subscriptions and non-renewing purchases, found only inside the caller's own snapshot and never by an identifier taken on trust; the capability answer for a purchase is per operation and per origin, as RevenueCat documents it.
 - [x] An operation on a record of another account or tenant is refused and reaches no source, for every operation and both kinds of record, in a table-driven test.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -490,7 +490,7 @@ Implement resume through the service and the RevenueCat adapter, for the origins
 - [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
 - [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
 - [x] The result of a resume is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports the change through the normal path.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -579,7 +579,7 @@ Implement change product through the service and the RevenueCat adapter, for the
 - [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
 - [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
 - [x] A target product the page says RevenueCat will not accept for that origin is refused before any call, with the invalid-input code, and a change that the read-back does not show, as RevenueCat documents the result, is reported as not done.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -668,7 +668,7 @@ Implement extend through the service and the RevenueCat adapter, for the origins
 - [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
 - [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
 - [x] An extension outside the bounds the page states is refused before any call, with the invalid-input code, and the result is the snapshot read back, whose access end is compared with the effect RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -758,7 +758,7 @@ Implement refund through the service and the RevenueCat adapter, for the origins
 - [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
 - [x] The result of a refund is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports it through the normal path (AC05).
 - [x] The refund acts on a subscription or a non-renewing purchase found by `findOwnRecord` inside the authenticated account's own snapshot, and on no other record.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -839,3 +839,4 @@ Completion Protocol (after the work is reported done):
 - 8.7 ✅ 2026-11-26 — change product re-read on the RevenueCat pages: no server operation is documented; the target product is validated before any call and every origin is not possible
 - 8.8 ✅ 2026-11-26 — extend through version 2 for Google Play, the App Store (reason, at most 90 days) and web billing; the read-back must show a later period end
 - 8.9 ✅ 2026-11-26 — refund for Google Play (version 2 transaction, version 1 purchase) and web billing (version 2), App Store and Stripe not possible; the read-back decides
+- 8.4 ✅ 2026-11-26 — sweeps extended to every operation and branch, the Appendix A.4 matrix in one table, one read-back test per operation, the service surface pinned, Definition of Done mapped to named tests

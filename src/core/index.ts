@@ -89,6 +89,17 @@ export type { WebhookAnswer, WebhookOutcome } from './webhook/webhook-outcome'
 export { SubscriptionWebhookController } from './webhook/webhook.controller'
 export { WebhookProcessor } from './webhook/webhook.processor'
 export type { WebhookContext } from './webhook/webhook.processor'
+export type {
+  ChangeProductOutcome,
+  ExtendOutcome,
+  ManagedRecordKind,
+  PersonMustAct,
+  ReadBack,
+  RefundOutcome,
+  ResumeOutcome,
+  StopRenewalOutcome,
+  SubscriptionCapabilities
+} from './management/management.types'
 export type { AgedSnapshot } from './snapshot-view'
 export type { ReconcileOptions, ReconcileResult } from './reconciliation/reconciler'
 export type { Wait } from './reconciliation/rate-limiter'

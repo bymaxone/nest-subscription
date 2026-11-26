@@ -23,10 +23,7 @@ export function changeProductSpec(productReference: string): OperationSpec {
       target.kind === 'subscription'
         ? source.changeProduct?.(account, target.record, productReference)
         : undefined,
-    shows: (_before, after) =>
-      after !== undefined &&
-      after.kind === 'subscription' &&
-      after.record.productReference === productReference
+    shows: (_before, after) => after?.record.productReference === productReference
   }
 }
 

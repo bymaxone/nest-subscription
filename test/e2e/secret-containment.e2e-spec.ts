@@ -19,6 +19,7 @@ import { revenueCatSource } from '@bymax-one/nest-subscription/revenuecat'
 import { InMemorySubscriptionStore } from '@bymax-one/nest-subscription/testing'
 import { SnapshotRefresher } from '../../src/core/refresh/snapshot-refresher'
 import { credentialedSource } from './fixtures/credentialed-source'
+import { startStandIn } from './fixtures/revenuecat-stand-in'
 import {
   expectNoSentinel,
   outputsOf,
@@ -32,6 +33,25 @@ function sentinelOptions(): Parameters<typeof resolveOptions>[0] {
     store: new InMemorySubscriptionStore(),
     accountResolver: () => null
   }
+}
+
+/** Runs the capability query and each management operation on the fixture's subscription. */
+async function runManagement(
+  service: SubscriptionService,
+  account: { accountId: string }
+): Promise<unknown[]> {
+  const reference = 'sub_PLACEHOLDER_1'
+  const calls = [
+    () => service.getCapabilities(account, reference),
+    () => service.stopRenewal(account, reference),
+    () => service.resume(account, reference),
+    () => service.changeProduct(account, reference, 'product_PLACEHOLDER_annual'),
+    () => service.extend(account, reference, { days: 3, reason: 'other' }),
+    () => service.refund(account, reference)
+  ]
+  const results: unknown[] = []
+  for (const call of calls) results.push(await call().catch((error: unknown) => error))
+  return results
 }
 
 describe('secret containment', () => {
@@ -99,6 +119,48 @@ describe('secret containment', () => {
     expectNoSentinel(outputsOf(service))
     expect(Object.keys(source)).toEqual(['name'])
     await app.close()
+  })
+
+  it('shows no secret in what any management operation returns or raises, or in the adapter and service afterwards', async () => {
+    // Scenario: SEC05: the adapter holds a rotation pair as its API key and talks to the stand-in,
+    // which refuses the operations with a body that holds the key; nothing returned, raised or
+    // held shows it.
+    const stand = await startStandIn(WEBHOOK_SENTINEL)
+    stand.serveFixture('customer_a', 'active-subscription')
+    const source = revenueCatSource({
+      projectId: 'proj_PLACEHOLDER',
+      apiKey: { current: WEBHOOK_SENTINEL, previous: ROTATED_SENTINEL },
+      baseUrl: stand.baseUrl
+    })
+    const app = await Test.createTestingModule({
+      imports: [
+        SubscriptionModule.forRoot({
+          source,
+          store: new InMemorySubscriptionStore(),
+          accountResolver: () => null
+        })
+      ]
+    }).compile()
+    const service = app.get(SubscriptionService)
+    await service.refresh({ accountId: 'customer_a' })
+    stand.respondWith((request) =>
+      request.method === 'POST'
+        ? { status: 409, body: { message: `${WEBHOOK_SENTINEL} ${ROTATED_SENTINEL}` } }
+        : undefined
+    )
+    const results = await runManagement(service, { accountId: 'customer_a' })
+    expect(results.filter((result) => result instanceof SubscriptionError).length).toBeGreaterThan(
+      0
+    )
+    for (const result of results) {
+      expect(JSON.stringify(result) + String(result)).not.toContain(WEBHOOK_SENTINEL)
+      expect(JSON.stringify(result) + String(result)).not.toContain(ROTATED_SENTINEL)
+      if (typeof result === 'object' && result !== null) expectNoSentinel(outputsOf(result))
+    }
+    expectNoSentinel(outputsOf(source))
+    expectNoSentinel(outputsOf(service))
+    await app.close()
+    await stand.close()
   })
 
   it('shows no secret on any path of the Secret holder itself', () => {

@@ -78,6 +78,43 @@ describe('operationsOf: Appendix A.4, resume and change product', () => {
   })
 })
 
+describe('operationsOf: Appendix A.4 as a whole', () => {
+  /** One row of the table: a record of an origin and store, and every operation allowed for it. */
+  const A4 = [
+    ['subscription', 'play_store', null, ['stop_renewal', 'extend', 'refund']],
+    ['subscription', 'app_store', null, ['extend']],
+    ['subscription', 'web', 'rc_billing', ['stop_renewal', 'extend', 'refund']],
+    ['subscription', 'web', 'stripe', []],
+    ['subscription', 'web', 'paddle', []],
+    ['subscription', 'web', null, []],
+    ['subscription', 'promotional', null, []],
+    ['subscription', 'other', null, []],
+    ['subscription', 'app_store', 'rc_billing', ['extend']],
+    ['subscription', 'promotional', 'rc_billing', []],
+    ['subscription', 'other', 'rc_billing', []],
+    ['purchase', 'app_store', 'rc_billing', []],
+    ['purchase', 'promotional', 'rc_billing', []],
+    ['purchase', 'other', 'rc_billing', []],
+    ['purchase', 'play_store', null, ['refund']],
+    ['purchase', 'app_store', null, []],
+    ['purchase', 'web', 'rc_billing', ['refund']],
+    ['purchase', 'web', 'stripe', []],
+    ['purchase', 'web', null, []],
+    ['purchase', 'promotional', null, []],
+    ['purchase', 'other', null, []]
+  ] as const
+
+  it.each(A4)('a %s from %s on store %s allows exactly %j', (kind, origin, store, expected) => {
+    // Scenario: the five operations at once, so no column can drift from the table in the
+    // specification; resume and change product are in no row because no page documents them.
+    const target: ManagedRecord =
+      kind === 'subscription'
+        ? sub({ origin })
+        : { kind: 'purchase', record: purchaseOf({ origin }) }
+    expect(operationsOf(target, store)).toStrictEqual(expected)
+  })
+})
+
 describe('capabilitiesOf', () => {
   it('answers a Google Play subscription without reading the source, with its management reference', async () => {
     // Scenario: the origin alone decides, so no request is made.
