@@ -348,23 +348,22 @@ import { SubscriptionService } from '@bymax-one/nest-subscription'
 export class SubscriptionJobs {
   constructor(private readonly subscriptions: SubscriptionService) {}
 
-  /** Called by the host's own scheduler. */
-  async reconcileAll(): Promise<void> {
-    let cursor: string | null = null
-    let pendingCursor: string | null = null
-    // Bounded: a stale account that keeps failing is listed again by a run that starts over.
-    for (let run = 0; run < 20; run += 1) {
-      const result = await this.subscriptions.reconcile({
-        cursor,
-        pendingCursor,
-        batchSize: 100,
-        maxCallsPerSecond: 10,
-        wait: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
-      })
-      cursor = result.cursor
-      pendingCursor = result.pendingCursor
-      if (cursor === null && pendingCursor === null) break
-    }
+  // Where the last run stopped, so the next call goes on from there instead of starting over.
+  // Kept in memory here; a host with several instances keeps them where all instances read them.
+  private cursor: string | null = null
+  private pendingCursor: string | null = null
+
+  /** Called by the host's own scheduler, one run per call. */
+  async reconcileBatch(): Promise<void> {
+    const result = await this.subscriptions.reconcile({
+      cursor: this.cursor,
+      pendingCursor: this.pendingCursor,
+      batchSize: 100,
+      maxCallsPerSecond: 10,
+      wait: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+    })
+    this.cursor = result.cursor
+    this.pendingCursor = result.pendingCursor
   }
 
   /** After the app reports a purchase. */
