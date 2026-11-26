@@ -321,3 +321,163 @@ describe('revenuecat management: extend', () => {
     expect(writes(stand)).toHaveLength(0)
   })
 })
+
+/** What a customer's refund state looks like in the lists: refunded or not. */
+interface Refundable {
+  readonly store: string
+  readonly refunded: boolean
+}
+
+/**
+ * A customer with one subscription and one purchase of the same store. Refunded, the subscription
+ * ended before its paid period did and gives no access, and the purchase says so by its status.
+ */
+function refundCustomer(held: Refundable): ReturnType<typeof fixtureLists> {
+  const base = customerOf(held.store, 'will_renew')
+  const subscriptions: Record<string, unknown> = Object(base.subscriptions)
+  const first: Record<string, unknown> = Object(
+    Array.isArray(subscriptions['items']) ? subscriptions['items'][0] : {}
+  )
+  const purchase: Record<string, unknown> = Object(
+    Array.isArray(Object(fixtureLists('non-renewing-purchase').purchases)['items'])
+      ? Object(fixtureLists('non-renewing-purchase').purchases)['items'][0]
+      : {}
+  )
+  const subscription = held.refunded
+    ? { ...first, gives_access: false, status: 'expired', ends_at: 1797500000000 }
+    : first
+  return {
+    subscriptions: { ...subscriptions, items: [subscription] },
+    purchases: {
+      object: 'list',
+      items: [
+        {
+          ...purchase,
+          store: held.store,
+          status: held.refunded ? 'refunded' : 'owned',
+          store_purchase_identifier: 'store_purchase_PLACEHOLDER_1'
+        }
+      ],
+      next_page: null,
+      url: ''
+    },
+    activeEntitlements: held.refunded
+      ? { object: 'list', items: [], next_page: null, url: '' }
+      : base.activeEntitlements
+  }
+}
+
+/** Serves the stores' reads and the transactions list, and a write by `onWrite`. */
+function refunding(
+  store: string,
+  onWrite: (request: StandInRequest) => StandInAnswer
+): (request: StandInRequest) => StandInAnswer | undefined {
+  return (request) => {
+    if (request.url.startsWith(`${PROJECT}/subscriptions/${SUBSCRIPTION}/transactions?`)) {
+      return { status: 200, body: { items: [{ id: 'txn_PLACEHOLDER_9' }], next_page: null } }
+    }
+    if (request.url === `${PROJECT}/purchases/purchase_PLACEHOLDER_1`) {
+      return {
+        status: 200,
+        body: { store, store_purchase_identifier: 'store_purchase_PLACEHOLDER_1' }
+      }
+    }
+    return serving(store, onWrite)(request)
+  }
+}
+
+describe('revenuecat management: refund', () => {
+  it.each([
+    [
+      'play_store',
+      SUBSCRIPTION,
+      `POST ${PROJECT}/subscriptions/${SUBSCRIPTION}/transactions/txn_PLACEHOLDER_9/actions/refund`
+    ],
+    ['rc_billing', SUBSCRIPTION, `POST ${PROJECT}/subscriptions/${SUBSCRIPTION}/actions/refund`],
+    [
+      'rc_billing',
+      'purchase_PLACEHOLDER_1',
+      `POST ${PROJECT}/purchases/purchase_PLACEHOLDER_1/actions/refund`
+    ],
+    [
+      'play_store',
+      'purchase_PLACEHOLDER_1',
+      'POST /v1/subscribers/customer_a/transactions/store_purchase_PLACEHOLDER_1/refund'
+    ]
+  ])(
+    'refunds on %s: %s with one write, and the result is the customer read back',
+    async (store, reference, write) => {
+      // Scenario: the write goes where the documentation sends it; the stand-in then serves the
+      // customer as refunded, and that read is the result.
+      running = await boot(store)
+      const { service, stand } = running
+      stand.serve(ACCOUNT.accountId, refundCustomer({ store, refunded: false }))
+      await service.refresh(ACCOUNT)
+      stand.respondWith(
+        refunding(store, () => {
+          stand.serve(ACCOUNT.accountId, refundCustomer({ store, refunded: true }))
+          return { status: 200, body: {} }
+        })
+      )
+      const result = await service.refund(ACCOUNT, reference)
+      expect(result.outcome).toBe('refunded')
+      expect(writes(stand).map((request) => `${request.method} ${request.url}`)).toStrictEqual([
+        write
+      ])
+    }
+  )
+
+  it('reports not refunded when RevenueCat accepted and the read-back shows no refund', async () => {
+    // Scenario: the write answers 200 and the customer is unchanged.
+    running = await boot('rc_billing')
+    const { service, stand } = running
+    stand.serve(ACCOUNT.accountId, refundCustomer({ store: 'rc_billing', refunded: false }))
+    await service.refresh(ACCOUNT)
+    stand.respondWith(refunding('rc_billing', () => ({ status: 200, body: {} })))
+    expect((await service.refund(ACCOUNT, SUBSCRIPTION)).outcome).toBe('not_refunded')
+  })
+
+  it.each([
+    ['app_store', SUBSCRIPTION],
+    ['app_store', 'purchase_PLACEHOLDER_1'],
+    ['stripe', SUBSCRIPTION],
+    ['stripe', 'purchase_PLACEHOLDER_1']
+  ])('asks the person to act and writes nothing for %s: %s', async (store, reference) => {
+    // Scenario: Apple and Stripe refunds are done outside RevenueCat.
+    running = await boot(store)
+    const { service, stand } = running
+    stand.serve(ACCOUNT.accountId, refundCustomer({ store, refunded: false }))
+    await service.refresh(ACCOUNT)
+    stand.respondWith(refunding(store, () => ({ status: 500 })))
+    expect((await service.getCapabilities(ACCOUNT, reference)).possible.refund).toBe(false)
+    expect((await service.refund(ACCOUNT, reference)).outcome).toBe('person_must_act')
+    expect(writes(stand)).toHaveLength(0)
+  })
+
+  it('fails as source-unavailable, with no body or identifier in the error, when the refund is refused', async () => {
+    // Scenario: a 4xx on the refund of a Google Play purchase through version 1.
+    running = await boot('play_store')
+    const { service, stand } = running
+    stand.serve(ACCOUNT.accountId, refundCustomer({ store: 'play_store', refunded: false }))
+    await service.refresh(ACCOUNT)
+    stand.respondWith(
+      refunding('play_store', () => ({
+        status: 422,
+        body: { message: 'sentinel-body-refund-e2e' }
+      }))
+    )
+    const failure: unknown = await service
+      .refund(ACCOUNT, 'purchase_PLACEHOLDER_1')
+      .catch((e: unknown) => e)
+    expect(failure).toMatchObject({ code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE })
+    const shown = JSON.stringify(failure) + String(failure)
+    for (const secret of [
+      'sentinel-body-refund-e2e',
+      ACCOUNT.accountId,
+      KEY,
+      'store_purchase_PLACEHOLDER_1'
+    ]) {
+      expect(shown).not.toContain(secret)
+    }
+  })
+})

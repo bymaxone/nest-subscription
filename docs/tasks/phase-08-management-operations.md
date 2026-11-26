@@ -1,6 +1,6 @@
 # Phase 8 — Management operations
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 7 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 8 / 9 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P8 — management-operations
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -46,7 +46,7 @@ At the end a host can ask what is possible for a given subscription, ask the sou
 | 8.6 | Implement resume                                                  | ✅ Done | P0       | M    | 8.5                     |
 | 8.7 | Implement change product                                          | ✅ Done | P0       | M    | 8.5                     |
 | 8.8 | Implement extend                                                  | ✅ Done | P0       | M    | 8.5                     |
-| 8.9 | Implement refund                                                  | 📋 ToDo | P0       | M    | 8.5                     |
+| 8.9 | Implement refund                                                  | ✅ Done | P0       | M    | 8.5                     |
 | 8.4 | Close the phase                                                   | 📋 ToDo | P0       | S    | 8.3, 8.6, 8.7, 8.8, 8.9 |
 
 ---
@@ -739,7 +739,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 8.9 — Implement refund
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 8.5
@@ -750,14 +750,14 @@ Implement refund through the service and the RevenueCat adapter, for the origins
 
 #### Acceptance criteria
 
-- [ ] Before any code, the RevenueCat page that documents refund, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
-- [ ] `docs/spec.md` Appendix A.4 gains the refund column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
-- [ ] The capability answer for refund, per origin and store, matches Appendix A.4 in a table-driven test.
-- [ ] The service method for refund takes the record reference (a subscription or a non-renewing purchase), and what else the page requires; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
-- [ ] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
-- [ ] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
-- [ ] The result of a refund is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports it through the normal path (AC05).
-- [ ] The refund acts on a subscription or a non-renewing purchase found by `findOwnRecord` inside the authenticated account's own snapshot, and on no other record.
+- [x] Before any code, the RevenueCat page that documents refund, and the pages for the origins it concerns, were re-read, and `docs/revenuecat-facts.md` records the endpoint, the API version, the request and response shape, the origins it applies to, and the URL and date read.
+- [x] `docs/spec.md` Appendix A.4 gains the refund column, per origin, as the page says; an origin the page does not cover is recorded as unknown and answered as not possible with the management reference.
+- [x] The capability answer for refund, per origin and store, matches Appendix A.4 in a table-driven test.
+- [x] The service method for refund takes the record reference (a subscription or a non-renewing purchase), and what else the page requires; where it is possible it makes exactly one source call, refreshes, and returns the snapshot read back with the outcome; where it is not, it calls nothing and returns the "must be done by the person" result with the management reference.
+- [x] An accepted request that the read-back contradicts is reported as not done, with the snapshot; a source failure surfaces as the source-unavailable code and leaves the stored snapshot unchanged.
+- [x] A 4xx from the operation becomes a typed failure that does not include the response body or any customer identifier.
+- [x] The result of a refund is the snapshot read back from the source; the state expected after it is the one RevenueCat documents, recorded in `docs/revenuecat-facts.md` with its page, and the change list reports it through the normal path (AC05).
+- [x] The refund acts on a subscription or a non-renewing purchase found by `findOwnRecord` inside the authenticated account's own snapshot, and on no other record.
 - [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
@@ -838,3 +838,4 @@ Completion Protocol (after the work is reported done):
 - 8.6 ✅ 2026-11-26 — resume re-read on the RevenueCat pages: no server operation is documented, so every origin is answered as not possible with the management reference
 - 8.7 ✅ 2026-11-26 — change product re-read on the RevenueCat pages: no server operation is documented; the target product is validated before any call and every origin is not possible
 - 8.8 ✅ 2026-11-26 — extend through version 2 for Google Play, the App Store (reason, at most 90 days) and web billing; the read-back must show a later period end
+- 8.9 ✅ 2026-11-26 — refund for Google Play (version 2 transaction, version 1 purchase) and web billing (version 2), App Store and Stripe not possible; the read-back decides

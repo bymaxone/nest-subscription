@@ -19,9 +19,14 @@ const WEB_BILLING = 'rc_billing'
 
 /** The operations a subscription of an origin allows from a server (Appendix A.4). */
 function subscriptionOperations(origin: string, store: string | null): ManagementOperation[] {
-  if (origin === 'play_store') return ['stop_renewal', 'extend']
+  if (origin === 'play_store') return ['stop_renewal', 'extend', 'refund']
   if (origin === 'app_store') return ['extend']
-  return origin === 'web' && store === WEB_BILLING ? ['stop_renewal', 'extend'] : []
+  return origin === 'web' && store === WEB_BILLING ? ['stop_renewal', 'extend', 'refund'] : []
+}
+
+/** The operations a non-renewing purchase of an origin allows from a server: only a refund. */
+function purchaseOperations(origin: string, store: string | null): ManagementOperation[] {
+  return origin === 'play_store' || (origin === 'web' && store === WEB_BILLING) ? ['refund'] : []
 }
 
 /**
@@ -31,7 +36,9 @@ function subscriptionOperations(origin: string, store: string | null): Managemen
  * @param store The RevenueCat `store` of the record, or `null` when it is not known.
  */
 export function operationsOf(target: ManagedRecord, store: string | null): ManagementOperation[] {
-  return target.kind === 'subscription' ? subscriptionOperations(target.record.origin, store) : []
+  return target.kind === 'subscription'
+    ? subscriptionOperations(target.record.origin, store)
+    : purchaseOperations(target.record.origin, store)
 }
 
 /**

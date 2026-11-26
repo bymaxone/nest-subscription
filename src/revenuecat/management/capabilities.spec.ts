@@ -16,27 +16,44 @@ const sub = (origin: Parameters<typeof subscriptionOf>[0] = {}): ManagedRecord =
   record: subscriptionOf(origin)
 })
 
-describe('operationsOf: Appendix A.4, stop renewal and extend', () => {
+describe('operationsOf: Appendix A.4, stop renewal, extend and refund', () => {
   it.each([
-    ['Google Play', 'play_store', null, ['stop_renewal', 'extend']],
+    ['Google Play', 'play_store', null, ['stop_renewal', 'extend', 'refund']],
     ['App Store', 'app_store', null, ['extend']],
-    ['RevenueCat web billing', 'web', 'rc_billing', ['stop_renewal', 'extend']],
+    ['RevenueCat web billing', 'web', 'rc_billing', ['stop_renewal', 'extend', 'refund']],
     ['Stripe tracked by RevenueCat', 'web', 'stripe', []],
     ['another web store', 'web', 'paddle', []],
     ['a web record whose store is not stated', 'web', null, []],
     ['a promotional grant', 'promotional', null, []],
     ['another origin', 'other', null, []]
   ] as const)('%s allows %j', (_label, origin, store, expected) => {
-    // Scenario: each row of the stop renewal and extend columns, per origin and store.
+    // Scenario: each row of the stop renewal, extend and refund columns, per origin and store.
     expect(operationsOf(sub({ origin }), store)).toStrictEqual(expected)
   })
 
-  it('allows nothing to stop on a non-renewing purchase, whatever its origin', () => {
+  it.each([
+    ['Google Play', 'play_store', null, ['refund']],
+    ['RevenueCat web billing', 'web', 'rc_billing', ['refund']],
+    ['Stripe tracked by RevenueCat', 'web', 'stripe', []],
+    ['a web purchase whose store is not stated', 'web', null, []],
+    ['the App Store', 'app_store', null, []],
+    ['another origin', 'other', null, []]
+  ] as const)('allows a purchase from %s only %j', (_label, origin, store, expected) => {
+    // Scenario: the refund column for a non-renewing purchase; nothing else applies to one.
+    expect(operationsOf({ kind: 'purchase', record: purchaseOf({ origin }) }, store)).toStrictEqual(
+      expected
+    )
+  })
+
+  it('allows neither a stop nor an extension on a non-renewing purchase, whatever its origin', () => {
     // Scenario: a purchase renews nothing.
     for (const origin of ['play_store', 'web', 'app_store'] as const) {
-      expect(
-        operationsOf({ kind: 'purchase', record: purchaseOf({ origin }) }, 'rc_billing')
-      ).toStrictEqual([])
+      const operations = operationsOf(
+        { kind: 'purchase', record: purchaseOf({ origin }) },
+        'rc_billing'
+      )
+      expect(operations).not.toContain('stop_renewal')
+      expect(operations).not.toContain('extend')
     }
   })
 })
@@ -66,7 +83,7 @@ describe('capabilitiesOf', () => {
     // Scenario: the origin alone decides, so no request is made.
     const { context, calls } = stubbed(() => ok({}))
     expect(await capabilitiesOf(context, sub())).toStrictEqual({
-      operations: ['stop_renewal', 'extend'],
+      operations: ['stop_renewal', 'extend', 'refund'],
       managementReference: 'https://manage.example/sub_1'
     })
     expect(calls).toHaveLength(0)
@@ -77,7 +94,8 @@ describe('capabilitiesOf', () => {
     const web = stubbed(() => ok({ store: 'rc_billing' }))
     expect((await capabilitiesOf(web.context, sub({ origin: 'web' }))).operations).toStrictEqual([
       'stop_renewal',
-      'extend'
+      'extend',
+      'refund'
     ])
     expect(web.calls.map((call) => call.url)).toStrictEqual([
       'https://rc.test/v2/projects/proj_1/subscriptions/sub_1'

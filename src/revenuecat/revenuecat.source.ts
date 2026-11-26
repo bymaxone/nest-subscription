@@ -25,6 +25,7 @@ import type {
 import { capabilitiesOf } from './management/capabilities'
 import { extendAt } from './management/extend'
 import type { RevenueCatManagementContext } from './management/management-context'
+import { refundAt } from './management/refund'
 import { stopRenewalAt } from './management/stop-renewal'
 import { readRevenueCatAccount } from './read/read-account'
 import type { RevenueCatReadContext } from './read/read-context'
@@ -106,6 +107,10 @@ class RevenueCatSource implements SubscriptionSource {
     extension: ExtendRequest
   ): Promise<OperationResult> {
     return extendAt(this.#management, subscription, extension)
+  }
+
+  refund(account: AccountReference, target: ManagedRecord): Promise<OperationResult> {
+    return refundAt(this.#management, account, target)
   }
 
   /** Records an event that named no account, with no identifier, and never fails the request. */

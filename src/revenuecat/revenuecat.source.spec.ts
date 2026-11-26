@@ -116,6 +116,40 @@ describe('revenueCatSource extend', () => {
   })
 })
 
+describe('revenueCatSource refund', () => {
+  it('refunds a web billing purchase through the version 2 action, with its key', async () => {
+    // Scenario: the source hands the request to the refund operation with the adapter's own client.
+    const requests: Array<{ url: string; method: string | undefined }> = []
+    const source = sourceWith({
+      fetch: (url, init) => {
+        requests.push({ url, method: init.method })
+        return Promise.resolve(new Response('{"store":"rc_billing"}', { status: 200 }))
+      }
+    })
+    const record = {
+      purchaseReference: 'pur_1',
+      entitlementNames: ['pro'],
+      givesAccess: true,
+      origin: 'web',
+      environment: 'production',
+      productReference: 'lifetime',
+      purchasedAt: '2026-01-01T00:00:00.000Z',
+      accessUntil: null,
+      refundedAt: null
+    } as const
+    expect(await source.refund?.({ accountId: 'c' }, { kind: 'purchase', record })).toStrictEqual({
+      outcome: 'accepted'
+    })
+    expect(requests).toStrictEqual([
+      { url: 'http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/purchases/pur_1', method: 'GET' },
+      {
+        url: 'http://127.0.0.1:9/v2/projects/proj_PLACEHOLDER/purchases/pur_1/actions/refund',
+        method: 'POST'
+      }
+    ])
+  })
+})
+
 describe('revenueCatSource purchases', () => {
   it('has no management reference for a non-renewing purchase', async () => {
     // Scenario: a purchase carries no management reference, so none is answered.
