@@ -164,7 +164,7 @@ DELETE FROM subscription_processed_event
 WHERE received_at < $1::timestamptz
 ```
 
-Each reconciliation run calls it with the moment the retention (`eventRetentionMs`, 7 days by default) ended. Identifiers older than that are forgotten, so a retry that arrives after the retention is processed again; keep the retention longer than the longest span in which the source can deliver an event again. The library starts no timer for this, so a host that never runs reconciliation never purges.
+Each reconciliation run calls it with the moment the retention (`eventRetentionMs`, 7 days by default) ended. Identifiers older than that are forgotten, so a retry that arrives after the retention is processed again; keep the retention longer than the longest span in which the source can deliver an event again. Nothing else purges them, so a host that never runs reconciliation never purges.
 
 ### `listStaleKeys(olderThan, limit, cursor)`
 

@@ -1,6 +1,6 @@
 # Phase 9 — Release readiness
 
-> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 4 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: 🔄 In Progress &nbsp;·&nbsp; **Progress**: 5 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P9 — release-readiness
 > **Source spec**: [`docs/spec.md`](../spec.md)
 
@@ -43,7 +43,7 @@ At the end the package is publishable: the README follows the family's canonical
 | 9.2 | Write the host guides                             | ✅ Done | P0       | M    | 9.1           |
 | 9.3 | Sweep the captured logs of the whole suite        | ✅ Done | P0       | M    | 9.1           |
 | 9.6 | Prove AC08 with one suite run against two sources | ✅ Done | P0       | M    | —             |
-| 9.4 | Measure the whole package                         | 📋 ToDo | P0       | M    | 9.2, 9.3, 9.6 |
+| 9.4 | Measure the whole package                         | ✅ Done | P0       | M    | 9.2, 9.3, 9.6 |
 | 9.5 | Prepare the release candidate                     | 📋 ToDo | P0       | M    | 9.4           |
 
 ---
@@ -291,7 +291,7 @@ Completion Protocol (after the work is reported done):
 
 ### Task 9.4 — Measure the whole package
 
-- **Status**: 📋 ToDo
+- **Status**: ✅ Done
 - **Priority**: P0
 - **Size**: M
 - **Depends on**: 9.2, 9.3, 9.6
@@ -302,12 +302,12 @@ Run the full, non-incremental mutation run, set the size budget and the API base
 
 #### Acceptance criteria
 
-- [ ] `pnpm mutation:full` scores 100, with no disable directive lacking a recorded reason (`pnpm check:mutants`).
-- [ ] The size budget is set per subpath from the measured build with a small stated margin, and `pnpm size` passes.
-- [ ] The API surface baseline matches the build, reviewed name by name for anything exported by accident.
-- [ ] `docs/acceptance.md` maps AC01 to AC07, AC09 and the Appendix A half of AC10 to named passing tests, maps AC08 to the suite of task 9.6 for the fake source and the RevenueCat stand-in, and marks the Finance run of AC08 and the Appendix B half of AC10 as owned by P11.
-- [ ] `docs/mutation_testing_results.md` records the full run's numbers.
-- [ ] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
+- [x] `pnpm mutation:full` scores 100, with no disable directive lacking a recorded reason (`pnpm check:mutants`).
+- [x] The size budget is set per subpath from the measured build with a small stated margin, and `pnpm size` passes.
+- [x] The API surface baseline matches the build, reviewed name by name for anything exported by accident.
+- [x] `docs/acceptance.md` maps AC01 to AC07, AC09 and the Appendix A half of AC10 to named passing tests, maps AC08 to the suite of task 9.6 for the fake source and the RevenueCat stand-in, and marks the Finance run of AC08 and the Appendix B half of AC10 as owned by P11.
+- [x] `docs/mutation_testing_results.md` records the full run's numbers.
+- [x] All gates pass: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, `pnpm test:cov:all`, `pnpm build`.
 
 #### Files to create / modify
 
@@ -557,3 +557,4 @@ Completion Protocol (after the work is reported done):
 - 9.3 ✅ 2026-11-26 — a per-file sweep and a global teardown search every log line, observer payload, response body and library error of the whole end-to-end run for the sentinels the specs declare
 - 9.1 ✅ 2026-11-26 — the public README in the family's sequence, every snippet compiled against the built package, the error table checked against the catalogue
 - 9.2 ✅ 2026-11-26 — the raw-body guide and the PostgreSQL reference store, whose fixture passes all 28 conformance cases against PostgreSQL 17
+- 9.4 ✅ 2026-11-26 — the full mutation run scores 100, the size budgets are re-derived from the build, the acceptance table and the mutation results are written

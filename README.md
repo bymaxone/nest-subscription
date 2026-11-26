@@ -11,6 +11,8 @@
 
 <p align="center">
   <a href="https://github.com/bymaxone/nest-subscription/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bymaxone/nest-subscription/ci.yml?branch=main&style=flat-square&colorA=000000&label=CI" alt="CI status" /></a>
+  <a href="docs/mutation_testing_results.md"><img src="https://img.shields.io/badge/mutation-100%25-brightgreen?style=flat-square&colorA=000000" alt="mutation score 100%, measured on 2026-11-26" /></a>
+  <a href="docs/acceptance.md"><img src="https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square&colorA=000000" alt="coverage 100%, measured on 2026-11-26" /></a>
   <a href="https://github.com/bymaxone/nest-subscription/blob/main/LICENSE"><img src="https://img.shields.io/github/license/bymaxone/nest-subscription?style=flat-square&colorA=000000&colorB=000000" alt="license" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-26%2B-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js" /></a>
@@ -327,7 +329,7 @@ Mount the controller with `webhookController: true` and a `webhookPath`, and cre
 
 What this covers, and what it does not:
 
-- **De-duplication is by event identifier and is not a lock on state.** The identifier is recorded when processing starts, for `eventRetentionMs`. Reconciliation purges older identifiers; the library starts no timer, so a host that never runs reconciliation never purges. Keep the retention longer than the longest span in which the source can deliver an event again (RevenueCat retries for about 80 minutes and allows a manual resend with no stated limit).
+- **De-duplication is by event identifier and is not a lock on state.** The identifier is recorded when processing starts, for `eventRetentionMs`. Reconciliation purges older identifiers; nothing else purges them, so a host that never runs reconciliation never purges. Keep the retention longer than the longest span in which the source can deliver an event again (RevenueCat retries for about 80 minutes and allows a manual resend with no stated limit).
 - **A failed event's identifier is forgotten in the background.** The removal is started before the failed answer and is never awaited, so a slow store cannot hold the answer past the deadline. While that removal is in flight the processor remembers the event in memory (up to a bound, oldest out) and answers a retry as a failure at once. **A `forgetEvent` that never settles keeps retries of that event at `503` on that instance until a restart or until the event is evicted from that memory.** The memory belongs to one process: a retry that lands on another instance while the removal is in flight may find the identifier recorded and be answered as already seen until the retention purges it.
 - **A retry of a timed-out webhook reads the source twice.** The deadline answers a temporary failure and the work is not cancelled.
 - **An answer the framework's body parser gives** before the controller runs, such as a rejection of invalid JSON, is outside the uniform refusal.
@@ -536,7 +538,7 @@ This repository's own end-to-end suite runs one set of routes and one change hoo
 4. **Delivery is honest.** At least once, with a stable key per change, and a redelivery path.
 5. **Nothing is claimed that was not read back.** Operation results are the source's snapshot, not the request.
 6. **The source's flag decides access.** Status names are descriptive.
-7. **No hidden state in the library.** The host owns the store, the scheduler, the routes and the account resolver; the library starts no timer and reads no environment variable.
+7. **No hidden state in the library.** The host owns the store, the scheduler, the routes and the account resolver; the library runs no background schedule (its only timer is the webhook deadline's, cleared when the race ends) and reads no environment variable.
 
 ---
 
@@ -623,8 +625,8 @@ Not listed because the repository does not run them: a dynamic scan of a deploye
 The gates every change passes (`pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm test:cov:all && pnpm build`), and before a pull request is opened for a phase, `pnpm mutation`, `pnpm check:exports`, `pnpm check:runtime`, `pnpm check:api`, `pnpm check:docs`, `pnpm check:published` and `pnpm size`.
 
 - **Coverage:** 100% of statements, branches, functions and lines in the unit suite, in the end-to-end suite and in both together.
-- **Mutation testing:** MUTATION_SUMMARY.
-- **Acceptance:** every acceptance criterion points at a named, passing test in ACCEPTANCE_DOC. The Finance run of the source-parity criterion and the Appendix B half of the mapping criterion belong to the Finance adapter and are not claimed.
+- **Mutation testing:** a full, non-incremental run on 2026-11-26 scored 100.00: 2275 mutants killed, 20 timed out and none survived, of the 2295 that ran, with no `Stryker disable` directive in the source. The numbers by area are in [`docs/mutation_testing_results.md`](docs/mutation_testing_results.md).
+- **Acceptance:** every acceptance criterion points at a named, passing test in [`docs/acceptance.md`](docs/acceptance.md). The Finance run of the source-parity criterion and the Appendix B half of the mapping criterion belong to the Finance adapter and are not claimed.
 - **Packaging:** the entry points are loaded from the packed tarball in ESM and CommonJS, a bundle-size budget is held per subpath, and the public declarations are compared with the previous published version once one exists.
 - **Documentation:** every snippet in this README is compiled against the built package.
 
@@ -645,7 +647,8 @@ The gates every change passes (`pnpm typecheck && pnpm lint && pnpm test && pnpm
 | `SubscriptionChangeHook`, `SubscriptionChangeNotification`, `diffSnapshots`                                                                                             | notifications    | The hook's types, and the pure comparison of two snapshots                                                                                                         |
 | `SubscriptionObserver` and its event types                                                                                                                              | observer         | Counters and timings                                                                                                                                               |
 | `SubscriptionCapabilities`, `StopRenewalOutcome`, `ResumeOutcome`, `ChangeProductOutcome`, `ExtendOutcome`, `RefundOutcome`, `PersonMustAct`, `Unconfirmed`, `ReadBack` | management types | The results of the operations                                                                                                                                      |
-| `AgedSnapshot`, `ReconcileOptions`, `ReconcileResult`                                                                                                                   | types            | Read and reconciliation shapes                                                                                                                                     |
+| `AgedSnapshot`, `ReconcileOptions`, `ReconcileResult`, `Wait`                                                                                                           | types            | Read and reconciliation shapes                                                                                                                                     |
+| `SubscriptionCache`, `SubscriptionLogger`, `SubscriptionFailPolicy`, `Clock`, `AccountReference`, `WebhookContext`                                                      | types            | The small contracts the options and the methods take                                                                                                               |
 | `SubscriptionError`, `SUBSCRIPTION_ERROR_CODES`, `SubscriptionErrorCode`                                                                                                | errors           | The one error class and the closed catalogue                                                                                                                       |
 | `Secret`, `SECRET_PLACEHOLDER`, `encodeAccountKey`, `decodeAccountKey`, `hashAccountKey`, the `SUBSCRIPTION_*` injection tokens                                         | support          | Held secrets, account keys and the symbol tokens                                                                                                                   |
 
@@ -679,7 +682,7 @@ Every error the library raises is a `SubscriptionError` with one of these codes.
 - It is not a billing platform, a product catalogue or a pricing engine.
 - It ships no database client and no migration. The host implements the store port; [`docs/reference-store.md`](docs/reference-store.md) is a reference for PostgreSQL.
 - It mounts no route for the management operations. The host writes those controllers.
-- It starts no timer and reads no environment variable. The host schedules reconciliation and passes its own configuration.
+- It runs no background schedule and reads no environment variable. The host schedules reconciliation and passes its own configuration. The only timer it starts is the webhook deadline's, cleared the moment the race is decided.
 - **The Bymax Finance adapter is planned and is not available.** It is built when Bymax Finance publishes the API it needs, and the `./finance` subpath exports nothing until then.
 - It does not guarantee exactly-once delivery of a change, ordering between a webhook and a read, or that RevenueCat's state is correct.
 
