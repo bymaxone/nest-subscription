@@ -6,7 +6,7 @@ The statements below are the ones of a fixture kept in this repository, [`test/e
 
 ## How it was verified
 
-The fixture passes every case of `storeConformanceCases()` (the `testing` subpath), 28 of them, against PostgreSQL 17.12. The maintainer ran it on 2026-11-26 in a local container with the `pg` driver (8.23.1), one case at a time with the tables emptied before each. The continuous integration of this repository has no database, so that run is not part of it: the spec [`test/e2e/reference-store.e2e-spec.ts`](../test/e2e/reference-store.e2e-spec.ts) runs the conformance suite when `REFERENCE_STORE_DATABASE_URL` names a database, and is skipped otherwise. What always runs is the check that this guide shows the fixture's statements word for word, and the checks of the TypeScript around the statements.
+The fixture passes every case of `storeConformanceCases()` (the `testing` subpath) against PostgreSQL 17.12. The maintainer ran it on 2026-11-26 in a local container with the `pg` driver (8.23.1), one case at a time with the tables emptied before each. The continuous integration of this repository has no database, so that run is not part of it: the spec [`test/e2e/reference-store.e2e-spec.ts`](../test/e2e/reference-store.e2e-spec.ts) runs the conformance suite when `REFERENCE_STORE_DATABASE_URL` names a database, and is skipped otherwise. What always runs is the check that this guide shows the fixture's statements word for word, and the checks of the TypeScript around the statements.
 
 A host that adopts the store runs the conformance suite against its own database and its own driver, which is how the cases are written to be used:
 
@@ -19,7 +19,7 @@ for (const conformance of storeConformanceCases()) {
 }
 ```
 
-A broken statement is caught. With `<=` changed to `<` in the conditional write, and the event insert changed to update on conflict, six cases fail.
+A broken statement is caught. With `<=` changed to `<` in the conditional write, and the event insert changed to update on conflict, cases fail.
 
 ## The two records
 

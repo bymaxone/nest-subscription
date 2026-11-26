@@ -394,7 +394,7 @@ Changes are `started`, `renewed`, `trial_converted`, `will_not_renew`, `will_ren
 - **Delivery is at least once, not exactly once.** The changes are stored with the snapshot, in the same write, marked as not delivered, and cleared only after the hook returns. A hook that throws, a crash between the write and the call, and a failure to clear all leave them pending, and the next reconciliation run calls the hook again with the same keys and `redelivery: true`. A redelivery carries the current snapshot and no previous one. The host's reaction must be idempotent on `changes[].key`.
 - **A hook that throws is contained.** The failure is logged by its error code and reported to the observer; it never reaches the operation that stored the change.
 - **A change hook must not await `reconcile()`.** Reconciliation delivers pending changes, including the ones this hook is being called for, so a hook that waits for a run waits on its own pending changes and they are delivered again.
-- The hook is never called inside the webhook's response deadline.
+- The hook is never awaited inside the webhook's response deadline.
 
 An optional **observer** receives `onRefresh`, `onSourceError`, `onCacheLookup`, `onGuardDecision`, `onChangeDelivery`, `onWebhook` and `onBackgroundRefreshFailure`. Its payloads hold counts, outcomes, durations and error codes, and no account identifier and no payload.
 
@@ -538,7 +538,7 @@ This repository's own end-to-end suite runs one set of routes and one change hoo
 4. **Delivery is honest.** At least once, with a stable key per change, and a redelivery path.
 5. **Nothing is claimed that was not read back.** Operation results are the source's snapshot, not the request.
 6. **The source's flag decides access.** Status names are descriptive.
-7. **No hidden state in the library.** The host owns the store, the scheduler, the routes and the account resolver; the library runs no background schedule (its only timer is the webhook deadline's, cleared when the race ends) and reads no environment variable.
+7. **No hidden state in the library.** The host owns the store, the scheduler, the routes and the account resolver; the library runs no background schedule and reads no environment variable.
 
 ---
 
@@ -625,7 +625,7 @@ Not listed because the repository does not run them: a dynamic scan of a deploye
 The gates every change passes (`pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm test:cov:all && pnpm build`), and before a pull request is opened for a phase, `pnpm mutation`, `pnpm check:exports`, `pnpm check:runtime`, `pnpm check:api`, `pnpm check:docs`, `pnpm check:published` and `pnpm size`.
 
 - **Coverage:** 100% of statements, branches, functions and lines in the unit suite, in the end-to-end suite and in both together.
-- **Mutation testing:** a full, non-incremental run on 2026-11-26 scored 100.00: 2275 mutants killed, 20 timed out and none survived, of the 2295 that ran, with no `Stryker disable` directive in the source. The numbers by area are in [`docs/mutation_testing_results.md`](docs/mutation_testing_results.md).
+- **Mutation testing:** a full, non-incremental run on 2026-11-26 scored 100.00, with no `Stryker disable` directive in the source. The numbers by area are in [`docs/mutation_testing_results.md`](docs/mutation_testing_results.md).
 - **Acceptance:** every acceptance criterion points at a named, passing test in [`docs/acceptance.md`](docs/acceptance.md). The Finance run of the source-parity criterion and the Appendix B half of the mapping criterion belong to the Finance adapter and are not claimed.
 - **Packaging:** the entry points are loaded from the packed tarball in ESM and CommonJS, a bundle-size budget is held per subpath, and the public declarations are compared with the previous published version once one exists.
 - **Documentation:** every snippet in this README is compiled against the built package.
@@ -682,7 +682,7 @@ Every error the library raises is a `SubscriptionError` with one of these codes.
 - It is not a billing platform, a product catalogue or a pricing engine.
 - It ships no database client and no migration. The host implements the store port; [`docs/reference-store.md`](docs/reference-store.md) is a reference for PostgreSQL.
 - It mounts no route for the management operations. The host writes those controllers.
-- It runs no background schedule and reads no environment variable. The host schedules reconciliation and passes its own configuration. The only timer it starts is the webhook deadline's, cleared the moment the race is decided.
+- It runs no background schedule and reads no environment variable. The host schedules reconciliation and passes its own configuration.
 - **The Bymax Finance adapter is planned and is not available.** It is built when Bymax Finance publishes the API it needs, and the `./finance` subpath exports nothing until then.
 - It does not guarantee exactly-once delivery of a change, ordering between a webhook and a read, or that RevenueCat's state is correct.
 

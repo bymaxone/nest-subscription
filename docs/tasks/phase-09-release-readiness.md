@@ -556,7 +556,7 @@ Completion Protocol (after the work is reported done):
 - 9.6 ✅ 2026-11-26 — one suite runs the same application and cases against the fake source and the RevenueCat adapter over a local stand-in (AC08)
 - 9.3 ✅ 2026-11-26 — a per-file sweep and a global teardown search every log line, observer payload, response body and library error of the whole end-to-end run for the sentinels the specs declare
 - 9.1 ✅ 2026-11-26 — the public README in the family's sequence, every snippet compiled against the built package, the error table checked against the catalogue
-- 9.2 ✅ 2026-11-26 — the raw-body guide and the PostgreSQL reference store, whose fixture passes all 28 conformance cases against PostgreSQL 17
+- 9.2 ✅ 2026-11-26 — the raw-body guide and the PostgreSQL reference store, whose fixture passes the conformance cases against PostgreSQL 17
 - 9.4 ✅ 2026-11-26 — the full mutation run scores 100, the size budgets are re-derived from the build, the acceptance table and the mutation results are written
 - 9.5 ✅ 2026-11-26 — the first release's changelog entry, the weekly provider watch, and the publish dry run recorded
 

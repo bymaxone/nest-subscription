@@ -47,7 +47,7 @@ nothing.
   mapped to the HTTP answers RevenueCat expects. A verified notification triggers a read of the
   source; its payload is never applied.
 - **Change notifications.** A host hook with typed changes (`started`, `renewed`, `refunded` and
-  twelve more), each with a stable key, delivered at least once, plus an optional observer that
+  others), each with a stable key, delivered at least once, plus an optional observer that
   receives counters and timings and never an identifier.
 - **Management operations.** Capabilities per subscription, then stop renewal, resume, change
   product, extend and refund where a server can do it. A result is the snapshot read back from the
