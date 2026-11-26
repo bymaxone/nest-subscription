@@ -19,7 +19,7 @@ import { encodeSegment } from '../revenuecat-http'
 import { listAll } from './list-all'
 import { mapSubscription } from './map-subscription'
 import { parseEntitlementNames, parseSubscription, type ParsedSubscription } from './parse-customer'
-import { unreadable, type RevenueCatReadContext } from './read-context'
+import { unavailableIfUnknown, unreadable, type RevenueCatReadContext } from './read-context'
 import { readPurchases } from './read-purchases'
 import { applySandboxFilter, filterSandboxPurchases, type GrantedRecords } from './sandbox-filter'
 
@@ -52,10 +52,9 @@ async function readSubscriptions(
 /** The records of the customer and the names each grants, before the sandbox filter. */
 async function readGranted(
   context: RevenueCatReadContext,
-  accountId: string,
+  parsed: readonly ParsedSubscription[],
   fetchedAt: string
 ): Promise<GrantedRecords> {
-  const parsed = await readSubscriptions(context, accountId)
   const records: SubscriptionRecord[] = []
   const grants = new Map<string, readonly string[]>()
   for (const subscription of parsed) {
@@ -65,49 +64,62 @@ async function readGranted(
   return { records, grants }
 }
 
-/** The snapshot of a customer RevenueCat knows. */
+/**
+ * The snapshot of a customer RevenueCat knows, from the subscriptions already read. Every request
+ * here comes after the first one, so a resource the source no longer has makes the read fail
+ * instead of reading as an unknown customer.
+ */
 async function buildSnapshot(
   context: RevenueCatReadContext,
   account: AccountReference,
+  parsed: readonly ParsedSubscription[],
   fetchedAt: string
 ): Promise<SubscriptionSnapshot> {
-  const granted = applySandboxFilter(
-    await readGranted(context, account.accountId, fetchedAt),
-    context.allowSandbox
-  )
-  const purchases = filterSandboxPurchases(
-    await readPurchases(context, account.accountId, fetchedAt),
-    context.allowSandbox
-  )
-  return {
-    accountId: account.accountId,
-    ...(account.tenantId === undefined ? {} : { tenantId: account.tenantId }),
-    entitlements: resolveEntitlements(granted.records, granted.grants, purchases).entitlements,
-    subscriptions: granted.records,
-    nonRenewingPurchases: purchases,
-    source: context.sourceName,
-    sourceCustomer: { id: account.accountId },
-    fetchedAt,
-    sourceUpdatedAt: null
+  try {
+    const granted = applySandboxFilter(
+      await readGranted(context, parsed, fetchedAt),
+      context.allowSandbox
+    )
+    const purchases = filterSandboxPurchases(
+      await readPurchases(context, account.accountId, fetchedAt),
+      context.allowSandbox
+    )
+    return {
+      accountId: account.accountId,
+      ...(account.tenantId === undefined ? {} : { tenantId: account.tenantId }),
+      entitlements: resolveEntitlements(granted.records, granted.grants, purchases).entitlements,
+      subscriptions: granted.records,
+      nonRenewingPurchases: purchases,
+      source: context.sourceName,
+      sourceCustomer: { id: account.accountId },
+      fetchedAt,
+      sourceUpdatedAt: null
+    }
+  } catch (error) {
+    throw unavailableIfUnknown(error)
   }
 }
 
 /**
- * Reads the current state of one account.
+ * Reads the current state of one account. Only the first request, the first page of the customer's
+ * subscriptions, decides that the customer is unknown; a request after it that is not found fails
+ * the read, so the snapshot already stored is kept.
  *
  * @param context The client and the settings of the adapter.
  * @param account The account to read; its identifier is RevenueCat's App User ID.
  * @returns The snapshot, or the empty snapshot when RevenueCat has no record of the customer.
  * @throws SubscriptionError with the source-unavailable code when the source cannot be read to the
- *   end or answers with something that is not what the API documents.
+ *   end, a resource it listed is no longer there, or it answers with something that is not what the
+ *   API documents.
  */
 export async function readRevenueCatAccount(
   context: RevenueCatReadContext,
   account: AccountReference
 ): Promise<SubscriptionSnapshot> {
   const fetchedAt = context.clock.now().toISOString()
+  let subscriptions: readonly ParsedSubscription[]
   try {
-    return await buildSnapshot(context, account, fetchedAt)
+    subscriptions = await readSubscriptions(context, account.accountId)
   } catch (error) {
     if (
       error instanceof SubscriptionError &&
@@ -122,4 +134,5 @@ export async function readRevenueCatAccount(
     }
     throw error
   }
+  return buildSnapshot(context, account, subscriptions, fetchedAt)
 }

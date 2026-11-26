@@ -11,6 +11,7 @@ import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
 import type { RevenueCatHttp } from '../revenuecat-http'
 import { isRecord, parseList, readString } from './parse-customer'
+import { unavailableIfUnknown } from './read-context'
 
 /** How many items one request asks for. The API clamps the value to its own limit. */
 export const PAGE_LIMIT = 100
@@ -18,8 +19,23 @@ export const PAGE_LIMIT = 100
 /** The most pages read from one list; a customer with more than this many pages is refused. */
 export const MAX_PAGES = 50
 
+/** One page of a list; a page after the first that is not found is a source that cannot be read. */
+async function getPage(
+  http: RevenueCatHttp,
+  path: string,
+  query: Readonly<Record<string, string>>,
+  page: number
+): Promise<unknown> {
+  try {
+    return await http.get(path, query)
+  } catch (error) {
+    throw page === 0 ? error : unavailableIfUnknown(error)
+  }
+}
+
 /**
- * Reads every item of a list.
+ * Reads every item of a list. A page after the first that the source answers as not found is a
+ * list that cannot be read to its end, not an unknown customer.
  *
  * @param http The client.
  * @param path The path of the list, with every identifier already encoded.
@@ -38,7 +54,7 @@ export async function listAll(
   for (let page = 0; page < MAX_PAGES; page += 1) {
     const query: Record<string, string> = { limit: String(PAGE_LIMIT) }
     if (cursor !== null) query['starting_after'] = cursor
-    const parsed = parseList(await http.get(path, query))
+    const parsed = parseList(await getPage(http, path, query, page))
     if (parsed === null) break
     items.push(...parsed.items)
     if (!parsed.hasMore) return items

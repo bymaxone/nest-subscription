@@ -379,15 +379,17 @@ describe('readRevenueCatAccount of purchases the API reports unusually', () => {
     }
   )
 
-  it('treats a customer that vanishes while the purchases are read as an empty snapshot', async () => {
-    // Scenario: the purchases list answers 404.
+  it('fails the read when the purchases list answers 404 after an empty subscriptions list', async () => {
+    // Scenario: the customer was found by the first request, so a later 404 is a read that cannot be
+    // completed, not an unknown customer.
     const stub: RevenueCatFetch = (url) =>
       Promise.resolve(
         new URL(url).pathname.endsWith('/purchases')
           ? new Response('{}', { status: 404 })
           : new Response(JSON.stringify(list([])))
       )
-    const snapshot = await readRevenueCatAccount(contextFor(stub), { accountId: 'c' })
-    expect(snapshot.sourceCustomer).toBeNull()
+    expect(await codeOf(readRevenueCatAccount(contextFor(stub), { accountId: 'c' }))).toBe(
+      SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+    )
   })
 })

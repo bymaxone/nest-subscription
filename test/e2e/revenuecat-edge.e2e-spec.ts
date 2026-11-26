@@ -133,6 +133,19 @@ describe('lists the adapter cannot use', () => {
     expect(await outcome()).toBe(UNAVAILABLE)
   })
 
+  it('is a source that cannot be read when a page after the first is not found', async () => {
+    // Scenario: the second page of the subscriptions answers 404; the customer is known, so the
+    // read fails and does not become the empty snapshot.
+    stand.respondWith((request) =>
+      resource(request.url) !== 'subscriptions'
+        ? undefined
+        : request.url.includes('starting_after')
+          ? { status: 404, body: { type: 'resource_missing' } }
+          : { status: 200, body: list([subscription()], 'next') }
+    )
+    expect(await outcome()).toBe(UNAVAILABLE)
+  })
+
   it('is a source that cannot be read when nothing listens, and sends the key to no other address', async () => {
     // Scenario: connection refused; the stand-in saw only requests with the bearer key.
     await stand.close()
@@ -513,6 +526,13 @@ describe('webhook requests that are not the ordinary ones', () => {
   })
 })
 
+/** The items of a list of a recorded customer fixture; none when the fixture has no such list. */
+function itemsOf(name: string, list: string): Array<Record<string, unknown>> {
+  const body: unknown = Reflect.get(loadFixture(name), list)
+  const items: unknown = typeof body === 'object' && body !== null ? Reflect.get(body, 'items') : []
+  return Array.isArray(items) ? items.map((item): Record<string, unknown> => Object(item)) : []
+}
+
 describe('purchases that appear, change and leave across reads', () => {
   /** Reads the customer with the fixture served and returns the snapshot. */
   async function read(
@@ -565,6 +585,15 @@ describe('purchases that appear, change and leave across reads', () => {
       'empty-customer'
     ]) {
       const snapshot = await adapter({ fetch: fixtureFetch(name) }).readAccount({ accountId: 'c' })
+      for (const item of itemsOf(name, 'subscriptions')) {
+        const mapped = snapshot.subscriptions.find(
+          (record) => record.subscriptionReference === item['id']
+        )
+        // The source's own flag decides; a sandbox subscription gives none under the default setting.
+        expect(mapped?.givesAccess).toBe(
+          item['gives_access'] === true && item['environment'] === 'production'
+        )
+      }
       const giving = [
         ...snapshot.subscriptions
           .filter((record) => record.givesAccess)
@@ -579,7 +608,6 @@ describe('purchases that appear, change and leave across reads', () => {
         )
       }
     }
-    expect(loadFixture('lifetime-purchase')).toHaveProperty('purchases')
   })
 
   it('does not change what a clock reads', () => {

@@ -161,6 +161,46 @@ describe('the RevenueCat adapter with non-renewing purchases, through the servic
     })
   })
 
+  it('keeps the stored entitlement when a later request of a refresh answers 404', async () => {
+    // Scenario: a subscription's entitlement list disappears between two requests of one read: the
+    // refresh fails, the stored snapshot still grants access and no change is delivered.
+    running = await boot()
+    const list = (items: unknown[]): unknown => ({ object: 'list', items, next_page: null })
+    const entitlements = list([{ id: 'entl_1', lookup_key: 'premium' }])
+    running.stand.serve('customer_a', {
+      subscriptions: list([
+        {
+          id: 's1',
+          status: 'active',
+          gives_access: true,
+          environment: 'production',
+          store: 'app_store'
+        }
+      ])
+    })
+    let present = true
+    running.stand.respondWith((request) =>
+      request.url.includes('/subscriptions/s1/entitlements')
+        ? present
+          ? { status: 200, body: entitlements }
+          : { status: 404, body: { type: 'resource_missing' } }
+        : undefined
+    )
+    await running.service.refresh(ACCOUNT)
+    expect(await running.service.hasEntitlement(ACCOUNT, 'premium')).toBe(true)
+    const delivered = running.notifications.length
+    present = false
+    running.clock.advance(60_000)
+    await expect(running.service.refresh(ACCOUNT)).rejects.toMatchObject({
+      code: 'SUBSCRIPTION_SOURCE_UNAVAILABLE'
+    })
+    expect(await running.service.hasEntitlement(ACCOUNT, 'premium')).toBe(true)
+    expect(running.notifications).toHaveLength(delivered)
+    expect(
+      running.notifications.flatMap((entry) => entry.changes.map((change) => change.kind))
+    ).toStrictEqual(['started'])
+  })
+
   it('reads the stand-in with the key and nowhere else', async () => {
     // Scenario: every request is to the stand-in's address, with the bearer key.
     running = await boot()

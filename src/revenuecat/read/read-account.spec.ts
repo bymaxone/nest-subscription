@@ -620,16 +620,100 @@ describe('readRevenueCatAccount with a response that is not what the API documen
     expect(snapshot.entitlements.map((e) => e.name)).toStrictEqual(['premium'])
   })
 
-  it('treats an unknown customer found while reading entitlements as an empty snapshot', async () => {
-    // Scenario: the customer is deleted between two calls; the answer is still a value.
-    const stub: RevenueCatFetch = (url) =>
-      Promise.resolve(
-        url.includes('/entitlements')
-          ? new Response('{}', { status: 404 })
-          : new Response(JSON.stringify(list([{ id: 's1' }])))
+  describe('a 404 after the first request of the read', () => {
+    const entitlement = { id: 'entl_1', lookup_key: 'premium' }
+    const nested = list([entitlement])
+
+    /** The requests of a complete read, each named, with the body it is answered with. */
+    function routes(url: URL): Array<readonly [string, unknown]> {
+      const last = url.pathname.split('/').at(-1) ?? ''
+      const after = url.searchParams.get('starting_after')
+      const owner = url.pathname.includes('/customers/')
+      if (owner && last === 'subscriptions' && after === null) {
+        return [['subscriptions-first-page', list([{ id: 's1', gives_access: true }], 'next')]]
+      }
+      if (owner && last === 'subscriptions') {
+        return [['subscriptions-second-page', list([{ id: 's2', entitlements: nested }])]]
+      }
+      if (last === 'entitlements' && url.pathname.includes('/subscriptions/')) {
+        return [['subscription-entitlements', nested]]
+      }
+      if (last === 'entitlements') return [['purchase-entitlements', nested]]
+      if (last === 'purchases') return [['purchases', list([{ id: 'p1', status: 'owned' }])]]
+      return [['active-entitlements', list([{ entitlement_id: 'entl_1', expires_at: null }])]]
+    }
+
+    /** A `fetch` that answers 404 to the one request named and serves the rest. */
+    function missingOn(name: string | null): RevenueCatFetch {
+      return (url) => {
+        const [[request, body] = ['', {}]] = routes(new URL(url))
+        return Promise.resolve(
+          request === name
+            ? new Response('{}', { status: 404 })
+            : new Response(JSON.stringify(body))
+        )
+      }
+    }
+
+    it('reads the whole customer when no request is missing', async () => {
+      // Scenario: the control for the table below: every request of the read is answered.
+      const snapshot = await readRevenueCatAccount(contextFor(missingOn(null)), { accountId: 'c' })
+      expect(snapshot.subscriptions.map((record) => record.subscriptionReference)).toStrictEqual([
+        's1',
+        's2'
+      ])
+      expect(snapshot.nonRenewingPurchases).toHaveLength(1)
+    })
+
+    it('yields the empty snapshot when the first request is the one that is missing', async () => {
+      // Scenario: the customer is unknown; only the first page of the subscriptions decides it.
+      const snapshot = await readRevenueCatAccount(
+        contextFor(missingOn('subscriptions-first-page')),
+        {
+          accountId: 'c'
+        }
       )
-    const snapshot = await readRevenueCatAccount(contextFor(stub), { accountId: 'c' })
-    expect(snapshot.sourceCustomer).toBeNull()
+      expect(snapshot).toMatchObject({ sourceCustomer: null, subscriptions: [], entitlements: [] })
+    })
+
+    it.each([
+      'subscriptions-second-page',
+      'subscription-entitlements',
+      'purchases',
+      'purchase-entitlements',
+      'active-entitlements'
+    ])('rejects with the source-unavailable code when the request %s is missing', async (name) => {
+      // Scenario: a resource removed between two requests of one read: the read cannot be
+      // completed, so the stored snapshot of a customer the source knows stays as it is.
+      expect(
+        await codeOf(readRevenueCatAccount(contextFor(missingOn(name)), { accountId: 'c' }))
+      ).toBe(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+    })
+
+    it('rejects with the source-unavailable code for a subscription whose identifier cannot be sent', async () => {
+      // Scenario: a dot segment as a subscription identifier is refused after the first request.
+      const stub: RevenueCatFetch = () =>
+        Promise.resolve(new Response(JSON.stringify(list([{ id: '..' }]))))
+      expect(await codeOf(readRevenueCatAccount(contextFor(stub), { accountId: 'c' }))).toBe(
+        SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+      )
+    })
+
+    it('reads the customer on a retry after a read that failed on a missing request', async () => {
+      // Scenario: a 404 then a 200 for the same request: the failure left nothing behind.
+      let calls = 0
+      const flaky: RevenueCatFetch = (url, init) => {
+        calls += 1
+        return missingOn(calls <= 4 ? 'purchases' : null)(url, init)
+      }
+      const context = contextFor(flaky)
+      expect(await codeOf(readRevenueCatAccount(context, { accountId: 'c' }))).toBe(
+        SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+      )
+      expect(
+        (await readRevenueCatAccount(context, { accountId: 'c' })).sourceCustomer
+      ).toStrictEqual({ id: 'c' })
+    })
   })
 
   it.each(['.', '..'])(
