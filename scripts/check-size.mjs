@@ -37,7 +37,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 // measured size of the built artifact (brotli at the maximum quality) rounded up to the next 0.05 KiB,
 // plus one more 0.05 KiB step, so the margin is between 0.05 and 0.10 KiB (at most 0.5% of the
 // largest bundle). The `finance` bundle, which exports nothing, keeps a 0.05 KiB budget that is
-// already far above its measured size. Last measured on the release candidate. A change that adds behaviour to an entry
+// already far above its measured size. A change that adds behaviour to an entry
 // point re-derives its row from the built artifact, with modest headroom, and says why in the same
 // change; a budget is never nudged and never met by shortening the text of a message.
 // The root bundle holds the module, the service, the guard, the refresher, reconciliation, change
