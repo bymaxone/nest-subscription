@@ -1,6 +1,6 @@
 # Phase 9 — Release readiness
 
-> **Status**: 👀 Review &nbsp;·&nbsp; **Progress**: 6 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
+> **Status**: ✅ Done &nbsp;·&nbsp; **Progress**: 6 / 6 tasks &nbsp;·&nbsp; **Last updated**: 2026-11-26
 > **Source roadmap**: [`docs/plan.md`](../plan.md) § P9 — release-readiness
 > **Source spec**: [`docs/spec.md`](../spec.md)
 

@@ -25,8 +25,8 @@ This document says in which order the specification is built and when each part 
 
 > Update this every time a phase moves status. Recompute % from the table below.
 
-**Overall progress**: 🔄 9 / 10 phases of the first release done (90%) — P0 to P8
-**Active phase**: P9 — release-readiness
+**Overall progress**: ✅ 10 / 10 phases of the first release done (100%) — P0 to P9
+**Active phase**: none; the first release is a release candidate and waits for the owner's publish instruction
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 
@@ -34,19 +34,19 @@ This document says in which order the specification is built and when each part 
 
 ## Phase dashboard
 
-| ID  | Phase                                                                                                     | Status    | Progress | Size | Last updated |
-| --- | --------------------------------------------------------------------------------------------------------- | --------- | -------- | ---- | ------------ |
-| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done   | 7/7      | L    | 2026-11-24   |
-| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done   | 7/7      | L    | 2026-11-24   |
-| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
-| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done   | 5/5      | L    | 2026-11-25   |
-| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done   | 4/4      | M    | 2026-11-25   |
-| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done   | 5/5      | M    | 2026-11-25   |
-| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | ✅ Done   | 5/5      | L    | 2026-11-25   |
-| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | ✅ Done   | 8/8      | L    | 2026-11-25   |
-| P8  | management-operations — capabilities, the five operations and the management reference                    | ✅ Done   | 9/9      | L    | 2026-11-26   |
-| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | 👀 Review | 6/6      | M    | 2026-11-26   |
-| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo   | 0/5      | L    | —            |
+| ID  | Phase                                                                                                     | Status  | Progress | Size | Last updated |
+| --- | --------------------------------------------------------------------------------------------------------- | ------- | -------- | ---- | ------------ |
+| P0  | scaffold-and-governance — the `nest-telemetry` scaffold, the gates and the repository rules               | ✅ Done | 7/7      | L    | 2026-11-24   |
+| P1  | model-ports-and-test-doubles — the shared model, the two ports, the in-memory store and the fake source   | ✅ Done | 7/7      | L    | 2026-11-24   |
+| P2  | module-and-options — `forRoot`, `forRootAsync`, validation at boot and secret containment                 | ✅ Done | 5/5      | M    | 2026-11-25   |
+| P3  | read-refresh-reconcile — the service, refresh on demand, staleness, ordered writes and reconciliation     | ✅ Done | 5/5      | L    | 2026-11-25   |
+| P4  | guard-and-fail-policy — the decorator, the guard, the refusal codes and the two fail policies             | ✅ Done | 4/4      | M    | 2026-11-25   |
+| P5  | change-notifications-and-observer — the typed change list, the host hook and the observer                 | ✅ Done | 5/5      | M    | 2026-11-25   |
+| P6  | webhook-receiver — the processor, the controller, de-duplication, outcomes and the deadline               | ✅ Done | 5/5      | L    | 2026-11-25   |
+| P7  | revenuecat-adapter — read, identity, verification, sandbox filter, mapping tables, non-renewing purchases | ✅ Done | 8/8      | L    | 2026-11-25   |
+| P8  | management-operations — capabilities, the five operations and the management reference                    | ✅ Done | 9/9      | L    | 2026-11-26   |
+| P9  | release-readiness — the public documents, the full gate run and the release candidate                     | ✅ Done | 6/6      | M    | 2026-11-26   |
+| P11 | finance-adapter — deferred, outside the first release; built when the Finance API exists (D30)            | 📋 ToDo | 0/5      | L    | —            |
 
 ---
 
@@ -379,12 +379,12 @@ The specification leaves the file layout to this roadmap. These are the director
   - In: the public `README.md` in the family's canonical sequence, including the raw-body setup for NestJS (FR17), the reference store over a relational table (FR22, D11), the error code catalogue and the security table; the changelog entry of the first release; a sweep of captured logs across the whole end-to-end suite for secrets and account identifiers (AC09); a full, non-incremental mutation run; the bundle size budget and the API surface baseline set from the real build; the checks that README links resolve and its snippets compile; the scheduled job that watches the provider's changelog (R03); a publish dry run; one end-to-end suite in this repository that runs the same routes and the same hook code, unchanged, against the fake source and against a local stand-in of the RevenueCat API (AC08, D29).
   - Out: `npm publish` and the version tag, which are the owner's (specification §8); the Finance adapter's documentation beyond stating that it is planned; the Finance run of AC08, which belongs to P11; any example repository (D29).
 - **Definition of Done**:
-  - [ ] Every acceptance criterion from AC01 to AC07, AC09 and the Appendix A half of AC10 points at a named, passing test in a table in the pull request.
-  - [ ] The full mutation run scores 100 with no disable directive lacking a recorded reason.
-  - [ ] Every README snippet compiles against the built package, and every statement in its security section names a control the repository actually runs.
-  - [ ] No log line captured across the end-to-end suite contains a configured secret or a raw account identifier.
-  - [ ] One end-to-end suite runs unchanged against the fake source and against a local RevenueCat stand-in, with no difference in routes or hook code between the two runs (AC08).
-  - [ ] `npm publish --dry-run` succeeds from a clean checkout, and the tarball passes the export, runtime and published-surface checks.
+  - [x] Every acceptance criterion from AC01 to AC07, AC09 and the Appendix A half of AC10 points at a named, passing test in a table in the pull request.
+  - [x] The full mutation run scores 100 with no disable directive lacking a recorded reason.
+  - [x] Every README snippet compiles against the built package, and every statement in its security section names a control the repository actually runs.
+  - [x] No log line captured across the end-to-end suite contains a configured secret or a raw account identifier.
+  - [x] One end-to-end suite runs unchanged against the fake source and against a local RevenueCat stand-in, with no difference in routes or hook code between the two runs (AC08).
+  - [x] `npm publish --dry-run` succeeds from a clean checkout, and the tarball passes the export, runtime and published-surface checks.
 - **Context / preconditions**: P4, P5, P6, P7 and P8 are done.
 - **Rules-of-phase**:
   1. A documented guarantee states its limit next to it. The fail policy, sandbox handling and at-least-once delivery are described with what they do not cover.
@@ -452,6 +452,7 @@ When a phase moves status:
 - P6 ✅ 2026-11-25 — the processor, the controller, de-duplication by event identifier, the five outcomes and the response deadline merged in #12 (e004c38)
 - P7 ✅ 2026-11-25 — the RevenueCat read, verification, sandbox filter, mapping tables and non-renewing purchases merged in #13 (48354d4)
 - P8 ✅ 2026-11-26 — management operations merged in #14
+- P9 ✅ 2026-11-26 — the public documents, the whole-package measurements and the release candidate merged in #15 (4a4531c); nothing published or tagged
 
 ---
 
