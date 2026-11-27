@@ -1,7 +1,7 @@
 # @bymax-one/nest-subscription — Agent Specification
 
 > **Type:** npm public library (not an application)
-> **Stage:** `1.0.0`, prepared for its first publish. The first release's behaviour is written and documented; the Bymax Finance adapter is planned and its entry point exports nothing. The first publish is manual and the owner's.
+> **Stage:** `1.0.0`, published. The Bymax Finance adapter is planned and its entry point exports nothing. Every release is the owner's decision.
 
 ## 1. Where things are
 
