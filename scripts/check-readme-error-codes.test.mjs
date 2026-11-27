@@ -31,7 +31,7 @@ function catalogueMessages(source) {
 
 /** The rows of the README's error code table: the code and the meaning column. */
 function readmeRows(readme) {
-  const section = /## Error Code Catalog([\s\S]*?)\n---/.exec(readme)
+  const section = /^## .*Error Code Catalog([\s\S]*?)\n---/m.exec(readme)
   assert.ok(section, 'the README has an Error Code Catalog section')
   return [...section[1].matchAll(/^\|\s*`(SUBSCRIPTION_[A-Z_]+)`\s*\|\s*([^|]*?)\s*\|/gm)].map(
     (match) => ({ code: match[1], meaning: match[2] })

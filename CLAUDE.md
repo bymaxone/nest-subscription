@@ -20,4 +20,4 @@ Before a pull request is opened for a phase: `pnpm mutation`, `pnpm check:export
 
 ## Release
 
-The first publish and every version bump need the maintainer's explicit instruction naming the number. Never infer a bump from an event, never tag, never publish. `README.md` and `CHANGELOG.md` ship in the package; while no version is published, the `Unreleased` section of the changelog is edited in place.
+The first publish and every version bump need the maintainer's explicit instruction naming the number. Never infer a bump from an event, never tag, never publish. `README.md` and `CHANGELOG.md` ship in the package; a change a user would notice is recorded under the changelog's `Unreleased` section.

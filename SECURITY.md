@@ -4,7 +4,12 @@
 
 ## Supported versions
 
-The library is a release candidate and no version is published yet. Once one is, only the most recent minor receives security fixes.
+Only the most recent minor of the `1.x` line receives security fixes. Earlier versions are not supported: update to the latest minor to get a fix.
+
+| Version                 | Status                              |
+| ----------------------- | ----------------------------------- |
+| Latest `1.x` minor      | ✅ Active — receives security fixes |
+| Any earlier `1.x` minor | ❌ Not supported — update           |
 
 ## Reporting a vulnerability
 

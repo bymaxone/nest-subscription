@@ -1,12 +1,24 @@
 # Changelog
 
-All notable changes to `@bymax-one/nest-subscription` are recorded here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+All notable changes to `@bymax-one/nest-subscription` will be documented in this file.
 
-While no version is published, what the first release will describe is collected under
-`Unreleased` and edited in place.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+**Versioning, while the library is pre-adoption.** [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+is the target, not yet the practice. Until the API settles, breaking changes ship in **minor and
+patch** releases rather than driving the major, deliberately: the library has no production
+dependant yet, the surface can still be corrected as adopters and audits report, and a major per
+breaking change would say nothing useful about its stability. Strict SemVer starts when the API is
+declared stable, and that transition will be announced here.
+
+**What this means for you:** do not infer compatibility from the version number in the `1.x` line
+— `^1.0.0` and `~1.0.0` both resolve to releases that may break you. Read the entry before
+upgrading. Every breaking change carries an **Apply to a derived backend** note saying exactly
+what moves, and that note is the compatibility contract until strict SemVer begins.
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-11-27
 
 The first release. `@bymax-one/nest-subscription` keeps one normalized subscription snapshot per
 account for a NestJS 11 backend, fed by one billing source through an adapter, and exposes it
@@ -109,3 +121,6 @@ billing source's webhooks itself:
    Keep your own rules for what an entitlement is worth.
 5. Make the change hook idempotent on `changes[].key`, call `refresh` after a purchase the app
    reports, and schedule `reconcile`.
+
+[Unreleased]: https://github.com/bymaxone/nest-subscription/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/bymaxone/nest-subscription/releases/tag/v1.0.0

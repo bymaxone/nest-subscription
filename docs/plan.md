@@ -26,7 +26,7 @@ This document says in which order the specification is built and when each part 
 > Update this every time a phase moves status. Recompute % from the table below.
 
 **Overall progress**: ✅ 10 / 10 phases of the first release done (100%) — P0 to P9
-**Active phase**: none; the first release is a release candidate and waits for the owner's publish instruction
+**Active phase**: none; version `1.0.0` is prepared and waits for the owner's first manual publish
 **Blocked**: none
 **Deferred**: P11, outside the first release until the Bymax Finance API exists (D03, D30)
 

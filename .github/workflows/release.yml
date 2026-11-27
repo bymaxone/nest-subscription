@@ -234,10 +234,12 @@ jobs:
           egress-policy: audit
 
       # No checkout and no install in this job: nothing from the package runs while the token exists.
+      # Node 24 is the template's own step, which the organisation's release check compares key for
+      # key; this job runs npm only, never the package, so the package's Node floor does not apply.
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 26.x
+          node-version: 24.x
 
       - name: Require an npm that can publish with OIDC
         run: |
