@@ -345,9 +345,28 @@ function lineDiff(left, right) {
   return lines.join('\n')
 }
 
+/**
+ * The environment for the nested `npm pack` of the previous version. A `npm publish --dry-run`
+ * exports `npm_config_dry_run` to its lifecycle scripts, and a pack that inherits it writes no
+ * file, so it is removed. The given environment is not changed.
+ *
+ * @param {NodeJS.ProcessEnv} env - The environment to copy.
+ * @returns {NodeJS.ProcessEnv} A copy without `npm_config_dry_run`.
+ */
+export function packEnvironment(env) {
+  const copy = { ...env }
+  delete copy['npm_config_dry_run']
+  return copy
+}
+
 /** Runs a command and returns its stdout, throwing with its stderr on failure. */
-function run(command, args, cwd) {
-  const result = spawnSync(command, args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+function run(command, args, cwd, env = process.env) {
+  const result = spawnSync(command, args, {
+    cwd,
+    env,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024
+  })
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(' ')} failed: ${result.stderr || result.error}`)
   }
@@ -382,14 +401,12 @@ function resolvePrevious(name, current, against) {
   if (previous === undefined) return undefined
   const scratch = mkdtempSync(join(tmpdir(), 'api-surface-pack-'))
   const packed = JSON.parse(
-    run('npm', [
-      'pack',
-      `${name}@${previous}`,
-      '--ignore-scripts',
-      '--json',
-      '--pack-destination',
-      scratch
-    ])
+    run(
+      'npm',
+      ['pack', `${name}@${previous}`, '--ignore-scripts', '--json', '--pack-destination', scratch],
+      undefined,
+      packEnvironment(process.env)
+    )
   )
   return {
     dist: unpack(join(scratch, packed[0].filename)),
