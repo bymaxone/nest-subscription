@@ -1,6 +1,6 @@
 {
   "name": "@bymax-one/nest-subscription",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "One normalized subscription snapshot per account for NestJS 11, fed by one billing source through an adapter. Access is granted only from a read of the source, never from a webhook payload.",
   "author": "Bymax One <support@bymax.one>",
   "license": "MIT",

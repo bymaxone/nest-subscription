@@ -18,6 +18,8 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-27
+
 ### Changed
 
 - **The module and the source must agree on `allowSandbox`.** Only the source decides whether sandbox purchases are admitted, so a host that set `allowSandbox` on the module alone, or with a different value than on `revenueCatSource`, believed sandbox access was on or off and it was not. When `allowSandbox` is set on the module options and the source declares what it admits, the two must be equal, or the boot fails with `SUBSCRIPTION_CONFIG_INVALID` naming `allowSandbox`, through `forRoot` and `forRootAsync`. A module that leaves `allowSandbox` unset is never refused, and a source that declares nothing is never compared.
@@ -129,5 +131,6 @@ billing source's webhooks itself:
 5. Make the change hook idempotent on `changes[].key`, call `refresh` after a purchase the app
    reports, and schedule `reconcile`.
 
-[Unreleased]: https://github.com/bymaxone/nest-subscription/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/bymaxone/nest-subscription/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/bymaxone/nest-subscription/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/bymaxone/nest-subscription/releases/tag/v1.0.0
