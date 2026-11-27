@@ -1,7 +1,7 @@
 # @bymax-one/nest-subscription — Agent Specification
 
 > **Type:** npm public library (not an application)
-> **Stage:** release candidate. The first release's behaviour (the model, the module, the guard, the webhook receiver, the RevenueCat adapter, the management operations and the testing subpath) is written and documented; the Bymax Finance adapter is planned and its entry point exports nothing. Nothing is published, and publishing waits for the owner's instruction.
+> **Stage:** `1.0.0`, prepared for its first publish. The first release's behaviour is written and documented; the Bymax Finance adapter is planned and its entry point exports nothing. The first publish is manual and the owner's.
 
 ## 1. Where things are
 
@@ -231,7 +231,7 @@ rewrite published history.
 
 - `docs/` is written in English, like everything else here. A different language for `docs/` is the repository owner's decision, recorded in this section, and no contributor introduces one.
 - The `shared` markers above delimit text a workflow replaces wholesale. Everything this repository states for itself sits below the closing marker.
-- The first publish and every version bump are the owner's explicit instruction. `package.json` stays at `0.0.0` until then, and nothing here creates a tag or publishes.
+- The first publish and every version bump are the owner's explicit instruction naming the number. Nothing here creates a tag or publishes.
 - The specification's open questions are in `docs/spec.md` §10.2. A question the specification does not answer is added there with a proposal; it is never answered on the owner's behalf in code.
 
 ## 5. Design principles

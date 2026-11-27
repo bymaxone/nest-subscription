@@ -10,9 +10,12 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@bymax-one/nest-subscription"><img src="https://img.shields.io/npm/v/@bymax-one/nest-subscription?style=flat-square&colorA=000000&colorB=000000" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@bymax-one/nest-subscription"><img src="https://img.shields.io/npm/dm/@bymax-one/nest-subscription?style=flat-square&colorA=000000&colorB=000000" alt="npm downloads" /></a>
   <a href="https://github.com/bymaxone/nest-subscription/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bymaxone/nest-subscription/ci.yml?branch=main&style=flat-square&colorA=000000&label=CI" alt="CI status" /></a>
   <a href="docs/mutation_testing_results.md"><img src="https://img.shields.io/badge/mutation-100%25-brightgreen?style=flat-square&colorA=000000" alt="mutation score 100%, measured on 2026-11-26" /></a>
   <a href="docs/acceptance.md"><img src="https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square&colorA=000000" alt="coverage 100%, measured on 2026-11-26" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/bymaxone/nest-subscription"><img src="https://api.scorecard.dev/projects/github.com/bymaxone/nest-subscription/badge?style=flat-square" alt="OpenSSF Scorecard" /></a>
   <a href="https://github.com/bymaxone/nest-subscription/blob/main/LICENSE"><img src="https://img.shields.io/github/license/bymaxone/nest-subscription?style=flat-square&colorA=000000&colorB=000000" alt="license" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-26%2B-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js" /></a>
@@ -22,24 +25,21 @@
 <p align="center">
   <a href="https://github.com/bymaxone/nest-subscription">GitHub</a> ·
   <a href="https://github.com/bymaxone/nest-subscription/issues">Issues</a> ·
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#api-reference">API Reference</a> ·
-  <a href="#security-model">Security Model</a> ·
+  <a href="#-quick-start">Quick Start</a> ·
+  <a href="#-api-reference">API Reference</a> ·
+  <a href="#-security-model">Security Model</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 ---
 
-## Overview
+## ✨ Overview
 
 `@bymax-one/nest-subscription` is a NestJS library that answers one question for a backend: _does this account have `premium`, until when, and where did they buy it?_ It keeps a normalized snapshot of each account's subscription, fed by one billing source through an adapter, and exposes it through a service, a route guard and typed change notifications. The host's code is the same whichever source feeds it.
 
-The first release ships the **RevenueCat** adapter. A **Bymax Finance** adapter is planned and is not available: its subpath exists and exports nothing, and it waits for Bymax Finance to publish an API (see [What This Library Does Not Do](#what-this-library-does-not-do)).
+The first release ships the **RevenueCat** adapter. A **Bymax Finance** adapter is planned and is not available: its subpath exists and exports nothing, and it waits for Bymax Finance to publish an API (see [What This Library Does Not Do](#-what-this-library-does-not-do)).
 
 The library has **zero direct dependencies**. NestJS, `reflect-metadata` and `rxjs` are peer dependencies; the RevenueCat adapter uses the runtime's own `fetch` and `node:crypto`, with no provider SDK.
-
-> [!NOTE]
-> The package is a release candidate and is not published to npm yet. The first publish waits for the maintainer's explicit instruction, so the install commands below work only once a version exists.
 
 ### Why nest-subscription?
 
@@ -51,7 +51,7 @@ The library has **zero direct dependencies**. NestJS, `reflect-metadata` and `rx
 
 ---
 
-## Features
+## 🔥 Features
 
 ### Reading and guarding
 
@@ -82,7 +82,7 @@ The library has **zero direct dependencies**. NestJS, `reflect-metadata` and `rx
 
 ---
 
-## Subpath Exports
+## 📦 Subpath Exports
 
 | Subpath            | Import                                    | Purpose                                                                                                                  | Dependencies                     |
 | ------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
@@ -121,7 +121,7 @@ The runtime is **Node.js 26 or newer**. A backend moves to Node.js 26 before it 
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 pnpm add @bymax-one/nest-subscription @nestjs/common @nestjs/core reflect-metadata rxjs
@@ -227,11 +227,11 @@ void bootstrap()
 
 Then, in RevenueCat, point a webhook integration at `https://your-host/webhooks/revenuecat` and set its signing secret. Keep the route outside the host's authentication guard, because RevenueCat cannot sign in as a user and the adapter verifies the request itself, and inside the host's rate limiting.
 
-An account with nothing stored is "no subscription" until a webhook arrives or the host calls `refresh`. After the app reports a purchase, call `refresh` for the account instead of waiting for the webhook (see [Refresh and reconciliation](#refresh-and-reconciliation)).
+An account with nothing stored is "no subscription" until a webhook arrives or the host calls `refresh`. After the app reports a purchase, call `refresh` for the account instead of waiting for the webhook (see [Refresh and reconciliation](#-refresh-and-reconciliation)).
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 `SubscriptionModule.forRoot(options)` and `SubscriptionModule.forRootAsync({ useFactory, inject, imports, webhookPath })` take the same options. An invalid configuration stops the boot with one `SubscriptionError` (`SUBSCRIPTION_CONFIG_INVALID`) that names every offending option and none of its values. `forRootAsync` takes `webhookPath` beside the factory, because NestJS registers routes before a factory runs.
 
@@ -273,7 +273,7 @@ Secrets are held in a `Secret` that prints `[Secret]` to JSON, `util.inspect` an
 
 ---
 
-## Reading and guarding
+## 🛂 Reading and guarding
 
 The service answers from the store:
 
@@ -313,7 +313,7 @@ The body of a refusal is the catalogue's code and fixed message and nothing else
 
 ---
 
-## Webhooks
+## 🪝 Webhooks
 
 A notification is a trigger, not the truth. On a verified notification the library reads the named accounts from the source and stores what it reads; it never applies the payload's state.
 
@@ -338,7 +338,7 @@ RevenueCat specifics: the `Authorization` value and the signature (`X-RevenueCat
 
 ---
 
-## Refresh and reconciliation
+## 🔄 Refresh and reconciliation
 
 ```ts
 import { Injectable } from '@nestjs/common'
@@ -379,7 +379,7 @@ export class SubscriptionJobs {
 
 ---
 
-## Change notifications
+## 🔔 Change notifications
 
 ```ts
 import type { SubscriptionChangeNotification } from '@bymax-one/nest-subscription'
@@ -404,7 +404,7 @@ An optional **observer** receives `onRefresh`, `onSourceError`, `onCacheLookup`,
 
 ---
 
-## Management operations
+## 🛠️ Management operations
 
 ```ts
 import type { SubscriptionService } from '@bymax-one/nest-subscription'
@@ -454,7 +454,7 @@ What RevenueCat allows a server to do, by origin (version 2 of the API unless it
 
 ---
 
-## RevenueCat adapter: what it maps, and what it does not
+## 🔌 RevenueCat adapter: what it maps, and what it does not
 
 The adapter reads `GET /projects/{id}/customers/{id}/subscriptions`, `/purchases` and `/active_entitlements` and maps them to the normalized snapshot. Its limits, stated where the code makes them:
 
@@ -467,7 +467,7 @@ The adapter reads `GET /projects/{id}/customers/{id}/subscriptions`, `/purchases
 
 ---
 
-## Testing
+## 🧰 Testing your host
 
 The `testing` subpath lets a host test its own wiring without a network:
 
@@ -514,7 +514,7 @@ This repository's own end-to-end suite runs one set of routes and one change hoo
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```
  request ──▶ host authentication ──▶ AccountResolver
@@ -546,7 +546,7 @@ This repository's own end-to-end suite runs one set of routes and one change hoo
 
 ---
 
-## Security Model
+## 🔐 Security Model
 
 ### Access is granted only from a read of the source (SEC01)
 
@@ -586,7 +586,7 @@ An operation finds its record inside the authenticated account's own snapshot an
 
 ---
 
-## Security Table
+## 🛡️ Security Table
 
 Only controls this repository runs are listed.
 
@@ -610,7 +610,7 @@ Not listed because the repository does not run them: a dynamic scan of a deploye
 
 ---
 
-## Tech Stack
+## 🧱 Tech Stack
 
 | Area            | Choice                                                  |
 | --------------- | ------------------------------------------------------- |
@@ -624,7 +624,7 @@ Not listed because the repository does not run them: a dynamic scan of a deploye
 
 ---
 
-## Testing and Quality
+## 🧪 Testing & Quality
 
 The gates every change passes (`pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm test:cov:all && pnpm build`), and before a pull request is opened for a phase, `pnpm mutation`, `pnpm check:exports`, `pnpm check:runtime`, `pnpm check:api`, `pnpm check:docs`, `pnpm check:published` and `pnpm size`.
 
@@ -636,7 +636,7 @@ The gates every change passes (`pnpm typecheck && pnpm lint && pnpm test && pnpm
 
 ---
 
-## API Reference
+## 📖 API Reference
 
 | Export (root)                                                                                                                                                           | Kind             | Purpose                                                                                                                                                            |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -660,7 +660,7 @@ The gates every change passes (`pnpm typecheck && pnpm lint && pnpm test && pnpm
 
 ---
 
-## Error Code Catalog
+## 🚨 Error Code Catalog
 
 Every error the library raises is a `SubscriptionError` with one of these codes. The codes are exported as `SUBSCRIPTION_ERROR_CODES` from the root and from `./shared`, and a test fails if this table and the catalogue differ.
 
@@ -679,7 +679,7 @@ Every error the library raises is a `SubscriptionError` with one of these codes.
 
 ---
 
-## What This Library Does Not Do
+## 🚫 What This Library Does NOT Do
 
 - It does not charge anyone, hold card data, render a purchase screen or talk to the App Store or Google Play on the device. Purchases happen in the app and in the billing platform.
 - It does not decide what a subscription is worth in a product. Prices, benefits and limits belong to the host.
@@ -692,24 +692,24 @@ Every error the library raises is a `SubscriptionError` with one of these codes.
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md). The specification is [`docs/spec.md`](docs/spec.md), the roadmap is [`docs/plan.md`](docs/plan.md), and everything that reaches the repository is written in English.
 
 ---
 
-## Security Policy
+## 🔒 Security Policy
 
 Report a vulnerability privately through GitHub's [private security advisory](https://github.com/bymaxone/nest-subscription/security/advisories/new), or email **support@bymax.one** with `[security] @bymax-one/nest-subscription` in the subject. Do not open a public issue. The full policy is in [`SECURITY.md`](SECURITY.md).
 
 ---
 
-## License
+## 📄 License
 
 [MIT](./LICENSE) © [Bymax One](https://github.com/bymaxone)
 
 ---
 
 <p align="center">
-  <sub>Part of the <a href="https://github.com/bymaxone">@bymax-one</a> NestJS family.</sub>
+  <sub>Built with ❤️ by <a href="https://github.com/bymaxone">Bymax One</a></sub>
 </p>

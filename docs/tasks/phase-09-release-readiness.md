@@ -564,7 +564,7 @@ Completion Protocol (after the work is reported done):
 
 Nothing below is done by this phase. The phase ends at a release candidate.
 
-1. **The version number.** `package.json` holds `0.0.0`. The owner names the version; then the `Unreleased` heading of `CHANGELOG.md` becomes `## [x.y.z] — <date>` with a `[x.y.z]: <compare link>` definition at the foot, `version` is set, and the "not published" notes of `README.md`, `SECURITY.md` and `AGENTS.md` are updated.
+1. **The version number.** Decided by the owner on 2026-11-27: `1.0.0`. `package.json` holds it, `CHANGELOG.md` has its `## [1.0.0]` section and the `[1.0.0]` link definition at the foot, and the notes of `README.md`, `SECURITY.md` and `AGENTS.md` that said no version was published are updated.
 2. **The first publish is manual.** Trusted publishing can be configured on npmjs.com only after the package exists, so the first version is published by hand from a clean checkout of the updated `main`, with the owner's credentials. Then the trusted publisher is configured for repository `bymaxone/nest-subscription`, workflow file `release.yml` and environment `npm-publish`, and later releases run from the tag.
 3. **The `npm-publish` environment.** Create it with a required reviewer and a deployment policy that allows the tags `v*.*.*` only, and a tag ruleset on `v*.*.*` limiting who can create them (`release.yml` relies on both).
 4. **The tag.** After the merge, from updated `main`: the tag `vx.y.z` on the commit that holds the version and the changelog heading. Never from a branch.

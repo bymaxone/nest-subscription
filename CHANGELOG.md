@@ -3,10 +3,9 @@
 All notable changes to `@bymax-one/nest-subscription` are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-While no version is published, what the first release will describe is collected under
-`Unreleased` and edited in place.
-
 ## [Unreleased]
+
+## [1.0.0] - 2026-11-27
 
 The first release. `@bymax-one/nest-subscription` keeps one normalized subscription snapshot per
 account for a NestJS 11 backend, fed by one billing source through an adapter, and exposes it
@@ -109,3 +108,6 @@ billing source's webhooks itself:
    Keep your own rules for what an entitlement is worth.
 5. Make the change hook idempotent on `changes[].key`, call `refresh` after a purchase the app
    reports, and schedule `reconcile`.
+
+[Unreleased]: https://github.com/bymaxone/nest-subscription/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/bymaxone/nest-subscription/releases/tag/v1.0.0
