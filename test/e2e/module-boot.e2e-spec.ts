@@ -279,6 +279,37 @@ describe('module boot refuses a wrong configuration', () => {
     await app.close()
   })
 
+  it.each([
+    ['the module allows and the source does not', true, false],
+    ['the module refuses and the source allows', false, true]
+  ])('stops the boot of both forms when %s', async (_name, module, admits) => {
+    // Scenario: allowSandbox set on the module disagrees with what the source declares.
+    const source = Object.assign(new FakeSubscriptionSource(), { admitsSandbox: admits })
+    const options = { ...good(), source, allowSandbox: module }
+    for (const form of [
+      SubscriptionModule.forRoot(options),
+      SubscriptionModule.forRootAsync({ useFactory: () => options })
+    ]) {
+      const error = await refusal(form)
+      expect((error as SubscriptionError).code).toBe('SUBSCRIPTION_CONFIG_INVALID')
+      expect((error as SubscriptionError).optionPaths).toEqual(['allowSandbox'])
+    }
+  })
+
+  it('boots both forms when the module and the source agree on sandbox access', async () => {
+    // Scenario: the same value on both sides, and the module option left unset.
+    const source = Object.assign(new FakeSubscriptionSource(), { admitsSandbox: true })
+    for (const options of [
+      { ...good(), source, allowSandbox: true },
+      { ...good(), source }
+    ]) {
+      const app = await boot(SubscriptionModule.forRoot(options))
+      await app.close()
+      const asyncApp = await boot(SubscriptionModule.forRootAsync({ useFactory: () => options }))
+      await asyncApp.close()
+    }
+  })
+
   it('names only the factory when it rejects, with the secret it raised absent', async () => {
     // Scenario: a factory fails with a message that holds a secret.
     const error = await refusal(

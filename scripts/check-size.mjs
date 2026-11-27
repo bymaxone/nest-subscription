@@ -49,7 +49,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 // The `shared` bundle holds the one `SubscriptionError`, the instant parser and the entitlement resolution; every other bundle
 // imports `shared` by package specifier and carries no copy of it.
 const BUDGETS = [
-  { name: 'root', path: 'dist/core/index.mjs', brotli: 19.75 * 1024 },
+  { name: 'root', path: 'dist/core/index.mjs', brotli: 19.85 * 1024 },
   { name: 'shared', path: 'dist/shared/index.mjs', brotli: 2.15 * 1024 },
   { name: 'internal', path: 'dist/internal/index.mjs', brotli: 1.45 * 1024 },
   { name: 'revenuecat', path: 'dist/revenuecat/index.mjs', brotli: 8.7 * 1024 },

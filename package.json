@@ -1,6 +1,6 @@
 {
   "name": "@bymax-one/nest-subscription",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "One normalized subscription snapshot per account for NestJS 11, fed by one billing source through an adapter. Access is granted only from a read of the source, never from a webhook payload.",
   "author": "Bymax One <support@bymax.one>",
   "license": "MIT",
@@ -122,7 +122,7 @@
     "clean": "rm -rf dist coverage",
     "check:socket-gate": "node scripts/check-socket-gate.mjs",
     "check:spec-headers": "node scripts/check-spec-headers.mjs",
-    "lint": "eslint src scripts test '*.config.ts' '*.config.mjs' '*.config.cjs' && pnpm check:socket-gate && pnpm check:spec-headers && node --test scripts/check-spec-headers.test.mjs scripts/check-dist-fresh.test.mjs scripts/check-size-wiring.test.mjs scripts/check-import-boundaries.test.mjs scripts/check-readme-error-codes.test.mjs scripts/check-acceptance.test.mjs scripts/check-provider-facts.test.mjs",
+    "lint": "eslint src scripts test '*.config.ts' '*.config.mjs' '*.config.cjs' && pnpm check:socket-gate && pnpm check:spec-headers && node --test scripts/check-spec-headers.test.mjs scripts/check-dist-fresh.test.mjs scripts/check-size-wiring.test.mjs scripts/check-import-boundaries.test.mjs scripts/check-readme-error-codes.test.mjs scripts/check-api-surface.test.mjs scripts/check-acceptance.test.mjs scripts/check-provider-facts.test.mjs",
     "lint:fix": "eslint src scripts test '*.config.ts' '*.config.mjs' '*.config.cjs' --fix",
     "mutation": "stryker run",
     "mutation:full": "node -e \"require('node:fs').rmSync('reports/stryker-incremental.json',{force:true,recursive:true})\" && stryker run",
