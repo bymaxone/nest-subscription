@@ -105,6 +105,21 @@ const sandboxRule: Rule = (options) => {
   return refused ? 'confirmSandboxInProduction' : undefined
 }
 
+/**
+ * A host that sets `allowSandbox` on the module and whose source declares what it admits must say
+ * the same on both: the source alone decides, so a difference is a belief the library cannot
+ * honour. A source that does not declare it, and a module that does not set the option, are never
+ * compared.
+ */
+const sandboxAgreementRule: Rule = (options) => {
+  const allowed = read(options, 'allowSandbox')
+  const source = read(options, 'source')
+  const admitted = isObject(source) ? Reflect.get(source, 'admitsSandbox') : undefined
+  return isBoolean(allowed) && isBoolean(admitted) && allowed !== admitted
+    ? 'allowSandbox'
+    : undefined
+}
+
 /** The controller needs a route of its own: the library has no default path (D41). */
 const controllerRouteRule: Rule = (options) =>
   read(options, 'webhookController') === true && !isWebhookRoute(read(options, 'webhookPath'))
@@ -133,6 +148,7 @@ const RULES: readonly Rule[] = [
   optional('confirmSandboxInProduction', isBoolean),
   optional('isProduction', isBoolean),
   sandboxRule,
+  sandboxAgreementRule,
   optional('webhookController', isBoolean),
   optional('webhookPath', isWebhookRoute),
   controllerRouteRule,

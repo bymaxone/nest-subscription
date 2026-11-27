@@ -18,6 +18,13 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 ## [Unreleased]
 
+### Changed
+
+- **The module and the source must agree on `allowSandbox`.** Only the source decides whether sandbox purchases are admitted, so a host that set `allowSandbox` on the module alone, or with a different value than on `revenueCatSource`, believed sandbox access was on or off and it was not. When `allowSandbox` is set on the module options and the source declares what it admits, the two must be equal, or the boot fails with `SUBSCRIPTION_CONFIG_INVALID` naming `allowSandbox`, through `forRoot` and `forRootAsync`. A module that leaves `allowSandbox` unset is never refused, and a source that declares nothing is never compared.
+- `SubscriptionSource` gains an optional read-only member, `admitsSandbox`, and `revenueCatSource` sets it from its `allowSandbox`.
+
+**Apply to a derived backend:** nothing, unless the module options set `allowSandbox` to a value that differs from the one on `revenueCatSource`: the boot now stops, so set the same value on both, or leave it unset on the module. A custom source needs no change; it may declare `admitsSandbox` to be compared with the module's `allowSandbox`.
+
 ## [1.0.0] - 2026-11-27
 
 The first release. `@bymax-one/nest-subscription` keeps one normalized subscription snapshot per

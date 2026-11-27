@@ -48,12 +48,14 @@ export const UNIDENTIFIED_EVENT_LINE =
 /** The adapter. It is built by {@link revenueCatSource}. */
 class RevenueCatSource implements SubscriptionSource {
   readonly name = REVENUECAT_SOURCE_NAME
+  readonly admitsSandbox: boolean
   readonly #options: ResolvedRevenueCatOptions
   readonly #context: RevenueCatReadContext
   readonly #management: RevenueCatManagementContext
 
   constructor(options: ResolvedRevenueCatOptions) {
     this.#options = options
+    this.admitsSandbox = options.allowSandbox
     const http = new RevenueCatHttp({
       baseUrl: options.baseUrl,
       apiKey: options.apiKey,

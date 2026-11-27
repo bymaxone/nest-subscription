@@ -119,7 +119,7 @@ describe('secret containment', () => {
     const service = app.get(SubscriptionService)
     await service.refresh({ accountId: 'sentinel-acc-1' }).catch(() => undefined)
     expectNoSentinel(outputsOf(service))
-    expect(Object.keys(source)).toEqual(['name'])
+    expect(Object.keys(source)).toEqual(['name', 'admitsSandbox'])
     await app.close()
   })
 

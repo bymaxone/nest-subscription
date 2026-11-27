@@ -71,6 +71,15 @@ describe('revenueCatSource', () => {
     expect((await closed.readAccount({ accountId: 'c' })).entitlements).toHaveLength(0)
   })
 
+  it.each([
+    ['true', { allowSandbox: true }, true],
+    ['false', { allowSandbox: false }, false],
+    ['left unset', {}, false]
+  ])('declares that it admits sandbox purchases as its option says: %s', (_name, extra, admits) => {
+    // Scenario: the module compares this declaration with its own allowSandbox at boot.
+    expect(sourceWith(extra).admitsSandbox).toBe(admits)
+  })
+
   it('answers stop renewal as not possible for the App Store, with the management reference', async () => {
     // Scenario: the source advertises no server-side operation, and the answer carries the
     // management reference for the person to act on.
@@ -394,6 +403,6 @@ describe('revenueCatSource containment', () => {
     for (const output of outputs) {
       for (const sentinel of SENTINELS) expect(output).not.toContain(sentinel)
     }
-    expect(Object.keys(source)).toStrictEqual(['name'])
+    expect(Object.keys(source)).toStrictEqual(['name', 'admitsSandbox'])
   })
 })

@@ -334,6 +334,57 @@ describe('validateOptions', () => {
     })
   })
 
+  describe('agreement on sandbox access with the source', () => {
+    /** A source that declares what it admits, as the RevenueCat adapter does. */
+    const declaring = (admitsSandbox: unknown): Record<string, unknown> => ({
+      ...valid(),
+      source: Object.assign(new FakeSubscriptionSource(), { admitsSandbox })
+    })
+
+    it.each([
+      ['the module allows and the source does not', true, false],
+      ['the module refuses and the source allows', false, true]
+    ])('refuses it when %s, naming allowSandbox and no value', (_name, module, admits) => {
+      // Scenario: the host set the module option and the source says the opposite.
+      const error = problems({ ...declaring(admits), allowSandbox: module })
+      expect(error.optionPaths).toEqual(['allowSandbox'])
+      expect(error.message).toBe('An option is invalid. Offending options: allowSandbox.')
+      expect(String(error)).not.toMatch(/true|false/)
+    })
+
+    it.each([true, false])('accepts equal values (%s)', (value) => {
+      // Scenario: the module and the source say the same.
+      expect(() => validateOptions({ ...declaring(value), allowSandbox: value })).not.toThrow()
+    })
+
+    it.each([true, false])(
+      'accepts a module that sets nothing beside a source that admits %s',
+      (value) => {
+        // Scenario: the README tells a host to set the option on the adapter alone.
+        expect(() => validateOptions(declaring(value))).not.toThrow()
+      }
+    )
+
+    it.each([true, false])(
+      'accepts a source that declares nothing beside allowSandbox %s',
+      (value) => {
+        // Scenario: a custom source is never compared.
+        expect(() => validateOptions({ ...valid(), allowSandbox: value })).not.toThrow()
+      }
+    )
+
+    it('does not compare a declaration that is not a boolean', () => {
+      // Scenario: only a boolean is a declaration.
+      expect(() => validateOptions({ ...declaring('yes'), allowSandbox: true })).not.toThrow()
+    })
+
+    it('names allowSandbox once when its own shape is also wrong', () => {
+      // Scenario: the shape rule and the agreement rule both refuse the same option.
+      const error = problems({ ...declaring(true), allowSandbox: 'true' })
+      expect(error.optionPaths).toEqual(['allowSandbox'])
+    })
+  })
+
   describe('the controller switch', () => {
     it.each([
       ['no route', {}],

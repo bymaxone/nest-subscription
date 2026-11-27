@@ -109,6 +109,13 @@ export interface SubscriptionSource {
   readonly name: string
 
   /**
+   * Declares whether this source admits sandbox purchases. The module compares it with its own
+   * `allowSandbox` at boot, only when the host set that option, and refuses a boot where the two
+   * differ. A source that does not declare it is never compared.
+   */
+  readonly admitsSandbox?: boolean
+
+  /**
    * Reads the current state of one account from the source. An account the source does not know
    * is a snapshot with no entitlements and no subscriptions, not an error. A source that cannot
    * be reached rejects. The snapshot's `accountId` and `tenantId` are those of the account asked
