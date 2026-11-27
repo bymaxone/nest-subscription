@@ -194,6 +194,14 @@ Adapter (the design the code follows, from the rows above):
 | Secret rotation      | A "Rotate secret" button; the old secret is invalidated immediately; the secret is shown once. **No overlap of two valid secrets is offered**                                                                                                                                                                     | Webhooks              |
 | IP allow list        | **Not stated**                                                                                                                                                                                                                                                                                                    | Webhooks              |
 
+Observation, not a page quote (2026-11-27, the dedicated sandbox project): a webhook integration
+created with `POST /projects/{id}/integrations/webhooks` returned no signing secret, and HMAC
+signing could only be turned on with the dashboard toggle, which shows the secret once. With the
+toggle on, every delivery of a promotional grant and of its revocation carried both the
+`Authorization` value and `X-RevenueCat-Webhook-Signature`. The packed package verified them over
+the raw body and stored the account without a host refresh. A request with the right
+`Authorization` and no signature, or a wrong one, was refused with `401`.
+
 Adapter: both methods can be configured at once, and a request passes when it satisfies every method
 that is configured. Because RevenueCat invalidates the old signing secret at once, a two-secret
 window only helps the host when it rotates the secret in the dashboard and in its own configuration
@@ -390,3 +398,24 @@ The result of every operation is the snapshot read back, compared with what Reve
 | Refund         | access is revoked immediately (the refund sentences above): the record has a refund instant or no longer gives access; for a purchase, `status: refunded`                        |
 | Resume         | renewal is `yes` again; no operation is documented, so no origin reaches this                                                                                                    |
 | Change product | the record's product is the requested one; no operation is documented, so no origin reaches this                                                                                 |
+
+## 11. A live run of the packed package
+
+Observation, not a page quote (2026-11-27, the dedicated sandbox project). The packed tarball ran in a
+NestJS host with the RevenueCat adapter, one protected route, the webhook controller with the raw body
+and a change hook, behind a temporary public tunnel. The host:
+
+- read an account with nothing yet as having no subscription, and the guard refused it with `403`
+  `SUBSCRIPTION_ENTITLEMENT_REQUIRED`;
+- after `POST .../actions/grant_entitlement`, received a webhook within seconds, read the account,
+  stored it and called the change hook with `started`; the guard then allowed it. The record read as
+  origin `promotional`, environment `production`, renewal `no`;
+- answered `getCapabilities` on that record with no operation possible, and `stopRenewal`, `extend`
+  and `refund` with `person_must_act`, as the table in section 10 gives for a promotional grant. A
+  second account asking for the same record was refused with `SUBSCRIPTION_ACCOUNT_UNKNOWN`;
+- after `POST .../actions/revoke_granted_entitlement`, received the webhooks, called the hook with
+  `expired`, and the guard refused the account again;
+- ran `reconcile` against the live source.
+
+Not exercised there: a store purchase, which the sandbox cannot make through the API, and the
+operations that only a store purchase allows.
