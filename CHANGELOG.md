@@ -36,6 +36,10 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing.
 
+- **`fetchedAt` is the instant the read of the source started**, not the instant it finished. A source that reports no `sourceUpdatedAt`, as RevenueCat does, is ordered by it, so of two reads the one that started later is kept. Staleness is counted from the same instant. Instances order each other by their own clocks, so keep the clocks synchronized.
+
+**Apply to a derived backend:** nothing, unless a test expects `fetchedAt` to be the instant the read ended.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.

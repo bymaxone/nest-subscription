@@ -283,6 +283,29 @@ describe('SnapshotRefresher', () => {
     expect((await stored(store, ACCOUNT))?.sourceCustomer?.id).toBe('newer')
   })
 
+  it('keeps the read that started later when the source reports no update instant', async () => {
+    // Scenario: as above for a source with no instant of its own. The first read starts, is held,
+    // and finishes last; ordered by the instant a read started, it is the older one.
+    const { source, store, clock } = setup()
+    const build = (): SnapshotRefresher =>
+      new SnapshotRefresher(source, store, clock, null, null, new ObserverBridge(null, clock))
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, null, 'older'))
+    const release = source.delayNextRead()
+    const slowRefresh = build().refresh(ACCOUNT)
+    await flush()
+    clock.set(T10)
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, null, 'newer'))
+    await expect(build().refresh(ACCOUNT)).resolves.toMatchObject({ written: true })
+    clock.set(T20)
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, null, 'older'))
+    release()
+    await expect(slowRefresh).resolves.toMatchObject({ written: false })
+    expect(await stored(store, ACCOUNT)).toMatchObject({
+      sourceCustomer: { id: 'newer' },
+      fetchedAt: T10
+    })
+  })
+
   it('reports the stored snapshot as current when the store refuses the write of a racing refresh', async () => {
     // Scenario: the pre-write read finds nothing, but another writer wins before the write; the
     // store refuses and the refresher answers with what the store now holds.

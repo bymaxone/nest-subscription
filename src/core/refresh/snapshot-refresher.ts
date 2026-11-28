@@ -65,7 +65,11 @@ interface Flight extends Pick<RefreshResult, 'written' | 'changes'> {
   readonly finish: () => RefreshResult
 }
 
-/** The instant a snapshot is ordered by: what the source says, or else when it was read. */
+/**
+ * The instant a snapshot is ordered by: what the source says, or else when its read started. The
+ * start is what orders two reads: one that began earlier may have seen an earlier state, however
+ * late it finished.
+ */
 function orderInstant(snapshot: SubscriptionSnapshot): string {
   return snapshot.sourceUpdatedAt ?? snapshot.fetchedAt
 }
@@ -128,6 +132,9 @@ export class SnapshotRefresher {
   /** One read of the source and the ordered write of its result, reported to the observer. */
   async #refreshOnce(key: string, account: AccountReference): Promise<Flight> {
     const started = this.observer.mark()
+    // Taken before the read and formatted after it, so an unreadable clock fails the refresh where
+    // the result is stored and not before the source is called.
+    const readFrom = this.clock.now().getTime()
     let read: SubscriptionSnapshot
     try {
       read = await this.#read(account)
@@ -135,7 +142,8 @@ export class SnapshotRefresher {
       this.observer.sourceError(this.source.name, started)
       throw error
     }
-    const result = await this.#store(key, account, read)
+    const fetchedAt = new Date(readFrom).toISOString()
+    const result = await this.#store(key, account, { ...read, fetchedAt })
     this.observer.refresh(
       result.written ? 'written' : 'superseded',
       this.source.name,
@@ -149,9 +157,8 @@ export class SnapshotRefresher {
   async #store(
     key: string,
     account: AccountReference,
-    read: SubscriptionSnapshot
+    snapshot: SubscriptionSnapshot
   ): Promise<Flight> {
-    const snapshot: SubscriptionSnapshot = { ...read, fetchedAt: this.clock.now().toISOString() }
     const orderedAt = orderInstant(snapshot)
     const previous = await this.#stored(key, account)
     if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {

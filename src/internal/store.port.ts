@@ -41,7 +41,7 @@ export interface SubscriptionStore {
    * Writes a snapshot and its new changes in one atomic step, and returns whether it was written.
    *
    * - `sourceUpdatedAt` is the instant the source says the state is as of; when the source reports
-   *   none, the caller passes the fetch instant. A write whose instant is older than the stored
+   *   none, the caller passes the fetch instant, which is when its read started. A write whose instant is older than the stored
    *   one is refused whole: it returns `false` and neither the snapshot nor the changes change. An
    *   equal or newer instant replaces the snapshot.
    * - `pendingChanges` are appended to the changes already pending in the same step, never
