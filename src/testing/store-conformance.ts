@@ -494,6 +494,19 @@ const conditionalCases: readonly StoreConformanceCase[] = [
         assert.equal(answers.filter(Boolean).length, 1, 'two writes replaced one state')
       }
     }
+  },
+  {
+    name: 'replaceSnapshot tells apart two states fetched one millisecond apart',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      const replace = conditionalWrite(store)
+      if (replace === null) return
+      await seed(store, ACC, MS1, [])
+      assert.equal(await replace(ACC_KEY, MS1, snapshotOf(ACC, MS2), [C1], MS2), true)
+      assert.equal(await replace(ACC_KEY, MS1, snapshotOf(ACC, MS3), [C2], MS3), false)
+      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, MS2), [C1]))
+      assert.equal(await replace(ACC_KEY, MS2, snapshotOf(ACC, MS3), [C3], MS3), true)
+    }
   }
 ]
 

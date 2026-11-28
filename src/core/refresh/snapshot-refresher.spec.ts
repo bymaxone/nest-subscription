@@ -753,14 +753,17 @@ describe('SnapshotRefresher with a stored snapshot that cannot be read', () => {
     expect(result.current).toEqual(newer)
   })
 
-  it('writes without the condition after the state kept moving', async () => {
-    // Scenario: the conditional write is refused every time; the read is still stored.
+  it('writes nothing after every conditional attempt was refused', async () => {
+    // Scenario: the stored state keeps moving; writing without the condition could lose a change.
     const replaceSnapshot = jest.fn(() => Promise.resolve(false))
     const { store, refresher } = overtaken(MEANWHILE, { replaceSnapshot })
-    const result = await refresher.refresh(ACCOUNT)
-    expect(replaceSnapshot).toHaveBeenCalledTimes(3)
-    expect(result.written).toBe(true)
-    expect(await stored(store, ACCOUNT)).toEqual(result.current)
+    const refused = await refresher.refresh(ACCOUNT).catch((error: unknown) => error)
+    expect(refused).toMatchObject({
+      code: 'SUBSCRIPTION_SOURCE_UNAVAILABLE',
+      cause: { message: expect.stringContaining('20 conditional writes were refused') }
+    })
+    expect(replaceSnapshot).toHaveBeenCalledTimes(20)
+    expect(await stored(store, ACCOUNT)).toEqual(MEANWHILE)
   })
 
   it('writes without the condition over a stored snapshot that is not of the account', async () => {

@@ -468,6 +468,13 @@ const exactnessDefects: Readonly<Record<string, () => SubscriptionStore>> = {
       const stored = (await base.getSnapshot(key))?.snapshot.fetchedAt ?? null
       await Promise.resolve()
       return stored === expected && base.putSnapshot(key, snapshot, changes, at)
+    }),
+  replaceExpectsByTheSecond: () =>
+    conditional((base) => async (key, expected, snapshot, changes, at) => {
+      const stored = (await base.getSnapshot(key))?.snapshot.fetchedAt ?? null
+      const sameSecond =
+        stored !== null && expected !== null && wholeSecond(stored) === wholeSecond(expected)
+      return base.replaceSnapshot(key, sameSecond ? stored : expected, snapshot, changes, at)
     })
 }
 

@@ -72,7 +72,8 @@ const CASE = {
   milliseconds: 'orders writes and judges staleness by the millisecond',
   replaceExpected: 'replaceSnapshot writes only over the fetch instant it expects',
   replaceOlder: 'replaceSnapshot refuses an older instant',
-  replaceOnce: 'replaceSnapshot lets exactly one of two overlapping writes of one state through'
+  replaceOnce: 'replaceSnapshot lets exactly one of two overlapping writes of one state through',
+  replaceMillisecond: 'replaceSnapshot tells apart two states fetched one millisecond apart'
 }
 
 // The cases each broken store fails, by the defect it has. A defect that touches the keys or the
@@ -200,9 +201,10 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   longKeysCut: [CASE.longKeys],
   eventIdsFolded: [CASE.exactEventIds],
   wholeSecondOrdering: [CASE.milliseconds],
-  replaceIgnoresTheExpectation: [CASE.replaceExpected, CASE.replaceOnce],
+  replaceIgnoresTheExpectation: [CASE.replaceExpected, CASE.replaceOnce, CASE.replaceMillisecond],
   replaceIgnoresOrdering: [CASE.replaceOlder],
   replaceCheckedThenWritten: [CASE.replaceOnce],
+  replaceExpectsByTheSecond: [CASE.replaceMillisecond],
   staleListingIncludesTheThreshold: [CASE.milliseconds, CASE.staleOnly]
 }
 

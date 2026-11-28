@@ -111,6 +111,20 @@ describe.each([
     await app.app.close()
   })
 
+  it('answers a failure a source retries when the stored snapshot never stops changing', async () => {
+    // Scenario: every conditional write is refused; nothing is stored, and the identifier is
+    // removed so the next delivery of the event is processed.
+    const app = await buildWebhookApp()
+    const contended = jest.spyOn(app.store, 'replaceSnapshot').mockResolvedValue(false)
+    const refused = await send(app, route, signed(app))
+    expect(refused.status).toBe(503)
+    expect(refused.body).toMatchObject({ code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE })
+    expect(await app.store.getSnapshot(encodeAccountKey(ACCOUNT))).toBeNull()
+    contended.mockRestore()
+    expect((await send(app, route, signed(app))).status).toBe(200)
+    await app.app.close()
+  })
+
   it('answers a retry as a failure while the removal is pending and processes it once it succeeded', async () => {
     // Scenario: the source is down and the removal is held; the retry during it gets a 503 and
     // reads nothing; when the removal succeeded the next retry is read and answered 200 (D16).

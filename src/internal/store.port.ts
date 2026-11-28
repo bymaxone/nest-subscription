@@ -41,7 +41,7 @@ export interface SubscriptionStore {
    * Writes a snapshot and its new changes in one atomic step, and returns whether it was written.
    *
    * - `sourceUpdatedAt` is the instant the source says the state is as of; when the source reports
-   *   none, the caller passes the fetch instant, which is when its read started. A write whose instant is older than the stored
+   *   none, the caller passes the snapshot's `fetchedAt`. A write whose instant is older than the stored
    *   one is refused whole: it returns `false` and neither the snapshot nor the changes change. An
    *   equal or newer instant replaces the snapshot.
    * - `pendingChanges` are appended to the changes already pending in the same step, never
@@ -63,14 +63,27 @@ export interface SubscriptionStore {
    * the stored snapshot is another one or `sourceUpdatedAt` is older than the stored instant.
    *
    * The library compares a read with the stored state to work out the changes. With this method
-   * the changes stored are those of the state the write replaced, across processes, unless the
-   * stored state keeps moving under one refresh, which then writes with `putSnapshot`. A store
-   * without it is written with `putSnapshot`, and a write by another process between the read and
-   * the write can then leave changes worked out against a state that was already replaced.
+   * the changes stored are those of the state the write replaced, across processes. When a write
+   * is refused the library reads and compares again; after 20 refusals in one refresh it writes
+   * nothing and throws `SUBSCRIPTION_SOURCE_UNAVAILABLE`, and a webhook that asked for the refresh
+   * is answered so that it is delivered again. States are told apart by their `fetchedAt`,
+   * compared to the millisecond, so a refresh whose read did not start after the stored
+   * `fetchedAt` stores one millisecond past it.
    *
-   * States are told apart by their `fetchedAt`: when the reads behind two writes of one account
-   * started in the same millisecond, a change can go unreported. A host that must not miss a
-   * revocation reads the access state and does not rely on the notifications alone.
+   * Limits:
+   *
+   * - A store without this method is written with `putSnapshot`, and a write by another process
+   *   between the read and the write can leave changes worked out against a state already
+   *   replaced, so a change can go unreported.
+   * - A stored snapshot that does not fit the account is overwritten with `putSnapshot`, as no
+   *   condition can name it.
+   * - Hooks of different processes are not ordered.
+   * - When the source reports no `sourceUpdatedAt`, a read that started before a moved `fetchedAt`,
+   *   or in the same millisecond, can be refused as older; the stored state then stays until the
+   *   next refresh, and no notification is lost.
+   * - A moved `fetchedAt` is later than the instant its read started: by milliseconds when reads
+   *   coincide, and by up to the difference between clocks when the source reports
+   *   `sourceUpdatedAt` and the process that wrote the stored state runs ahead.
    */
   replaceSnapshot?(
     key: string,

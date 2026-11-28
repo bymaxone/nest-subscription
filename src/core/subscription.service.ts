@@ -114,7 +114,8 @@ export class SubscriptionService {
    * hook never fails the refresh.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be
-   * read, with the stored snapshot untouched; with `SUBSCRIPTION_INVALID_INPUT` as
+   * read, with the stored snapshot untouched, or when the stored snapshot kept changing under the
+   * conditional write, with nothing written by this call; with `SUBSCRIPTION_INVALID_INPUT` as
    * {@link SubscriptionService.getSnapshot} does.
    */
   async refresh(account: AccountReference): Promise<AgedSnapshot> {

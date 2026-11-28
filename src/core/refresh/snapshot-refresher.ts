@@ -36,9 +36,12 @@ const NO_CHANGES: readonly SubscriptionChange[] = Object.freeze([])
 
 /**
  * How many conditional writes one refresh tries while the stored state keeps moving, before it
- * writes without the condition so that its read is not lost.
+ * gives up and writes nothing.
  */
-const CONDITIONAL_ATTEMPTS = 3
+const CONDITIONAL_ATTEMPTS = 20
+
+/** What the cause of a refresh that gave up says. */
+const CONTENDED = `The stored snapshot kept changing: ${CONDITIONAL_ATTEMPTS} conditional writes were refused and nothing was written.`
 
 /** What one refresh did. */
 export interface RefreshResult {
@@ -83,6 +86,22 @@ function orderInstant(snapshot: SubscriptionSnapshot): string {
 }
 
 /**
+ * The snapshot to write over `previous`: its `fetchedAt` is the instant the read started, moved to
+ * one millisecond after the stored one when it is not already later. Two states stored in
+ * succession therefore never share the instant a conditional write and a change key tell them
+ * apart by.
+ */
+function succeeding(
+  previous: SubscriptionSnapshot | null,
+  snapshot: SubscriptionSnapshot
+): SubscriptionSnapshot {
+  if (previous === null) return snapshot
+  const stored = parseInstant(previous.fetchedAt)
+  if (parseInstant(snapshot.fetchedAt) > stored) return snapshot
+  return { ...snapshot, fetchedAt: new Date(stored + 1).toISOString() }
+}
+
+/**
  * Reads accounts from the source and stores what it reads. A refresh of an account that is
  * already being refreshed joins that refresh, so a burst of calls costs the source one read.
  */
@@ -109,8 +128,10 @@ export class SnapshotRefresher {
    * The tenant and the account identifier come from the caller's argument and nowhere else.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank account identifier,
-   * and with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be read; the stored snapshot
-   * is untouched in that case and the source's own error is the `cause`.
+   * and with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be read, where the stored
+   * snapshot is untouched and the source's own error is the `cause`, or when the stored snapshot
+   * kept changing under the conditional write, where this refresh wrote nothing and the `cause`
+   * says so.
    */
   async refresh(account: AccountReference): Promise<RefreshResult> {
     const key = encodeAccountKey(account)
@@ -164,7 +185,8 @@ export class SnapshotRefresher {
   /**
    * Stores what was read, unless the store holds a newer snapshot; `finish()` starts delivery.
    * Where the store has `replaceSnapshot`, the write holds only while the state the changes were
-   * worked out against is still the stored one; otherwise it is read and compared again.
+   * worked out against is still the stored one; otherwise it is read and compared again, and
+   * after {@link CONDITIONAL_ATTEMPTS} refusals nothing is written.
    */
   async #store(
     key: string,
@@ -179,20 +201,22 @@ export class SnapshotRefresher {
       if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {
         return this.#kept(previous, previous, snapshot)
       }
+      const next = succeeding(previous, snapshot)
       // The changes are computed from the two snapshots before the write and stored with the
       // snapshot in that one write, so a crash after it cannot lose them.
-      const changes = this.dispatcher === null ? NO_CHANGES : diffSnapshots(previous, snapshot)
+      const changes = this.dispatcher === null ? NO_CHANGES : diffSnapshots(previous, next)
       // No condition can name a stored snapshot that does not fit the account.
-      const nameable = held === undefined || previous !== null
-      if (replace !== undefined && nameable && attempt <= CONDITIONAL_ATTEMPTS) {
+      if (replace !== undefined && (held === undefined || previous !== null)) {
         const expected = previous?.fetchedAt ?? null
-        if (await replace(key, expected, snapshot, changes, orderedAt)) {
-          return this.#written(key, account, previous, snapshot, changes)
+        if (await replace(key, expected, next, changes, orderInstant(next))) {
+          return this.#written(key, account, previous, next, changes)
         }
-        continue
+        if (attempt < CONDITIONAL_ATTEMPTS) continue
+        const cause = new Error(CONTENDED)
+        throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE, { cause })
       }
-      if (await this.store.putSnapshot(key, snapshot, changes, orderedAt)) {
-        return this.#written(key, account, previous, snapshot, changes)
+      if (await this.store.putSnapshot(key, next, changes, orderInstant(next))) {
+        return this.#written(key, account, previous, next, changes)
       }
       return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot, snapshot)
     }
