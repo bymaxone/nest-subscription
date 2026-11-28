@@ -40,7 +40,7 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing, unless a test expects `fetchedAt` to be the instant the read ended.
 
-- **`webhookDeadlineMs` covers recording the event identifier too**, not only the reads of the source. A record that has not settled by the deadline is answered as a temporary failure, and the identifier is removed when it settles. A record that rejects has its identifier removed as well.
+- **`webhookDeadlineMs` covers recording the event identifier too**, not only the reads of the source. A record that has not settled by the deadline is answered as a temporary failure, and the identifier is removed when it settles, unless an earlier delivery had recorded it. A record that rejects has its identifier removed as well.
 
 **Apply to a derived backend:** nothing. A store of your own must resolve `forgetEvent` for an identifier it does not hold, as the conformance case `forgets nothing but the named event identifier` already checks.
 
@@ -48,7 +48,7 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing, unless the host computes or predicts keys itself.
 
-- **Optional conditional write in the store port.** `SubscriptionStore` gains `replaceSnapshot`, which writes only while the stored snapshot is still the one the library compared with, so changes are worked out against the state the write replaced even when processes write at once. A store without it keeps writing with `putSnapshot`, with that guarantee missing. `InMemorySubscriptionStore` has it, and `createFailingStore` fails it when `putSnapshot` is named.
+- **Optional conditional write in the store port.** `SubscriptionStore` gains `replaceSnapshot`, which writes only while the stored snapshot is still the one the library compared with, so changes are worked out against the state the write replaced even when processes write at once, unless the stored state keeps moving under one refresh, which then writes without the condition. A store without it keeps writing with `putSnapshot`, with that guarantee missing. `InMemorySubscriptionStore` has it, and `createFailingStore` fails it when `putSnapshot` is named.
 
 **Apply to a derived backend:** optional. Add `replaceSnapshot` to your store and run the cases `replaceSnapshot writes only over the fetch instant it expects`, `replaceSnapshot refuses an older instant` and `replaceSnapshot lets exactly one of two overlapping writes of one state through`; they pass without testing anything while the method is absent. A test that wraps your store and forwards a fixed list of methods has to forward this one too.
 

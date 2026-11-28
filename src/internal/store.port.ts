@@ -63,7 +63,8 @@ export interface SubscriptionStore {
    * the stored snapshot is another one or `sourceUpdatedAt` is older than the stored instant.
    *
    * The library compares a read with the stored state to work out the changes. With this method
-   * the changes stored are always those of the state the write replaced, across processes. A store
+   * the changes stored are those of the state the write replaced, across processes, unless the
+   * stored state keeps moving under one refresh, which then writes with `putSnapshot`. A store
    * without it is written with `putSnapshot`, and a write by another process between the read and
    * the write can then leave changes worked out against a state that was already replaced.
    */
