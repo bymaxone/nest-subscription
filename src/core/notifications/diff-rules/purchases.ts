@@ -1,5 +1,5 @@
 /**
- * @fileoverview The rules for non-renewing purchases (D31): one that appears is a start, one that
+ * @fileoverview The rules for non-renewing purchases (D31): one that appears may start, one that
  * stops giving access has expired, and one that gains a refund instant is refunded. Each reads the
  * purchase records of the two snapshots and nothing else, so the existing change kinds report a
  * purchase as they report a subscription and no payload decides what changed.
@@ -21,7 +21,7 @@ export function purchasesOf(
 
 /**
  * One `started` for each purchase of an account that had neither a subscription nor a purchase
- * before, told apart by when it was purchased. A purchase beside an existing one is not a start.
+ * before, told apart by when it was purchased.
  */
 export function purchaseStartedChanges(
   previous: SubscriptionSnapshot | null,

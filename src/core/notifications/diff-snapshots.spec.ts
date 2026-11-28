@@ -128,7 +128,7 @@ const ROWS: readonly Row[] = [
   },
   {
     kind: 'overlap_detected',
-    previous: snapshotOf([record()]),
+    previous: grantingSnapshot([{}], { 'sub-1': ['pro'] }),
     current: grantingSnapshot([{}, { subscriptionReference: 'sub-2' }], {
       'sub-1': ['pro'],
       'sub-2': ['pro']
@@ -290,7 +290,7 @@ const VARIANTS: Record<ChangeKind, readonly [SubscriptionSnapshot | null, Subscr
   refunded: [one(), one({ refundedAt: '2026-01-13T00:00:00.000Z' })],
   transferred: [one(), one({}, 'cust-3')],
   overlap_detected: [
-    one(),
+    grantingSnapshot([{}], { 'sub-1': ['pro'] }),
     grantingSnapshot([{}, { subscriptionReference: 'sub-3' }], {
       'sub-1': ['pro'],
       'sub-3': ['pro']

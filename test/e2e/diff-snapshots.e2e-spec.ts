@@ -60,6 +60,13 @@ function both(): SubscriptionSnapshot {
   return { ...base, entitlements: resolveEntitlements(base.subscriptions, grants).entitlements }
 }
 
+/** The first of the two subscriptions of {@link both} alone, granting `pro`. */
+function onlyFirst(): SubscriptionSnapshot {
+  const base = snapshotOf([{}])
+  const grants = new Map([['sub-1', ['pro']]])
+  return { ...base, entitlements: resolveEntitlements(base.subscriptions, grants).entitlements }
+}
+
 /** One subscription with the given fields changed. */
 function one(overrides: Partial<SubscriptionRecord> = {}): SubscriptionSnapshot {
   return snapshotOf([overrides])
@@ -152,7 +159,12 @@ const CASES: ReadonlyArray<
   ['a customer that disappears', one(), snapshotOf([{}], null), ['transferred']],
   ['a customer first linked', snapshotOf([{}], null), one(), []],
   ['a subscription that moves away', one(), snapshotOf([]), ['transferred']],
-  ['a second subscription granting the same entitlement', one(), both(), ['overlap_detected']],
+  [
+    'a second subscription granting the same entitlement',
+    onlyFirst(),
+    both(),
+    ['overlap_detected']
+  ],
   ['two subscriptions that already overlapped', both(), both(), []],
   [
     'a renewal with a product change',

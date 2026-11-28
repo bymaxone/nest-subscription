@@ -60,6 +60,16 @@ function sourceState(periodEnd: string, sourceUpdatedAt: string): SubscriptionSn
   }
 }
 
+/** The source state of the account with these subscriptions, each granting `premium`. */
+function stateOf(records: readonly SubscriptionRecord[]): SubscriptionSnapshot {
+  const grants = new Map(records.map((r) => [r.subscriptionReference, ['premium']]))
+  return {
+    ...createEmptySnapshot({ ...ACCOUNT, source: 'fake', fetchedAt: T0 }),
+    subscriptions: records,
+    entitlements: resolveEntitlements(records, grants).entitlements
+  }
+}
+
 /** What the host's hook does with a call. */
 type Behaviour = (notification: SubscriptionChangeNotification) => unknown
 
@@ -157,6 +167,23 @@ describe('change notifications', () => {
       }
     ])
     expect(await pendingKeys(store)).toStrictEqual([])
+  })
+
+  it('calls the hook once when access returns through a new subscription', async () => {
+    // Scenario: the subscription expires, then another one appears beside the expired record.
+    const { service, source, clock, notifications } = await boot()
+    const expired: SubscriptionRecord = { ...RECORD, status: 'expired', givesAccess: false }
+    const next: SubscriptionRecord = { ...RECORD, subscriptionReference: 'sub-2' }
+    for (const records of [[RECORD], [expired], [expired, next]]) {
+      source.setAccount(ACCOUNT, stateOf(records))
+      await service.refresh(ACCOUNT)
+      clock.advance(60_000)
+    }
+    expect(notifications.map((n) => n.changes.map((change) => change.kind))).toStrictEqual([
+      ['started'],
+      ['expired'],
+      ['started']
+    ])
   })
 
   it('calls no hook for a refresh that changes nothing', async () => {
