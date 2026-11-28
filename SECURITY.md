@@ -50,7 +50,8 @@ Code that runs in the same Node.js process as the library is trusted, as it is i
 the secrets the host passed, replace any built-in, and change the library's objects, options or stores, and
 no library running in that process can stop it. The freezing of options and snapshots and the holding of
 secrets in `Secret` are best-effort hardening that narrows common accidents, not a security boundary. A
-report whose attacker must already run code in the process is not a vulnerability in this package. A report
+report whose attacker must already run code in the process is not a vulnerability in this package, apart
+from the supply-chain line below. A report
 of a way for untrusted input (a webhook request, a header, an identifier, a response of the billing source)
 to cross one of the lines listed below is.
 
