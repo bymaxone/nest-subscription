@@ -649,7 +649,7 @@ describe('readRevenueCatAccount with a response that is not what the API documen
         const [[request, body] = ['', {}]] = routes(new URL(url))
         return Promise.resolve(
           request === name
-            ? new Response('{}', { status: 404 })
+            ? new Response(JSON.stringify({ type: 'resource_missing' }), { status: 404 })
             : new Response(JSON.stringify(body))
         )
       }
@@ -674,6 +674,15 @@ describe('readRevenueCatAccount with a response that is not what the API documen
         }
       )
       expect(snapshot).toMatchObject({ sourceCustomer: null, subscriptions: [], entitlements: [] })
+    })
+
+    it('rejects when the first request answers a 404 that is not about the customer', async () => {
+      // Scenario: a wrong address; reading it as an unknown customer would empty the snapshot.
+      const stub: RevenueCatFetch = () =>
+        Promise.resolve(new Response('<html></html>', { status: 404 }))
+      expect(await codeOf(readRevenueCatAccount(contextFor(stub), { accountId: 'c' }))).toBe(
+        SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE
+      )
     })
 
     it.each([

@@ -118,12 +118,26 @@ describe('RevenueCatHttp', () => {
     expect(init?.signal).toBeInstanceOf(AbortSignal)
   })
 
-  it('maps a 404 to the account-unknown code', async () => {
+  it('maps a 404 of type resource_missing to the account-unknown code', async () => {
     // Scenario: RevenueCat has no record of the customer; the read turns this into an empty snapshot.
+    const body = { type: 'resource_missing', message: BODY_SENTINEL }
     const error = await rejection(
-      clientWith(() => Promise.resolve(jsonResponse(404, { message: BODY_SENTINEL }))).get('/x')
+      clientWith(() => Promise.resolve(jsonResponse(404, body))).get('/x')
     )
     expect(error.code).toBe(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+  })
+
+  it.each([
+    ['a page that is not JSON', () => new Response('<html>not found</html>', { status: 404 })],
+    ['no body', () => new Response(null, { status: 404 })],
+    ['an object with no type', () => jsonResponse(404, { message: BODY_SENTINEL })],
+    ['another type', () => jsonResponse(404, { type: 'parameter_error' })],
+    ['JSON that is not an object', () => jsonResponse(404, ['resource_missing'])],
+    ['null', () => jsonResponse(404, null)]
+  ])('maps a 404 with %s to the source-unavailable code', async (_name, answer) => {
+    // Scenario: a 404 that does not say the customer is unknown, as a wrong address would give.
+    const error = await rejection(clientWith(() => Promise.resolve(answer())).get('/x'))
+    expect(error.code).toBe(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
   })
 
   it.each([400, 401, 403, 409, 422, 429, 500, 502, 503, 504])(

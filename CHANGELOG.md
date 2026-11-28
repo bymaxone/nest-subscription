@@ -28,6 +28,10 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing for a route that passes the raw bytes as received. A route that could pass an empty body now gets a refusal, so check that it passes the bytes of the request.
 
+- **Only RevenueCat's `resource_missing` answer reads as an unknown customer.** A 404 whose JSON body has `type: resource_missing` gives the empty snapshot, as before. Any other 404 is `SUBSCRIPTION_SOURCE_UNAVAILABLE`, and the stored snapshot stays.
+
+**Apply to a derived backend:** nothing. A test or a proxy that stands in for RevenueCat and answers an unknown customer with a bare 404 has to answer `{"type":"resource_missing"}`.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.
