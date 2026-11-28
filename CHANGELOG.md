@@ -18,6 +18,8 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-28
+
 ### Changed
 
 - **`started` is also reported when access begins on an account with records**, so it is not a first-purchase signal. On an account that holds records, one is reported for a subscription or purchase that did not give access before and now grants an entitlement that no record gave access to, unless `recovered`, `resumed` or `trial_converted` reports that return. Access that moves between two subscriptions from one stored state to the next reports none.
@@ -198,6 +200,7 @@ billing source's webhooks itself:
 5. Make the change hook idempotent on `changes[].key`, call `refresh` after a purchase the app
    reports, and schedule `reconcile`.
 
-[Unreleased]: https://github.com/bymaxone/nest-subscription/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/bymaxone/nest-subscription/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/bymaxone/nest-subscription/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/bymaxone/nest-subscription/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/bymaxone/nest-subscription/releases/tag/v1.0.0
