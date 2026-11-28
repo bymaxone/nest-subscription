@@ -96,8 +96,9 @@ describe.each([
     }
   )
 
-  it('answers a failure, and records nothing to forget, when the store cannot record the event', async () => {
-    // Scenario: the store is down for the first call; the source is told to retry and nothing is read.
+  it('answers a failure, and removes the identifier, when the store cannot record the event', async () => {
+    // Scenario: the store is down for the first call; the source is told to retry, nothing is read,
+    // and the identifier is removed because the failed record may have stored it.
     let failing: FailingStore | undefined
     const app = await buildWebhookApp({
       wrapStore: (store) => (failing = createFailingStore(store))
@@ -106,7 +107,7 @@ describe.each([
     const forget = jest.spyOn(app.store, 'forgetEvent')
     expect((await send(app, route, signed(app))).status).toBe(503)
     expect(app.source.totalReads).toBe(0)
-    expect(forget).toHaveBeenCalledTimes(0)
+    expect(forget).toHaveBeenCalledTimes(1)
     await app.app.close()
   })
 

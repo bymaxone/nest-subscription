@@ -40,6 +40,10 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing, unless a test expects `fetchedAt` to be the instant the read ended.
 
+- **`webhookDeadlineMs` covers recording the event identifier too**, not only the reads of the source. A record that has not settled by the deadline is answered as a temporary failure, and the identifier is removed when it settles. A record that rejects has its identifier removed as well.
+
+**Apply to a derived backend:** nothing. A store of your own must resolve `forgetEvent` for an identifier it does not hold, as the conformance case `forgets nothing but the named event identifier` already checks.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.

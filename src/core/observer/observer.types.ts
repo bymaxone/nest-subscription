@@ -79,7 +79,8 @@ export interface WebhookEvent {
   /**
    * Whether the identifier of a failed event stayed recorded because the store could not forget
    * it. It describes the removal this delivery started: a failed answer given while an earlier
-   * removal is still in flight starts none and reports `false`. A retry that reaches the same
+   * removal is still in flight starts none and reports `false`, and so does one given at the
+   * deadline while the identifier is still being recorded. A retry that reaches the same
    * process is answered as a failure and starts the removal again; one that reaches another
    * instance of the host is answered as already seen until the retention purges the identifier.
    * Always `false` for an outcome other than `failed`. The removal is started before a failed

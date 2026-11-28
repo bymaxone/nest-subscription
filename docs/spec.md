@@ -207,7 +207,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 **FR20. Unknown event kinds and fields** are accepted and trigger a refresh. A new kind added by a source must never break the receiver.
 
-**FR21. Deadline.** Processing fits inside the source's response time limit. If the read from the source is slow, the library answers with a temporary failure rather than holding the connection.
+**FR21. Deadline.** Processing fits inside the source's response time limit. If recording the event or reading from the source is slow, the library answers with a temporary failure rather than holding the connection.
 
 ### 3.9 Storage, refresh and reconciliation
 
