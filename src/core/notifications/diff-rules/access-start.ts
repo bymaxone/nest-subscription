@@ -45,8 +45,7 @@ function holdingsOf(snapshot: SubscriptionSnapshot): Holding[] {
 /**
  * One `started` for each subscription or purchase that did not give access before and now grants
  * an entitlement that had no grantor, told apart by the start of its period or the instant of its
- * purchase. A reference that `found` already announces is left to that change. An account with no
- * record before is the business of the first-contact rules, not of this one.
+ * purchase. A reference that `found` already announces is left to that change.
  */
 export function accessStartedChanges(
   previous: SubscriptionSnapshot | null,
@@ -54,10 +53,10 @@ export function accessStartedChanges(
   found: readonly RawChange[]
 ): RawChange[] {
   if (previous === null) return []
-  const before = holdingsOf(previous)
-  if (before.length === 0) return []
   const skipped = new Set([
-    ...before.filter((held) => held.givesAccess).map((held) => held.reference),
+    ...holdingsOf(previous)
+      .filter((held) => held.givesAccess)
+      .map((held) => held.reference),
     ...found
       .filter((change) => ANNOUNCING_KINDS.has(change.kind))
       .map((change) => change.subscriptionReference)

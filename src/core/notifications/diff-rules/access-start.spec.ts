@@ -105,6 +105,15 @@ describe('access that begins on an account with records', () => {
     ])
   })
 
+  it('keeps the start when the return carries a change of another kind', () => {
+    // Scenario: the expired subscription had renewal turned off and comes back with it on.
+    const stopped = { ...EXPIRED, willRenew: 'no' as const }
+    expect(changesOf(snapshotOf([stopped]), snapshotOf([record()]))).toStrictEqual([
+      'started sub-1',
+      'will_renew_again sub-1'
+    ])
+  })
+
   it('reports a start for a new purchase beside an expired subscription', () => {
     // Scenario: access returns through a non-renewing purchase.
     expect(changesOf(snapshotOf([EXPIRED]), snapshotOf([EXPIRED], [PURCHASE]))).toStrictEqual([
