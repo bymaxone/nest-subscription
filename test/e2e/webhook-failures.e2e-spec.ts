@@ -252,6 +252,32 @@ describe('webhook receiver removal of an event dropped from the memory', () => {
   })
 })
 
+describe('webhook receiver record still unsettled at the deadline', () => {
+  it.each([
+    ['removes the identifier of an event it recorded late', true, 1],
+    ['leaves the identifier an earlier delivery recorded', false, 0]
+  ])('answers a failure and then %s', async (_label, isNew, removals) => {
+    // Scenario: the store answers the record only after the deadline has been answered.
+    const app = await buildWebhookApp()
+    let settle: (value: boolean) => void = () => undefined
+    jest
+      .spyOn(app.store, 'markEventProcessed')
+      .mockImplementationOnce(() => new Promise<boolean>((resolve) => (settle = resolve)))
+    const forget = jest.spyOn(app.store, 'forgetEvent')
+    const processor = app.moduleRef.get(WebhookProcessor)
+    const answer = processor.process(app.source.buildRequest(NOTIFICATION))
+    for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
+    app.expire()
+    expect(await answer).toStrictEqual({ kind: 'failed' })
+    expect(forget).toHaveBeenCalledTimes(0)
+    settle(isNew)
+    for (let turn = 0; turn < 40; turn += 1) await Promise.resolve()
+    expect(forget).toHaveBeenCalledTimes(removals)
+    expect(app.source.totalReads).toBe(0)
+    await app.app.close()
+  })
+})
+
 describe('webhook receiver tenants', () => {
   it('reads under the tenant of the host route and not the one a signed body names', async () => {
     // Scenario: a multi-tenant host passes the tenant its authentication gave (SEC08); a tenant

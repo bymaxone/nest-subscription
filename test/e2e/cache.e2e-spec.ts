@@ -21,7 +21,7 @@ import {
   ManualClock
 } from '@bymax-one/nest-subscription/testing'
 
-import { SnapshotCache } from '../../src/core/cache/snapshot-cache'
+import { CACHE_CALL_TIMEOUT_MS, SnapshotCache } from '../../src/core/cache/snapshot-cache'
 
 const ACCOUNT: AccountReference = { accountId: 'sentinel-acc-1' }
 
@@ -367,6 +367,25 @@ describe('cache', () => {
     source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
     await service.refresh(ACCOUNT)
     await expect(service.hasEntitlement(ACCOUNT, 'pro')).resolves.toBe(true)
+    await app.close()
+  })
+
+  it('answers from the store when the host cache lookup and delete never answer', async () => {
+    // Scenario: get and delete never settle; each is given up after the bound, on fake timers.
+    const never = (): Promise<never> => new Promise<never>(() => undefined)
+    const { app, service, source } = await boot({ ...mapCache(), get: never, delete: never })
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, true, '2026-01-01T00:00:10.000Z'))
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'queueMicrotask', 'setImmediate'] })
+    try {
+      const refreshed = service.refresh(ACCOUNT)
+      await jest.advanceTimersByTimeAsync(CACHE_CALL_TIMEOUT_MS)
+      await expect(refreshed).resolves.toBeDefined()
+      const answer = service.hasEntitlement(ACCOUNT, 'pro')
+      await jest.advanceTimersByTimeAsync(CACHE_CALL_TIMEOUT_MS)
+      await expect(answer).resolves.toBe(true)
+    } finally {
+      jest.useRealTimers()
+    }
     await app.close()
   })
 
