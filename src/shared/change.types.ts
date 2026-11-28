@@ -11,6 +11,10 @@ import type { ChangeKind } from './values'
 export interface SubscriptionChange {
   /** What kind of change this is. */
   readonly kind: ChangeKind
-  /** Stable for the same change; two different changes never share it. */
+  /**
+   * Stable for one occurrence of a change, however often it is delivered. A change that is undone
+   * and happens again gets another key. A renewal, a trial conversion and a refund name a period or
+   * an instant of the source, and the same one keeps its key.
+   */
   readonly key: string
 }

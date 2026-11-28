@@ -84,8 +84,11 @@ function acceptedTrigger(result: unknown): Trigger | null {
  *
  * The identifier of an event is recorded when its processing starts and removed when it ends as
  * a failure, so the source's retry is processed (D16). The removal is started before the failed
- * answer is returned and is never awaited, so a store that is slow or down cannot hold the answer
- * past the deadline. The observer hears of a failed delivery when the removal that delivery started
+ * answer is returned and is never awaited. Recording the identifier and reading the accounts share
+ * one deadline, so a store that is slow or down cannot hold the answer past it. A record that
+ * rejects may have stored the identifier, so it is removed too. A record still unsettled at the
+ * deadline is answered as a failure and reported at once; its removal follows when it settles, and
+ * until then every delivery of the event is a failure. The observer hears of a failed delivery when the removal that delivery started
  * settles; a delivery answered while another delivery's removal is in flight starts none and is
  * reported at once.
  *
@@ -122,8 +125,9 @@ export class WebhookProcessor {
    * that fails any check, or makes the adapter throw, is refused with the one refusal and nothing
    * else is touched. A verified notification that is new causes a read of every account it names,
    * stored through the refresher's ordered write; the host's hook for the changes runs outside
-   * this call's deadline and is not awaited. Reads that do not finish inside the deadline end the
-   * call as a failure, and are not abandoned: a read that completes later is stored normally.
+   * this call's deadline and is not awaited. A record or reads that do not finish inside the
+   * deadline end the call as a failure. Reads already started are not abandoned: one that completes
+   * later is stored normally.
    *
    * @param request The raw body and headers, untouched.
    * @param context Where the request came from; its tenant is required in a multi-tenant host.
@@ -180,22 +184,57 @@ export class WebhookProcessor {
     if (memory === 'failed') {
       return { outcome: { kind: 'failed' }, removal: this.#release(key, trigger.eventId) }
     }
-    const recorded = await this.#record(trigger.eventId)
-    if (recorded === 'unavailable') return { outcome: { kind: 'failed' } }
-    if (recorded === 'seen') return { outcome: { kind: 'duplicate' } }
     const references = accountIds.map((accountId): AccountReference => ({
       ...(tenantId === undefined ? {} : { tenantId }),
       accountId
     }))
-    if (await this.#refreshAll(references)) {
-      return { outcome: { kind: 'processed', accounts: references.length } }
+    return this.#attempt(key, trigger.eventId, references)
+  }
+
+  /**
+   * Records the event and reads the accounts inside one deadline. An event that fails, or does not
+   * finish in time, has its identifier removed. When the time runs out before the record settled,
+   * the answer does not wait for it: the removal follows the record, and no read is started.
+   */
+  async #attempt(
+    key: string,
+    eventId: string,
+    references: readonly AccountReference[]
+  ): Promise<Settled> {
+    const record = this.#record(eventId)
+    let isRemovalDue = false
+    let isAbandoned = false
+    const work = record.then(async (recorded): Promise<WebhookOutcome> => {
+      isRemovalDue = recorded !== 'seen'
+      if (recorded === 'seen') return { kind: 'duplicate' }
+      if (recorded === 'unavailable' || isAbandoned) return { kind: 'failed' }
+      return (await this.#refreshAll(references))
+        ? { kind: 'processed', accounts: references.length }
+        : { kind: 'failed' }
+    })
+    const outcome = await this.#beforeDeadline(work)
+    if (outcome !== null && outcome.kind !== 'failed') return { outcome }
+    if (isRemovalDue) {
+      return { outcome: { kind: 'failed' }, removal: this.#release(key, eventId) }
     }
-    return { outcome: { kind: 'failed' }, removal: this.#release(key, trigger.eventId) }
+    isAbandoned = true
+    this.#releaseOnceRecorded(key, eventId, record)
+    return { outcome: { kind: 'failed' } }
+  }
+
+  /** The outcome of the work, or `null` when it did not finish inside the deadline. */
+  async #beforeDeadline(work: Promise<WebhookOutcome>): Promise<WebhookOutcome | null> {
+    try {
+      const result = await withDeadline(work, this.options.webhookDeadlineMs, this.wait)
+      return result.timedOut ? null : result.value
+    } catch {
+      return null
+    }
   }
 
   /**
    * Records the event identifier. `seen` means it was recorded already, and `unavailable` means the
-   * store failed, in which case nothing is known to be recorded and nothing is forgotten.
+   * store failed, in which case the identifier may or may not be recorded. It never rejects.
    */
   async #record(eventId: string): Promise<'new' | 'seen' | 'unavailable'> {
     try {
@@ -211,20 +250,32 @@ export class WebhookProcessor {
   }
 
   /**
-   * Reads every account from the source inside the deadline. Resolves `true` only when every read
-   * finished in time and stored or kept its snapshot. A read that is still running at the deadline
-   * is left to finish; the host's hook for what it stores is never awaited here.
+   * Reads every account from the source, and resolves `true` only when every read stored or kept
+   * its snapshot. A read still running at the deadline is left to finish; the host's hook for what
+   * it stores is never awaited here.
    */
   async #refreshAll(references: readonly AccountReference[]): Promise<boolean> {
-    const reads = Promise.allSettled(
+    const reads = await Promise.allSettled(
       references.map((reference) => this.refresher.refreshAfter(reference))
     )
-    try {
-      const result = await withDeadline(reads, this.options.webhookDeadlineMs, this.wait)
-      return !result.timedOut && result.value.every((read) => read.status === 'fulfilled')
-    } catch {
-      return false
-    }
+    return reads.every((read) => read.status === 'fulfilled')
+  }
+
+  /**
+   * Remembers an event whose record is still unsettled, so no delivery of it is processed, and
+   * removes the identifier once the record settles. An identifier an earlier delivery recorded
+   * stays.
+   */
+  #releaseOnceRecorded(
+    key: string,
+    eventId: string,
+    record: Promise<'new' | 'seen' | 'unavailable'>
+  ): void {
+    const removal = this.#unreleased.begin(key)
+    void record.then(async (recorded) => {
+      const removed = recorded === 'seen' || (await this.#forget(eventId))
+      this.#unreleased.settled(key, removal, removed)
+    })
   }
 
   /**

@@ -8,6 +8,7 @@
 import { SubscriptionError, type Secret } from '@bymax-one/nest-subscription/internal'
 import { SUBSCRIPTION_ERROR_CODES } from '@bymax-one/nest-subscription/shared'
 
+import { isRecord } from './read/parse-customer'
 import type { RevenueCatFetch } from './revenuecat.options'
 
 /** What the client needs from the resolved options. */
@@ -28,6 +29,9 @@ export type RevenueCatQuery = Readonly<Record<string, string>>
 /** The status of RevenueCat's answer for a resource it has no record of. */
 const NOT_FOUND = 404
 
+/** The `type` of the error body that says a resource is not on record. */
+const RESOURCE_MISSING = 'resource_missing'
+
 /**
  * Percent-encodes one path segment, so an identifier can never add or end a segment.
  *
@@ -44,6 +48,19 @@ export function encodeSegment(value: string): string {
 /** The error of a failed call: the source could not be read, with no detail that could leak. */
 function unavailable(): SubscriptionError {
   return new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE)
+}
+
+/**
+ * Whether an error answer is RevenueCat's own report that the resource is not on record. A 404
+ * from anything else on the way, such as a wrong address, says nothing about the customer.
+ */
+async function saysResourceMissing(response: Response): Promise<boolean> {
+  try {
+    const body: unknown = await response.json()
+    return isRecord(body) && Reflect.get(body, 'type') === RESOURCE_MISSING
+  } catch {
+    return false
+  }
 }
 
 /** The client of the RevenueCat REST API. */
@@ -66,9 +83,10 @@ export class RevenueCatHttp {
    *
    * @param path The path after the base address, with every identifier already encoded.
    * @param query The query parameters, if any.
-   * @throws SubscriptionError with the account-unknown code for a 404, and with the
-   *   source-unavailable code for a network error, a timeout, a redirect, a 429, a 5xx, any other
-   *   non-success status, or a body that is not JSON.
+   * @throws SubscriptionError with the account-unknown code for a 404 whose JSON body has the
+   *   type `resource_missing`, and with the source-unavailable code for any other 404, a network
+   *   error, a timeout, a redirect, a 429, a 5xx, any other non-success status, or a body that is
+   *   not JSON.
    */
   get(path: string, query?: RevenueCatQuery): Promise<unknown> {
     return this.#send(path, query, { method: 'GET' })
@@ -114,15 +132,16 @@ export class RevenueCatHttp {
   }
 
   async #parse(response: Response): Promise<unknown> {
+    if (response.status === NOT_FOUND && (await saysResourceMissing(response))) {
+      throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
+    }
     if (!response.ok) {
       try {
         await response.body?.cancel()
       } catch {
         // A body that cannot be released changes nothing: the status decides.
       }
-      throw response.status === NOT_FOUND
-        ? new SubscriptionError(SUBSCRIPTION_ERROR_CODES.ACCOUNT_UNKNOWN)
-        : unavailable()
+      throw unavailable()
     }
     try {
       const parsed: unknown = await response.json()

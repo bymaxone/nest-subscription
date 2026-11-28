@@ -368,13 +368,66 @@ describe('diffSnapshots', () => {
   })
 
   it.each(ROWS)('gives the same $kind change the same key when read at another instant', (row) => {
-    // Scenario: the same change computed from snapshots fetched at different instants.
+    // Scenario: the instant the new state was read is not part of any key.
     const later = { ...row.current, fetchedAt: '2026-06-01T00:00:00.000Z' }
-    const earlierPrevious =
-      row.previous === null ? null : { ...row.previous, fetchedAt: '2025-12-01T00:00:00.000Z' }
-    expect(diffSnapshots(earlierPrevious, later)).toStrictEqual(
+    expect(diffSnapshots(row.previous, later)).toStrictEqual(
       diffSnapshots(row.previous, row.current)
     )
+  })
+
+  /** The kinds whose key names one period or one instant of the source, so they happen once. */
+  const ONCE: readonly ChangeKind[] = ['renewed', 'trial_converted', 'refunded']
+
+  it.each(ROWS)('tells apart by the state it left a $kind change only if it can recur', (row) => {
+    // Scenario: the same two states, with the earlier one read at another instant. A kind the
+    // source's facts can bring back gets another key; the others keep theirs.
+    const previous =
+      row.previous === null ? null : { ...row.previous, fetchedAt: '2025-12-01T00:00:00.000Z' }
+    const keys = diffSnapshots(previous, row.current).map((change) => change.key)
+    const base = diffSnapshots(row.previous, row.current).map((change) => change.key)
+    if (row.previous === null || ONCE.includes(row.kind)) expect(keys).toStrictEqual(base)
+    else expect(keys).not.toStrictEqual(base)
+  })
+
+  it('gives a change that happens, is undone and happens again two different keys', () => {
+    // Scenario: the account stops renewing, resumes and stops again inside one period.
+    const at = (willRenew: 'yes' | 'no', day: string): SubscriptionSnapshot =>
+      snapshotOf([record({ willRenew })], `2026-01-${day}T00:00:00.000Z`)
+    const first = diffSnapshots(at('yes', '01'), at('no', '02'))
+    const again = diffSnapshots(at('yes', '03'), at('no', '04'))
+    expect(again[0]?.kind).toBe(first[0]?.kind)
+    expect(again[0]?.key).not.toBe(first[0]?.key)
+  })
+
+  it.each([
+    ['subscription', snapshotOf([record()], '2026-01-02T00:00:00.000Z')],
+    [
+      'purchase',
+      {
+        ...snapshotOf([], '2026-01-02T00:00:00.000Z'),
+        nonRenewingPurchases: [
+          {
+            purchaseReference: 'p1',
+            entitlementNames: ['pro'],
+            givesAccess: true,
+            origin: 'app_store' as const,
+            environment: 'production' as const,
+            productReference: 'lifetime',
+            purchasedAt: '2026-01-01T00:00:00.000Z',
+            accessUntil: null,
+            refundedAt: null
+          }
+        ]
+      }
+    ]
+  ])('gives a %s that starts again after leaving the account another key', (_name, held) => {
+    // Scenario: it starts, leaves the account and comes back with the same facts of the source.
+    const none = (day: string): SubscriptionSnapshot =>
+      snapshotOf([], `2026-01-${day}T00:00:00.000Z`)
+    const first = diffSnapshots(none('01'), held)
+    const again = diffSnapshots(none('03'), held)
+    expect(again[0]?.kind).toBe('started')
+    expect(again[0]?.key).not.toBe(first[0]?.key)
   })
 
   it.each(ROWS)('gives a $kind change with another discriminating fact another key', (row) => {

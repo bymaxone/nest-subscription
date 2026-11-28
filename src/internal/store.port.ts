@@ -41,7 +41,7 @@ export interface SubscriptionStore {
    * Writes a snapshot and its new changes in one atomic step, and returns whether it was written.
    *
    * - `sourceUpdatedAt` is the instant the source says the state is as of; when the source reports
-   *   none, the caller passes the fetch instant. A write whose instant is older than the stored
+   *   none, the caller passes the snapshot's `fetchedAt`. A write whose instant is older than the stored
    *   one is refused whole: it returns `false` and neither the snapshot nor the changes change. An
    *   equal or newer instant replaces the snapshot.
    * - `pendingChanges` are appended to the changes already pending in the same step, never
@@ -51,6 +51,46 @@ export interface SubscriptionStore {
    */
   putSnapshot(
     key: string,
+    snapshot: SubscriptionSnapshot,
+    pendingChanges: readonly SubscriptionChange[],
+    sourceUpdatedAt: string
+  ): Promise<boolean>
+
+  /**
+   * Optional. Writes as {@link SubscriptionStore.putSnapshot} does, in one atomic step, only while
+   * the key still holds the state the caller read: `expectedFetchedAt` is the `fetchedAt` of the
+   * stored snapshot, or `null` when nothing was stored. It returns `false`, changing nothing, when
+   * the stored snapshot is another one or `sourceUpdatedAt` is older than the stored instant.
+   *
+   * The library compares a read with the stored state to work out the changes. With this method
+   * the changes stored are those of the state the write replaced, across processes. When a write
+   * is refused the library reads and compares again; after 20 refusals in one refresh it writes
+   * nothing and throws `SUBSCRIPTION_SOURCE_UNAVAILABLE`, and a webhook that asked for the refresh
+   * is answered so that it is delivered again. States are told apart by their `fetchedAt`,
+   * compared to the millisecond. A refresh that writes stores one millisecond past the stored
+   * `fetchedAt` when its read started at that instant, or started before it and the source
+   * reported `sourceUpdatedAt`; otherwise it stores the instant its read started.
+   *
+   * Limits:
+   *
+   * - A store without this method is written with `putSnapshot`, and a write by another process
+   *   between the read and the write can leave changes worked out against a state already
+   *   replaced, so a change can go unreported.
+   * - A stored snapshot that does not fit the account is written with `putSnapshot`, as no
+   *   condition can name it.
+   * - Hooks of different processes are not ordered.
+   * - When the source reports no `sourceUpdatedAt`, a read that started before a moved `fetchedAt`
+   *   can be refused as older; the stored state then stays until the next refresh, and no
+   *   notification is lost.
+   * - A moved `fetchedAt` is later than the instant its read started.
+   * - When the source reports `sourceUpdatedAt` for some reads only, a read without it can store
+   *   a `fetchedAt` earlier than the one it replaced. Should a later write then repeat an earlier
+   *   `fetchedAt` to the millisecond, a refresh still comparing with that earlier state does not
+   *   tell the two apart.
+   */
+  replaceSnapshot?(
+    key: string,
+    expectedFetchedAt: string | null,
     snapshot: SubscriptionSnapshot,
     pendingChanges: readonly SubscriptionChange[],
     sourceUpdatedAt: string

@@ -63,7 +63,7 @@ jobs:
   ci:
     uses: bymaxone/.github/.github/workflows/node-lib-ci.yml@v1
     with:
-      node-version: '26'
+      node-version: '24'
       # No `format:check` script exists, so the shared job has nothing to call.
       #
       # Formatting of CODE is gated by lint instead: `prettier/prettier` is an
@@ -107,7 +107,7 @@ jobs:
           persist-credentials: false
       - uses: bymaxone/.github/.github/actions/setup-node-pnpm@v1
         with:
-          node-version: '26'
+          node-version: '24'
       - name: Mutation directives parse and carry their reason
         run: pnpm check:mutants
       - name: Documentation snippets reference symbols that exist

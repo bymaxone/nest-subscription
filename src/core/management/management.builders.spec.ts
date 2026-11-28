@@ -149,7 +149,11 @@ export function harness(multiTenant = false): Harness {
   }
 }
 
-describe('management builders', () => {
+// Other specs import this file for its builders, which would register its own cases in each of
+// them and give one full name to several files, so they are declared only when this file is run.
+const own = expect.getState().testPath === __filename ? describe : (): void => undefined
+
+own('management builders', () => {
   it('seeds an account through the refresher so the service reads it back', async () => {
     // Scenario: a seeded snapshot is what the store holds afterwards, tenant included.
     const { service, seed } = harness(true)

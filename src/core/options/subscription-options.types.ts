@@ -109,7 +109,10 @@ export interface SubscriptionOptionsInput {
   readonly cacheTtlMs?: number
   /** Whether sandbox purchases grant access. Defaults to `false`. */
   readonly allowSandbox?: boolean
-  /** Confirms that sandbox access is meant in a production environment. Defaults to `false`. */
+  /**
+   * Confirms that sandbox access is meant in a production environment. Defaults to `false`. It is
+   * also needed when `allowSandbox` is unset here and the source declares that it admits sandbox.
+   */
   readonly confirmSandboxInProduction?: boolean
   /** Whether this is a production environment. The library reads no environment variable. */
   readonly isProduction?: boolean

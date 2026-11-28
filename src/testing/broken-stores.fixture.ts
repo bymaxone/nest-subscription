@@ -365,6 +365,131 @@ function pendingKeptApart(options: {
   })
 }
 
+/** The instant cut to whole seconds, as a column without fractions keeps it. */
+function wholeSecond(instant: string): string {
+  return new Date(Math.floor(parseInstant(instant) / 1000) * 1000).toISOString()
+}
+
+/** The store whose keys pass through `fold`, as a column that cannot tell them apart. */
+function foldingKeys(fold: (key: string) => string): SubscriptionStore {
+  const base = good()
+  return withDefect(base, {
+    getSnapshot: (key) => base.getSnapshot(fold(key)),
+    putSnapshot: (key, snapshot, changes, at) => base.putSnapshot(fold(key), snapshot, changes, at),
+    clearPendingChanges: (key, keys) => base.clearPendingChanges(fold(key), keys)
+  })
+}
+
+/** A conditional write built on the in-memory store, with the defect `write` has. */
+function conditional(
+  write: (base: InMemorySubscriptionStore) => NonNullable<SubscriptionStore['replaceSnapshot']>
+): SubscriptionStore {
+  const base = good()
+  return withDefect(base, { replaceSnapshot: write(base) })
+}
+
+/**
+ * The stores that lose a change or a clear when operations overlap or carry nothing, that cannot
+ * tell two keys or two instants apart, or whose conditional write holds no condition.
+ */
+const exactnessDefects: Readonly<Record<string, () => SubscriptionStore>> = {
+  emptyWriteErasesPending: () => {
+    const base = good()
+    return withDefect(base, {
+      putSnapshot: async (key, snapshot, changes, at) => {
+        if (changes.length === 0) {
+          await base.clearPendingChanges(key, await heldChangeKeys(base, key))
+        }
+        return base.putSnapshot(key, snapshot, changes, at)
+      }
+    })
+  },
+  clearReadThenWritten: () => {
+    const base = good()
+    const cleared = new Map<string, readonly string[]>()
+    return withDefect(base, {
+      // The keys cleared so far are read, then written back after a wait: of two overlapping
+      // clears the later write forgets the earlier one.
+      clearPendingChanges: async (key, keys) => {
+        const read = new Set(cleared.get(key))
+        await Promise.resolve()
+        cleared.set(key, [...read, ...keys])
+      },
+      getSnapshot: async (key) => {
+        const held = await base.getSnapshot(key)
+        const gone = new Set(cleared.get(key))
+        return held === null
+          ? null
+          : { ...held, pendingChanges: held.pendingChanges.filter((c) => !gone.has(c.key)) }
+      }
+    })
+  },
+  updateReadThenWritten: () => {
+    const base = good()
+    return withDefect(base, {
+      // Safe for a new key; for a stored one the list is read before a wait and written after it.
+      putSnapshot: async (key, snapshot, changes, at) => {
+        const held = await base.getSnapshot(key)
+        if (held === null) return base.putSnapshot(key, snapshot, changes, at)
+        await Promise.resolve()
+        await base.clearPendingChanges(key, await heldChangeKeys(base, key))
+        return base.putSnapshot(key, snapshot, [...held.pendingChanges, ...changes], at)
+      }
+    })
+  },
+  keysIgnoreCase: () => foldingKeys((key) => key.toLowerCase()),
+  longKeysCut: () => foldingKeys((key) => key.slice(0, 190)),
+  eventIdsFolded: () => {
+    const base = good()
+    return withDefect(base, {
+      markEventProcessed: (source, id, at) => base.markEventProcessed(source, id.toLowerCase(), at),
+      forgetEvent: (source, id) => base.forgetEvent(source, id.toLowerCase())
+    })
+  },
+  eventIdsTrimmed: () => {
+    const base = good()
+    return withDefect(base, {
+      markEventProcessed: (source, id, at) => base.markEventProcessed(source, id.trimEnd(), at)
+    })
+  },
+  wholeSecondOrdering: () => {
+    const base = good()
+    return withDefect(base, {
+      putSnapshot: (key, snapshot, changes, at) =>
+        base.putSnapshot(key, snapshot, changes, wholeSecond(at))
+    })
+  },
+  replaceIgnoresTheExpectation: () =>
+    conditional(
+      (base) => (key, _expected, snapshot, changes, at) =>
+        base.putSnapshot(key, snapshot, changes, at)
+    ),
+  replaceIgnoresOrdering: () =>
+    conditional((base) => async (key, expected, snapshot, changes) => {
+      return base.replaceSnapshot(key, expected, snapshot, changes, FAR_FUTURE)
+    }),
+  replaceCheckedThenWritten: () =>
+    conditional((base) => async (key, expected, snapshot, changes, at) => {
+      const stored = (await base.getSnapshot(key))?.snapshot.fetchedAt ?? null
+      await Promise.resolve()
+      return stored === expected && base.putSnapshot(key, snapshot, changes, at)
+    }),
+  replaceExpectsByTheSecond: () =>
+    conditional((base) => async (key, expected, snapshot, changes, at) => {
+      const stored = (await base.getSnapshot(key))?.snapshot.fetchedAt ?? null
+      const sameSecond =
+        stored !== null && expected !== null && wholeSecond(stored) === wholeSecond(expected)
+      return base.replaceSnapshot(key, sameSecond ? stored : expected, snapshot, changes, at)
+    }),
+  replaceKeepsRefusedChanges: () =>
+    conditional((base) => async (key, expected, snapshot, changes, at) => {
+      if (await base.replaceSnapshot(key, expected, snapshot, changes, at)) return true
+      const held = await base.getSnapshot(key)
+      await (held && base.putSnapshot(key, held.snapshot, changes, at))
+      return false
+    })
+}
+
 /** A paged listing with the limit and the cursor already bound. */
 type Listing = (limit: number, cursor: string | null) => Promise<KeyPage>
 
@@ -536,5 +661,6 @@ export const BROKEN_STORES: Readonly<Record<string, () => SubscriptionStore>> = 
   ...eventDefects,
   ...snapshotDefects,
   ...pendingDefects,
-  ...listingDefects
+  ...listingDefects,
+  ...exactnessDefects
 }

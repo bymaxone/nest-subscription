@@ -126,7 +126,10 @@ class RevenueCatSource implements SubscriptionSource {
       // A logger that fails must not fail the verification.
     }
     try {
-      this.#options.onUnidentifiedEvent?.({ kind, environment })
+      // `Promise.resolve` adopts a returned promise or thenable, so its rejection is handled here.
+      void Promise.resolve(this.#options.onUnidentifiedEvent?.({ kind, environment })).catch(
+        () => undefined
+      )
     } catch {
       // A callback that fails must not fail the verification.
     }

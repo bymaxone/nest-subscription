@@ -133,7 +133,8 @@ export function named<Done extends string, NotDone extends string>(
 }
 
 /**
- * Reads the account from the source and stores what it reads.
+ * Reads the account from the source, stores what it reads and returns what it read, also when the
+ * store kept a snapshot ordered after it.
  *
  * @throws {SubscriptionError} with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the read fails.
  */
@@ -141,9 +142,9 @@ async function readFresh(
   context: ManagementContext,
   account: AccountReference
 ): Promise<SubscriptionSnapshot> {
-  const { current, delivery } = await context.refresher.refreshAfter(account)
+  const { read, delivery } = await context.refresher.refreshAfter(account)
   await delivery
-  return current
+  return read
 }
 
 /**

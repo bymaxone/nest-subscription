@@ -6,7 +6,7 @@ The statements below are the ones of a fixture kept in this repository, [`test/e
 
 ## How it was verified
 
-The fixture passes every case of `storeConformanceCases()` (the `testing` subpath) against PostgreSQL 17.12. The maintainer ran it on 2026-11-26 in a local container with the `pg` driver (8.23.1), one case at a time with the tables emptied before each. The continuous integration of this repository has no database, so that run is not part of it: the spec [`test/e2e/reference-store.e2e-spec.ts`](../test/e2e/reference-store.e2e-spec.ts) runs the conformance suite when `REFERENCE_STORE_DATABASE_URL` names a database, and is skipped otherwise. What always runs is the check that this guide shows the fixture's statements word for word, and the checks of the TypeScript around the statements.
+The fixture passes every case of `storeConformanceCases()` (the `testing` subpath) against PostgreSQL 17.12. It was last run on 2026-11-28 in a local container with the `pg` driver (8.23.1), one case at a time with the tables emptied before each. The continuous integration of this repository has no database, so that run is not part of it: the spec [`test/e2e/reference-store.e2e-spec.ts`](../test/e2e/reference-store.e2e-spec.ts) runs the conformance suite when `REFERENCE_STORE_DATABASE_URL` names a database, and is skipped otherwise. What always runs is the check that this guide shows the fixture's statements word for word, and the checks of the TypeScript around the statements.
 
 A host that adopts the store runs the conformance suite against its own database and its own driver, which is how the cases are written to be used:
 
@@ -67,6 +67,7 @@ Every method may be called concurrently, including for one key and from several 
 | The snapshot and its new changes are written together                  | One statement, one row.                                                                                                                                                                                            |
 | A change already pending is not added twice                            | The `NOT EXISTS` over the held changes by `key`. The fixture also sends once a change whose key repeats within one call.                                                                                           |
 | Exactly one of any number of concurrent marks of one identifier is new | `INSERT ... ON CONFLICT DO NOTHING RETURNING`: the unique index decides, and only the statement that inserted gets a row back.                                                                                     |
+| A conditional write holds only over the state that was read            | `ON CONFLICT DO NOTHING` for an empty key; for a held one, the `WHERE` on `fetched_at`, evaluated again after the wait for another writer.                                                                         |
 | A cursor stays valid while the listing changes under it                | Keyset paging, `key > cursor ORDER BY key`. A key that stops qualifying is not returned; one that still qualifies and sorts after the cursor is never skipped. No offset is used.                                  |
 
 Without the uniqueness of the second record, an event is processed twice. Without the conditional write, a late webhook can replace newer state with older state. These are the two defects the conformance suite is built to catch.
@@ -108,6 +109,43 @@ RETURNING 1 AS written
 ```
 
 The parameters are the key, the snapshot as JSON, its `fetchedAt`, `sourceUpdatedAt` and the changes as a JSON array. A returned row means the write happened (`true`); no row means a newer snapshot is held (`false`). On a first insert there is nothing to compare and the changes are stored as given. On an update the new changes are appended after the held ones, skipping any whose `key` is already there.
+
+### `replaceSnapshot(key, expectedFetchedAt, snapshot, pendingChanges, sourceUpdatedAt)`
+
+The optional conditional write. With `expectedFetchedAt` `null` the key must hold nothing:
+
+```sql
+INSERT INTO subscription_snapshot
+  (key, snapshot, fetched_at, source_updated_at, pending_changes)
+VALUES ($1, $2::jsonb, $3::timestamptz, $4::timestamptz, $5::jsonb)
+ON CONFLICT (key) DO NOTHING
+RETURNING 1 AS written
+```
+
+Otherwise the held snapshot must still be the one that was read, which its `fetched_at` identifies:
+
+```sql
+UPDATE subscription_snapshot AS held
+SET snapshot          = $2::jsonb,
+    fetched_at        = $3::timestamptz,
+    source_updated_at = $4::timestamptz,
+    pending_changes   = held.pending_changes || COALESCE((
+      SELECT jsonb_agg(incoming.change ORDER BY incoming.ordinal)
+      FROM jsonb_array_elements($5::jsonb)
+           WITH ORDINALITY AS incoming(change, ordinal)
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(held.pending_changes) AS kept(change)
+        WHERE kept.change ->> 'key' = incoming.change ->> 'key'
+      )
+    ), '[]'::jsonb)
+WHERE held.key = $1
+  AND held.fetched_at = $6::timestamptz
+  AND held.source_updated_at <= $4::timestamptz
+RETURNING 1 AS written
+```
+
+A returned row means the write happened (`true`). No row means the key holds something else, or a newer instant, and nothing changed. The update locks the row and, after waiting for another writer, evaluates the `WHERE` against what that writer left.
 
 ### `clearPendingChanges(key, changeKeys)`
 

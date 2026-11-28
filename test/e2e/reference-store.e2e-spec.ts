@@ -18,10 +18,12 @@ import { createEmptySnapshot } from '@bymax-one/nest-subscription/shared'
 import { storeConformanceCases } from '@bymax-one/nest-subscription/testing'
 
 import {
+  INSERT_SNAPSHOT_SQL,
   LIST_PENDING_SQL,
   LIST_STALE_SQL,
   PUT_SNAPSHOT_SQL,
   REFERENCE_STATEMENTS,
+  REPLACE_SNAPSHOT_SQL,
   ReferencePostgresStore,
   SCHEMA_SQL,
   type SqlClient
@@ -122,6 +124,26 @@ describe('reference store: the code around the statements', () => {
       SubscriptionError
     )
     expect(calls).toHaveLength(0)
+  })
+
+  it('replaces with the insert for a key expected empty and with the update otherwise', async () => {
+    // Scenario: the expectation picks the statement, and a returned row means written.
+    const snapshot = createEmptySnapshot({ accountId: 'a', source: 's', fetchedAt: AT })
+    const written = recording([{ written: 1 }])
+    const store = new ReferencePostgresStore(written.client)
+    expect(await store.replaceSnapshot('key', null, snapshot, [], AT)).toBe(true)
+    expect(await store.replaceSnapshot('key', AT, snapshot, [], AT)).toBe(true)
+    expect(written.calls.map((call) => call.text)).toStrictEqual([
+      INSERT_SNAPSHOT_SQL,
+      REPLACE_SNAPSHOT_SQL
+    ])
+    expect(written.calls[1]?.values[5]).toBe(AT)
+    const refused = new ReferencePostgresStore(recording().client)
+    expect(await refused.replaceSnapshot('key', null, snapshot, [], AT)).toBe(false)
+    expect(await refused.replaceSnapshot('key', AT, snapshot, [], AT)).toBe(false)
+    await expect(
+      store.replaceSnapshot('key', 'yesterday', snapshot, [], AT)
+    ).rejects.toBeInstanceOf(SubscriptionError)
   })
 
   it('returns null for a key with no row and the stored document for one with a row', async () => {

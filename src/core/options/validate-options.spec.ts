@@ -334,6 +334,42 @@ describe('validateOptions', () => {
     })
   })
 
+  describe('sandbox access admitted by the source in production (SEC07)', () => {
+    /** A production module whose source declares what it admits. */
+    const production = (admitsSandbox: unknown): Record<string, unknown> => ({
+      ...valid(),
+      isProduction: true,
+      source: Object.assign(new FakeSubscriptionSource(), { admitsSandbox })
+    })
+
+    it('refuses a source that admits sandbox when the module sets no allowSandbox', () => {
+      // Scenario: only the source enables sandbox, and the module says it is production.
+      const error = problems(production(true))
+      expect(error.optionPaths).toEqual(['confirmSandboxInProduction'])
+    })
+
+    it('accepts it with the confirming option', () => {
+      // Scenario: the host confirms on the module what the source admits.
+      expect(() =>
+        validateOptions({ ...production(true), confirmSandboxInProduction: true })
+      ).not.toThrow()
+    })
+
+    it.each([false, 'yes', undefined])(
+      'asks for no confirmation when the source declares %s',
+      (admits) => {
+        // Scenario: only a declaration of true counts as sandbox access.
+        expect(() => validateOptions(production(admits))).not.toThrow()
+      }
+    )
+
+    it('names allowSandbox alone when the module refuses what the source admits', () => {
+      // Scenario: the module's own value decides, and the disagreement is the problem.
+      const error = problems({ ...production(true), allowSandbox: false })
+      expect(error.optionPaths).toEqual(['allowSandbox'])
+    })
+  })
+
   describe('agreement on sandbox access with the source', () => {
     /** A source that declares what it admits, as the RevenueCat adapter does. */
     const declaring = (admitsSandbox: unknown): Record<string, unknown> => ({

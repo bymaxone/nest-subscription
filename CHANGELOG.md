@@ -18,6 +18,64 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 ## [Unreleased]
 
+### Changed
+
+- **A production module asks for the sandbox confirmation when its source admits sandbox purchases.** With `isProduction: true` on the module and `allowSandbox` unset there, a source that declares `admitsSandbox: true` now needs `confirmSandboxInProduction: true` on the module, or the boot fails with `SUBSCRIPTION_CONFIG_INVALID`.
+
+**Apply to a derived backend:** if the module sets `isProduction: true` and the source admits sandbox purchases, set `confirmSandboxInProduction: true` on the module, or stop admitting sandbox on the source.
+
+- **`revenueCatSource` refuses a webhook request with an empty body**, whatever verification method is configured. The controller answers `401` with `SUBSCRIPTION_WEBHOOK_REFUSED`.
+
+**Apply to a derived backend:** nothing for a route that passes the raw bytes as received. A route that could pass an empty body now gets a refusal, so check that it passes the bytes of the request.
+
+- **Only RevenueCat's `resource_missing` answer reads as an unknown customer.** A 404 whose JSON body has `type: resource_missing` gives the empty snapshot, as before. Any other 404 is `SUBSCRIPTION_SOURCE_UNAVAILABLE`, and the stored snapshot stays.
+
+**Apply to a derived backend:** nothing. A test or a proxy that stands in for RevenueCat and answers an unknown customer with a bare 404 has to answer `{"type":"resource_missing"}`.
+
+- A promise that `onUnidentifiedEvent` returns is now watched: its rejection is dropped, as a throw already was, and the verification does not wait for it.
+
+**Apply to a derived backend:** nothing.
+
+- **`fetchedAt` is the instant the read of the source started**, not the instant it finished; where it equals the stored `fetchedAt`, or is earlier and the source reported `sourceUpdatedAt`, the snapshot is stored with one millisecond past the stored one. A source that reports no `sourceUpdatedAt`, as RevenueCat does, is ordered by it, so of two reads the one that started later is kept. Staleness is counted from the same instant. Instances order each other by their own clocks, so keep the clocks synchronized.
+
+**Apply to a derived backend:** nothing, unless a test expects `fetchedAt` to be the instant the read ended.
+
+- **`webhookDeadlineMs` covers recording the event identifier too**, not only the reads of the source. A record that has not settled by the deadline is answered as a temporary failure, and the identifier is removed when it settles, unless an earlier delivery had recorded it. A record that rejects has its identifier removed as well.
+
+**Apply to a derived backend:** nothing. A store of your own must resolve `forgetEvent` for an identifier it does not hold, as the conformance case `forgets nothing but the named event identifier` already checks.
+
+- **A change that recurs gets a new key.** The keys of `started`, `will_not_renew`, `will_renew_again`, `entered_grace`, `put_on_hold`, `recovered`, `paused`, `resumed`, `product_changed`, `expired`, `transferred` and `overlap_detected` also name the stored state the change left, so one that is undone and happens again is a different key. `renewed`, `trial_converted` and `refunded` keep their keys, and so does every change of a first contact. Changes already pending keep the keys they were stored with.
+
+**Apply to a derived backend:** nothing, unless the host computes or predicts keys itself.
+
+- **Optional conditional write in the store port.** `SubscriptionStore` gains `replaceSnapshot`, which writes only while the stored snapshot is still the one the library compared with, so changes are worked out against the state the write replaced even when processes write at once. A refresh refused 20 times writes nothing and throws `SUBSCRIPTION_SOURCE_UNAVAILABLE`, which therefore also means that it gave up on a contended store; a webhook that asked for it is delivered again. A store without it keeps writing with `putSnapshot`, with that guarantee missing. `InMemorySubscriptionStore` has it, and `createFailingStore` fails it when `putSnapshot` is named. States are told apart by their `fetchedAt`, which the conditional write requires a store to compare to the millisecond.
+
+**Apply to a derived backend:** optional. Add `replaceSnapshot` to your store and run the cases `replaceSnapshot writes only over the fetch instant it expects`, `replaceSnapshot refuses an older instant`, `replaceSnapshot lets exactly one of two overlapping writes of one state through` and `replaceSnapshot tells apart two states fetched one millisecond apart`; they pass without testing anything while the method is absent. A test that wraps your store and forwards a fixed list of methods has to forward this one too.
+
+- **More store conformance cases.** The suite also checks that an accepted write with no changes keeps the pending ones, that overlapping clears and writes lose nothing, that keys and event identifiers are told apart by case, trailing space and their last characters, and that instants are compared by the millisecond.
+
+**Apply to a derived backend:** run `storeConformanceCases()` against your store again. A new failure is in one of `keeps the pending changes when an accepted write carries none`, `keeps both a clear and the change of a write that overlaps it`, `keeps both of two clears that overlap`, `keeps every pending change when writes to a key that holds a snapshot overlap`, `keeps apart keys that differ by case or by a trailing space`, `keeps apart long keys that differ only at their end`, `keeps apart event identifiers that differ by case, by a trailing space or at their end` and `orders writes and judges staleness by the millisecond`. Check the collation, length and timestamp precision of the columns.
+
+- **Bounded cache calls.** A lookup or a delete of the host's cache is waited for at most one
+  second. A lookup that has not answered is a miss, and a delete that has not answered counts as
+  failed, so reads of that account go to the store for one entry lifetime.
+
+  _Apply to a derived backend:_ nothing to change; a cache adapter that needs more than one second
+  for either call is now treated as failing for that call.
+
+- **Operations judge what they read.** A management operation takes the record it asks about, and
+  judges its effect, from what it just read from the source, also when the store holds a snapshot
+  ordered after that read. The snapshot in its result is that read.
+
+  _Apply to a derived backend:_ nothing to change; read the stored state with `getSnapshot` where
+  the stored snapshot is the one wanted.
+
+- **Node.js 24 floor.** The package requires Node.js 24 or newer, where it required 26. It is
+  built for Node.js 24 and its checks run on it.
+
+  _Apply to a derived backend:_ nothing to change; a backend on Node.js 24 can now install the
+  package.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.

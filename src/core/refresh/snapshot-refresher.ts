@@ -34,12 +34,23 @@ import { isSnapshotFor } from '../snapshot-fit'
 /** The changes of a refresh that stored nothing, and of one with no hook to tell. */
 const NO_CHANGES: readonly SubscriptionChange[] = Object.freeze([])
 
+/**
+ * How many conditional writes one refresh tries while the stored state keeps moving, before it
+ * gives up and writes nothing.
+ */
+const CONDITIONAL_ATTEMPTS = 20
+
+/** What the cause of a refresh that gave up says. */
+const CONTENDED = `The stored snapshot kept changing: ${CONDITIONAL_ATTEMPTS} conditional writes were refused and nothing was written.`
+
 /** What one refresh did. */
 export interface RefreshResult {
   /** The snapshot stored before the refresh; `null` when none was stored. */
   readonly previous: SubscriptionSnapshot | null
   /** The snapshot stored after the refresh: the one just read, or the newer one that was kept. */
   readonly current: SubscriptionSnapshot
+  /** The snapshot just read from the source, whether or not the store took it. */
+  readonly read: SubscriptionSnapshot
   /** Whether the store took the snapshot just read. `false` means a newer one was kept. */
   readonly written: boolean
   /**
@@ -65,9 +76,31 @@ interface Flight extends Pick<RefreshResult, 'written' | 'changes'> {
   readonly finish: () => RefreshResult
 }
 
-/** The instant a snapshot is ordered by: what the source says, or else when it was read. */
+/**
+ * The instant a snapshot is ordered by: what the source says, or else when its read started. The
+ * start is what orders two reads: one that began earlier may have seen an earlier state, however
+ * late it finished.
+ */
 function orderInstant(snapshot: SubscriptionSnapshot): string {
   return snapshot.sourceUpdatedAt ?? snapshot.fetchedAt
+}
+
+/**
+ * The snapshot to write over `previous`: its `fetchedAt` is the instant the read started, moved to
+ * one millisecond after the stored one when it equals it, or when it is earlier and the source
+ * gave the read an instant of its own. Two states stored in succession therefore never share the
+ * instant a conditional write and a change key tell them apart by. An earlier read with no source
+ * instant keeps its own: it would be ordered by the moved one, ahead of states newer than it.
+ */
+function succeeding(
+  previous: SubscriptionSnapshot | null,
+  snapshot: SubscriptionSnapshot
+): SubscriptionSnapshot {
+  if (previous === null) return snapshot
+  const stored = parseInstant(previous.fetchedAt)
+  const started = parseInstant(snapshot.fetchedAt)
+  if (started > stored || (started < stored && snapshot.sourceUpdatedAt === null)) return snapshot
+  return { ...snapshot, fetchedAt: new Date(stored + 1).toISOString() }
 }
 
 /**
@@ -97,8 +130,10 @@ export class SnapshotRefresher {
    * The tenant and the account identifier come from the caller's argument and nowhere else.
    *
    * @throws {SubscriptionError} with `SUBSCRIPTION_INVALID_INPUT` for a blank account identifier,
-   * and with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be read; the stored snapshot
-   * is untouched in that case and the source's own error is the `cause`.
+   * and with `SUBSCRIPTION_SOURCE_UNAVAILABLE` when the source cannot be read, where the stored
+   * snapshot is untouched and the source's own error is the `cause`, or when the stored snapshot
+   * kept changing under the conditional write, where this refresh wrote nothing and the `cause`
+   * says so.
    */
   async refresh(account: AccountReference): Promise<RefreshResult> {
     const key = encodeAccountKey(account)
@@ -128,6 +163,9 @@ export class SnapshotRefresher {
   /** One read of the source and the ordered write of its result, reported to the observer. */
   async #refreshOnce(key: string, account: AccountReference): Promise<Flight> {
     const started = this.observer.mark()
+    // Taken before the read and formatted after it, so an unreadable clock fails the refresh where
+    // the result is stored and not before the source is called.
+    const readFrom = this.clock.now().getTime()
     let read: SubscriptionSnapshot
     try {
       read = await this.#read(account)
@@ -135,7 +173,8 @@ export class SnapshotRefresher {
       this.observer.sourceError(this.source.name, started)
       throw error
     }
-    const result = await this.#store(key, account, read)
+    const fetchedAt = new Date(readFrom).toISOString()
+    const result = await this.#store(key, account, { ...read, fetchedAt })
     this.observer.refresh(
       result.written ? 'written' : 'superseded',
       this.source.name,
@@ -145,44 +184,80 @@ export class SnapshotRefresher {
     return result
   }
 
-  /** Stores what was read, unless the store holds a newer snapshot; `finish()` starts delivery. */
+  /**
+   * Stores what was read, unless the store holds a newer snapshot; `finish()` starts delivery.
+   * Where the store has `replaceSnapshot`, the write holds only while the state the changes were
+   * worked out against is still the stored one; a refused write is read and compared again, and
+   * after {@link CONDITIONAL_ATTEMPTS} refusals nothing is written.
+   */
   async #store(
     key: string,
     account: AccountReference,
-    read: SubscriptionSnapshot
+    snapshot: SubscriptionSnapshot
   ): Promise<Flight> {
-    const snapshot: SubscriptionSnapshot = { ...read, fetchedAt: this.clock.now().toISOString() }
     const orderedAt = orderInstant(snapshot)
-    const previous = await this.#stored(key, account)
-    if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {
-      return this.#kept(previous, previous)
+    const replace = this.store.replaceSnapshot?.bind(this.store)
+    for (let attempt = 1; ; attempt += 1) {
+      const held = (await this.store.getSnapshot(key))?.snapshot
+      const previous = isSnapshotFor(held, account) ? held : null
+      if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {
+        return this.#kept(previous, previous, snapshot)
+      }
+      const next = succeeding(previous, snapshot)
+      // The changes are computed from the two snapshots before the write and stored with the
+      // snapshot in that one write, so a crash after it cannot lose them.
+      const changes = this.dispatcher === null ? NO_CHANGES : diffSnapshots(previous, next)
+      // No condition can name a stored snapshot that does not fit the account.
+      if (replace !== undefined && (held === undefined || previous !== null)) {
+        const expected = previous?.fetchedAt ?? null
+        if (await replace(key, expected, next, changes, orderInstant(next))) {
+          return this.#written(key, account, previous, next, changes)
+        }
+        if (attempt < CONDITIONAL_ATTEMPTS) continue
+        const cause = new Error(CONTENDED)
+        throw new SubscriptionError(SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE, { cause })
+      }
+      if (await this.store.putSnapshot(key, next, changes, orderInstant(next))) {
+        return this.#written(key, account, previous, next, changes)
+      }
+      return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot, snapshot)
     }
-    // The changes are computed from the two snapshots before the write and stored with the
-    // snapshot in that one write, so a crash after it cannot lose them.
-    const changes = this.dispatcher === null ? NO_CHANGES : diffSnapshots(previous, snapshot)
-    if (await this.store.putSnapshot(key, snapshot, changes, orderedAt)) {
-      await this.cache?.invalidate(account)
-      // The hook is called only once the write has succeeded and the cache no longer holds the old
-      // snapshot, and only after the flight is released.
-      let result: RefreshResult | undefined
-      const finish = (): RefreshResult =>
-        (result ??= {
-          previous,
-          current: snapshot,
-          written: true,
-          changes,
-          delivery: this.dispatcher?.deliver(key, previous, snapshot, changes) ?? Promise.resolve()
-        })
-      return { written: true, changes, finish }
-    }
-    return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot)
+  }
+
+  /** The result of a refresh whose snapshot was stored, once the cache dropped the old one. */
+  async #written(
+    key: string,
+    account: AccountReference,
+    previous: SubscriptionSnapshot | null,
+    current: SubscriptionSnapshot,
+    changes: readonly SubscriptionChange[]
+  ): Promise<Flight> {
+    await this.cache?.invalidate(account)
+    // The hook is called only once the write has succeeded and the cache no longer holds the old
+    // snapshot, and only after the flight is released.
+    let result: RefreshResult | undefined
+    const finish = (): RefreshResult =>
+      (result ??= {
+        previous,
+        current,
+        read: current,
+        written: true,
+        changes,
+        delivery: this.dispatcher?.deliver(key, previous, current, changes) ?? Promise.resolve()
+      })
+    return { written: true, changes, finish }
   }
 
   /** The result of a refresh whose snapshot was not stored because a newer one is. */
-  #kept(previous: SubscriptionSnapshot | null, current: SubscriptionSnapshot): Flight {
+  #kept(
+    previous: SubscriptionSnapshot | null,
+    current: SubscriptionSnapshot,
+    read: SubscriptionSnapshot
+  ): Flight {
     const result: RefreshResult = {
       previous,
       current,
+      read,
       written: false,
       changes: NO_CHANGES,
       delivery: Promise.resolve()

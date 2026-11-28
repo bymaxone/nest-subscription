@@ -60,28 +60,52 @@ const CASE = {
   staleCursorStable:
     'keeps listing every remaining stale key when the keys already listed stop being stale',
   pendingCursorStable:
-    'keeps listing every remaining pending key when the keys already listed are cleared'
+    'keeps listing every remaining pending key when the keys already listed are cleared',
+  emptyWriteKeeps: 'keeps the pending changes when an accepted write carries none',
+  clearAndWrite: 'keeps both a clear and the change of a write that overlaps it',
+  twoClears: 'keeps both of two clears that overlap',
+  overlapOnStored: 'keeps every pending change when writes to a key that holds a snapshot overlap',
+  caseKeys: 'keeps apart keys that differ by case or by a trailing space',
+  longKeys: 'keeps apart long keys that differ only at their end',
+  exactEventIds:
+    'keeps apart event identifiers that differ by case, by a trailing space or at their end',
+  milliseconds: 'orders writes and judges staleness by the millisecond',
+  replaceExpected: 'replaceSnapshot writes only over the fetch instant it expects',
+  replaceOlder: 'replaceSnapshot refuses an older instant',
+  replaceOnce: 'replaceSnapshot lets exactly one of two overlapping writes of one state through',
+  replaceMillisecond: 'replaceSnapshot tells apart two states fetched one millisecond apart'
 }
 
 // The cases each broken store fails, by the defect it has. A defect that touches the keys or the
 // pages also fails the cases that read them back, so a list names every consequence.
 const EXPECTED: Readonly<Record<string, readonly string[]>> = {
-  noEventUniqueness: [CASE.eventNew, CASE.eventConcurrent, CASE.forgetOnlyNamed, CASE.retention],
+  noEventUniqueness: [
+    CASE.milliseconds,
+    CASE.eventNew,
+    CASE.eventConcurrent,
+    CASE.forgetOnlyNamed,
+    CASE.retention
+  ],
   eventSourceIgnored: [CASE.twoSources, CASE.eventForgotten],
   eventKeyJoinedWithDelimiter: [CASE.eventBoundary],
   forgetEventDoesNothing: [CASE.eventForgotten],
   forgetEventForgetsEverything: [CASE.forgetOnlyNamed],
-  retentionDeletesNothing: [CASE.retention],
-  retentionDeletesTheBoundary: [CASE.retention],
-  noOrdering: [CASE.olderRefused, CASE.olderAddsNoChanges, CASE.interleaved],
-  refusesAnEqualInstant: [CASE.equalReplaces, CASE.overlapKeepsChanges],
+  retentionDeletesNothing: [CASE.milliseconds, CASE.retention],
+  retentionDeletesTheBoundary: [CASE.milliseconds, CASE.retention],
+  noOrdering: [CASE.olderRefused, CASE.olderAddsNoChanges, CASE.interleaved, CASE.milliseconds],
+  refusesAnEqualInstant: [CASE.equalReplaces, CASE.overlapKeepsChanges, CASE.overlapOnStored],
   keepsTheStoredSnapshotOnAnEqualInstant: [CASE.equalReplaces],
-  keepsTheStoredSnapshotOnANewerInstant: [CASE.newerReplaces, CASE.interleaved, CASE.accumulates],
-  refusedWriteReportsTrue: [CASE.olderRefused, CASE.olderAddsNoChanges],
+  keepsTheStoredSnapshotOnANewerInstant: [
+    CASE.newerReplaces,
+    CASE.interleaved,
+    CASE.accumulates,
+    CASE.emptyWriteKeeps
+  ],
+  refusedWriteReportsTrue: [CASE.olderRefused, CASE.olderAddsNoChanges, CASE.milliseconds],
   staleUsesTheWriteInstant: [CASE.staleByFetch],
   pendingChangeAddedTwice: [CASE.accumulates],
   pendingNewestFirst: [CASE.accumulates],
-  clearingDoesNothing: [CASE.clearsNamed, CASE.pendingUnlisted],
+  clearingDoesNothing: [CASE.clearsNamed, CASE.pendingUnlisted, CASE.clearAndWrite, CASE.twoClears],
   clearingAnUnknownChangeKeyFails: [CASE.clearsNamed, CASE.clearUnknown],
   clearingResetsTheSnapshot: [CASE.clearsNamed],
   clearingCreatesAnEntry: [CASE.clearUnknown],
@@ -92,8 +116,15 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   staleListingSkipsAKey: [CASE.stalePaged, CASE.staleCursorStable],
   staleListingUsesAnOffsetCursor: [CASE.staleCursorStable],
   pendingListingUsesAnOffsetCursor: [CASE.pendingCursorStable],
-  staleListingIgnoresTheThreshold: [CASE.staleOnly, CASE.staleByFetch, CASE.staleNone],
+  staleListingIgnoresTheThreshold: [
+    CASE.milliseconds,
+    CASE.staleOnly,
+    CASE.staleByFetch,
+    CASE.staleNone
+  ],
   markAlwaysSeen: [
+    CASE.exactEventIds,
+    CASE.milliseconds,
     CASE.eventNew,
     CASE.twoSources,
     CASE.eventBoundary,
@@ -102,7 +133,7 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
     CASE.retention
   ],
   eventCheckedThenRecorded: [CASE.eventConcurrent],
-  retentionDeletesEverything: [CASE.retention],
+  retentionDeletesEverything: [CASE.milliseconds, CASE.retention],
   inventsAnUnknownSnapshot: [CASE.unknownIsNull, CASE.clearUnknown],
   dropsPendingChangesOnRead: [
     CASE.readsBack,
@@ -113,7 +144,11 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
     CASE.olderAddsNoChanges,
     CASE.overlapKeepsChanges,
     CASE.accumulates,
-    CASE.clearsNamed
+    CASE.clearsNamed,
+    CASE.emptyWriteKeeps,
+    CASE.clearAndWrite,
+    CASE.twoClears,
+    CASE.overlapOnStored
   ],
   allKeysCollide: [
     CASE.accountsApart,
@@ -121,33 +156,58 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
     CASE.pendingPaged,
     CASE.pendingCursorStable,
     CASE.pendingUnlisted,
+    CASE.caseKeys,
+    CASE.longKeys,
+    CASE.milliseconds,
     CASE.staleOnly,
     CASE.staleByFetch,
     CASE.stalePaged,
     CASE.staleCursorStable
   ],
-  tenantsCollide: [CASE.tenantsApart, CASE.staleOnly, CASE.staleByFetch],
+  tenantsCollide: [
+    CASE.tenantsApart,
+    CASE.longKeys,
+    CASE.milliseconds,
+    CASE.staleOnly,
+    CASE.staleByFetch
+  ],
   pendingOverwrittenByLaterWrite: [
     CASE.equalReplaces,
     CASE.newerReplaces,
     CASE.olderAddsNoChanges,
-    CASE.accumulates
+    CASE.accumulates,
+    CASE.emptyWriteKeeps,
+    CASE.overlapOnStored
   ],
-  pendingNotClearedByKey: [CASE.clearsNamed],
+  pendingNotClearedByKey: [CASE.clearsNamed, CASE.clearAndWrite, CASE.twoClears],
   clearingAnUnknownKeyFails: [CASE.clearUnknown],
-  lostUpdateWhenWritesOverlap: [CASE.overlapKeepsChanges],
+  lostUpdateWhenWritesOverlap: [CASE.overlapKeepsChanges, CASE.clearAndWrite, CASE.overlapOnStored],
   changesWrittenApartFromTheSnapshot: [CASE.olderAddsNoChanges],
   staleListingIgnoresLimit: [CASE.stalePaged],
   pendingListingIgnoresLimit: [CASE.pendingPaged],
   pendingListingIncludesEveryKey: [CASE.pendingPaged, CASE.pendingUnlisted],
   staleListingNeverEnds: [
+    CASE.milliseconds,
     CASE.staleOnly,
     CASE.staleByFetch,
     CASE.stalePaged,
     CASE.staleCursorStable,
     CASE.staleNone
   ],
-  staleListingIncludesTheThreshold: [CASE.staleOnly]
+  emptyWriteErasesPending: [CASE.emptyWriteKeeps],
+  clearReadThenWritten: [CASE.pendingUnlisted, CASE.twoClears],
+  updateReadThenWritten: [CASE.olderAddsNoChanges, CASE.clearAndWrite],
+  keysIgnoreCase: [CASE.caseKeys],
+  longKeysCut: [CASE.longKeys],
+  eventIdsFolded: [CASE.exactEventIds],
+  eventIdsTrimmed: [CASE.exactEventIds],
+  wholeSecondOrdering: [CASE.milliseconds],
+  replaceIgnoresTheExpectation: [CASE.replaceExpected, CASE.replaceOnce, CASE.replaceMillisecond],
+  replaceIgnoresOrdering: [CASE.replaceOlder],
+  replaceCheckedThenWritten: [CASE.replaceOnce],
+  replaceExpectsByTheSecond: [CASE.replaceMillisecond],
+  replaceKeepsRefusedChanges: [CASE.replaceExpected, CASE.replaceMillisecond],
+  staleListingIncludesTheThreshold: [CASE.milliseconds, CASE.staleOnly]
 }
 
 describe('storeConformanceCases', () => {
@@ -165,6 +225,15 @@ describe('storeConformanceCases', () => {
     // Scenario: the shipped store is the reference implementation of the port.
     const factory = (): InMemorySubscriptionStore =>
       new InMemorySubscriptionStore({ logger: () => undefined })
+    expect(await failures(cases, factory)).toEqual([])
+  })
+
+  it('passes every case with a store that offers no conditional write', async () => {
+    // Scenario: `replaceSnapshot` is optional, so its cases hold nothing against a store without it.
+    const factory = (): InMemorySubscriptionStore =>
+      Object.assign(new InMemorySubscriptionStore({ logger: () => undefined }), {
+        replaceSnapshot: undefined
+      })
     expect(await failures(cases, factory)).toEqual([])
   })
 
@@ -300,4 +369,64 @@ describe('storeConformanceCases', () => {
       expect(await failures(cases, create)).toEqual(EXPECTED[defect])
     }
   )
+})
+
+/** The case of that name, which the suite is known to hold. */
+function caseNamed(name: string): StoreConformanceCase {
+  const found = storeConformanceCases().find((one) => one.name === name)
+  if (found === undefined) throw new Error(`no case named ${name}`)
+  return found
+}
+
+describe('what the overlap and conditional-write cases put a store through', () => {
+  it('overlaps a clear and a write with each of the two started first', async () => {
+    // Scenario: a store may lose a change in one order only, so the case has to make both.
+    const calls: string[] = []
+    await caseNamed('keeps both a clear and the change of a write that overlaps it').run(() => {
+      const store = new InMemorySubscriptionStore({ logger: () => undefined })
+      const put = store.putSnapshot.bind(store)
+      const clear = store.clearPendingChanges.bind(store)
+      jest.spyOn(store, 'putSnapshot').mockImplementation((...args) => {
+        calls.push('write')
+        return put(...args)
+      })
+      jest.spyOn(store, 'clearPendingChanges').mockImplementation((...args) => {
+        calls.push('clear')
+        return clear(...args)
+      })
+      return store
+    })
+    // Each run seeds with one write, then makes the two overlapping calls.
+    expect(calls).toStrictEqual(['write', 'clear', 'write', 'write', 'write', 'clear'])
+  })
+
+  it.each([
+    ['replaceSnapshot writes only over the fetch instant it expects', ['c2', 'c2', 'c3']],
+    ['replaceSnapshot refuses an older instant', ['c2']]
+  ])('hands a change to every write refused by "%s"', async (name, expected) => {
+    // Scenario: a store that keeps the changes of a write it refuses is caught only when the
+    // refused write carries one.
+    const refused: string[] = []
+    await caseNamed(name).run(() => {
+      const store = new InMemorySubscriptionStore({ logger: () => undefined })
+      const replace = store.replaceSnapshot.bind(store)
+      jest.spyOn(store, 'replaceSnapshot').mockImplementation(async (...args) => {
+        const accepted = await replace(...args)
+        if (!accepted) refused.push(args[3].map((change) => change.key).join())
+        return accepted
+      })
+      return store
+    })
+    expect(refused).toStrictEqual(expected)
+  })
+
+  it('says that two writes replaced one state when a store lets both through', async () => {
+    // Scenario: the host reads this sentence to know which guarantee its store lacks.
+    const create = BROKEN_STORES['replaceIgnoresTheExpectation']
+    if (create === undefined) throw new Error('the broken store is missing')
+    const run = caseNamed(
+      'replaceSnapshot lets exactly one of two overlapping writes of one state through'
+    ).run(create)
+    await expect(run).rejects.toThrow('two writes replaced one state')
+  })
 })

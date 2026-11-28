@@ -117,7 +117,11 @@ export interface SubscriptionSnapshot {
   readonly source: string
   /** How the source names the account; `null` when the source has no record of it. */
   readonly sourceCustomer: SourceCustomerReference | null
-  /** When the library read the source. */
+  /**
+   * When the library started the read of the source, or one millisecond past the `fetchedAt` of
+   * the snapshot it replaced when the read started at that instant, or started before it and the
+   * source reported `sourceUpdatedAt`.
+   */
   readonly fetchedAt: string
   /** How fresh the source says its data is; `null` when it does not say. */
   readonly sourceUpdatedAt: string | null

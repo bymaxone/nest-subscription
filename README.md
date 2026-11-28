@@ -117,7 +117,7 @@ A host loads only the adapter it uses: with one adapter configured, the other ad
 | `rxjs`                                          | `^7.8.0`   | the root entry point                                                                                                  |
 | `@bymax-one/nest-cache`, `@bymax-one/nest-core` | optional   | declared so a host on the family resolves compatible ranges; the library imports neither today, and runs without them |
 
-The runtime is **Node.js 26 or newer**. A backend moves to Node.js 26 before it installs this library.
+The runtime is **Node.js 24 or newer**.
 
 ---
 
@@ -244,7 +244,7 @@ An account with nothing stored is "no subscription" until a webhook arrives or t
 | `failPolicy`                                                 | `'refuse'` or `'last_known_state'`     | `'refuse'`       | What the guard does when it cannot show a snapshot current                                                                                              |
 | `lastKnownStateToleranceMs`                                  | number                                 | 72 hours         | How old a snapshot may be and still be trusted under `last_known_state`                                                                                 |
 | `maxSnapshotAgeMs`                                           | number                                 | 24 hours         | The age after which a snapshot is refreshed in the background on its next read                                                                          |
-| `cache`, `cacheTtlMs`                                        | `SubscriptionCache`, number            | none, 30 seconds | An optional string cache in front of the store                                                                                                          |
+| `cache`, `cacheTtlMs`                                        | `SubscriptionCache`, number            | none, 30 seconds | An optional string cache in front of the store; a lookup or a delete is waited for at most one second                                                   |
 | `observer`                                                   | `SubscriptionObserver`                 | none             | Counters and timings                                                                                                                                    |
 | `logger`                                                     | `SubscriptionLogger`                   | NestJS `Logger`  | Where warnings go: a fixed sentence, an error code and, at most, a short salted hash of the account                                                     |
 | `eventRetentionMs`                                           | number                                 | 7 days           | How long processed event identifiers are kept for de-duplication                                                                                        |
@@ -330,7 +330,7 @@ Mount the controller with `webhookController: true` and a `webhookPath`, and cre
 What this covers, and what it does not:
 
 - **De-duplication is by event identifier and is not a lock on state.** The identifier is recorded when processing starts, for `eventRetentionMs`. Reconciliation purges older identifiers; nothing else purges them, so a host that never runs reconciliation never purges. Keep the retention longer than the longest span in which the source can deliver an event again (RevenueCat retries for about 80 minutes and allows a manual resend with no stated limit).
-- **A failed event's identifier is forgotten in the background.** The removal is started before the failed answer and is never awaited, so a slow store cannot hold the answer past the deadline. While that removal is in flight the processor remembers the event in memory (up to a bound, oldest out) and answers a retry as a failure at once. **A `forgetEvent` that never settles keeps retries of that event at `503` on that instance until a restart or until the event is evicted from that memory.** The memory belongs to one process: a retry that lands on another instance while the removal is in flight may find the identifier recorded and be answered as already seen until the retention purges it.
+- **A failed event's identifier is forgotten in the background.** The removal is never awaited, so a slow store cannot hold the answer past the deadline. It is started before the failed answer, except when recording the identifier is what missed the deadline: it then starts once the record settles, and not at all if the record finds the event already recorded. While that removal is in flight the processor remembers the event in memory (up to a bound, oldest out) and answers a retry as a failure at once. **A `forgetEvent` or a `markEventProcessed` that never settles keeps retries of that event at `503` on that instance until a restart or until the event is evicted from that memory.** The memory belongs to one process: a retry that lands on another instance while the removal is in flight may find the identifier recorded and be answered as already seen.
 - **A retry of a timed-out webhook reads the source twice.** The deadline answers a temporary failure and the work is not cancelled.
 - **An answer the framework's body parser gives** before the controller runs, such as a rejection of invalid JSON, is outside the uniform refusal.
 
@@ -535,6 +535,13 @@ async function duringAnOutage(scenario: () => Promise<void>): Promise<void> {
 - `createFailingStore(store)` returns the same store port with `fail(methods?, error?)` and `recover()`. Without an `error`, a failing method rejects with an `Error` whose message names the method and holds no argument of the call.
 - `FakeSubscriptionSource` sets an account's state, queues signed notifications (`buildRequest`, `queueNotification`), delays or fails the next read, counts reads and scripts the management operations.
 - `buildRevenueCatWebhookRequest` builds a signed request the adapter accepts, and each way a request can be wrong on purpose (`REVENUECAT_REQUEST_FLAWS`).
+- A `SubscriptionStore` may also offer `replaceSnapshot`, a write that holds only while the stored snapshot is the one the library read. With it, changes are worked out against the state each write replaced, also when several processes write at once. When a write is refused the library reads and compares again; after 20 refusals in one refresh it writes nothing and throws `SUBSCRIPTION_SOURCE_UNAVAILABLE`, and a webhook that asked for the refresh is answered so that it is delivered again. States are told apart by their `fetchedAt`, compared to the millisecond. A refresh that writes stores one millisecond past the stored `fetchedAt` when its read started at that instant, or started before it and the source reported `sourceUpdatedAt`; otherwise it stores the instant its read started. The limits:
+  - A store without `replaceSnapshot` is written with `putSnapshot`, and a write that lands between the read and the write can leave changes worked out against a state already replaced, so a change can go unreported.
+  - A stored snapshot that does not fit the account is written with `putSnapshot`, as no condition can name it.
+  - Hooks of different processes are not ordered.
+  - When the source reports no `sourceUpdatedAt`, a read that started before a moved `fetchedAt` can be refused as older; the stored state then stays until the next refresh, and no notification is lost.
+  - A moved `fetchedAt` is later than the instant its read started.
+  - When the source reports `sourceUpdatedAt` for some reads only, a read without it can store a `fetchedAt` earlier than the one it replaced. Should a later write then repeat an earlier `fetchedAt` to the millisecond, a refresh still comparing with that earlier state does not tell the two apart.
 - `InMemorySubscriptionStore` is for tests and development only. `storeConformanceCases()` returns the cases a host runs against its own store from any test runner; each fails by throwing an assertion error (see [Examples by subpath](#examples-by-subpath)).
 - `createCapture()` and `assertNoSentinel(capture, sentinels)` check that no log line or observer payload holds a value the test chose as a sentinel. **`assertNoSentinel` searches plain data only**: strings, numbers, bigints, booleans, property names, and the members of `Map` and `Set`. It does not search `Date`, `Buffer` or `Error` objects, getters or symbol keys, so a value that reaches a log only through one of those is not found.
 
@@ -598,7 +605,7 @@ The library stores no payment data, no price paid and no raw webhook payload. In
 
 ### Sandbox purchases (SEC07)
 
-Sandbox purchases grant nothing unless access is enabled explicitly, and enabling it in a production environment is refused at boot unless a second option confirms it (`allowSandbox`, `isProduction` and `confirmSandboxInProduction`). For RevenueCat it is the **adapter's** `allowSandbox` that admits sandbox purchases, so set it on `revenueCatSource`. The module accepts the same three options and refuses the same production combination at boot. When `allowSandbox` is also set on the module and the source declares what it admits (`revenueCatSource` does, from its own `allowSandbox`), the two must be equal, or the boot fails with `SUBSCRIPTION_CONFIG_INVALID` naming `allowSandbox` (D53). A module that leaves `allowSandbox` unset is never refused, and a custom source that does not declare `admitsSandbox` is not compared. The module's option never changes what the adapter admits.
+Sandbox purchases grant nothing unless access is enabled explicitly, and enabling it in a production environment is refused at boot unless a second option confirms it (`allowSandbox`, `isProduction` and `confirmSandboxInProduction`). For RevenueCat it is the **adapter's** `allowSandbox` that admits sandbox purchases, so set it on `revenueCatSource`. The module accepts the same three options and refuses the same production combination at boot. For that check the module uses its own `allowSandbox`, or, when it sets none, what the source declares it admits, so a production module needs `confirmSandboxInProduction` on the module whenever its source admits sandbox purchases (D53). When `allowSandbox` is also set on the module and the source declares what it admits (`revenueCatSource` does, from its own `allowSandbox`), the two must be equal, or the boot fails with `SUBSCRIPTION_CONFIG_INVALID` naming `allowSandbox` (D53). A module that leaves `allowSandbox` unset is never refused for disagreeing, and a custom source that does not declare `admitsSandbox` is not compared. The module's option never changes what the adapter admits.
 
 ### Tenants are separate (SEC08)
 
@@ -643,7 +650,7 @@ Not listed because the repository does not run them: a dynamic scan of a deploye
 | Area            | Choice                                                  |
 | --------------- | ------------------------------------------------------- |
 | Language        | TypeScript 5.9, `strict`                                |
-| Runtime         | Node.js 26 or newer                                     |
+| Runtime         | Node.js 24 or newer                                     |
 | Framework       | NestJS 11 (peer)                                        |
 | Build           | tsup, ESM and CommonJS with declarations for each       |
 | Unit and e2e    | Jest, with supertest for the end-to-end suite           |
@@ -822,7 +829,7 @@ Every error the library raises is a `SubscriptionError` with one of these codes.
 | `SUBSCRIPTION_UNAUTHENTICATED`        | The request carries no account.                      | The guard, `401`                                                                                                                 |
 | `SUBSCRIPTION_ENTITLEMENT_REQUIRED`   | The required entitlement is not held.                | The guard, `403`                                                                                                                 |
 | `SUBSCRIPTION_NO_ACCESS`              | The subscription does not give access.               | The guard, `403`                                                                                                                 |
-| `SUBSCRIPTION_SOURCE_UNAVAILABLE`     | The billing source could not be read.                | The guard, `503`; the webhook answer, `503`; `refresh`, the operations and the adapter                                           |
+| `SUBSCRIPTION_SOURCE_UNAVAILABLE`     | The billing source could not be read.                | The guard, `503`; the webhook answer, `503`; `refresh`, also when it gives up on a contended store; the operations; the adapter  |
 | `SUBSCRIPTION_OPERATION_NOT_POSSIBLE` | The operation is not possible for this subscription. | Reserved in the catalogue. The library does not raise it: an operation a server cannot do is the `person_must_act` result        |
 | `SUBSCRIPTION_CONFIG_MISSING`         | A required option is missing.                        | Reserved in the catalogue. The library does not raise it: a missing required option is reported as `SUBSCRIPTION_CONFIG_INVALID` |
 | `SUBSCRIPTION_CONFIG_INVALID`         | An option is invalid.                                | Module and adapter validation at boot                                                                                            |

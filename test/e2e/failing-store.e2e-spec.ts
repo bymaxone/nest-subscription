@@ -29,6 +29,26 @@ describe('the failing store through the testing subpath', () => {
     }
   )
 
+  it.each(['putSnapshot', 'replaceSnapshot'] as const)(
+    'rejects a conditional write when %s is named as failing',
+    async (method) => {
+      // Scenario: a conditional write is a write, so naming either method fails it.
+      const store = wrapped()
+      store.fail([method])
+      const snapshot = createEmptySnapshot({ accountId: 'k', source: 'fake', fetchedAt: AT })
+      await expect(store.replaceSnapshot?.('k', null, snapshot, [], AT)).rejects.toThrow(
+        'failing store'
+      )
+    }
+  )
+
+  it('offers no conditional write over a store that has none', () => {
+    // Scenario: a host store without the optional method is wrapped.
+    const memory = new InMemorySubscriptionStore({ logger: () => undefined })
+    Object.defineProperty(memory, 'replaceSnapshot', { value: undefined })
+    expect(createFailingStore(memory).replaceSnapshot).toBeUndefined()
+  })
+
   it('rejects every method of the port once switched to failing, and none after recover', async () => {
     // Scenario: all eight methods are called while failing and then again after recovering.
     const store = wrapped()

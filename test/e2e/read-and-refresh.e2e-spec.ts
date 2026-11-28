@@ -572,3 +572,27 @@ describe('read and refresh: a stale snapshot in a running application', () => {
     await app.close()
   })
 })
+
+describe('read and refresh: a conditional write that lost', () => {
+  it('reads the stored state again and writes over what it then finds', async () => {
+    // Scenario: the first conditional write is told the stored state is no longer the compared one.
+    const memory = new InMemorySubscriptionStore({ logger: () => undefined })
+    let attempts = 0
+    const store = delegating(memory, {
+      replaceSnapshot: (key, expected, snapshot, changes, at) => {
+        attempts += 1
+        return attempts === 1
+          ? Promise.resolve(false)
+          : memory.replaceSnapshot(key, expected, snapshot, changes, at)
+      }
+    })
+    const { app, source } = await boot({ store })
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T10))
+    await app.get(SnapshotRefresher).refresh(ACCOUNT)
+    expect(attempts).toBe(2)
+    expect(await memory.getSnapshot(encodeAccountKey(ACCOUNT))).toMatchObject({
+      snapshot: { sourceUpdatedAt: T10 }
+    })
+    await app.close()
+  })
+})

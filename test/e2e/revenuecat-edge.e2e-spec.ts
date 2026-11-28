@@ -166,6 +166,12 @@ describe('lists the adapter cannot use', () => {
     expect(await outcome()).toBe(UNAVAILABLE)
   })
 
+  it('is a source that cannot be read when a not-found answer is not JSON', async () => {
+    // Scenario: a 404 from something on the way says nothing about the customer.
+    stand.respondWith(() => ({ status: 404, body: '<html>not found</html>' }))
+    expect(await outcome()).toBe(UNAVAILABLE)
+  })
+
   it('is a source that cannot be read when nothing listens, and sends the key to no other address', async () => {
     // Scenario: connection refused; the stand-in saw only requests with the bearer key.
     await stand.close()
@@ -550,6 +556,16 @@ describe('webhook requests that are not the ordinary ones', () => {
     // Scenario: verification passed; the shape never makes an error.
     const result = await signed(both).verifyWebhook(sign(body))
     expect(result).toMatchObject({ accepted: true })
+  })
+
+  it('accepts a request when the callback for an event naming no account rejects', async () => {
+    // Scenario: the callback is asynchronous and fails; the verification stands and nothing leaks.
+    const onUnidentifiedEvent = jest.fn(() => Promise.reject(new Error('callback failed')))
+    const source = signed({ ...both, onUnidentifiedEvent })
+    const result = await source.verifyWebhook(sign(loadFixture('webhook-anonymous-only')))
+    expect(result).toMatchObject({ accepted: true, notification: { accountIds: [] } })
+    expect(onUnidentifiedEvent).toHaveBeenCalledTimes(1)
+    await new Promise<void>((resolve) => setImmediate(resolve))
   })
 
   it('builds a request from bytes and from text as they are', async () => {

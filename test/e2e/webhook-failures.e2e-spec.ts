@@ -96,8 +96,9 @@ describe.each([
     }
   )
 
-  it('answers a failure, and records nothing to forget, when the store cannot record the event', async () => {
-    // Scenario: the store is down for the first call; the source is told to retry and nothing is read.
+  it('answers a failure, and removes the identifier, when the store cannot record the event', async () => {
+    // Scenario: the store is down for the first call; the source is told to retry, nothing is read,
+    // and the identifier is removed because the failed record may have stored it.
     let failing: FailingStore | undefined
     const app = await buildWebhookApp({
       wrapStore: (store) => (failing = createFailingStore(store))
@@ -106,7 +107,21 @@ describe.each([
     const forget = jest.spyOn(app.store, 'forgetEvent')
     expect((await send(app, route, signed(app))).status).toBe(503)
     expect(app.source.totalReads).toBe(0)
-    expect(forget).toHaveBeenCalledTimes(0)
+    expect(forget).toHaveBeenCalledTimes(1)
+    await app.app.close()
+  })
+
+  it('answers a failure a source retries when the stored snapshot never stops changing', async () => {
+    // Scenario: every conditional write is refused; nothing is stored, and the identifier is
+    // removed so the next delivery of the event is processed.
+    const app = await buildWebhookApp()
+    const contended = jest.spyOn(app.store, 'replaceSnapshot').mockResolvedValue(false)
+    const refused = await send(app, route, signed(app))
+    expect(refused.status).toBe(503)
+    expect(refused.body).toMatchObject({ code: SUBSCRIPTION_ERROR_CODES.SOURCE_UNAVAILABLE })
+    expect(await app.store.getSnapshot(encodeAccountKey(ACCOUNT))).toBeNull()
+    contended.mockRestore()
+    expect((await send(app, route, signed(app))).status).toBe(200)
     await app.app.close()
   })
 
@@ -247,6 +262,32 @@ describe('webhook receiver removal of an event dropped from the memory', () => {
       app.source.buildRequest({ ...NOTIFICATION, eventId: 'evt-1' })
     )
     expect(retry).toStrictEqual({ kind: 'processed', accounts: 1 })
+    await app.app.close()
+  })
+})
+
+describe('webhook receiver record still unsettled at the deadline', () => {
+  it.each([
+    ['removes the identifier of an event it recorded late', true, 1],
+    ['leaves the identifier an earlier delivery recorded', false, 0]
+  ])('answers a failure and then %s', async (_label, isNew, removals) => {
+    // Scenario: the store answers the record only after the deadline has been answered.
+    const app = await buildWebhookApp()
+    let settle: (value: boolean) => void = () => undefined
+    jest
+      .spyOn(app.store, 'markEventProcessed')
+      .mockImplementationOnce(() => new Promise<boolean>((resolve) => (settle = resolve)))
+    const forget = jest.spyOn(app.store, 'forgetEvent')
+    const processor = app.moduleRef.get(WebhookProcessor)
+    const answer = processor.process(app.source.buildRequest(NOTIFICATION))
+    for (let turn = 0; turn < 20; turn += 1) await Promise.resolve()
+    app.expire()
+    expect(await answer).toStrictEqual({ kind: 'failed' })
+    expect(forget).toHaveBeenCalledTimes(0)
+    settle(isNew)
+    for (let turn = 0; turn < 40; turn += 1) await Promise.resolve()
+    expect(forget).toHaveBeenCalledTimes(removals)
+    expect(app.source.totalReads).toBe(0)
     await app.app.close()
   })
 })

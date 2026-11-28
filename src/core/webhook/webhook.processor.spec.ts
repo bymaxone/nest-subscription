@@ -560,19 +560,6 @@ describe('WebhookProcessor de-duplication', () => {
     expect(second).toStrictEqual({ kind: 'processed', accounts: 2 })
   })
 
-  it('fails the event, without forgetting, when the store cannot record it', async () => {
-    // Scenario: the store is down at the first call; nothing was recorded, so nothing is forgotten.
-    const h = harness({
-      store: (base) =>
-        delegating(base, { markEventProcessed: () => Promise.reject(new Error('store down')) })
-    })
-    const forget = jest.spyOn(h.store, 'forgetEvent')
-    const outcome = await h.processor.process(h.source.buildRequest(NOTIFICATION))
-    expect(outcome).toStrictEqual({ kind: 'failed' })
-    expect(forget).toHaveBeenCalledTimes(0)
-    expect(h.source.totalReads).toBe(0)
-  })
-
   it('still answers failed, and tells the observer, when the identifier cannot be forgotten', async () => {
     // Scenario: the source is down and so is forgetEvent; the outcome is failed, the identifier
     // stays recorded, the observer says so and the log holds a fixed sentence with a code. The
