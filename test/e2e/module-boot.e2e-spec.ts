@@ -279,6 +279,24 @@ describe('module boot refuses a wrong configuration', () => {
     await app.close()
   })
 
+  it('stops the boot of both forms when only the source admits sandbox in production', async () => {
+    // Scenario: SEC07 with the module option left unset, then the confirmation added.
+    const source = Object.assign(new FakeSubscriptionSource(), { admitsSandbox: true })
+    const unconfirmed = { ...good(), source, isProduction: true }
+    for (const form of [
+      SubscriptionModule.forRoot(unconfirmed),
+      SubscriptionModule.forRootAsync({ useFactory: () => unconfirmed })
+    ]) {
+      const error = await refusal(form)
+      expect((error as SubscriptionError).code).toBe('SUBSCRIPTION_CONFIG_INVALID')
+      expect((error as SubscriptionError).optionPaths).toEqual(['confirmSandboxInProduction'])
+    }
+    const app = await boot(
+      SubscriptionModule.forRoot({ ...unconfirmed, confirmSandboxInProduction: true })
+    )
+    await app.close()
+  })
+
   it.each([
     ['the module allows and the source does not', true, false],
     ['the module refuses and the source allows', false, true]

@@ -18,6 +18,12 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 ## [Unreleased]
 
+### Changed
+
+- **A production module asks for the sandbox confirmation when its source admits sandbox purchases.** With `isProduction: true` on the module and `allowSandbox` unset there, a source that declares `admitsSandbox: true` now needs `confirmSandboxInProduction: true` on the module, or the boot fails with `SUBSCRIPTION_CONFIG_INVALID`.
+
+**Apply to a derived backend:** if the module sets `isProduction: true` and the source admits sandbox purchases, set `confirmSandboxInProduction: true` on the module, or stop admitting sandbox on the source.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.

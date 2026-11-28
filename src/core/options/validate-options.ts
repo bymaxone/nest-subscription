@@ -96,10 +96,19 @@ function optional(path: string, accepts: (value: unknown) => boolean): Rule {
 
 const isBoolean = (value: unknown): boolean => typeof value === 'boolean'
 
-/** Sandbox access in production needs the second, separate confirming option (SEC07). */
+/** What the source declares it admits, or `undefined` when it declares nothing. */
+function admittedBySource(options: Candidate): unknown {
+  const source = read(options, 'source')
+  return isObject(source) ? Reflect.get(source, 'admitsSandbox') : undefined
+}
+
+/**
+ * Sandbox access in production needs the second, separate confirming option (SEC07). The access
+ * is the module's `allowSandbox`, or, when the module sets none, what the source admits.
+ */
 const sandboxRule: Rule = (options) => {
   const refused =
-    read(options, 'allowSandbox') === true &&
+    (read(options, 'allowSandbox') ?? admittedBySource(options)) === true &&
     read(options, 'isProduction') === true &&
     read(options, 'confirmSandboxInProduction') !== true
   return refused ? 'confirmSandboxInProduction' : undefined
@@ -113,8 +122,7 @@ const sandboxRule: Rule = (options) => {
  */
 const sandboxAgreementRule: Rule = (options) => {
   const allowed = read(options, 'allowSandbox')
-  const source = read(options, 'source')
-  const admitted = isObject(source) ? Reflect.get(source, 'admitsSandbox') : undefined
+  const admitted = admittedBySource(options)
   return isBoolean(allowed) && isBoolean(admitted) && allowed !== admitted
     ? 'allowSandbox'
     : undefined
