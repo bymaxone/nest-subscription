@@ -221,7 +221,7 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 **FR26. Reconciliation.** The service exposes a method that refreshes the accounts whose snapshot is older than a threshold, in bounded batches, with a rate limit that respects the source's. The host calls it from its own scheduled job. This covers a lost webhook. The same run delivers the changes that are still marked as not delivered (FR33).
 
-**FR27. Writes are ordered.** A stored snapshot is never replaced by one that the source reports as older. Where the store offers the optional conditional write (`replaceSnapshot`), the changes stored with a snapshot are worked out against the state that write replaced, also across processes; a refresh refused 20 times writes nothing and fails with `SUBSCRIPTION_SOURCE_UNAVAILABLE`. Without it they are worked out against the state read just before the write. States are told apart by their `fetchedAt`, so a refresh whose read did not start after the stored `fetchedAt` stores one millisecond past it.
+**FR27. Writes are ordered.** A stored snapshot is never replaced by one that the source reports as older. Where the store offers the optional conditional write (`replaceSnapshot`), the changes stored with a snapshot are worked out against the state that write replaced, also across processes; a refresh refused 20 times writes nothing and fails with `SUBSCRIPTION_SOURCE_UNAVAILABLE`. Without it they are worked out against the state read just before the write. States are told apart by their `fetchedAt`, so a refresh that writes, and whose read did not start after the stored `fetchedAt`, stores one millisecond past it.
 
 ### 3.10 Reading and guarding
 

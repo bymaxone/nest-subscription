@@ -67,8 +67,8 @@ export interface SubscriptionStore {
    * is refused the library reads and compares again; after 20 refusals in one refresh it writes
    * nothing and throws `SUBSCRIPTION_SOURCE_UNAVAILABLE`, and a webhook that asked for the refresh
    * is answered so that it is delivered again. States are told apart by their `fetchedAt`,
-   * compared to the millisecond, so a refresh whose read did not start after the stored
-   * `fetchedAt` stores one millisecond past it.
+   * compared to the millisecond, so a refresh that writes, and whose read did not start
+   * after the stored `fetchedAt`, stores one millisecond past it.
    *
    * Limits:
    *
@@ -78,8 +78,8 @@ export interface SubscriptionStore {
    * - A stored snapshot that does not fit the account is overwritten with `putSnapshot`, as no
    *   condition can name it.
    * - Hooks of different processes are not ordered.
-   * - When the source reports no `sourceUpdatedAt`, a read that started before a moved `fetchedAt`,
-   *   or in the same millisecond, can be refused as older; the stored state then stays until the
+   * - When the source reports no `sourceUpdatedAt`, a read that started before a moved `fetchedAt`
+   *   can be refused as older; the stored state then stays until the
    *   next refresh, and no notification is lost.
    * - A moved `fetchedAt` is later than the instant its read started: by milliseconds when reads
    *   coincide, and by up to the difference between clocks when the source reports

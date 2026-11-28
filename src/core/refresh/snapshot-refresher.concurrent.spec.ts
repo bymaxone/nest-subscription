@@ -44,10 +44,11 @@ const RECORD: SubscriptionRecord = {
 }
 
 /** The account with or without its one subscription. */
-function state(isGranted: boolean): SubscriptionSnapshot {
+function state(isGranted: boolean, updatedAt: string | null = null): SubscriptionSnapshot {
   return {
     ...createEmptySnapshot({ accountId: ACCOUNT.accountId, source: 'fake', fetchedAt: T0 }),
-    subscriptions: isGranted ? [RECORD] : []
+    subscriptions: isGranted ? [RECORD] : [],
+    sourceUpdatedAt: updatedAt
   }
 }
 
@@ -62,11 +63,12 @@ function writer(
   store: SubscriptionStore,
   hook: (n: SubscriptionChangeNotification) => void,
   isGranted: boolean,
-  at: string
+  at: string,
+  updatedAt: string | null = null
 ): () => Promise<void> {
   const clock = new ManualClock(at)
   const source = new FakeSubscriptionSource()
-  source.setAccount(ACCOUNT, state(isGranted))
+  source.setAccount(ACCOUNT, state(isGranted, updatedAt))
   const observer = new ObserverBridge(null, clock)
   const dispatcher = new ChangeDispatcher(hook, store, { warn: () => undefined }, observer)
   const refresher = new SnapshotRefresher(source, store, clock, null, dispatcher, observer)
@@ -148,6 +150,19 @@ describe('what the hook hears under concurrent writers', () => {
     const later = '2026-01-01T00:00:01.001Z'
     expect((await store.getSnapshot(KEY))?.snapshot.fetchedAt).toBe(later)
     expect(replace.mock.calls.map((call) => [call[1], call[4]])).toEqual([[T1, later]])
+  })
+
+  // The stored fetch instant is ahead of this writer's clock; the source orders the two states.
+  it('stores and reports a newer source state read by a clock that is behind', async () => {
+    const store = new InMemorySubscriptionStore({ logger: () => undefined })
+    const { heard, hook } = listener()
+    await writer(store, hook, true, T9, T0)()
+
+    await writer(store, hook, false, T1, T1)()
+
+    expect(await isGrantedIn(store)).toBe(false)
+    expect((await store.getSnapshot(KEY))?.snapshot.fetchedAt).toBe('2026-01-01T00:00:09.001Z')
+    expect(heard).toEqual([true, false])
   })
 
   // The stored state moves before every conditional attempt, so none of them holds.
