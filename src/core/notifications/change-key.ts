@@ -1,7 +1,6 @@
 /**
- * @fileoverview The stable key of a change: the same change, computed again from the same two
- * snapshots or from the same state read at another instant, gets the same key, and any other
- * change gets another. The key is derived from snapshot data only and holds no raw identifier.
+ * @fileoverview The stable key of a change: the same facts give the same key and any other facts
+ * give another. The key is derived from snapshot data only and holds no raw identifier.
  * @layer core
  */
 import { createHash } from 'node:crypto'
@@ -20,8 +19,9 @@ function digest(text: string): string {
  * subscription the change concerns (a change of the whole account is told apart from any
  * subscription) and the discriminating facts of its kind.
  *
- * The key does not depend on the fetch instant, on property order or on the order of the
- * subscriptions in a list: the facts a rule hands over are already sorted where a list is one.
+ * The key does not depend on property order or on the order of the subscriptions in a list: the
+ * facts handed over are already sorted where a list is one. An instant counts only when it is one
+ * of the facts.
  *
  * @param accountKey The output of `encodeAccountKey` for the account; it is hashed and never
  * appears in the key.

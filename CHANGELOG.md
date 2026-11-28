@@ -44,6 +44,10 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing. A store of your own must resolve `forgetEvent` for an identifier it does not hold, as the conformance case `forgets nothing but the named event identifier` already checks.
 
+- **A change that recurs gets a new key.** The keys of `will_not_renew`, `will_renew_again`, `entered_grace`, `put_on_hold`, `recovered`, `paused`, `resumed`, `product_changed`, `expired`, `transferred` and `overlap_detected` also name the stored state the change left, so one that is undone and happens again is a different key. `started`, `renewed`, `trial_converted` and `refunded` keep their keys. Changes already pending keep the keys they were stored with.
+
+**Apply to a derived backend:** nothing, unless the host computes or predicts keys itself.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.

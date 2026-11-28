@@ -6,6 +6,7 @@
 import { encodeAccountKey } from '@bymax-one/nest-subscription/internal'
 import {
   CHANGE_KINDS,
+  type ChangeKind,
   type SubscriptionChange,
   type SubscriptionSnapshot
 } from '@bymax-one/nest-subscription/shared'
@@ -49,6 +50,26 @@ function pairsOf(
 }
 
 /**
+ * The kinds that can happen again with the same facts of the source, such as a cancellation undone
+ * and made again inside one period. Their keys also name the state the change left, by the instant
+ * that state was read. The other kinds name one period or one instant of the source, which is
+ * already one occurrence.
+ */
+const RECURRING_KINDS: ReadonlySet<ChangeKind> = new Set([
+  'will_not_renew',
+  'will_renew_again',
+  'entered_grace',
+  'put_on_hold',
+  'recovered',
+  'paused',
+  'resumed',
+  'product_changed',
+  'expired',
+  'transferred',
+  'overlap_detected'
+])
+
+/**
  * Finds what changed from `previous` to `current`, before any key is derived. `previous` is
  * `null` on first contact.
  *
@@ -72,11 +93,18 @@ export function diffCandidates(
   return found.sort((a, b) => CHANGE_KINDS.indexOf(a.kind) - CHANGE_KINDS.indexOf(b.kind))
 }
 
+/** The change with the facts that tell this occurrence of it from an earlier one. */
+function occurrenceOf(change: RawChange, previous: SubscriptionSnapshot | null): RawChange {
+  if (previous === null || !RECURRING_KINDS.has(change.kind)) return change
+  return { ...change, facts: [...change.facts, previous.fetchedAt] }
+}
+
 /**
  * Compares two snapshots of one account into the typed list of what changed, each change with its
  * stable key. It is a pure function of the two snapshots: it never reads a webhook payload, a
- * clock or any other state, so the same two snapshots always give the same list, and the same
- * change gives the same key whenever and wherever it is computed. The order is that of
+ * clock or any other state, so the same two snapshots always give the same list and the same keys,
+ * whenever and wherever they are compared. The instant `current` was read is part of no key; the
+ * instant `previous` was read is part of the keys of {@link RECURRING_KINDS}. The order is that of
  * {@link diffCandidates}.
  *
  * @param previous The snapshot stored before, or `null` on first contact.
@@ -92,6 +120,6 @@ export function diffSnapshots(
   const accountKey = encodeAccountKey(current)
   return diffCandidates(previous, current).map((change) => ({
     kind: change.kind,
-    key: changeKey(accountKey, change)
+    key: changeKey(accountKey, occurrenceOf(change, previous))
   }))
 }
