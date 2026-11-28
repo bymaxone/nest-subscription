@@ -8,7 +8,7 @@ import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 
 import { rawChange, type RawChange } from './raw-change'
 
-/** How many subscriptions granted the named entitlement and gave access in a snapshot. */
+/** How many records granted the named entitlement and gave access in a snapshot. */
 export function grantorCount(snapshot: SubscriptionSnapshot | null, name: string): number {
   const held = snapshot?.entitlements.find((entitlement) => entitlement.name === name)
   return held?.grantingSubscriptionReferences.length ?? 0

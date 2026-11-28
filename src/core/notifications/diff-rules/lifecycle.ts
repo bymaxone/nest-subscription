@@ -14,7 +14,7 @@ function laterThan(first: string, second: string): boolean {
 
 /**
  * The subscriptions of an account that had none before: one `started` for each, told apart by the
- * start of its period. For an account that had one, `accessStartedChanges` decides.
+ * start of its period.
  */
 export function startedChanges(
   previous: SubscriptionSnapshot | null,

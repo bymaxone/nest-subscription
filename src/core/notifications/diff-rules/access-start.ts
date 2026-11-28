@@ -10,7 +10,7 @@ import { grantorCount } from './overlap'
 import { purchasesOf } from './purchases'
 import { rawChange, type RawChange } from './raw-change'
 
-/** The kinds that already tell the host that access of their reference began. */
+/** The kinds that stand in place of a `started` for their reference. */
 const ANNOUNCING_KINDS: ReadonlySet<ChangeKind> = new Set([
   'started',
   'trial_converted',

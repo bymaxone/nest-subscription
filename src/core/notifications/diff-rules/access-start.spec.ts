@@ -119,13 +119,13 @@ describe('access that begins on an account with records', () => {
   })
 
   it('reports one start for a record that grants two entitlements', () => {
-    // Scenario: the returning subscription grants both.
+    // Scenario: the new subscription grants both.
     const back = snapshotOf([EXPIRED, SECOND], [], { 'sub-2': ['premium', 'extra'] })
     expect(changesOf(snapshotOf([EXPIRED]), back)).toStrictEqual(['started sub-2'])
   })
 
   it('reports each start once when the account held purchases and no subscription', () => {
-    // Scenario: both rules for `started` see the new subscription.
+    // Scenario: two rules see the new subscription.
     const expired = { ...PURCHASE, givesAccess: false }
     expect(changesOf(snapshotOf([], [expired]), snapshotOf([SECOND], [expired]))).toStrictEqual([
       'started sub-2'
