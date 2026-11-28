@@ -369,6 +369,24 @@ describe('revenueCatSource webhooks', () => {
     ).toMatchObject({ accepted: true })
   })
 
+  it('handles the rejection of a callback that returns a promise', async () => {
+    // Scenario: an async callback fits the `void` signature; an unhandled rejection would end the
+    // process. The thenable records that someone listened to it.
+    const then = jest.fn((_resolve: unknown, reject: (reason: Error) => void) => {
+      reject(new Error('callback rejected'))
+    })
+    const source = sourceWith({
+      webhookAuthorization: AUTHORIZATION,
+      onUnidentifiedEvent: () => ({ then })
+    })
+    const anonymous = encode(loadFixture('webhook-anonymous-only'))
+    expect(
+      await source.verifyWebhook({ rawBody: anonymous, headers: { authorization: AUTHORIZATION } })
+    ).toMatchObject({ accepted: true })
+    await new Promise((resolve) => setImmediate(resolve))
+    expect(then).toHaveBeenCalledTimes(1)
+  })
+
   it('accepts a verified event of a kind it has never seen and names its accounts, so the receiver refreshes', async () => {
     // Scenario: FR20.
     const source = sourceWith({ webhookAuthorization: AUTHORIZATION })

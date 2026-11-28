@@ -32,6 +32,10 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing. A test or a proxy that stands in for RevenueCat and answers an unknown customer with a bare 404 has to answer `{"type":"resource_missing"}`.
 
+- A promise that `onUnidentifiedEvent` returns is now watched: its rejection is dropped, as a throw already was, and the verification does not wait for it.
+
+**Apply to a derived backend:** nothing.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.
