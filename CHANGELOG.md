@@ -20,7 +20,7 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 ### Documentation
 
-- The README shows `createFailingStore` and its types, adds examples by subpath for the exports that had none, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.
+- The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.
 - `SECURITY.md` states the threat model: code in the same process is trusted, and the in-process guards are hardening and not a security boundary.
 
 ## [1.0.1] - 2026-11-27
