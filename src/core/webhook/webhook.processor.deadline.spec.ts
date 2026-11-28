@@ -407,8 +407,8 @@ describe('WebhookProcessor record of an event', () => {
   it.each(['recorded', 'rejected'] as const)(
     'removes the identifier when a record held past the deadline ends as %s',
     async (how) => {
-      // Scenario: the record settles after the answer. Whatever it left is removed, so the
-      // source's retry is processed.
+      // Scenario: the record settles after the answer. No read is started for the answered
+      // delivery, and whatever the record left is removed, so the source's retry is processed.
       const { h, settle } = heldRecord()
       const forget = jest.spyOn(h.store, 'forgetEvent')
       const request = h.source.buildRequest(NOTIFICATION)
@@ -417,6 +417,7 @@ describe('WebhookProcessor record of an event', () => {
       h.expire()
       await pending
       await settle(how)
+      expect(h.source.totalReads).toBe(0)
       expect(forget).toHaveBeenCalledWith('fake', 'evt-1')
       await expect(h.processor.process(request)).resolves.toStrictEqual({
         kind: 'processed',
@@ -438,6 +439,18 @@ describe('WebhookProcessor record of an event', () => {
     await settle('seen')
     expect(forget).toHaveBeenCalledTimes(0)
     await expect(h.processor.process(request)).resolves.toStrictEqual({ kind: 'duplicate' })
+  })
+
+  it('keeps an identifier already seen when the wait ends first', async () => {
+    // Scenario: the wait is over at once and the record has already said the event was seen. The
+    // identifier belongs to an earlier delivery, so nothing is removed.
+    const { source, store, processor } = build(() => Promise.resolve())
+    const request = source.buildRequest(NOTIFICATION)
+    await store.markEventProcessed('fake', 'evt-1', T0)
+    const forget = jest.spyOn(store, 'forgetEvent')
+    await processor.process(request)
+    await flush()
+    expect(forget).toHaveBeenCalledTimes(0)
   })
 
   it('starts the removal again when the removal of a late record fails', async () => {

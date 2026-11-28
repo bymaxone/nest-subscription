@@ -25,6 +25,7 @@ export const CACHE_CALL_TIMEOUT_MS = 1000
 /** The answer of one call to the host's cache; it rejects when the call has not answered in time. */
 async function bounded<T>(call: Promise<T>): Promise<T> {
   const result = await withDeadline(Promise.resolve(call), CACHE_CALL_TIMEOUT_MS, timerWait)
+  // Stryker disable next-line StringLiteral: every caller discards the error, so nothing can read the text; remove this directive if a caller ever logs it or passes it on.
   if (result.timedOut) throw new Error('the cache did not answer in time')
   return result.value
 }

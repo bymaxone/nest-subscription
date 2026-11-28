@@ -366,3 +366,63 @@ describe('storeConformanceCases', () => {
     }
   )
 })
+
+/** The case of that name, which the suite is known to hold. */
+function caseNamed(name: string): StoreConformanceCase {
+  const found = storeConformanceCases().find((one) => one.name === name)
+  if (found === undefined) throw new Error(`no case named ${name}`)
+  return found
+}
+
+describe('what the overlap and conditional-write cases put a store through', () => {
+  it('overlaps a clear and a write with each of the two started first', async () => {
+    // Scenario: a store may lose a change in one order only, so the case has to make both.
+    const calls: string[] = []
+    await caseNamed('keeps both a clear and the change of a write that overlaps it').run(() => {
+      const store = new InMemorySubscriptionStore({ logger: () => undefined })
+      const put = store.putSnapshot.bind(store)
+      const clear = store.clearPendingChanges.bind(store)
+      jest.spyOn(store, 'putSnapshot').mockImplementation((...args) => {
+        calls.push('write')
+        return put(...args)
+      })
+      jest.spyOn(store, 'clearPendingChanges').mockImplementation((...args) => {
+        calls.push('clear')
+        return clear(...args)
+      })
+      return store
+    })
+    // Each run seeds with one write, then makes the two overlapping calls.
+    expect(calls).toStrictEqual(['write', 'clear', 'write', 'write', 'write', 'clear'])
+  })
+
+  it.each([
+    ['replaceSnapshot writes only over the fetch instant it expects', ['c2', 'c2', 'c3']],
+    ['replaceSnapshot refuses an older instant', ['c2']]
+  ])('hands a change to every write refused by "%s"', async (name, expected) => {
+    // Scenario: a store that keeps the changes of a write it refuses is caught only when the
+    // refused write carries one.
+    const refused: string[] = []
+    await caseNamed(name).run(() => {
+      const store = new InMemorySubscriptionStore({ logger: () => undefined })
+      const replace = store.replaceSnapshot.bind(store)
+      jest.spyOn(store, 'replaceSnapshot').mockImplementation(async (...args) => {
+        const accepted = await replace(...args)
+        if (!accepted) refused.push(args[3].map((change) => change.key).join())
+        return accepted
+      })
+      return store
+    })
+    expect(refused).toStrictEqual(expected)
+  })
+
+  it('says that two writes replaced one state when a store lets both through', async () => {
+    // Scenario: the host reads this sentence to know which guarantee its store lacks.
+    const create = BROKEN_STORES['replaceIgnoresTheExpectation']
+    if (create === undefined) throw new Error('the broken store is missing')
+    const run = caseNamed(
+      'replaceSnapshot lets exactly one of two overlapping writes of one state through'
+    ).run(create)
+    await expect(run).rejects.toThrow('two writes replaced one state')
+  })
+})

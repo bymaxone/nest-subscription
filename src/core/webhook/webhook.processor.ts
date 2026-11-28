@@ -202,10 +202,10 @@ export class WebhookProcessor {
     references: readonly AccountReference[]
   ): Promise<Settled> {
     const record = this.#record(eventId)
-    let isRecordSettled = false
+    let isRemovalDue = false
     let isAbandoned = false
     const work = record.then(async (recorded): Promise<WebhookOutcome> => {
-      isRecordSettled = true
+      isRemovalDue = recorded !== 'seen'
       if (recorded === 'seen') return { kind: 'duplicate' }
       if (recorded === 'unavailable' || isAbandoned) return { kind: 'failed' }
       return (await this.#refreshAll(references))
@@ -214,7 +214,7 @@ export class WebhookProcessor {
     })
     const outcome = await this.#beforeDeadline(work)
     if (outcome !== null && outcome.kind !== 'failed') return { outcome }
-    if (isRecordSettled) {
+    if (isRemovalDue) {
       return { outcome: { kind: 'failed' }, removal: this.#release(key, eventId) }
     }
     isAbandoned = true

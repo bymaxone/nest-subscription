@@ -20,14 +20,17 @@ export const HEADER_ONLY_WARNING =
   'RevenueCat webhooks are verified by the static authorization header only; configure the signing secret to verify the HMAC signature as well.'
 
 /**
- * Whether a value is a `WebhookRequest`: raw bytes and a headers object. The port promises both,
- * but a host that calls the adapter itself may not keep the promise.
+ * Whether a value is a `WebhookRequest` that carries an event: at least one raw byte and a headers
+ * object. The port promises the shape, but a host that calls the adapter itself may not keep the
+ * promise, and a body with no bytes carries no event while the header alone does not cover it.
  */
 function isWebhookRequest(request: unknown): request is WebhookRequest {
   if (typeof request !== 'object' || request === null) return false
   const headers: unknown = Reflect.get(request, 'headers')
+  const body: unknown = Reflect.get(request, 'rawBody')
   return (
-    Reflect.get(request, 'rawBody') instanceof Uint8Array &&
+    body instanceof Uint8Array &&
+    body.byteLength > 0 &&
     typeof headers === 'object' &&
     headers !== null
   )
@@ -44,8 +47,7 @@ export function isAuthentic(options: ResolvedRevenueCatOptions, request: unknown
   const { webhookAuthorization, webhookSigningSecret } = options
   if (webhookAuthorization === null && webhookSigningSecret === null) return false
   try {
-    // A body with no bytes carries no event, and the header alone does not cover the body.
-    if (!isWebhookRequest(request) || request.rawBody.byteLength === 0) return false
+    if (!isWebhookRequest(request)) return false
     const header =
       webhookAuthorization === null || verifyAuthorization(webhookAuthorization, request.headers)
     const signature =

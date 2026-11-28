@@ -67,6 +67,10 @@ export interface SubscriptionStore {
    * stored state keeps moving under one refresh, which then writes with `putSnapshot`. A store
    * without it is written with `putSnapshot`, and a write by another process between the read and
    * the write can then leave changes worked out against a state that was already replaced.
+   *
+   * States are told apart by their `fetchedAt`: when the reads behind two writes of one account
+   * started in the same millisecond, a change can go unreported. A host that must not miss a
+   * revocation reads the access state and does not rely on the notifications alone.
    */
   replaceSnapshot?(
     key: string,
