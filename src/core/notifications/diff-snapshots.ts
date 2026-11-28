@@ -12,6 +12,7 @@ import {
 } from '@bymax-one/nest-subscription/shared'
 
 import { changeKey } from './change-key'
+import { accessStartedChanges } from './diff-rules/access-start'
 import { billingTroubleChanges } from './diff-rules/billing-trouble'
 import { lifecycleChanges, startedChanges } from './diff-rules/lifecycle'
 import { overlapChanges } from './diff-rules/overlap'
@@ -91,7 +92,8 @@ export function diffCandidates(
     ...transferChanges(previous, current),
     ...overlapChanges(previous, current)
   ]
-  return found.sort((a, b) => CHANGE_KINDS.indexOf(a.kind) - CHANGE_KINDS.indexOf(b.kind))
+  const all = [...found, ...accessStartedChanges(previous, current, found)]
+  return all.sort((a, b) => CHANGE_KINDS.indexOf(a.kind) - CHANGE_KINDS.indexOf(b.kind))
 }
 
 /** The change with the facts that tell this occurrence of it from an earlier one. */

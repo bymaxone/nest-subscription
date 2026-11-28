@@ -242,6 +242,8 @@ Both need the unparsed request body. The documentation says how to obtain it in 
 
 `started`, `renewed`, `trial_converted`, `will_not_renew`, `will_renew_again`, `entered_grace`, `put_on_hold`, `recovered`, `paused`, `resumed`, `product_changed`, `expired`, `refunded`, `transferred`, `overlap_detected`.
 
+`started` reports that access began (see the README, "Change notifications", for which records get one). It does not mean a first purchase. Access that moves from one subscription to another between two stored states reports no `started`, so a host derives access from the snapshot the call carries.
+
 **FR33. Delivery.** At least once, after the store write, never inside the webhook's response deadline. The changes are stored with the snapshot, in the same write, marked as not delivered; the mark is cleared after the hook returns, and reconciliation delivers what is still marked (D17). Each notification carries a key that is stable for the same change (for a renewal, the subscription and the period), so the host can make its reaction idempotent. A hook that throws does not undo the stored state; the failure is logged and reported to the observer, and the changes stay marked.
 
 **FR34. Observer.** An optional observer receives counters and timings: webhooks by outcome, refreshes, source errors, cache hits, guard decisions. No account identifier and no payload in it.

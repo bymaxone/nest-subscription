@@ -20,6 +20,10 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 ### Changed
 
+- **`started` now means that access began**, on first contact or after a period with no access, so it is not a first-purchase signal. On an account that holds records, one is reported for a subscription or purchase that did not give access before and now grants an entitlement that no record gave access to, unless `recovered`, `resumed` or `trial_converted` reports that return. Access that moves between two subscriptions from one stored state to the next reports none.
+
+**Apply to a derived backend:** a hook that grants access on `started` needs no change. A reaction meant for a first purchase only, such as a welcome message, has to check for it on its own. Derive access from `notification.current`.
+
 - **A production module asks for the sandbox confirmation when its source admits sandbox purchases.** With `isProduction: true` on the module and `allowSandbox` unset there, a source that declares `admitsSandbox: true` now needs `confirmSandboxInProduction: true` on the module, or the boot fails with `SUBSCRIPTION_CONFIG_INVALID`.
 
 **Apply to a derived backend:** if the module sets `isProduction: true` and the source admits sandbox purchases, set `confirmSandboxInProduction: true` on the module, or stop admitting sandbox on the source.

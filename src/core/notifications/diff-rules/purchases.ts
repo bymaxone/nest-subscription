@@ -21,7 +21,8 @@ export function purchasesOf(
 
 /**
  * One `started` for each purchase of an account that had neither a subscription nor a purchase
- * before, told apart by when it was purchased. A purchase beside an existing one is not a start.
+ * before, told apart by when it was purchased. For any other account, `accessStartedChanges`
+ * decides.
  */
 export function purchaseStartedChanges(
   previous: SubscriptionSnapshot | null,
