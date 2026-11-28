@@ -119,7 +119,8 @@ export interface SubscriptionSnapshot {
   readonly sourceCustomer: SourceCustomerReference | null
   /**
    * When the library started the read of the source, or one millisecond past the `fetchedAt` of
-   * the snapshot it replaced when the read did not start after it.
+   * the snapshot it replaced when the read started at that instant, or started before it and the
+   * source reported `sourceUpdatedAt`.
    */
   readonly fetchedAt: string
   /** How fresh the source says its data is; `null` when it does not say. */

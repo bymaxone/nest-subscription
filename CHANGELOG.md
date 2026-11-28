@@ -36,7 +36,7 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing.
 
-- **`fetchedAt` is the instant the read of the source started**, not the instant it finished; where that is not after the stored `fetchedAt`, the snapshot is stored with one millisecond past it. A source that reports no `sourceUpdatedAt`, as RevenueCat does, is ordered by it, so of two reads the one that started later is kept. Staleness is counted from the same instant. Instances order each other by their own clocks, so keep the clocks synchronized.
+- **`fetchedAt` is the instant the read of the source started**, not the instant it finished; where it equals the stored `fetchedAt`, or is earlier and the source reported `sourceUpdatedAt`, the snapshot is stored with one millisecond past the stored one. A source that reports no `sourceUpdatedAt`, as RevenueCat does, is ordered by it, so of two reads the one that started later is kept. Staleness is counted from the same instant. Instances order each other by their own clocks, so keep the clocks synchronized.
 
 **Apply to a derived backend:** nothing, unless a test expects `fetchedAt` to be the instant the read ended.
 

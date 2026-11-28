@@ -165,6 +165,21 @@ describe('what the hook hears under concurrent writers', () => {
     expect(heard).toEqual([true, false])
   })
 
+  // A source that gives its instant only sometimes: a read without one is ordered by its own start.
+  it('keeps the instant of a read that has no source instant and started earlier', async () => {
+    const store = new InMemorySubscriptionStore({ logger: () => undefined })
+    const { heard, hook } = listener()
+    await writer(store, hook, true, T9, T0)()
+    await writer(store, hook, false, T1)()
+    const stored = (await store.getSnapshot(KEY))?.snapshot.fetchedAt
+
+    await writer(store, hook, true, '2026-01-01T00:00:03.000Z', '2026-01-01T00:00:02.000Z')()
+
+    expect(await isGrantedIn(store)).toBe(true)
+    expect(heard).toEqual([true, false, true])
+    expect(stored).toBe(T1)
+  })
+
   // The stored state moves before every conditional attempt, so none of them holds.
   it('writes nothing when the stored state moves under every attempt', async () => {
     const store = new InMemorySubscriptionStore({ logger: () => undefined })

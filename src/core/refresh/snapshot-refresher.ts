@@ -87,9 +87,10 @@ function orderInstant(snapshot: SubscriptionSnapshot): string {
 
 /**
  * The snapshot to write over `previous`: its `fetchedAt` is the instant the read started, moved to
- * one millisecond after the stored one when it is not already later. Two states stored in
- * succession therefore never share the instant a conditional write and a change key tell them
- * apart by.
+ * one millisecond after the stored one when it equals it, or when it is earlier and the source
+ * gave the read an instant of its own. Two states stored in succession therefore never share the
+ * instant a conditional write and a change key tell them apart by. An earlier read with no source
+ * instant keeps its own: it would be ordered by the moved one, ahead of states newer than it.
  */
 function succeeding(
   previous: SubscriptionSnapshot | null,
@@ -97,7 +98,8 @@ function succeeding(
 ): SubscriptionSnapshot {
   if (previous === null) return snapshot
   const stored = parseInstant(previous.fetchedAt)
-  if (parseInstant(snapshot.fetchedAt) > stored) return snapshot
+  const started = parseInstant(snapshot.fetchedAt)
+  if (started > stored || (started < stored && snapshot.sourceUpdatedAt === null)) return snapshot
   return { ...snapshot, fetchedAt: new Date(stored + 1).toISOString() }
 }
 
