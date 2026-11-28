@@ -1,6 +1,6 @@
 # nest-subscription — Repository Instructions
 
-`@bymax-one/nest-subscription` is a public npm library for NestJS 11 that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter (RevenueCat, later Bymax Finance), and exposes it through a service, a guard and typed change notifications. Access is granted only from a read of the source, never from a webhook payload. Runtime: Node 26+. Package manager: pnpm.
+`@bymax-one/nest-subscription` is a public npm library for NestJS 11 that keeps one normalized subscription snapshot per account, fed by one billing source through an adapter (RevenueCat, later Bymax Finance), and exposes it through a service, a guard and typed change notifications. Access is granted only from a read of the source, never from a webhook payload. Runtime: Node 24+. Package manager: pnpm.
 
 ## Commands
 

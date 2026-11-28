@@ -70,6 +70,12 @@ what moves, and that note is the compatibility contract until strict SemVer begi
   _Apply to a derived backend:_ nothing to change; read the stored state with `getSnapshot` where
   the stored snapshot is the one wanted.
 
+- **Node.js 24 floor.** The package requires Node.js 24 or newer, where it required 26. It is
+  built for Node.js 24 and its checks run on it.
+
+  _Apply to a derived backend:_ nothing to change; a backend on Node.js 24 can now install the
+  package.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.

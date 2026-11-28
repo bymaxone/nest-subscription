@@ -24,7 +24,7 @@ const common = {
     'reflect-metadata',
     'rxjs'
   ],
-  target: 'node26' as const,
+  target: 'node24' as const,
   clean: false,
   splitting: false,
   treeshake: true,

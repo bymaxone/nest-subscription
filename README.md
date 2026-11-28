@@ -117,7 +117,7 @@ A host loads only the adapter it uses: with one adapter configured, the other ad
 | `rxjs`                                          | `^7.8.0`   | the root entry point                                                                                                  |
 | `@bymax-one/nest-cache`, `@bymax-one/nest-core` | optional   | declared so a host on the family resolves compatible ranges; the library imports neither today, and runs without them |
 
-The runtime is **Node.js 26 or newer**. A backend moves to Node.js 26 before it installs this library.
+The runtime is **Node.js 24 or newer**.
 
 ---
 
@@ -644,7 +644,7 @@ Not listed because the repository does not run them: a dynamic scan of a deploye
 | Area            | Choice                                                  |
 | --------------- | ------------------------------------------------------- |
 | Language        | TypeScript 5.9, `strict`                                |
-| Runtime         | Node.js 26 or newer                                     |
+| Runtime         | Node.js 24 or newer                                     |
 | Framework       | NestJS 11 (peer)                                        |
 | Build           | tsup, ESM and CommonJS with declarations for each       |
 | Unit and e2e    | Jest, with supertest for the end-to-end suite           |

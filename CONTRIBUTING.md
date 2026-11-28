@@ -8,7 +8,7 @@ Thank you for your interest in contributing! This document describes the workflo
 
 ## Prerequisites
 
-- Node.js >= 26
+- Node.js >= 24
 - pnpm 11 (`corepack enable`)
 
 ## Getting started
