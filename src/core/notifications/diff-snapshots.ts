@@ -56,6 +56,7 @@ function pairsOf(
  * already one occurrence.
  */
 const RECURRING_KINDS: ReadonlySet<ChangeKind> = new Set([
+  'started',
   'will_not_renew',
   'will_renew_again',
   'entered_grace',

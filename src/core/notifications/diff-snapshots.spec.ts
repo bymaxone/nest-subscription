@@ -376,7 +376,7 @@ describe('diffSnapshots', () => {
   })
 
   /** The kinds whose key names one period or one instant of the source, so they happen once. */
-  const ONCE: readonly ChangeKind[] = ['started', 'renewed', 'trial_converted', 'refunded']
+  const ONCE: readonly ChangeKind[] = ['renewed', 'trial_converted', 'refunded']
 
   it.each(ROWS)('tells apart by the state it left a $kind change only if it can recur', (row) => {
     // Scenario: the same two states, with the earlier one read at another instant. A kind the
@@ -396,6 +396,37 @@ describe('diffSnapshots', () => {
     const first = diffSnapshots(at('yes', '01'), at('no', '02'))
     const again = diffSnapshots(at('yes', '03'), at('no', '04'))
     expect(again[0]?.kind).toBe(first[0]?.kind)
+    expect(again[0]?.key).not.toBe(first[0]?.key)
+  })
+
+  it.each([
+    ['subscription', snapshotOf([record()], '2026-01-02T00:00:00.000Z')],
+    [
+      'purchase',
+      {
+        ...snapshotOf([], '2026-01-02T00:00:00.000Z'),
+        nonRenewingPurchases: [
+          {
+            purchaseReference: 'p1',
+            entitlementNames: ['pro'],
+            givesAccess: true,
+            origin: 'app_store' as const,
+            environment: 'production' as const,
+            productReference: 'lifetime',
+            purchasedAt: '2026-01-01T00:00:00.000Z',
+            accessUntil: null,
+            refundedAt: null
+          }
+        ]
+      }
+    ]
+  ])('gives a %s that starts again after leaving the account another key', (_name, held) => {
+    // Scenario: it starts, leaves the account and comes back with the same facts of the source.
+    const none = (day: string): SubscriptionSnapshot =>
+      snapshotOf([], `2026-01-${day}T00:00:00.000Z`)
+    const first = diffSnapshots(none('01'), held)
+    const again = diffSnapshots(none('03'), held)
+    expect(again[0]?.kind).toBe('started')
     expect(again[0]?.key).not.toBe(first[0]?.key)
   })
 
