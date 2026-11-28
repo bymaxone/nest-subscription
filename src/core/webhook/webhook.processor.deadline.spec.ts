@@ -2,9 +2,10 @@
  * @fileoverview Unit tests for the receiver's response deadline.
  *
  * Goal: a read slower than the deadline is answered as a failure before the deadline by the
- * injected clock, is not abandoned, frees the event for the retry, and leaves no timer pending.
+ * injected clock, is not abandoned, frees the event for the retry, and leaves no timer pending; an identifier the store may have
+ * recorded late or without acknowledging it is removed.
  * Mocks: the fake source with a read held by hand; a deadline wait that moves the manual clock and
- * resolves when the test says; Jest fake timers for the default wait.
+ * resolves when the test says; `markEventProcessed` replaced so a test settles it; Jest fake timers for the default wait.
  * @layer core
  */
 import {
@@ -322,6 +323,143 @@ describe('WebhookProcessor removal of a failed event', () => {
     ])
     expect(capture.lines).toHaveLength(1)
     expect(JSON.stringify([capture.lines, capture.payloads])).not.toContain('sentinel')
+  })
+})
+
+/** A processor whose first record of an event settles only when the test says so. */
+function heldRecord(): {
+  h: ReturnType<typeof build>
+  /** The store's own method, which records without being held. */
+  record: InMemorySubscriptionStore['markEventProcessed']
+  calls: () => number
+  settle: (how: 'recorded' | 'seen' | 'rejected') => Promise<void>
+} {
+  const h = build()
+  const real = h.store.markEventProcessed.bind(h.store)
+  let held: ((how: 'recorded' | 'seen' | 'rejected') => void) | undefined
+  let calls = 0
+  jest.spyOn(h.store, 'markEventProcessed').mockImplementation((source, id, at) => {
+    calls += 1
+    if (calls > 1) return real(source, id, at)
+    return new Promise((resolve, reject) => {
+      held = (how) => {
+        if (how === 'rejected') reject(new Error('store down'))
+        else if (how === 'seen') resolve(false)
+        else resolve(real(source, id, at))
+      }
+    })
+  })
+  return {
+    h,
+    record: real,
+    calls: () => calls,
+    settle: async (how) => {
+      held?.(how)
+      await flush()
+    }
+  }
+}
+
+describe('WebhookProcessor record of an event', () => {
+  it('removes the identifier when the store rejects after recording it', async () => {
+    // Scenario: the store commits the record and the acknowledgement is lost. The identifier is
+    // removed, so the source's retry is processed instead of being answered as already seen.
+    const h = build()
+    const real = h.store.markEventProcessed.bind(h.store)
+    let lose = true
+    jest.spyOn(h.store, 'markEventProcessed').mockImplementation(async (source, id, at) => {
+      const isNew = await real(source, id, at)
+      if (!lose) return isNew
+      lose = false
+      throw new Error('acknowledgement lost')
+    })
+    const request = h.source.buildRequest(NOTIFICATION)
+    await expect(h.processor.process(request)).resolves.toStrictEqual({ kind: 'failed' })
+    expect(h.source.totalReads).toBe(0)
+    await flush()
+    await expect(h.processor.process(request)).resolves.toStrictEqual({
+      kind: 'processed',
+      accounts: 1
+    })
+  })
+
+  it('answers failed at the deadline when the record of the event does not settle', async () => {
+    // Scenario: the store is frozen at the first call. The answer comes with the deadline, the
+    // observer hears it, nothing is read, and a retry meanwhile is a failure with no store call.
+    const { h, calls } = heldRecord()
+    const request = h.source.buildRequest(NOTIFICATION)
+    const pending = h.processor.process(request)
+    await flush()
+    h.expire()
+    await expect(pending).resolves.toStrictEqual({ kind: 'failed' })
+    await expect(h.processor.process(request)).resolves.toStrictEqual({ kind: 'failed' })
+    expect(calls()).toBe(1)
+    expect(h.source.totalReads).toBe(0)
+    expect(h.capture.payloads.filter((entry) => entry.method === 'onWebhook')).toStrictEqual([
+      {
+        method: 'onWebhook',
+        payload: { outcome: 'failed', durationMs: DEADLINE_MS, retained: false }
+      },
+      { method: 'onWebhook', payload: { outcome: 'failed', durationMs: 0, retained: false } }
+    ])
+  })
+
+  it.each(['recorded', 'rejected'] as const)(
+    'removes the identifier when a record held past the deadline ends as %s',
+    async (how) => {
+      // Scenario: the record settles after the answer. Whatever it left is removed, so the
+      // source's retry is processed.
+      const { h, settle } = heldRecord()
+      const forget = jest.spyOn(h.store, 'forgetEvent')
+      const request = h.source.buildRequest(NOTIFICATION)
+      const pending = h.processor.process(request)
+      await flush()
+      h.expire()
+      await pending
+      await settle(how)
+      expect(forget).toHaveBeenCalledWith('fake', 'evt-1')
+      await expect(h.processor.process(request)).resolves.toStrictEqual({
+        kind: 'processed',
+        accounts: 1
+      })
+    }
+  )
+
+  it('removes nothing when a record held past the deadline says the event was seen', async () => {
+    // Scenario: the identifier belongs to an earlier delivery, so it stays recorded.
+    const { h, record, settle } = heldRecord()
+    await record('fake', 'evt-1', T0)
+    const forget = jest.spyOn(h.store, 'forgetEvent')
+    const request = h.source.buildRequest(NOTIFICATION)
+    const pending = h.processor.process(request)
+    await flush()
+    h.expire()
+    await pending
+    await settle('seen')
+    expect(forget).toHaveBeenCalledTimes(0)
+    await expect(h.processor.process(request)).resolves.toStrictEqual({ kind: 'duplicate' })
+  })
+
+  it('starts the removal again when the removal of a late record fails', async () => {
+    // Scenario: the record lands after the deadline and its removal fails. The retry starts the
+    // removal again and is answered as a failure.
+    let refuse = true
+    const forgotten: string[] = []
+    const { h, settle } = heldRecord()
+    jest.spyOn(h.store, 'forgetEvent').mockImplementation((_source, id) => {
+      forgotten.push(id)
+      return refuse ? Promise.reject(new Error('store down')) : Promise.resolve()
+    })
+    const request = h.source.buildRequest(NOTIFICATION)
+    const pending = h.processor.process(request)
+    await flush()
+    h.expire()
+    await pending
+    await settle('recorded')
+    refuse = false
+    await expect(h.processor.process(request)).resolves.toStrictEqual({ kind: 'failed' })
+    await flush()
+    expect(forgotten).toStrictEqual(['evt-1', 'evt-1'])
   })
 })
 
