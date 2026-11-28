@@ -200,11 +200,13 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   keysIgnoreCase: [CASE.caseKeys],
   longKeysCut: [CASE.longKeys],
   eventIdsFolded: [CASE.exactEventIds],
+  eventIdsTrimmed: [CASE.exactEventIds],
   wholeSecondOrdering: [CASE.milliseconds],
   replaceIgnoresTheExpectation: [CASE.replaceExpected, CASE.replaceOnce, CASE.replaceMillisecond],
   replaceIgnoresOrdering: [CASE.replaceOlder],
   replaceCheckedThenWritten: [CASE.replaceOnce],
   replaceExpectsByTheSecond: [CASE.replaceMillisecond],
+  replaceKeepsRefusedChanges: [CASE.replaceExpected, CASE.replaceMillisecond],
   staleListingIncludesTheThreshold: [CASE.milliseconds, CASE.staleOnly]
 }
 

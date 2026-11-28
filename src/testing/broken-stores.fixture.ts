@@ -411,16 +411,16 @@ const exactnessDefects: Readonly<Record<string, () => SubscriptionStore>> = {
       // The keys cleared so far are read, then written back after a wait: of two overlapping
       // clears the later write forgets the earlier one.
       clearPendingChanges: async (key, keys) => {
-        const read = cleared.get(key) ?? []
+        const read = new Set(cleared.get(key))
         await Promise.resolve()
         cleared.set(key, [...read, ...keys])
       },
       getSnapshot: async (key) => {
         const held = await base.getSnapshot(key)
-        const gone = cleared.get(key) ?? []
+        const gone = new Set(cleared.get(key))
         return held === null
           ? null
-          : { ...held, pendingChanges: held.pendingChanges.filter((c) => !gone.includes(c.key)) }
+          : { ...held, pendingChanges: held.pendingChanges.filter((c) => !gone.has(c.key)) }
       }
     })
   },
@@ -442,9 +442,14 @@ const exactnessDefects: Readonly<Record<string, () => SubscriptionStore>> = {
   eventIdsFolded: () => {
     const base = good()
     return withDefect(base, {
-      markEventProcessed: (source, id, at) =>
-        base.markEventProcessed(source, id.toLowerCase().trimEnd(), at),
-      forgetEvent: (source, id) => base.forgetEvent(source, id.toLowerCase().trimEnd())
+      markEventProcessed: (source, id, at) => base.markEventProcessed(source, id.toLowerCase(), at),
+      forgetEvent: (source, id) => base.forgetEvent(source, id.toLowerCase())
+    })
+  },
+  eventIdsTrimmed: () => {
+    const base = good()
+    return withDefect(base, {
+      markEventProcessed: (source, id, at) => base.markEventProcessed(source, id.trimEnd(), at)
     })
   },
   wholeSecondOrdering: () => {
@@ -475,6 +480,13 @@ const exactnessDefects: Readonly<Record<string, () => SubscriptionStore>> = {
       const sameSecond =
         stored !== null && expected !== null && wholeSecond(stored) === wholeSecond(expected)
       return base.replaceSnapshot(key, sameSecond ? stored : expected, snapshot, changes, at)
+    }),
+  replaceKeepsRefusedChanges: () =>
+    conditional((base) => async (key, expected, snapshot, changes, at) => {
+      if (await base.replaceSnapshot(key, expected, snapshot, changes, at)) return true
+      const held = await base.getSnapshot(key)
+      await (held && base.putSnapshot(key, held.snapshot, changes, at))
+      return false
     })
 }
 

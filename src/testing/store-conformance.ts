@@ -506,6 +506,7 @@ const conditionalCases: readonly StoreConformanceCase[] = [
       assert.equal(await replace(ACC_KEY, MS1, snapshotOf(ACC, MS3), [C2], MS3), false)
       assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, MS2), [C1]))
       assert.equal(await replace(ACC_KEY, MS2, snapshotOf(ACC, MS3), [C3], MS3), true)
+      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, MS3), [C1, C3]))
     }
   }
 ]
