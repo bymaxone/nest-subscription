@@ -540,7 +540,7 @@ async function duringAnOutage(scenario: () => Promise<void>): Promise<void> {
   - A stored snapshot that does not fit the account is written with `putSnapshot`, as no condition can name it.
   - Hooks of different processes are not ordered.
   - When the source reports no `sourceUpdatedAt`, a read that started before a moved `fetchedAt` can be refused as older; the stored state then stays until the next refresh, and no notification is lost.
-  - A moved `fetchedAt` is later than the instant its read started: by milliseconds when reads coincide, and by up to the difference between clocks when the source reports `sourceUpdatedAt` and the process that wrote the stored state runs ahead.
+  - A moved `fetchedAt` is later than the instant its read started.
   - When the source reports `sourceUpdatedAt` for some reads only, a read without it can store a `fetchedAt` earlier than the one it replaced. Should a later write then repeat an earlier `fetchedAt` to the millisecond, a refresh still comparing with that earlier state does not tell the two apart.
 - `InMemorySubscriptionStore` is for tests and development only. `storeConformanceCases()` returns the cases a host runs against its own store from any test runner; each fails by throwing an assertion error (see [Examples by subpath](#examples-by-subpath)).
 - `createCapture()` and `assertNoSentinel(capture, sentinels)` check that no log line or observer payload holds a value the test chose as a sentinel. **`assertNoSentinel` searches plain data only**: strings, numbers, bigints, booleans, property names, and the members of `Map` and `Set`. It does not search `Date`, `Buffer` or `Error` objects, getters or symbol keys, so a value that reaches a log only through one of those is not found.
