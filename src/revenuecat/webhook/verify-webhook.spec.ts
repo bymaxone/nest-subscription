@@ -36,6 +36,24 @@ const request = (
   headers
 })
 
+describe('an empty body', () => {
+  it.each([
+    ['the header only', { webhookAuthorization: HEADER }],
+    ['the signature only', { webhookSigningSecret: SIGNING }],
+    ['both', { webhookAuthorization: HEADER, webhookSigningSecret: SIGNING }]
+  ])('is refused with %s, although every configured check would pass', (_name, methods) => {
+    // Scenario: no bytes arrived, with a right header and a signature made over nothing.
+    const signature = `t=${String(T)},v1=${createHmac('sha256', SIGNING)
+      .update(`${String(T)}.`)
+      .digest('hex')}`
+    const empty = {
+      rawBody: new Uint8Array(),
+      headers: { authorization: HEADER, 'x-revenuecat-webhook-signature': signature }
+    }
+    expect(isAuthentic(optionsWith(methods), empty)).toBe(false)
+  })
+})
+
 describe('isAuthentic', () => {
   const both = optionsWith({ webhookAuthorization: HEADER, webhookSigningSecret: SIGNING })
 

@@ -44,7 +44,8 @@ export function isAuthentic(options: ResolvedRevenueCatOptions, request: unknown
   const { webhookAuthorization, webhookSigningSecret } = options
   if (webhookAuthorization === null && webhookSigningSecret === null) return false
   try {
-    if (!isWebhookRequest(request)) return false
+    // A body with no bytes carries no event, and the header alone does not cover the body.
+    if (!isWebhookRequest(request) || request.rawBody.byteLength === 0) return false
     const header =
       webhookAuthorization === null || verifyAuthorization(webhookAuthorization, request.headers)
     const signature =

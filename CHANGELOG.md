@@ -24,6 +24,10 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** if the module sets `isProduction: true` and the source admits sandbox purchases, set `confirmSandboxInProduction: true` on the module, or stop admitting sandbox on the source.
 
+- **`revenueCatSource` refuses a webhook request with an empty body**, whatever verification method is configured. The controller answers `401` with `SUBSCRIPTION_WEBHOOK_REFUSED`.
+
+**Apply to a derived backend:** nothing for a route that passes the raw bytes as received. A route that could pass an empty body now gets a refusal, so check that it passes the bytes of the request.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.
