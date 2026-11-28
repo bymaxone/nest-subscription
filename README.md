@@ -13,7 +13,7 @@
   <a href="https://www.npmjs.com/package/@bymax-one/nest-subscription"><img src="https://img.shields.io/npm/v/@bymax-one/nest-subscription?style=flat-square&colorA=000000&colorB=000000" alt="npm version" /></a>
   <a href="https://www.npmjs.com/package/@bymax-one/nest-subscription"><img src="https://img.shields.io/npm/dm/@bymax-one/nest-subscription?style=flat-square&colorA=000000&colorB=000000" alt="npm downloads" /></a>
   <a href="https://github.com/bymaxone/nest-subscription/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bymaxone/nest-subscription/ci.yml?branch=main&style=flat-square&colorA=000000&label=CI" alt="CI status" /></a>
-  <a href="docs/mutation_testing_results.md"><img src="https://img.shields.io/badge/mutation-100%25-brightgreen?style=flat-square&colorA=000000" alt="mutation score 100%, measured on 2026-11-26" /></a>
+  <a href="docs/mutation_testing_results.md"><img src="https://img.shields.io/badge/mutation-100%25-brightgreen?style=flat-square&colorA=000000" alt="mutation score 100%, measured on 2026-11-28" /></a>
   <a href="docs/acceptance.md"><img src="https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square&colorA=000000" alt="coverage 100%, measured on 2026-11-26" /></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/bymaxone/nest-subscription"><img src="https://api.scorecard.dev/projects/github.com/bymaxone/nest-subscription/badge?style=flat-square" alt="OpenSSF Scorecard" /></a>
   <a href="https://github.com/bymaxone/nest-subscription/blob/main/LICENSE"><img src="https://img.shields.io/github/license/bymaxone/nest-subscription?style=flat-square&colorA=000000&colorB=000000" alt="license" /></a>
@@ -89,7 +89,7 @@ The library has **zero direct dependencies**. NestJS, `reflect-metadata` and `rx
 | **`.`**            | `@bymax-one/nest-subscription`            | Module, service, guard, decorator, webhook controller and processor, option and result types, ports, tokens, error class | NestJS peers                     |
 | **`./shared`**     | `@bymax-one/nest-subscription/shared`     | The model's types, closed value sets, error codes, `createEmptySnapshot`, `resolveEntitlements`, `parseInstant`          | none                             |
 | **`./revenuecat`** | `@bymax-one/nest-subscription/revenuecat` | `revenueCatSource`, `signRevenueCatWebhook` and the adapter's option types                                               | none (imports no NestJS package) |
-| **`./finance`**    | `@bymax-one/nest-subscription/finance`    | The Bymax Finance adapter: **planned, not available**. The entry point exists and exports nothing                        | none                             |
+| **`./finance`**    | `@bymax-one/nest-subscription/finance`    | Reserved for the Bymax Finance adapter: **planned, not available**. It exports nothing yet                               | none                             |
 | **`./testing`**    | `@bymax-one/nest-subscription/testing`    | In-memory store, fake source, manual clock, request builders, capture helpers, store conformance cases                   | none (imports no NestJS package) |
 | `./internal`       | `@bymax-one/nest-subscription/internal`   | Classes and tokens that more than one entry point shares. **Not for hosts**                                              | none                             |
 
@@ -505,9 +505,37 @@ async function premiumHolder(): Promise<boolean> {
 }
 ```
 
+`createFailingStore` wraps a store so a test can see what the host does while the store is down:
+
+```ts
+import {
+  createFailingStore,
+  InMemorySubscriptionStore,
+  type FailingStore,
+  type FailingStoreMethod
+} from '@bymax-one/nest-subscription/testing'
+
+const reads: readonly FailingStoreMethod[] = ['getSnapshot']
+
+/** Pass this to the module as its `store`. */
+const store: FailingStore = createFailingStore(
+  new InMemorySubscriptionStore({ logger: () => undefined })
+)
+
+async function duringAnOutage(scenario: () => Promise<void>): Promise<void> {
+  store.fail(reads) // these methods reject until `recover`; `fail()` with no names fails them all
+  try {
+    await scenario()
+  } finally {
+    store.recover()
+  }
+}
+```
+
+- `createFailingStore(store)` returns the same store port with `fail(methods?, error?)` and `recover()`. Without an `error`, a failing method rejects with an `Error` whose message names the method and holds no argument of the call.
 - `FakeSubscriptionSource` sets an account's state, queues signed notifications (`buildRequest`, `queueNotification`), delays or fails the next read, counts reads and scripts the management operations.
 - `buildRevenueCatWebhookRequest` builds a signed request the adapter accepts, and each way a request can be wrong on purpose (`REVENUECAT_REQUEST_FLAWS`).
-- `InMemorySubscriptionStore` is for tests and development only. `storeConformanceCases()` returns the cases a host runs against its own store from any test runner; each fails by throwing an assertion error.
+- `InMemorySubscriptionStore` is for tests and development only. `storeConformanceCases()` returns the cases a host runs against its own store from any test runner; each fails by throwing an assertion error (see [Examples by subpath](#examples-by-subpath)).
 - `createCapture()` and `assertNoSentinel(capture, sentinels)` check that no log line or observer payload holds a value the test chose as a sentinel. **`assertNoSentinel` searches plain data only**: strings, numbers, bigints, booleans, property names, and the members of `Map` and `Set`. It does not search `Date`, `Buffer` or `Error` objects, getters or symbol keys, so a value that reaches a log only through one of those is not found.
 
 This repository's own end-to-end suite runs one set of routes and one change hook against the fake source and against the RevenueCat adapter over HTTP to a local stand-in that serves recorded fixtures, with the module configuration as the only difference between the runs.
@@ -604,7 +632,7 @@ Only controls this repository runs are listed.
 | Secrets and identifiers out of output    | The end-to-end suite searches for every `sentinel-` value its specs declare: the lines the library writes through the framework's `Logger`, the headers and body of every response of a framework application (not of a provider stand-in), and the message of every error built by code in `src/`. It searches the logger lines and observer payloads of only those captures a spec registers with the sweep; a store or module built with a silent logger, or an observer a spec does not register, is not searched. An error is searched by its message, not by its other properties | `test/e2e/setup`                                                   |
 | Packed artifact checks                   | The packed tarball is loaded in ESM and CommonJS with dependency denials, and its type resolution and file list are checked                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `pnpm check:exports`, `pnpm check:runtime`, `pnpm check:published` |
 | No suppression comments                  | Inline lint directives are disabled (`noInlineConfig`), so a suppression has no effect, and each phase close greps `src` and `test` for them and fails on a match                                                                                                                                                                                                                                                                                                                                                                                                                       | `eslint.config.mjs`, `docs/AUTOPILOT.md`                           |
-| Release without a long-lived token       | A release workflow that packs once and publishes that tarball through npm trusted publishing with provenance, in an environment the owner configures with a required reviewer. **Written; it has not run, because nothing is published**                                                                                                                                                                                                                                                                                                                                                | `.github/workflows/release.yml`                                    |
+| Release without a long-lived token       | A release workflow that packs once and publishes that tarball through npm trusted publishing with provenance, in an environment the owner configures with a required reviewer. It published `1.0.0` and `1.0.1`, each with provenance                                                                                                                                                                                                                                                                                                                                                   | `.github/workflows/release.yml`                                    |
 
 Not listed because the repository does not run them: a dynamic scan of a deployed service (the library deploys nothing), and the `Semgrep` and `Audit registry signatures` jobs of the organisation's security workflow, which are skipped on this repository's pull requests.
 
@@ -629,9 +657,9 @@ Not listed because the repository does not run them: a dynamic scan of a deploye
 The gates every change passes (`pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm test:cov:all && pnpm build`), and before a pull request is opened for a phase, `pnpm mutation`, `pnpm check:exports`, `pnpm check:runtime`, `pnpm check:api`, `pnpm check:docs`, `pnpm check:published` and `pnpm size`.
 
 - **Coverage:** 100% of statements, branches, functions and lines in the unit suite, in the end-to-end suite and in both together.
-- **Mutation testing:** a full, non-incremental run on 2026-11-26 scored 100.00, with no `Stryker disable` directive in the source. The numbers by area are in [`docs/mutation_testing_results.md`](docs/mutation_testing_results.md).
+- **Mutation testing:** a full, non-incremental run on 2026-11-28 scored 100.00, with no `Stryker disable` directive in the source. The numbers by area are in [`docs/mutation_testing_results.md`](docs/mutation_testing_results.md).
 - **Acceptance:** every acceptance criterion points at a named, passing test in [`docs/acceptance.md`](docs/acceptance.md). The Finance run of the source-parity criterion and the Appendix B half of the mapping criterion belong to the Finance adapter and are not claimed.
-- **Packaging:** the entry points are loaded from the packed tarball in ESM and CommonJS, a bundle-size budget is held per subpath, and the public declarations are compared with the previous published version once one exists.
+- **Packaging:** the entry points are loaded from the packed tarball in ESM and CommonJS, a bundle-size budget is held per subpath, and the public declarations are compared with the previous published version.
 - **Documentation:** every snippet in this README is compiled against the built package.
 
 ---
@@ -656,7 +684,130 @@ The gates every change passes (`pnpm typecheck && pnpm lint && pnpm test && pnpm
 | `SubscriptionError`, `SUBSCRIPTION_ERROR_CODES`, `SubscriptionErrorCode`                                                                                                | errors           | The one error class and the closed catalogue                                                                                                                       |
 | `Secret`, `SECRET_PLACEHOLDER`, `encodeAccountKey`, `decodeAccountKey`, `hashAccountKey`, the `SUBSCRIPTION_*` injection tokens                                         | support          | Held secrets, account keys and the symbol tokens                                                                                                                   |
 
-`./shared` exports the types and closed value sets of the model (`SubscriptionSnapshot`, `SubscriptionRecord`, `EntitlementState`, `SubscriptionChange`, `SUBSCRIPTION_STATUSES`, `WILL_RENEW_VALUES`, `SUBSCRIPTION_ORIGINS`, `SUBSCRIPTION_ENVIRONMENTS`, `CHANGE_KINDS`), `createEmptySnapshot`, `resolveEntitlements` and `parseInstant`. `./revenuecat` exports `revenueCatSource`, `signRevenueCatWebhook` and the adapter's option types. `./testing` exports what the Testing section lists.
+`./shared` exports the types and closed value sets of the model (`SubscriptionSnapshot`, `SubscriptionRecord`, `NonRenewingPurchaseRecord`, `EntitlementState`, `EntitlementResolution`, `SubscriptionChange`, `SUBSCRIPTION_STATUSES`, `WILL_RENEW_VALUES`, `SUBSCRIPTION_ORIGINS`, `SUBSCRIPTION_ENVIRONMENTS`, `CHANGE_KINDS`), `createEmptySnapshot`, `resolveEntitlements` and `parseInstant`. `./revenuecat` exports `revenueCatSource`, `signRevenueCatWebhook` and the adapter's option types. `./testing` exports what the [Testing section](#-testing-your-host) lists. `./finance` is reserved for the Bymax Finance adapter and exports nothing yet.
+
+### Examples by subpath
+
+**Root.** The module exports its tokens, so a host can inject what it configured: `SUBSCRIPTION_OPTIONS` (the resolved options), `SUBSCRIPTION_SOURCE`, `SUBSCRIPTION_STORE`, `SUBSCRIPTION_CLOCK`, and `SUBSCRIPTION_CACHE` and `SUBSCRIPTION_OBSERVER` (with `forRoot`, provided only when the host set one; with `forRootAsync`, always, holding `null` when it set none).
+
+```ts
+import { Inject, Injectable } from '@nestjs/common'
+import {
+  encodeAccountKey,
+  SUBSCRIPTION_CLOCK,
+  SUBSCRIPTION_STORE,
+  type Clock,
+  type SubscriptionStore
+} from '@bymax-one/nest-subscription'
+
+@Injectable()
+export class SupportLookup {
+  constructor(
+    @Inject(SUBSCRIPTION_STORE) private readonly store: SubscriptionStore,
+    @Inject(SUBSCRIPTION_CLOCK) private readonly clock: Clock
+  ) {}
+
+  /** How old the stored snapshot is, or `null` when nothing is stored. */
+  async storedAgeMs(accountId: string): Promise<number | null> {
+    const record = await this.store.getSnapshot(encodeAccountKey({ accountId }))
+    if (record === null) return null
+    return this.clock.now().getTime() - Date.parse(record.snapshot.fetchedAt)
+  }
+}
+```
+
+Account keys, held secrets, option checks and the comparison of two snapshots are plain functions and classes:
+
+```ts
+import {
+  decodeAccountKey,
+  diffSnapshots,
+  encodeAccountKey,
+  hashAccountKey,
+  resolveOptions,
+  Secret,
+  SECRET_PLACEHOLDER,
+  validateOptions,
+  type SubscriptionOptionsInput,
+  type SubscriptionSnapshot
+} from '@bymax-one/nest-subscription'
+
+/** One key per tenant and account; the store receives this string. */
+const key = encodeAccountKey({ tenantId: 'tenant-1', accountId: 'account-1' })
+const reference = decodeAccountKey(key) // the same pair, or `null` for text the encoder never writes
+const forLogs = hashAccountKey(key) // 12 characters to correlate lines; the salt is per process
+
+const secret = Secret.from({ current: 'new-value', previous: 'old-value' })
+const printed = String(secret) === SECRET_PLACEHOLDER // true: only `reveal` and `candidates` read it
+const accepted = secret.matches('old-value') // true while the previous value is set
+
+/** Both throw one `SubscriptionError` naming every offending option. */
+function check(options: SubscriptionOptionsInput): number {
+  validateOptions(options)
+  return resolveOptions(options).maxSnapshotAgeMs // defaults applied
+}
+
+/** What changed between two snapshots of one account; `null` stands for "nothing stored before". */
+function changedKinds(previous: SubscriptionSnapshot | null, current: SubscriptionSnapshot) {
+  return diffSnapshots(previous, current).map((change) => change.kind)
+}
+```
+
+**`./shared`.** A source adapter, a worker or a client can resolve entitlements and read instants without NestJS:
+
+```ts
+import {
+  parseInstant,
+  resolveEntitlements,
+  type NonRenewingPurchaseRecord
+} from '@bymax-one/nest-subscription/shared'
+
+const lifetime: NonRenewingPurchaseRecord = {
+  purchaseReference: 'purchase-1',
+  entitlementNames: ['premium'],
+  givesAccess: true,
+  origin: 'app_store',
+  environment: 'production',
+  productReference: 'premium_lifetime',
+  purchasedAt: '2026-01-01T00:00:00Z',
+  accessUntil: null, // no end
+  refundedAt: null
+}
+
+// The subscriptions, what each one grants, and the non-renewing purchases.
+const { entitlements, overlapping } = resolveEntitlements([], new Map(), [lifetime])
+
+// Milliseconds since the epoch; a string without a zone throws `SUBSCRIPTION_INVALID_INPUT`.
+const purchasedAtMs = parseInstant(lifetime.purchasedAt)
+```
+
+**`./revenuecat`.** `signRevenueCatWebhook` builds the signature header RevenueCat sends, for a test of a receiver:
+
+```ts
+import { signRevenueCatWebhook } from '@bymax-one/nest-subscription/revenuecat'
+
+function signedRequest(signingSecret: string, body: string, now: Date) {
+  const rawBody = Buffer.from(body)
+  const seconds = Math.floor(now.getTime() / 1000)
+  const signature = signRevenueCatWebhook(signingSecret, seconds, rawBody)
+  return { rawBody, headers: { 'x-revenuecat-webhook-signature': signature } }
+}
+```
+
+**`./testing`.** The conformance cases run from any test runner; here with `node:test`, and the in-memory store where the host puts its own:
+
+```ts
+import { it } from 'node:test'
+import {
+  InMemorySubscriptionStore,
+  storeConformanceCases
+} from '@bymax-one/nest-subscription/testing'
+
+for (const { name, run } of storeConformanceCases()) {
+  // The factory returns a fresh, empty store for each case.
+  it(name, () => run(() => new InMemorySubscriptionStore({ logger: () => undefined })))
+}
+```
 
 ---
 

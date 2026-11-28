@@ -26,7 +26,7 @@ If you cannot use the GitHub form (for example, you do not have an account), ema
 A useful report contains:
 
 - A clear description of the vulnerability and its impact (confidentiality, integrity, availability)
-- Step-by-step reproduction against the latest release, or against the specification while no release exists
+- Step-by-step reproduction against the latest release
 - The affected subpath and source adapter
 - A suggested fix or mitigation, if you have one
 - Whether you would like to be credited in the published advisory, and how
@@ -43,6 +43,16 @@ A useful report contains:
 We follow [coordinated vulnerability disclosure](https://en.wikipedia.org/wiki/Coordinated_vulnerability_disclosure) and publish the advisory only after a fixed version is on npm, unless active exploitation forces an earlier publication.
 
 Reporters are credited in the GitHub Security Advisory and the CHANGELOG entry unless they request anonymity.
+
+## Threat model: same-process code
+
+Code that runs in the same Node.js process as the library is trusted, as it is in Node itself. It can read
+the secrets the host passed, replace any built-in, and change the library's objects, options or stores, and
+no library running in that process can stop it. The freezing of options and snapshots and the holding of
+secrets in `Secret` are best-effort hardening that narrows common accidents, not a security boundary. A
+report whose attacker must already run code in the process is not a vulnerability in this package. A report
+of a way for untrusted input (a webhook request, a header, an identifier, a response of the billing source)
+to cross one of the lines listed below is.
 
 ## In-scope vulnerabilities
 
