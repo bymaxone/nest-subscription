@@ -389,7 +389,7 @@ Write the changelog entry, add the scheduled job that watches the provider's cha
 #### Acceptance criteria
 
 - [x] `CHANGELOG.md` has the first release's entry under "Unreleased", written for a host: what the library does, its requirements (Node.js 26, NestJS 11), and its known limits.
-- [ ] A scheduled workflow checks the RevenueCat changelog or API reference for changes to the facts in `docs/revenuecat-facts.md` and opens an issue when something moved; its first manual run is green. (the script and its tests pass and the workflow passes actionlint; a manual run needs the workflow on the default branch, so it is run after the merge: `gh workflow run provider-changelog.yml`)
+- [x] A scheduled workflow checks the RevenueCat changelog or API reference for changes to the facts in `docs/revenuecat-facts.md` and opens an issue when something moved; its first manual run is green. (the script and its tests pass, the workflow passes actionlint, and the first manual run, after the merge, was green: run `46062979156`, `workflow_dispatch`, on `87f7223`, 2026-11-27)
 - [x] `npm publish --dry-run` succeeds from a clean checkout, and the tarball's file list holds `dist/`, `README.md`, `CHANGELOG.md`, `LICENSE` and nothing from `test/`, `scripts/` or `docs/`.
 - [x] `prepublishOnly` runs the whole gate chain and passes.
 - [x] A list for the owner states what a release needs: the version number, the first manual publish (trusted publishing can be configured only after the package exists), the `npm-publish` environment, the tag made from updated `main` after the merge.
