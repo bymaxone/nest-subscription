@@ -187,7 +187,7 @@ export class SnapshotRefresher {
   /**
    * Stores what was read, unless the store holds a newer snapshot; `finish()` starts delivery.
    * Where the store has `replaceSnapshot`, the write holds only while the state the changes were
-   * worked out against is still the stored one; otherwise it is read and compared again, and
+   * worked out against is still the stored one; a refused write is read and compared again, and
    * after {@link CONDITIONAL_ATTEMPTS} refusals nothing is written.
    */
   async #store(

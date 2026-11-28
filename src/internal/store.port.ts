@@ -82,9 +82,7 @@ export interface SubscriptionStore {
    * - When the source reports no `sourceUpdatedAt`, a read that started before a moved `fetchedAt`
    *   can be refused as older; the stored state then stays until the next refresh, and no
    *   notification is lost.
-   * - A moved `fetchedAt` is later than the instant its read started: by milliseconds when reads
-   *   coincide, and by up to the difference between clocks when the source reports
-   *   `sourceUpdatedAt` and the process that wrote the stored state runs ahead.
+   * - A moved `fetchedAt` is later than the instant its read started.
    * - When the source reports `sourceUpdatedAt` for some reads only, a read without it can store
    *   a `fetchedAt` earlier than the one it replaced. Should a later write then repeat an earlier
    *   `fetchedAt` to the millisecond, a refresh still comparing with that earlier state does not
