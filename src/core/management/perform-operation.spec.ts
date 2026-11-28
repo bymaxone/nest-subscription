@@ -95,6 +95,39 @@ describe('performOperation: a read-back that fails after an accepted write', () 
   )
 })
 
+describe('performOperation: a stored snapshot ordered after the read', () => {
+  const FUTURE = '2027-01-01T00:00:00.000Z'
+  const extended = subscriptionOf({ currentPeriodEnd: '2026-02-08T00:00:00.000Z' })
+
+  it('judges the operation on what was read from the source, not on the stored snapshot', async () => {
+    // Scenario: the stored snapshot is stamped later than anything this process reads, as one
+    // written by an instance whose clock is ahead; the source applies the write.
+    const { source, service, store } = await ready(subscriptionOf())
+    accepting(source, 'extend', () =>
+      source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, [extended], [purchaseOf()], null))
+    )
+    jest.spyOn(store, 'getSnapshot').mockResolvedValue({
+      snapshot: snapshotOf(ACCOUNT, [subscriptionOf()], [purchaseOf()], FUTURE),
+      pendingChanges: []
+    })
+    const result = await service.extend(ACCOUNT, 'sub-1', { days: 7 })
+    expect(result).toMatchObject({ outcome: 'extended', snapshot: { subscriptions: [extended] } })
+  })
+
+  it('asks the source about the record it read, not about the stored one', async () => {
+    // Scenario: the source holds a later period end than the superseding stored snapshot.
+    const { source, service, store } = await ready(subscriptionOf())
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, [extended], [purchaseOf()], null))
+    jest.spyOn(store, 'getSnapshot').mockResolvedValue({
+      snapshot: snapshotOf(ACCOUNT, [subscriptionOf()], [purchaseOf()], FUTURE),
+      pendingChanges: []
+    })
+    accepting(source, 'extend')
+    await service.extend(ACCOUNT, 'sub-1', { days: 7 })
+    expect(jest.mocked(source.extend).mock.calls[0]?.[1]).toStrictEqual(extended)
+  })
+})
+
 describe('performOperation: the record is asked about from a fresh read', () => {
   it('reports not extended when a fresh read before the write already shows the later period end', async () => {
     // Scenario: a renewal the stored snapshot has not seen; the write changes nothing further.

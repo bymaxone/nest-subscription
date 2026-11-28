@@ -46,6 +46,8 @@ export interface RefreshResult {
   readonly previous: SubscriptionSnapshot | null
   /** The snapshot stored after the refresh: the one just read, or the newer one that was kept. */
   readonly current: SubscriptionSnapshot
+  /** The snapshot just read from the source, whether or not the store took it. */
+  readonly read: SubscriptionSnapshot
   /** Whether the store took the snapshot just read. `false` means a newer one was kept. */
   readonly written: boolean
   /**
@@ -175,7 +177,7 @@ export class SnapshotRefresher {
       const held = (await this.store.getSnapshot(key))?.snapshot
       const previous = isSnapshotFor(held, account) ? held : null
       if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {
-        return this.#kept(previous, previous)
+        return this.#kept(previous, previous, snapshot)
       }
       // The changes are computed from the two snapshots before the write and stored with the
       // snapshot in that one write, so a crash after it cannot lose them.
@@ -192,7 +194,7 @@ export class SnapshotRefresher {
       if (await this.store.putSnapshot(key, snapshot, changes, orderedAt)) {
         return this.#written(key, account, previous, snapshot, changes)
       }
-      return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot)
+      return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot, snapshot)
     }
   }
 
@@ -212,6 +214,7 @@ export class SnapshotRefresher {
       (result ??= {
         previous,
         current,
+        read: current,
         written: true,
         changes,
         delivery: this.dispatcher?.deliver(key, previous, current, changes) ?? Promise.resolve()
@@ -220,10 +223,15 @@ export class SnapshotRefresher {
   }
 
   /** The result of a refresh whose snapshot was not stored because a newer one is. */
-  #kept(previous: SubscriptionSnapshot | null, current: SubscriptionSnapshot): Flight {
+  #kept(
+    previous: SubscriptionSnapshot | null,
+    current: SubscriptionSnapshot,
+    read: SubscriptionSnapshot
+  ): Flight {
     const result: RefreshResult = {
       previous,
       current,
+      read,
       written: false,
       changes: NO_CHANGES,
       delivery: Promise.resolve()
