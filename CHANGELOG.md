@@ -48,6 +48,14 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** nothing, unless the host computes or predicts keys itself.
 
+- **Optional conditional write in the store port.** `SubscriptionStore` gains `replaceSnapshot`, which writes only while the stored snapshot is still the one the library compared with, so changes are worked out against the state the write replaced even when processes write at once. A store without it keeps writing with `putSnapshot`, with that guarantee missing. `InMemorySubscriptionStore` has it, and `createFailingStore` fails it when `putSnapshot` is named.
+
+**Apply to a derived backend:** optional. Add `replaceSnapshot` to your store and run the cases `replaceSnapshot writes only over the fetch instant it expects`, `replaceSnapshot refuses an older instant` and `replaceSnapshot lets exactly one of two overlapping writes of one state through`; they pass without testing anything while the method is absent. A test that wraps your store and forwards a fixed list of methods has to forward this one too.
+
+- **More store conformance cases.** The suite also checks that an accepted write with no changes keeps the pending ones, that overlapping clears and writes lose nothing, that keys and event identifiers are told apart by case, trailing space and their last characters, and that instants are compared by the millisecond.
+
+**Apply to a derived backend:** run `storeConformanceCases()` against your store again. A new failure is in one of `keeps the pending changes when an accepted write carries none`, `keeps both a clear and the change of a write that overlaps it`, `keeps both of two clears that overlap`, `keeps every pending change when writes to a key that holds a snapshot overlap`, `keeps apart keys that differ by case or by a trailing space`, `keeps apart long keys that differ only at their end`, `keeps apart event identifiers that differ by case, by a trailing space or at their end` and `orders writes and judges staleness by the millisecond`. Check the collation, length and timestamp precision of the columns.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.

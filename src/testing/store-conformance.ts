@@ -82,6 +82,15 @@ const PAGE_BUDGET = Array.from({ length: 50 }, (_, page) => page)
 const NEVER_ENDS = 'the listing did not end within its page budget'
 const OVER_LIMIT = 'a page holds more keys than the limit'
 const CHANGE_LOST = 'a pending change was lost when two writes overlapped'
+const CLEAR_LOST = 'a clear that overlapped another operation was lost or lost a change'
+const CASE_ACCOUNTS = ['Account', 'account', 'account ']
+const LONG_ID = 'x'.repeat(200)
+const LONG_ACCOUNTS = [`${LONG_ID}a`, `${LONG_ID}b`]
+const EVENT_IDS = ['Event', 'event', 'event ', `${LONG_ID}a`, `${LONG_ID}b`]
+/** Three instants inside one second, a millisecond apart. */
+const MS1 = '2026-01-01T00:00:05.001Z'
+const MS2 = '2026-01-01T00:00:05.002Z'
+const MS3 = '2026-01-01T00:00:05.003Z'
 
 /** What a store holds for a key: the snapshot and the changes not yet cleared. */
 function held(
@@ -336,6 +345,158 @@ const pendingCases: readonly StoreConformanceCase[] = [
   }
 ]
 
+/** The keys of the changes pending under a key, sorted. */
+async function pendingKeys(store: SubscriptionStore, key: string): Promise<string[]> {
+  const stored = await store.getSnapshot(key)
+  assert.ok(stored !== null)
+  return stored.pendingChanges.map((one) => one.key).sort()
+}
+
+const concurrencyCases: readonly StoreConformanceCase[] = [
+  {
+    name: 'keeps the pending changes when an accepted write carries none',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      await seed(store, ACC, T1, [C1])
+      await seed(store, ACC, T2, [])
+      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, T2), [C1]))
+    }
+  },
+  {
+    name: 'keeps both a clear and the change of a write that overlaps it',
+    run: async (createStore): Promise<void> => {
+      for (const clearFirst of [true, false]) {
+        const store = await createStore()
+        await seed(store, ACC, T1, [C1])
+        const clear = (): Promise<void> => store.clearPendingChanges(ACC_KEY, [C1.key])
+        const write = (): Promise<boolean> =>
+          store.putSnapshot(ACC_KEY, snapshotOf(ACC, T2), [C2], T2)
+        await Promise.all(clearFirst ? [clear(), write()] : [write(), clear()])
+        assert.deepEqual(await pendingKeys(store, ACC_KEY), [C2.key], CLEAR_LOST)
+      }
+    }
+  },
+  {
+    name: 'keeps both of two clears that overlap',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      await seed(store, ACC, T1, [C1, C2, C3])
+      await Promise.all([C1, C2].map((one) => store.clearPendingChanges(ACC_KEY, [one.key])))
+      assert.deepEqual(await pendingKeys(store, ACC_KEY), [C3.key], CLEAR_LOST)
+    }
+  },
+  {
+    name: 'keeps every pending change when writes to a key that holds a snapshot overlap',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      await seed(store, ACC, T1, [C1])
+      await Promise.all(
+        [C2, C3].map((one) => store.putSnapshot(ACC_KEY, snapshotOf(ACC, T2), [one], T2))
+      )
+      assert.deepEqual(await pendingKeys(store, ACC_KEY), [C1.key, C2.key, C3.key], CHANGE_LOST)
+    }
+  }
+]
+
+const exactnessCases: readonly StoreConformanceCase[] = [
+  {
+    name: 'keeps apart keys that differ by case or by a trailing space',
+    run: async (createStore): Promise<void> => {
+      await keptApart(await createStore(), CASE_ACCOUNTS)
+    }
+  },
+  {
+    name: 'keeps apart long keys that differ only at their end',
+    run: async (createStore): Promise<void> => {
+      await keptApart(await createStore(), LONG_ACCOUNTS)
+    }
+  },
+  {
+    name: 'keeps apart event identifiers that differ by case, by a trailing space or at their end',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      for (const id of EVENT_IDS) {
+        assert.equal(await store.markEventProcessed(SOURCE, id, T1), true)
+      }
+    }
+  },
+  {
+    name: 'orders writes and judges staleness by the millisecond',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      await seed(store, ACC, MS2, [])
+      assert.equal(await store.putSnapshot(ACC_KEY, snapshotOf(ACC, MS3), [], MS1), false)
+      assert.deepEqual(await store.listStaleKeys(MS2, 10, null), { keys: [], nextCursor: null })
+      assert.deepEqual((await store.listStaleKeys(MS3, 10, null)).keys, [ACC_KEY])
+      await store.markEventProcessed(SOURCE, 'before', MS1)
+      await store.markEventProcessed(SOURCE, 'at', MS2)
+      await store.deleteEventsOlderThan(MS2)
+      assert.equal(await store.markEventProcessed(SOURCE, 'before', MS3), true)
+      assert.equal(await store.markEventProcessed(SOURCE, 'at', MS3), false)
+    }
+  }
+]
+
+/** Writes one snapshot per account and reads each back as its own. */
+async function keptApart(store: SubscriptionStore, accounts: readonly string[]): Promise<void> {
+  for (const account of accounts) await seed(store, account, T1, [])
+  for (const account of accounts) {
+    assert.deepEqual(await store.getSnapshot(keyOf(account)), held(snapshotOf(account, T1), []))
+  }
+}
+
+/** The conditional write of a store, or `null` for a store that offers none: its cases pass. */
+function conditionalWrite(
+  store: SubscriptionStore
+): NonNullable<SubscriptionStore['replaceSnapshot']> | null {
+  return store.replaceSnapshot?.bind(store) ?? null
+}
+
+const conditionalCases: readonly StoreConformanceCase[] = [
+  {
+    name: 'replaceSnapshot writes only over the fetch instant it expects',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      const replace = conditionalWrite(store)
+      if (replace === null) return
+      assert.equal(await replace(ACC_KEY, T1, snapshotOf(ACC, T2), [C2], T2), false)
+      assert.equal(await store.getSnapshot(ACC_KEY), null)
+      assert.equal(await replace(ACC_KEY, null, snapshotOf(ACC, T1), [C1], T1), true)
+      assert.equal(await replace(ACC_KEY, null, snapshotOf(ACC, T2), [C2], T2), false)
+      assert.equal(await replace(ACC_KEY, T2, snapshotOf(ACC, T3), [C3], T3), false)
+      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, T1), [C1]))
+      assert.equal(await replace(ACC_KEY, T1, snapshotOf(ACC, T2), [C2], T2), true)
+      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, T2), [C1, C2]))
+    }
+  },
+  {
+    name: 'replaceSnapshot refuses an older instant',
+    run: async (createStore): Promise<void> => {
+      const store = await createStore()
+      const replace = conditionalWrite(store)
+      if (replace === null) return
+      await seed(store, ACC, T5, [C1])
+      assert.equal(await replace(ACC_KEY, T5, snapshotOf(ACC, T6), [C2], T2), false)
+      assert.deepEqual(await store.getSnapshot(ACC_KEY), held(snapshotOf(ACC, T5), [C1]))
+    }
+  },
+  {
+    name: 'replaceSnapshot lets exactly one of two overlapping writes of one state through',
+    run: async (createStore): Promise<void> => {
+      for (const stored of [null, T1]) {
+        const store = await createStore()
+        const replace = conditionalWrite(store)
+        if (replace === null) return
+        if (stored !== null) await seed(store, ACC, stored, [])
+        const answers = await Promise.all(
+          [T2, T3].map((instant) => replace(ACC_KEY, stored, snapshotOf(ACC, instant), [], instant))
+        )
+        assert.equal(answers.filter(Boolean).length, 1, 'two writes replaced one state')
+      }
+    }
+  }
+]
+
 const eventCases: readonly StoreConformanceCase[] = [
   {
     name: 'reports an event identifier as new once and as seen afterwards',
@@ -481,5 +642,14 @@ const staleCases: readonly StoreConformanceCase[] = [
  * treat a rejection as a failure of the guarantee the case's name states.
  */
 export function storeConformanceCases(): readonly StoreConformanceCase[] {
-  return [...snapshotCases, ...orderingCases, ...pendingCases, ...eventCases, ...staleCases]
+  return [
+    ...snapshotCases,
+    ...orderingCases,
+    ...pendingCases,
+    ...concurrencyCases,
+    ...exactnessCases,
+    ...conditionalCases,
+    ...eventCases,
+    ...staleCases
+  ]
 }

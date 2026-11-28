@@ -78,6 +78,33 @@ ON CONFLICT (key) DO UPDATE SET
 WHERE held.source_updated_at <= EXCLUDED.source_updated_at
 RETURNING 1 AS written`
 
+/** Writes the first snapshot of a key, only while it holds none. */
+export const INSERT_SNAPSHOT_SQL = `INSERT INTO subscription_snapshot
+  (key, snapshot, fetched_at, source_updated_at, pending_changes)
+VALUES ($1, $2::jsonb, $3::timestamptz, $4::timestamptz, $5::jsonb)
+ON CONFLICT (key) DO NOTHING
+RETURNING 1 AS written`
+
+/** Replaces a snapshot only while the held one is the one the caller read. */
+export const REPLACE_SNAPSHOT_SQL = `UPDATE subscription_snapshot AS held
+SET snapshot          = $2::jsonb,
+    fetched_at        = $3::timestamptz,
+    source_updated_at = $4::timestamptz,
+    pending_changes   = held.pending_changes || COALESCE((
+      SELECT jsonb_agg(incoming.change ORDER BY incoming.ordinal)
+      FROM jsonb_array_elements($5::jsonb)
+           WITH ORDINALITY AS incoming(change, ordinal)
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(held.pending_changes) AS kept(change)
+        WHERE kept.change ->> 'key' = incoming.change ->> 'key'
+      )
+    ), '[]'::jsonb)
+WHERE held.key = $1
+  AND held.fetched_at = $6::timestamptz
+  AND held.source_updated_at <= $4::timestamptz
+RETURNING 1 AS written`
+
 /** Removes the named pending changes of one key and no others. */
 export const CLEAR_PENDING_SQL = `UPDATE subscription_snapshot
 SET pending_changes = COALESCE((
@@ -123,6 +150,8 @@ export const REFERENCE_STATEMENTS: readonly string[] = [
   SCHEMA_SQL,
   GET_SNAPSHOT_SQL,
   PUT_SNAPSHOT_SQL,
+  INSERT_SNAPSHOT_SQL,
+  REPLACE_SNAPSHOT_SQL,
   CLEAR_PENDING_SQL,
   LIST_PENDING_SQL,
   MARK_EVENT_SQL,
@@ -182,6 +211,32 @@ export class ReferencePostgresStore implements SubscriptionStore {
       sourceUpdatedAt,
       JSON.stringify(distinctChanges(pendingChanges))
     ])
+    return rows.length === 1
+  }
+
+  /** Writes only while the held snapshot is the one expected; returns whether it wrote. */
+  async replaceSnapshot(
+    key: string,
+    expectedFetchedAt: string | null,
+    snapshot: SubscriptionSnapshot,
+    pendingChanges: readonly SubscriptionChange[],
+    sourceUpdatedAt: string
+  ): Promise<boolean> {
+    parseInstant(sourceUpdatedAt)
+    parseInstant(snapshot.fetchedAt)
+    const values = [
+      key,
+      JSON.stringify(snapshot),
+      snapshot.fetchedAt,
+      sourceUpdatedAt,
+      JSON.stringify(distinctChanges(pendingChanges))
+    ]
+    if (expectedFetchedAt === null) {
+      const { rows } = await this.client.query(INSERT_SNAPSHOT_SQL, values)
+      return rows.length === 1
+    }
+    parseInstant(expectedFetchedAt)
+    const { rows } = await this.client.query(REPLACE_SNAPSHOT_SQL, [...values, expectedFetchedAt])
     return rows.length === 1
   }
 

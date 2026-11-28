@@ -106,6 +106,22 @@ export class InMemorySubscriptionStore implements SubscriptionStore {
     return true
   }
 
+  async replaceSnapshot(
+    key: string,
+    expectedFetchedAt: string | null,
+    snapshot: SubscriptionSnapshot,
+    pendingChanges: readonly SubscriptionChange[],
+    sourceUpdatedAt: string
+  ): Promise<boolean> {
+    const stored = this.#entries.get(key)?.snapshot.fetchedAt
+    const unchanged =
+      expectedFetchedAt === null
+        ? stored === undefined
+        : stored !== undefined && parseInstant(stored) === parseInstant(expectedFetchedAt)
+    // Nothing runs between the check and the write: the write starts before the first await.
+    return unchanged && this.putSnapshot(key, snapshot, pendingChanges, sourceUpdatedAt)
+  }
+
   async clearPendingChanges(key: string, changeKeys: readonly string[]): Promise<void> {
     const entry = this.#entries.get(key)
     if (entry !== undefined) {

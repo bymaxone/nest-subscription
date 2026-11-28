@@ -34,6 +34,12 @@ import { isSnapshotFor } from '../snapshot-fit'
 /** The changes of a refresh that stored nothing, and of one with no hook to tell. */
 const NO_CHANGES: readonly SubscriptionChange[] = Object.freeze([])
 
+/**
+ * How many conditional writes one refresh tries while the stored state keeps moving, before it
+ * writes without the condition so that its read is not lost.
+ */
+const CONDITIONAL_ATTEMPTS = 3
+
 /** What one refresh did. */
 export interface RefreshResult {
   /** The snapshot stored before the refresh; `null` when none was stored. */
@@ -153,36 +159,64 @@ export class SnapshotRefresher {
     return result
   }
 
-  /** Stores what was read, unless the store holds a newer snapshot; `finish()` starts delivery. */
+  /**
+   * Stores what was read, unless the store holds a newer snapshot; `finish()` starts delivery.
+   * Where the store has `replaceSnapshot`, the write holds only while the state the changes were
+   * worked out against is still the stored one; otherwise it is read and compared again.
+   */
   async #store(
     key: string,
     account: AccountReference,
     snapshot: SubscriptionSnapshot
   ): Promise<Flight> {
     const orderedAt = orderInstant(snapshot)
-    const previous = await this.#stored(key, account)
-    if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {
-      return this.#kept(previous, previous)
+    const replace = this.store.replaceSnapshot?.bind(this.store)
+    for (let attempt = 1; ; attempt += 1) {
+      const held = (await this.store.getSnapshot(key))?.snapshot
+      const previous = isSnapshotFor(held, account) ? held : null
+      if (previous !== null && parseInstant(orderedAt) < parseInstant(orderInstant(previous))) {
+        return this.#kept(previous, previous)
+      }
+      // The changes are computed from the two snapshots before the write and stored with the
+      // snapshot in that one write, so a crash after it cannot lose them.
+      const changes = this.dispatcher === null ? NO_CHANGES : diffSnapshots(previous, snapshot)
+      // No condition can name a stored snapshot that does not fit the account.
+      const nameable = held === undefined || previous !== null
+      if (replace !== undefined && nameable && attempt <= CONDITIONAL_ATTEMPTS) {
+        const expected = previous?.fetchedAt ?? null
+        if (await replace(key, expected, snapshot, changes, orderedAt)) {
+          return this.#written(key, account, previous, snapshot, changes)
+        }
+        continue
+      }
+      if (await this.store.putSnapshot(key, snapshot, changes, orderedAt)) {
+        return this.#written(key, account, previous, snapshot, changes)
+      }
+      return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot)
     }
-    // The changes are computed from the two snapshots before the write and stored with the
-    // snapshot in that one write, so a crash after it cannot lose them.
-    const changes = this.dispatcher === null ? NO_CHANGES : diffSnapshots(previous, snapshot)
-    if (await this.store.putSnapshot(key, snapshot, changes, orderedAt)) {
-      await this.cache?.invalidate(account)
-      // The hook is called only once the write has succeeded and the cache no longer holds the old
-      // snapshot, and only after the flight is released.
-      let result: RefreshResult | undefined
-      const finish = (): RefreshResult =>
-        (result ??= {
-          previous,
-          current: snapshot,
-          written: true,
-          changes,
-          delivery: this.dispatcher?.deliver(key, previous, snapshot, changes) ?? Promise.resolve()
-        })
-      return { written: true, changes, finish }
-    }
-    return this.#kept(previous, (await this.#stored(key, account)) ?? snapshot)
+  }
+
+  /** The result of a refresh whose snapshot was stored, once the cache dropped the old one. */
+  async #written(
+    key: string,
+    account: AccountReference,
+    previous: SubscriptionSnapshot | null,
+    current: SubscriptionSnapshot,
+    changes: readonly SubscriptionChange[]
+  ): Promise<Flight> {
+    await this.cache?.invalidate(account)
+    // The hook is called only once the write has succeeded and the cache no longer holds the old
+    // snapshot, and only after the flight is released.
+    let result: RefreshResult | undefined
+    const finish = (): RefreshResult =>
+      (result ??= {
+        previous,
+        current,
+        written: true,
+        changes,
+        delivery: this.dispatcher?.deliver(key, previous, current, changes) ?? Promise.resolve()
+      })
+    return { written: true, changes, finish }
   }
 
   /** The result of a refresh whose snapshot was not stored because a newer one is. */

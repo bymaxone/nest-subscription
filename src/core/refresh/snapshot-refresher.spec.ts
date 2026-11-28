@@ -688,4 +688,96 @@ describe('SnapshotRefresher with a stored snapshot that cannot be read', () => {
     expect(result.written).toBe(true)
     expect(result.current.sourceCustomer?.id).toBe('good')
   })
+
+  /**
+   * A refresher over a store where another process writes `meanwhile` right after the first read,
+   * so the state the refresh compared against is gone by the time it writes.
+   */
+  function overtaken(
+    meanwhile: SubscriptionSnapshot,
+    overrides: Partial<SubscriptionStore> = {}
+  ): { store: InMemorySubscriptionStore; refresher: SnapshotRefresher; seed: () => Promise<void> } {
+    const { source, store, clock } = setup()
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20, 'read'))
+    clock.set(T20)
+    const key = encodeAccountKey(ACCOUNT)
+    let reads = 0
+    const racing = delegating(store, {
+      getSnapshot: async (asked) => {
+        const held = await store.getSnapshot(asked)
+        reads += 1
+        if (reads === 1) await store.putSnapshot(key, meanwhile, [], T10)
+        return held
+      },
+      replaceSnapshot: (...write) => store.replaceSnapshot(...write),
+      ...overrides
+    })
+    const refresher = new SnapshotRefresher(
+      source,
+      racing,
+      clock,
+      null,
+      null,
+      new ObserverBridge(null, clock)
+    )
+    const seed = async (): Promise<void> => {
+      await store.putSnapshot(key, snapshotOf(ACCOUNT, T0, 'seed'), [], T0)
+    }
+    return { store, refresher, seed }
+  }
+
+  const MEANWHILE = { ...snapshotOf(ACCOUNT, T10, 'meanwhile'), fetchedAt: T10 }
+
+  it.each([['a snapshot was stored'], ['nothing was stored']])(
+    'compares again with what another process wrote when %s before the read',
+    async (before) => {
+      // Scenario: a conditional write is refused because the stored state moved, so the refresh
+      // reports and compares with the state its write really replaced.
+      const { store, refresher, seed } = overtaken(MEANWHILE)
+      if (before === 'a snapshot was stored') await seed()
+      const result = await refresher.refresh(ACCOUNT)
+      expect(result.written).toBe(true)
+      expect(result.previous).toEqual(MEANWHILE)
+      expect(await stored(store, ACCOUNT)).toEqual(result.current)
+    }
+  )
+
+  it('keeps the newer snapshot another process wrote before the write', async () => {
+    // Scenario: what arrived meanwhile is newer than the read, so nothing is written over it.
+    const newer = { ...snapshotOf(ACCOUNT, '2026-01-01T00:00:30.000Z', 'newer'), fetchedAt: T10 }
+    const { store, refresher, seed } = overtaken(newer)
+    await seed()
+    await store.putSnapshot(encodeAccountKey(ACCOUNT), newer, [], '2026-01-01T00:00:30.000Z')
+    const result = await refresher.refresh(ACCOUNT)
+    expect(result.written).toBe(false)
+    expect(result.current).toEqual(newer)
+  })
+
+  it('writes without the condition after the state kept moving', async () => {
+    // Scenario: the conditional write is refused every time; the read is still stored.
+    const replaceSnapshot = jest.fn(() => Promise.resolve(false))
+    const { store, refresher } = overtaken(MEANWHILE, { replaceSnapshot })
+    const result = await refresher.refresh(ACCOUNT)
+    expect(replaceSnapshot).toHaveBeenCalledTimes(3)
+    expect(result.written).toBe(true)
+    expect(await stored(store, ACCOUNT)).toEqual(result.current)
+  })
+
+  it('writes without the condition over a stored snapshot that is not of the account', async () => {
+    // Scenario: what is stored is treated as absent, and no condition could name it.
+    const { source, store, clock, refresher } = setup()
+    source.setAccount(ACCOUNT, snapshotOf(ACCOUNT, T20))
+    clock.set(T20)
+    await store.putSnapshot(
+      encodeAccountKey(ACCOUNT),
+      snapshotOf({ accountId: 'other' }, T10),
+      [],
+      T10
+    )
+    const replace = jest.spyOn(store, 'replaceSnapshot')
+    const result = await refresher.refresh(ACCOUNT)
+    expect(replace).not.toHaveBeenCalled()
+    expect(result.written).toBe(true)
+    expect(await stored(store, ACCOUNT)).toEqual(result.current)
+  })
 })

@@ -18,6 +18,7 @@ export type FailingStoreMethod = keyof SubscriptionStore
 export interface FailingStore extends SubscriptionStore {
   /**
    * Makes the named methods reject, or every method when none is named, until {@link recover}.
+   * Naming `putSnapshot` also fails `replaceSnapshot`.
    * A second call replaces the first. The rejection is `error` when given, and otherwise an
    * `Error` whose message is `failing store: <method>` and holds no argument of the call.
    */
@@ -30,6 +31,7 @@ export interface FailingStore extends SubscriptionStore {
 const ALL_METHODS: readonly FailingStoreMethod[] = [
   'getSnapshot',
   'putSnapshot',
+  'replaceSnapshot',
   'clearPendingChanges',
   'listKeysWithPendingChanges',
   'markEventProcessed',
@@ -43,7 +45,19 @@ class Switchable implements FailingStore {
   #failing: ReadonlySet<FailingStoreMethod> = new Set()
   #failure: unknown
 
-  constructor(private readonly store: SubscriptionStore) {}
+  /** Present only when the wrapped store has it, so the wrapper offers what that store offers. */
+  replaceSnapshot?: NonNullable<SubscriptionStore['replaceSnapshot']>
+
+  constructor(private readonly store: SubscriptionStore) {
+    const replace = store.replaceSnapshot?.bind(store)
+    if (replace !== undefined) {
+      // A conditional write is a write, so naming `putSnapshot` fails it too.
+      this.replaceSnapshot = (...write): Promise<boolean> =>
+        this.#through(this.#failing.has('putSnapshot') ? 'putSnapshot' : 'replaceSnapshot', () =>
+          replace(...write)
+        )
+    }
+  }
 
   fail(methods?: readonly FailingStoreMethod[], error?: unknown): void {
     this.#failing = new Set(methods ?? ALL_METHODS)

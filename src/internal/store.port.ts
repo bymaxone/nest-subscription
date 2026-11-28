@@ -57,6 +57,25 @@ export interface SubscriptionStore {
   ): Promise<boolean>
 
   /**
+   * Optional. Writes as {@link SubscriptionStore.putSnapshot} does, in one atomic step, only while
+   * the key still holds the state the caller read: `expectedFetchedAt` is the `fetchedAt` of the
+   * stored snapshot, or `null` when nothing was stored. It returns `false`, changing nothing, when
+   * the stored snapshot is another one or `sourceUpdatedAt` is older than the stored instant.
+   *
+   * The library compares a read with the stored state to work out the changes. With this method
+   * the changes stored are always those of the state the write replaced, across processes. A store
+   * without it is written with `putSnapshot`, and a write by another process between the read and
+   * the write can then leave changes worked out against a state that was already replaced.
+   */
+  replaceSnapshot?(
+    key: string,
+    expectedFetchedAt: string | null,
+    snapshot: SubscriptionSnapshot,
+    pendingChanges: readonly SubscriptionChange[],
+    sourceUpdatedAt: string
+  ): Promise<boolean>
+
+  /**
    * Removes the pending changes with the given change keys and no others. Unknown keys are
    * ignored. The snapshot is untouched.
    */

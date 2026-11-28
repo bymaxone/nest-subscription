@@ -24,6 +24,7 @@ const CALLS: Readonly<
 > = {
   getSnapshot: (store) => store.getSnapshot(KEY),
   putSnapshot: (store) => store.putSnapshot(KEY, SNAPSHOT, [], AT),
+  replaceSnapshot: async (store) => store.replaceSnapshot?.(KEY, null, SNAPSHOT, [], AT),
   clearPendingChanges: (store) => store.clearPendingChanges(KEY, []),
   listKeysWithPendingChanges: (store) => store.listKeysWithPendingChanges(10, null),
   markEventProcessed: (store) => store.markEventProcessed('fake', 'e1', AT),
@@ -65,19 +66,37 @@ describe('createFailingStore', () => {
     'fails only %s when it alone is named, and delegates every other',
     async (named) => {
       // Scenario: one method of the port is named; it rejects without reaching the wrapped store,
-      // and each of the other seven resolves after the wrapped store's own method is called once.
+      // and each other one resolves after the wrapped store's own method is called once. Naming
+      // `putSnapshot` takes `replaceSnapshot` with it, as both are the write.
       const wrapped = inner()
       const spies = new Map(METHODS.map((method) => [method, jest.spyOn(wrapped, method)]))
       const store = createFailingStore(wrapped)
       store.fail([named])
       await expect(CALLS[named](store)).rejects.toThrow('failing store')
       expect(spies.get(named)).not.toHaveBeenCalled()
-      for (const other of METHODS.filter((method) => method !== named)) {
+      const withIt = named === 'putSnapshot' ? [named, 'replaceSnapshot'] : [named]
+      for (const other of METHODS.filter((method) => !withIt.includes(method))) {
         await expect(CALLS[other](store)).resolves.not.toThrow()
         expect(spies.get(other)).toHaveBeenCalledTimes(1)
       }
     }
   )
+
+  it('fails replaceSnapshot when putSnapshot is the method named', async () => {
+    // Scenario: a test that stops the writes stops the conditional one too.
+    const wrapped = inner()
+    const spy = jest.spyOn(wrapped, 'replaceSnapshot')
+    const store = createFailingStore(wrapped)
+    store.fail(['putSnapshot'])
+    await expect(CALLS['replaceSnapshot'](store)).rejects.toThrow('failing store: putSnapshot')
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('offers no replaceSnapshot over a store that has none', () => {
+    // Scenario: the wrapper adds no capability to the store it wraps.
+    const wrapped = Object.assign(inner(), { replaceSnapshot: undefined })
+    expect(createFailingStore(wrapped).replaceSnapshot).toBeUndefined()
+  })
 
   it('reaches the wrapped store with a write that is not named', async () => {
     // Scenario: only `getSnapshot` is named; a write still lands in the wrapped store, which the
