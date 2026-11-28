@@ -631,3 +631,58 @@ describe('SnapshotCache observer', () => {
     expect(outcomes).toStrictEqual([])
   })
 })
+
+describe('SnapshotCache: a host cache that never answers', () => {
+  const never = <T>(): Promise<T> => new Promise<T>(() => undefined)
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  /** A cache over the given host cache, with a clock that does not move. */
+  function over(host: SubscriptionCache): SnapshotCache {
+    const clock = new ManualClock('2026-01-01T00:00:00.000Z')
+    return new SnapshotCache(host, TTL_MS, clock, new ObserverBridge(null, clock))
+  }
+
+  it('answers a read from the load once a get has not answered for a second', async () => {
+    // Scenario: the get never settles; the read waits one second and no less.
+    const cache = over({ ...mapCache(), get: () => never<string | null>() })
+    const answered = jest.fn()
+    void cache.read(ACCOUNT, () => Promise.resolve(snapshotOf(ACCOUNT))).then(answered)
+    await jest.advanceTimersByTimeAsync(999)
+    expect(answered).not.toHaveBeenCalled()
+    await jest.advanceTimersByTimeAsync(1)
+    expect(answered).toHaveBeenCalledWith(snapshotOf(ACCOUNT))
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it('ends an invalidation whose delete never settles and keeps the account off the cache', async () => {
+    // Scenario: the entry may still be there, so the next read goes to the load.
+    const host = mapCache()
+    const cache = over({ ...host, delete: () => never<void>() })
+    const done = jest.fn()
+    void cache.invalidate(ACCOUNT).then(done)
+    await jest.advanceTimersByTimeAsync(1000)
+    expect(done).toHaveBeenCalled()
+    expect(cache.blockedAccounts).toBe(1)
+  })
+
+  it('keeps the rejection of a call that fails after its time ran out to itself', async () => {
+    // Scenario: the get rejects two seconds in, when nothing waits for it any more.
+    const cache = over({
+      ...mapCache(),
+      get: () =>
+        new Promise<string | null>((_resolve, reject) => {
+          setTimeout(() => reject(new Error('late')), 2000)
+        })
+    })
+    const read = cache.read(ACCOUNT, () => Promise.resolve(null))
+    await jest.advanceTimersByTimeAsync(2000)
+    await expect(read).resolves.toBeNull()
+  })
+})

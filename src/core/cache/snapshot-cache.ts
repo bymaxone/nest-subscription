@@ -14,9 +14,20 @@ import type { SubscriptionSnapshot } from '@bymax-one/nest-subscription/shared'
 import type { ObserverBridge } from '../observer/observer-bridge'
 import type { SubscriptionCache } from '../options/subscription-options.types'
 import { isSnapshotFor } from '../snapshot-fit'
+import { timerWait, withDeadline } from '../webhook/deadline'
 
 /** The fixed prefix of every key this library writes to the host's cache. */
 const KEY_PREFIX = 'subscription:snapshot:'
+
+/** How long a lookup or a delete of the host's cache is waited for, in milliseconds. */
+export const CACHE_CALL_TIMEOUT_MS = 1000
+
+/** The answer of one call to the host's cache; it rejects when the call has not answered in time. */
+async function bounded<T>(call: Promise<T>): Promise<T> {
+  const result = await withDeadline(Promise.resolve(call), CACHE_CALL_TIMEOUT_MS, timerWait)
+  if (result.timedOut) throw new Error('the cache did not answer in time')
+  return result.value
+}
 
 /** A read in flight, which an invalidation of its account marks as out of date. */
 interface Ticket {
@@ -159,12 +170,12 @@ export class SnapshotCache {
   }
 
   /**
-   * The cached snapshot, or `null` on a miss, a failing cache, a value that is not a snapshot, or
-   * a snapshot of another account or tenant than the one asked for.
+   * The cached snapshot, or `null` on a miss, a failing or silent cache, a value that is not a
+   * snapshot, or a snapshot of another account or tenant than the one asked for.
    */
   async #get(key: string, account: AccountReference): Promise<SubscriptionSnapshot | null> {
     try {
-      const text = await this.cache.get(key)
+      const text = await bounded(this.cache.get(key))
       const parsed = text === null ? undefined : parse(text)
       return isSnapshotFor(parsed, account) ? parsed : null
     } catch {
@@ -187,14 +198,14 @@ export class SnapshotCache {
   }
 
   /**
-   * Removes an account's entry. A delete that fails keeps the account off the cache for one entry
+   * Removes an account's entry. A delete that fails, or has not answered in time, keeps the account off the cache for one entry
    * lifetime from now, since the entry cannot outlive that; a delete that succeeds ends it. Every
    * delete drops the marks that have run out.
    */
   async #delete(accountKey: string): Promise<void> {
     let failed = false
     try {
-      await this.cache.delete(`${KEY_PREFIX}${accountKey}`)
+      await bounded(this.cache.delete(`${KEY_PREFIX}${accountKey}`))
     } catch {
       failed = true
     }

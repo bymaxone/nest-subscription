@@ -56,6 +56,13 @@ what moves, and that note is the compatibility contract until strict SemVer begi
 
 **Apply to a derived backend:** run `storeConformanceCases()` against your store again. A new failure is in one of `keeps the pending changes when an accepted write carries none`, `keeps both a clear and the change of a write that overlaps it`, `keeps both of two clears that overlap`, `keeps every pending change when writes to a key that holds a snapshot overlap`, `keeps apart keys that differ by case or by a trailing space`, `keeps apart long keys that differ only at their end`, `keeps apart event identifiers that differ by case, by a trailing space or at their end` and `orders writes and judges staleness by the millisecond`. Check the collation, length and timestamp precision of the columns.
 
+- **Bounded cache calls.** A lookup or a delete of the host's cache is waited for at most one
+  second. A lookup that has not answered is a miss, and a delete that has not answered counts as
+  failed, so reads of that account go to the store for one entry lifetime.
+
+  _Apply to a derived backend:_ nothing to change; a cache adapter that needs more than one second
+  for either call is now treated as failing for that call.
+
 ### Documentation
 
 - The README shows `createFailingStore` and its types, adds examples by subpath, lists `NonRenewingPurchaseRecord` and `EntitlementResolution` under `./shared`, says that `./finance` is reserved and exports nothing yet, and no longer says that nothing is published.

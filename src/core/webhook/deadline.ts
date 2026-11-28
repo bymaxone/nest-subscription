@@ -1,7 +1,7 @@
 /**
- * @fileoverview The response deadline of the receiver: a race between work and a wait, with the
- * wait injectable so a test decides when time has passed. The default wait is the only timer the
- * library ever starts, and it is cleared the moment the race is decided, so none outlives a call.
+ * @fileoverview A race between work and a wait, which bounds the answer of the receiver and the
+ * calls to the host's cache, with the wait injectable so a test decides when time has passed. The
+ * default wait is the only timer the library ever starts, and it is cleared the moment the race is decided, so none outlives a call.
  * @layer core
  */
 
